@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""V10 step-2 integration runner.
+"""V10 step-3 integration runner.
 
 Validation bridge for:
 1) advanced deterministic baseball run engine;
-2) phase-isolated EARLY/LATE/FINAL residual learning and calibration.
+2) phase-isolated EARLY/LATE/FINAL residual learning and calibration;
+3) Run Line and Totals recommendations restricted to the consensus main line.
 
 main remains on stable V9.1.1. No workflow is modified here.
 """
@@ -17,11 +18,11 @@ from v10_step1_engine import advanced_base_runs, expected_starter_ip, self_test 
 V10_FEATURE_VERSION = "10.1.0"
 V10_MODEL_VERSION = "runs-residual-phase-walkforward-v5"
 V10_VERDICT_VERSION = "direction-calibrated-v4"
-V10_RECOMMENDATION_VERSION = "model-first-v2"
+V10_RECOMMENDATION_VERSION = "model-first-mainline-v3"
 
 # V10 uses an isolated history because both the deterministic target and the
 # training semantics differ from V9.
-core.VERSION = "10.0.0-step2"
+core.VERSION = "10.0.0-step3"
 core.FEATURE_VERSION = V10_FEATURE_VERSION
 core.MODEL_VERSION = V10_MODEL_VERSION
 core.VERDICT_VERSION = V10_VERDICT_VERSION
@@ -38,6 +39,11 @@ from v10_phase_models import (
     build_skill_states,
     select_phase_states,
     self_test as phase_self_test,
+)
+from v10_main_lines import (
+    main_spread_line,
+    main_total_line,
+    self_test as mainline_self_test,
 )
 
 _original_game_context = core.game_context
@@ -193,13 +199,103 @@ def analyze_base_v10(game, event, delta, states, hist):
 core.analyze_base = analyze_base_v10
 
 
+def _main_line_view(result, market, name, point, meta):
+    """Create a model view for one side of one already-selected main line."""
+    market_key = "spreads" if market == "RUNLINE" else "totals"
+    con = core.consensus(result["event"], market_key, name, point)
+    pw, pp, pl = core.line_probs(
+        result["hmu"], result["amu"],
+        result["disp_state"]["alpha_home"], result["disp_state"]["alpha_away"],
+        market, name, point,
+        result["ctx"]["home"], result["ctx"]["away"],
+    )
+    nonpush = pw + pl
+    if nonpush <= 0:
+        return None
+    p_model = pw / nonpush
+    p_market = con.get("p")
+    market_gap = p_model - p_market if p_market is not None else None
+    return {
+        "market": market,
+        "name": name,
+        "point": point,
+        "p_model": p_model,
+        "p_win": pw,
+        "p_push": pp,
+        "p_loss": pl,
+        "p_market": p_market,
+        "market_gap": market_gap,
+        "refs": con.get("n", 0),
+        "fair": (1 - pp) / pw if pw > 0 else 99,
+        "min_price": core.min_acceptable_price(pw, pp, pl),
+        "confidence": core.model_signal_confidence(
+            p_model, result["quality"], p_market, con.get("n", 0)
+        ),
+        "winamax_eval": core.winamax_eval_for(result, market, name, point),
+        "main_line": True,
+        "main_line_votes": meta.get("votes", 0),
+        "main_line_total_books": meta.get("total_books", 0),
+        "main_line_support": meta.get("support_ratio", 0),
+        "main_line_books": meta.get("books", []),
+    }
+
+
+def model_line_views_v10(result, market):
+    """Analyze both sides of the consensus main line and no alternate lines."""
+    home = result["ctx"]["home"]
+    away = result["ctx"]["away"]
+    if market == "RUNLINE":
+        meta = main_spread_line(result["event"], home, away, core.REF_BOOKS, core.NOW)
+        if not meta:
+            return []
+        pairs = [(home, meta["home_point"]), (away, meta["away_point"])]
+    elif market == "TOTAL":
+        meta = main_total_line(result["event"], core.REF_BOOKS, core.NOW)
+        if not meta:
+            return []
+        pairs = [("Over", meta["point"]), ("Under", meta["point"])]
+    else:
+        return []
+
+    views = []
+    for name, point in pairs:
+        view = _main_line_view(result, market, name, point, meta)
+        if view is not None:
+            views.append(view)
+    return views
+
+
+def best_model_line_v10(result, market):
+    """Direction is chosen by the independent model, after the market fixes the line."""
+    views = model_line_views_v10(result, market)
+    if not views:
+        return None
+    best = max(views, key=lambda v: (v["p_model"], v["confidence"], v["refs"]))
+    core.logging.info(
+        "V10 MAIN LINE | %s @ %s | %s %s %s | support=%d/%d | model=%s market=%s",
+        result["ctx"]["away"], result["ctx"]["home"], market,
+        best["name"], f"{best['point']:+g}" if market == "RUNLINE" else f"{best['point']:g}",
+        best["main_line_votes"], best["main_line_total_books"],
+        core.pct(best["p_model"]), core.pct(best["p_market"]),
+    )
+    return best
+
+
+# attach_model_recommendations() resolves these names dynamically in bot.py, so
+# replacing them here makes every RL/TOTAL recommendation main-line only.
+core.model_line_views = model_line_views_v10
+core.best_model_line = best_model_line_v10
+
+
 def self_test():
     engine_self_test()
     phase_self_test()
+    mainline_self_test()
     core.self_test()
 
     assert core.FEATURE_VERSION == V10_FEATURE_VERSION
     assert core.MODEL_VERSION == V10_MODEL_VERSION
+    assert core.RECOMMENDATION_VERSION == "model-first-mainline-v3"
     assert "v10" in str(core.HISTORY_FILE)
 
     short = {"gs": 20, "ip": 80, "era": 4.35, "whip": 1.32, "k9": 8.3, "bb9": 3.2}
@@ -226,13 +322,62 @@ def self_test():
     )
     assert select_phase_states(fake_states, "EARLY")[0]["n"] == 11
     assert select_phase_states(fake_states, "FINAL")[0]["n"] == 33
-    print("SELF-TEST V10 STEP2 INTEGRATION OK")
+
+    # Integration check: alternate 9.5 / +/-2.5 may exist, but the model rec
+    # must stay on 8.5 and +/-1.5 selected by reference-book consensus.
+    saved_refs = set(core.REF_BOOKS)
+    core.REF_BOOKS = {"pinnacle", "betclic_fr"}
+    try:
+        fake_event = {"bookmakers": [
+            {"key": "pinnacle", "markets": [
+                {"key": "totals", "outcomes": [
+                    {"name": "Over", "point": 8.5, "price": 1.91},
+                    {"name": "Under", "point": 8.5, "price": 1.91},
+                    {"name": "Over", "point": 9.5, "price": 2.45},
+                    {"name": "Under", "point": 9.5, "price": 1.55},
+                ]},
+                {"key": "spreads", "outcomes": [
+                    {"name": "Home", "point": -1.5, "price": 1.91},
+                    {"name": "Away", "point": 1.5, "price": 1.91},
+                    {"name": "Home", "point": -2.5, "price": 2.55},
+                    {"name": "Away", "point": 2.5, "price": 1.50},
+                ]},
+            ]},
+            {"key": "betclic_fr", "markets": [
+                {"key": "totals", "outcomes": [
+                    {"name": "Over", "point": 8.5, "price": 1.90},
+                    {"name": "Under", "point": 8.5, "price": 1.92},
+                ]},
+                {"key": "spreads", "outcomes": [
+                    {"name": "Home", "point": -1.5, "price": 1.90},
+                    {"name": "Away", "point": 1.5, "price": 1.92},
+                ]},
+            ]},
+        ]}
+        fake_result = {
+            "event": fake_event,
+            "hmu": 5.1,
+            "amu": 4.0,
+            "quality": .82,
+            "disp_state": {"alpha_home": .12, "alpha_away": .12},
+            "ctx": {"home": "Home", "away": "Away"},
+            "evals": [],
+        }
+        tr = best_model_line_v10(fake_result, "TOTAL")
+        rr = best_model_line_v10(fake_result, "RUNLINE")
+        assert tr and tr["point"] == 8.5 and tr["main_line"], tr
+        assert rr and abs(rr["point"]) == 1.5 and rr["main_line"], rr
+    finally:
+        core.REF_BOOKS = saved_refs
+
+    print("SELF-TEST V10 STEP3 INTEGRATION OK")
 
 
 def main():
     core.logging.info(
-        "V10 step2 actif | base=%s | apprentissage=%s | feature=%s",
-        "advanced-baseball-v10", "EARLY/LATE/FINAL isolés", core.FEATURE_VERSION,
+        "V10 step3 actif | base=%s | apprentissage=%s | lignes=%s | feature=%s",
+        "advanced-baseball-v10", "EARLY/LATE/FINAL isolés",
+        "RL/TOTAL main-line consensus uniquement", core.FEATURE_VERSION,
     )
     core.main()
 
