@@ -6,9 +6,9 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 from html.parser import HTMLParser
 
-VERSION="9.0.2"
+VERSION="9.0.3"
 SCHEMA_VERSION=9
-FEATURE_VERSION="9.0.2"
+FEATURE_VERSION="9.0.3"
 MODEL_VERSION="runs-residual-walkforward-v3"
 VERDICT_VERSION="direction-calibrated-v3"
 DIST_VERSION="nb-mle-split-v2"
@@ -766,11 +766,17 @@ def should_publish(rec,s):
     snaps=rec.get("snapshots",[])
     if not snaps:return True
     last=snaps[-1]
+    if last.get("feature_version")!=s.get("feature_version"):return True
     if last.get("phase")!=s.get("phase"):return True
     if last.get("directional_pick")!=s.get("directional_pick"):return True
     if abs(num(last.get("direction_confidence"))-num(s.get("direction_confidence")))>=.7:return True
     if last.get("home_lineup_count",0)<8<=s.get("home_lineup_count",0) or last.get("away_lineup_count",0)<8<=s.get("away_lineup_count",0):return True
-    a={(p["market"],p["name"],p.get("point")) for p in last.get("selected_picks",[])};b={(p["market"],p["name"],p.get("point")) for p in s.get("selected_picks",[])};return a!=b
+    last_h=bool((last.get("home_statcast") or {}).get("available"));new_h=bool((s.get("home_statcast") or {}).get("available"))
+    last_a=bool((last.get("away_statcast") or {}).get("available"));new_a=bool((s.get("away_statcast") or {}).get("available"))
+    if (not last_h and new_h) or (not last_a and new_a):return True
+    a={(p["market"],p["name"],p.get("point")) for p in last.get("selected_picks",[])}
+    b={(p["market"],p["name"],p.get("point")) for p in s.get("selected_picks",[])}
+    return a!=b
 
 def discord_request(method="GET",payload=None):
     if not DISCORD_URL:return None,None
