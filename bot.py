@@ -6,7 +6,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-VERSION="7.0"
+VERSION="7.1"
 PARIS=ZoneInfo("Europe/Paris")
 NOW=datetime.now(timezone.utc)
 TARGET_DATE=os.getenv("MLB_DATE",datetime.now(PARIS).date().isoformat())
@@ -21,6 +21,7 @@ MIN_EV=float(os.getenv("MIN_EV","0.03") or .03)
 MIN_EDGE=float(os.getenv("MIN_EDGE","0.025") or .025)
 MIN_QUALITY=float(os.getenv("MIN_QUALITY","0.62") or .62)
 MAX_MODEL_MARKET_GAP=float(os.getenv("MAX_MODEL_MARKET_GAP","0.16") or .16)
+HARD_MODEL_MARKET_GAP=float(os.getenv("HARD_MODEL_MARKET_GAP","0.26") or .26)
 ML_MIN_GAMES=int(os.getenv("ML_MIN_GAMES","150") or 150)
 BOOKMAKERS=os.getenv("ODDS_BOOKMAKERS","winamax_fr,pinnacle,betfair_ex_eu,betclic_fr,unibet_fr,pmu_fr,netbet_fr")
 REF_BOOKS={x for x in BOOKMAKERS.split(",") if x and x!="winamax_fr"}
@@ -190,9 +191,36 @@ def weather(team,iso):
 def team_bundle(team_id):
     return season_stats(team_id,"hitting"),season_stats(team_id,"pitching"),recent_context(team_id),bullpen_load(team_id)
 
+def ip_float(v):
+    try:
+        t=str(v or "0")
+        if "." not in t:return float(t)
+        a,b=t.split(".",1); return float(a)+(int(b[:1] or 0)/3)
+    except:return 0.0
+
+def shrunk_pitcher(p):
+    ip=ip_float(p.get("inningsPitched")) if p else 0.0
+    w_rate=ip/(ip+35.0)
+    w_kbb=ip/(ip+25.0)
+    raw_era=num(p.get("era"),4.35) if p else 4.35
+    raw_whip=num(p.get("whip"),1.32) if p else 1.32
+    raw_k=num(p.get("strikeOutsPer9"),8.3) if p else 8.3
+    raw_bb=num(p.get("walksPer9"),3.2) if p else 3.2
+    era=clamp(4.35+w_rate*(raw_era-4.35),2.15,6.75)
+    whip=clamp(1.32+w_rate*(raw_whip-1.32),.92,1.75)
+    k9=clamp(8.3+w_kbb*(raw_k-8.3),4.8,12.8)
+    bb9=clamp(3.2+w_kbb*(raw_bb-3.2),1.2,5.8)
+    return {"ip":ip,"era":era,"whip":whip,"k9":k9,"bb9":bb9,
+            "raw_era":raw_era,"raw_whip":raw_whip,"raw_k9":raw_k,"raw_bb9":raw_bb,
+            "weight":w_rate}
+
 def pitcher_line(p):
     if not p:return "données indisponibles"
-    return f"ERA {num(p.get('era'),4.50):.2f} • WHIP {num(p.get('whip'),1.35):.2f} • K/9 {num(p.get('strikeOutsPer9'),8.2):.1f} • BB/9 {num(p.get('walksPer9'),3.2):.1f}"
+    q=shrunk_pitcher(p)
+    if q["ip"]<35:
+        return (f"ERA {q['raw_era']:.2f} → adj {q['era']:.2f} • WHIP {q['raw_whip']:.2f} → adj {q['whip']:.2f} "
+                f"• K/9 {q['k9']:.1f} • BB/9 {q['bb9']:.1f} • IP {q['ip']:.1f}")
+    return f"ERA {q['era']:.2f} • WHIP {q['whip']:.2f} • K/9 {q['k9']:.1f} • BB/9 {q['bb9']:.1f} • IP {q['ip']:.1f}"
 
 def feature_and_projection(g):
     home=g["teams"]["home"]["team"];away=g["teams"]["away"]["team"]
@@ -207,8 +235,9 @@ def feature_and_projection(g):
     h_ops=rate(hh,"ops",.710);a_ops=rate(ah,"ops",.710)
     h_obp=rate(hh,"obp",rate(hh,"onBasePercentage",.320));a_obp=rate(ah,"obp",rate(ah,"onBasePercentage",.320))
     h_slg=rate(hh,"slg",rate(hh,"sluggingPercentage",.390));a_slg=rate(ah,"slg",rate(ah,"sluggingPercentage",.390))
-    hs_era=rate(hs,"era",4.35);as_era=rate(aps,"era",4.35);hs_whip=rate(hs,"whip",1.32);as_whip=rate(aps,"whip",1.32)
-    hs_k=rate(hs,"strikeOutsPer9",8.3);as_k=rate(aps,"strikeOutsPer9",8.3);hs_bb=rate(hs,"walksPer9",3.2);as_bb=rate(aps,"walksPer9",3.2)
+    hsq=shrunk_pitcher(hs);asq=shrunk_pitcher(aps)
+    hs_era,hs_whip,hs_k,hs_bb=hsq["era"],hsq["whip"],hsq["k9"],hsq["bb9"]
+    as_era,as_whip,as_k,as_bb=asq["era"],asq["whip"],asq["k9"],asq["bb9"]
     park=PARK.get(home["name"],1.0)
     league=4.45
     home_mu=(.52*h_rpg+.18*(a_era/9*9)+.30*league)
@@ -228,12 +257,15 @@ def feature_and_projection(g):
     ]
     completeness=[bool(hh),bool(ah),bool(hp),bool(ap),bool(hs),bool(aps),wx["quality"]>0,hbn>0,abn>0]
     quality=sum(completeness)/len(completeness)
+    starter_reliability=min(1.0,(hsq["ip"]+asq["ip"])/90.0)
+    quality=.90*quality+.10*starter_reliability
     return {
         "home":home["name"],"away":away["name"],"home_id":home["id"],"away_id":away["id"],
         "home_sp":hsp.get("fullName","Non annoncé"),"away_sp":asp.get("fullName","Non annoncé"),
         "home_sp_stats":hs,"away_sp_stats":aps,"home_mu":home_mu,"away_mu":away_mu,"total_mu":home_mu+away_mu,
         "features":features,"quality":quality,"park":park,"weather":wx,"home_recent":hr,"away_recent":ar,
-        "home_bullpen":hb,"away_bullpen":ab,"home_bullpen_n":hbn,"away_bullpen_n":abn
+        "home_bullpen":hb,"away_bullpen":ab,"home_bullpen_n":hbn,"away_bullpen_n":abn,
+        "home_sp_adj":hsq,"away_sp_adj":asq,"starter_reliability":starter_reliability
     }
 
 def poisson(mu,max_runs=25):
@@ -389,16 +421,52 @@ def ml_state(hist):
 
 def blend_probability(model_p,market,quality,mlp=None):
     if market["p"] is None:return clamp(model_p),False
-    w_model=.22+.18*quality
+    gap=abs(model_p-market["p"])
+    w_model=.25+.20*quality
     if market["n"]>=4:w_model-=.04
-    if market["disp"] is not None and market["disp"]>.035:w_model+=.05
-    w_model=clamp(w_model,.18,.42)
+    if market["disp"] is not None and market["disp"]>.035:w_model+=.04
+    if gap>.12:w_model-=.05
+    w_model=clamp(w_model,.20,.46)
     base=clamp(w_model*model_p+(1-w_model)*market["p"])
     if mlp is not None:base=.85*base+.15*mlp
-    cap=.10 if quality>=.75 else .07
+    cap=.11 if quality>=.78 else .075
     base=clamp(base,market["p"]-cap,market["p"]+cap)
-    anomaly=abs(model_p-market["p"])>MAX_MODEL_MARKET_GAP
+    anomaly=gap>MAX_MODEL_MARKET_GAP
     return base,anomaly
+
+def market_verdict(ctx,p_home,raw,con,anomaly):
+    home,away=ctx["home"],ctx["away"]
+    if con["p"] is None:
+        side=home if p_home>=.5 else away
+        return {"side":side,"type":"MODEL_ONLY","confidence":abs(p_home-.5)*2,
+                "text":f"Marché de référence insuffisant. Le modèle donne l'avantage à **{side}** ({pct(max(p_home,1-p_home))})."}
+    market_side=home if con["p"]>=.5 else away
+    raw_side=home if raw>=.5 else away
+    final_side=home if p_home>=.5 else away
+    market_strength=max(con["p"],1-con["p"])
+    raw_strength=max(raw,1-raw)
+    gap=abs(raw-con["p"])
+    hard=gap>HARD_MODEL_MARKET_GAP
+    if raw_side==market_side:
+        conf=clamp((market_strength-.5)*2*.55+(raw_strength-.5)*2*.45,0,1)
+        if conf>=.32:
+            text=(f"✅ **MARCHÉ CONFIRMÉ** — le marché penche vers **{market_side}** et le modèle va dans le même sens. "
+                  f"Pick directionnel: **{market_side}**.")
+            typ="CONFIRMED"
+        else:
+            text=(f"🟡 **MARCHÉ LÉGÈREMENT CONFIRMÉ** — avantage **{market_side}**, mais signal peu marqué. "
+                  f"Pick directionnel: **{market_side}**.")
+            typ="LEAN"
+        return {"side":market_side,"type":typ,"confidence":conf,"text":text}
+    if not hard and ctx["quality"]>=.76 and raw_strength>=.55 and gap>=.07:
+        conf=clamp((raw_strength-.5)*2*.60+ctx["quality"]*.25+min(.15,gap),0,1)
+        text=(f"🔄 **MARCHÉ CONTESTÉ** — le marché favorise **{market_side}**, mais les données du modèle penchent vers "
+              f"**{raw_side}**. Pick contrarian: **{raw_side}**.")
+        return {"side":raw_side,"type":"CONTRARIAN","confidence":conf,"text":text}
+    side=final_side
+    text=(f"⚠️ **DÉSACCORD NON RÉSOLU** — marché: **{market_side}**, modèle brut: **{raw_side}**. "
+          f"Après pondération, léger avantage **{side}**, mais confiance réduite.")
+    return {"side":side,"type":"UNCERTAIN","confidence":.20,"text":text}
 
 def stake_for(pw,pp,pl,price):
     nonpush=pw+pl
@@ -424,7 +492,9 @@ def evaluate(event,ctx,kind,name,price,point,model_tuple,cons,anomaly=False):
     reasons=[]
     if cons["n"]<2:reasons.append(f"consensus insuffisant ({cons['n']} book)")
     if q<MIN_QUALITY:reasons.append(f"qualité {q*10:.1f}/10 < {MIN_QUALITY*10:.1f}")
-    if anomaly and kind in ("ML","RUNLINE"):reasons.append("divergence modèle/marché anormale")
+    if anomaly and kind in ("ML","RUNLINE") and cons["p"] is not None:
+        gap=abs(cond_model-cons["p"])
+        if gap>HARD_MODEL_MARKET_GAP:reasons.append("divergence extrême modèle/marché")
     if edge<MIN_EDGE:reasons.append(f"edge {edge*100:+.1f} pts < {MIN_EDGE*100:.1f}")
     if ev<MIN_EV:reasons.append(f"EV {ev*100:+.1f}% < {MIN_EV*100:.1f}%")
     units,stake=stake_for(pw,pp,pl,price)
@@ -445,6 +515,7 @@ def analyze(g,event,mls,hist):
     ml_features=ctx["features"]+[raw_ml,con_ml["p"] if con_ml["p"] is not None else .5]
     mlp=logistic_predict(mls["model"],ml_features) if mls["active"] and mls["model"] else None
     p_home,anomaly=blend_probability(raw_ml,con_ml,ctx["quality"],mlp)
+    verdict=market_verdict(ctx,p_home,raw_ml,con_ml,anomaly)
     evals=[]
     wb,wm=winamax_outcomes(event,"h2h")
     if wm:
@@ -477,10 +548,11 @@ def analyze(g,event,mls,hist):
         "home_mu":round(ctx["home_mu"],4),"away_mu":round(ctx["away_mu"],4),"raw_model_home":round(raw_ml,6),
         "market_home":round(con_ml["p"],6) if con_ml["p"] is not None else None,"p_pre_ml":round(blend_probability(raw_ml,con_ml,ctx["quality"],None)[0],6),
         "p_home":round(p_home,6),"quality":round(ctx["quality"],4),"model_market_anomaly":anomaly,"ml_features":[round(x,6) for x in ml_features],
-        "ml_active":mls["active"],"picks":[{k:v for k,v in x.items() if k not in ("selected","reason","disp")} for x in picks]
+        "ml_active":mls["active"],"market_verdict":verdict["type"],"directional_pick":verdict["side"],
+        "picks":[{k:v for k,v in x.items() if k not in ("selected","reason","disp")} for x in picks]
     }
     hist[str(g["gamePk"])]=record
-    return ctx,p_home,raw_ml,con_ml,mlp,anomaly,evals,picks
+    return ctx,p_home,raw_ml,con_ml,mlp,anomaly,evals,picks,verdict
 
 def discord_request(method="GET",payload=None):
     if not DISCORD_URL:return None,None
@@ -517,33 +589,37 @@ def send_embed(title,fields,color=3447003):
     return False
 
 def eval_text(x):
-    if not x:return "Marché indisponible sur Winamax."
+    if not x:return "Cote non fournie par **Winamax via The Odds API** pour ce marché."
     point=f" {x['point']:+g}" if x["point"] is not None and x["market"]=="RUNLINE" else f" {x['point']:g}" if x["point"] is not None else ""
     head=f"**{x['market']} — {x['name']}{point} @ {x['price']:.2f}**"
     stats=f"Prob {pct(x['p_cond'])} • Fair {x['fair']:.2f} • Edge {x['edge']*100:+.1f} pts • EV {x['ev']*100:+.1f}% • refs {x['refs']} • qualité {x['quality']*10:.1f}/10"
     if x["selected"]:return head+"\n"+stats+f"\n✅ VALUE • **{x['units']:.2f}u = {x['stake_eur']:.2f} €**"
     return head+"\n"+stats+"\n❌ REJETÉ • "+x["reason"]
 
-def send_game(g,ctx,p_home,raw,con,mlp,anomaly,evals,picks,mls):
+def send_game(g,ctx,p_home,raw,con,mlp,anomaly,evals,picks,mls,verdict):
     probs=(f"Finale **{ctx['home']} {pct(p_home)}** • {ctx['away']} {pct(1-p_home)}\n"
            f"Poisson/statistique: {pct(raw)} • consensus: {pct(con['p'])} ({con['n']} books)\n"
            f"Projection score: **{ctx['home']} {ctx['home_mu']:.2f} – {ctx['away_mu']:.2f} {ctx['away']}** • total {ctx['total_mu']:.2f}\n"
            f"ML historique: {'ACTIF '+pct(mlp) if mlp is not None else 'inactif'} • n={mls['n']}"
-           +(f"\n⚠️ **Divergence brute modèle/marché: paris ML/RL bloqués**" if anomaly else "\n✅ Cohérence modèle/marché acceptable"))
+           +(f"\n⚠️ Divergence brute modèle/marché détectée" if anomaly else "\n✅ Cohérence modèle/marché acceptable"))
     starters=(f"{ctx['away']}: **{ctx['away_sp']}** • {pitcher_line(ctx['away_sp_stats'])}\n"
               f"{ctx['home']}: **{ctx['home_sp']}** • {pitcher_line(ctx['home_sp_stats'])}")
     context=(f"Park factor {ctx['park']:.3f} • météo: {ctx['weather']['text']}\n"
              f"Bullpen fatigue H/A: {ctx['home_bullpen']:.2f}/{ctx['away_bullpen']:.2f}\n"
              f"Forme 10: {ctx['home']} {ctx['home_recent']['win_pct']*100:.0f}% (RD {ctx['home_recent']['run_diff_pg']:+.2f}/g) • "
              f"{ctx['away']} {ctx['away_recent']['win_pct']*100:.0f}% (RD {ctx['away_recent']['run_diff_pg']:+.2f}/g)\n"
-             f"Qualité données brute: **{ctx['quality']*10:.1f}/10**")
+             f"Fiabilité starters: {ctx['starter_reliability']*10:.1f}/10 • qualité données: **{ctx['quality']*10:.1f}/10**")
     reps=[representative(evals,m) for m in ("ML","RUNLINE","TOTAL")]
     markets="\n\n".join(eval_text(x) for x in reps)
-    best=("\n".join(f"• **{x['market']} {x['name']} {x['point'] if x['point'] is not None else ''} @ {x['price']:.2f}** • EV {x['ev']*100:+.1f}% • {x['units']:.2f}u" for x in picks[:3]) if picks else "❌ **NO BET** — aucun marché ne franchit tous les filtres.")
+    directional=(verdict["text"]+f"\nConfiance directionnelle: **{verdict['confidence']*10:.1f}/10**"
+                 +"\n_Le choix directionnel indique qui le modèle préfère; la section Winamax juge séparément le prix proposé._")
+    best=("\n".join(f"• **{x['market']} {x['name']} {x['point'] if x['point'] is not None else ''} @ {x['price']:.2f}** • EV {x['ev']*100:+.1f}% • {x['units']:.2f}u" for x in picks[:3])
+          if picks else f"Pick du match: **{verdict['side']}**. Aucun prix Winamax ne passe toutefois tous les filtres de mise.")
     return send_embed(f"⚾ MLB V{VERSION} • {ctx['away']} @ {ctx['home']}",[
-        ("🕒 Match",local_time(g["gameDate"])+" (Paris)"),("🎯 Probabilités",probs),("🧑 Starters",starters),("🔬 Contexte",context),
-        ("💰 Winamax — meilleurs prix par catégorie",markets),("✅ Décision",best)
-    ],5763719 if picks else 9807270)
+        ("🕒 Match",local_time(g["gameDate"])+" (Paris)"),("🎯 Probabilités",probs),("🧭 Lecture du marché",directional),
+        ("🧑 Starters",starters),("🔬 Contexte",context),
+        ("💰 Winamax — prix & value",markets),("✅ Verdict",best)
+    ],5763719 if picks else 16766720 if verdict["type"] in ("CONFIRMED","CONTRARIAN") else 9807270)
 
 def top_messages(all_picks):
     for market,title in (("ML","🏆 TOP 3 MONEYLINE"),("RUNLINE","⚾ TOP 3 RUN LINE"),("TOTAL","📈 TOP 3 TOTAUX")):
@@ -576,9 +652,9 @@ def main():
         if not event:
             logging.warning("Odds absentes: %s @ %s",away,home);continue
         try:
-            ctx,p_home,raw,con,mlp,anom,evals,picks=analyze(g,event,mls,hist);analyzed+=1
+            ctx,p_home,raw,con,mlp,anom,evals,picks,verdict=analyze(g,event,mls,hist);analyzed+=1
             for x in picks:x.update({"home":home,"away":away,"game_pk":g["gamePk"]});all_picks.append(x)
-            send_game(g,ctx,p_home,raw,con,mlp,anom,evals,picks,mls)
+            send_game(g,ctx,p_home,raw,con,mlp,anom,evals,picks,mls,verdict)
             logging.info("%s @ %s | pHome=%s | market=%s | picks=%d",away,home,pct(p_home),pct(con["p"]),len(picks))
         except Exception as e:logging.exception("Analyse %s @ %s: %s",away,home,e)
     write_history(hist);top_messages(all_picks)
