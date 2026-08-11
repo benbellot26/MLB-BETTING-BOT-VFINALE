@@ -1,0 +1,141 @@
+name: Temporary integer stakes hotfix
+
+on:
+  push:
+    branches:
+      - hotfix-integer-stakes-20260811
+    paths:
+      - .github/workflows/tmp-integer-stakes-hotfix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply integer stake policy
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('bot.py')
+          s = path.read_text(encoding='utf-8')
+
+          def replace_once(old, new, label):
+              global s
+              count = s.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected 1 occurrence, found {count}')
+              s = s.replace(old, new, 1)
+
+          replace_once(
+          '''def round_down_units(eur):
+              if UNIT<=0:return 0.0,0.0
+              u=math.floor((eur/UNIT)*4+1e-9)/4
+              return (u,round(u*UNIT,2)) if u>=.25 else (0.0,0.0)''',
+          '''def round_down_units(eur):
+              if UNIT<=0:return 0.0,0.0
+              max_u=max(0,int(math.floor(MAX_STAKE_UNITS+1e-9)))
+              u=min(max_u,int(math.floor(max(0.0,eur)/UNIT+1e-9)))
+              return (float(u),round(u*UNIT,2)) if u>=1 else (0.0,0.0)
+          def integer_stake_units(eur):
+              if UNIT<=0:return 0.0,0.0
+              raw=max(0.0,eur)/UNIT;max_u=max(0,int(math.floor(MAX_STAKE_UNITS+1e-9)))
+              if raw<.75 or max_u<1:return 0.0,0.0
+              u=1 if raw<1.5 else 2 if raw<2.5 else 3;u=min(u,max_u)
+              return float(u),round(u*UNIT,2)''',
+          'integer stake helpers')
+
+          replace_once(
+          'p=pw/np;b=price-1;k=max(0,(p*price-1)/b);eur=min(BANKROLL*k*.25,UNIT*MAX_STAKE_UNITS);return round_down_units(eur)',
+          'p=pw/np;b=price-1;k=max(0,(p*price-1)/b);eur=min(BANKROLL*k*.25,UNIT*MAX_STAKE_UNITS);return integer_stake_units(eur)',
+          'stake_candidate integer policy')
+
+          if s.count('Kelly prudent < 0.25u') != 2:
+              raise SystemExit(f'Kelly threshold: expected 2 occurrences, found {s.count("Kelly prudent < 0.25u")}')
+          s = s.replace('Kelly prudent < 0.25u', 'Kelly prudent < 0.75u')
+
+          replace_once(
+          'if u<.25:e["portfolio_reason"]="mise réduite sous 0.25u par contrôle portefeuille";continue',
+          'if u<1:e["portfolio_reason"]="mise réduite sous 1u par contrôle portefeuille";continue',
+          'portfolio whole-unit floor')
+
+          old_exec = '''def execution_status(rec,phase):
+              if not rec:return "⚠️ Pas de recommandation modèle exploitable."
+              e=rec.get("winamax_eval");minimum=rec.get("min_price")
+              if not e:
+                  return f"⚠️ **Cote Winamax absente du flux** • jouer uniquement si cote ≥ **{minimum:.2f}**\\n💰 **Mise conseillée : 0.00u** — attendre une cote exploitable"
+              price=e["price"];cu=num(e.get("candidate_units"),0);cs=num(e.get("candidate_stake_eur"),0)
+              if price+1e-9<minimum:
+                  return f"❌ **BON PICK — PRIX TROP BAS** • Winamax {price:.2f} • minimum modèle **{minimum:.2f}**\\n💰 **Mise conseillée : 0.00u**"
+              if phase=="EARLY":
+                  if e.get("qualified") and cu>=.25:
+                      return f"👀 **PRIX SUFFISANT ({price:.2f})**, mais phase EARLY : surveillance uniquement\\n💰 **Mise théorique si la cote tient : {cu:.2f}u = {cs:.2f} €** • mise maintenant **0u**"
+                  return f"👀 **PRIX SUFFISANT ({price:.2f})**, mais phase EARLY : surveillance uniquement\\n💰 **Mise théorique : 0.00u**"
+              if e.get("selected"):
+                  return f"✅ **PARI RETENU @ {price:.2f}**\\n💰 **Mise recommandée : {e['units']:.2f}u = {e['stake_eur']:.2f} €**"
+              if e.get("qualified"):
+                  return f"🟠 **PRIX JOUABLE @ {price:.2f}**, mais non retenu par les limites portefeuille\\n💰 Kelly brut **{cu:.2f}u = {cs:.2f} €** • **mise portefeuille : 0u**"
+              return f"⚪ Winamax {price:.2f} • modèle exige ≥ **{minimum:.2f}**\\n💰 **Mise conseillée : 0.00u**"'''
+
+          new_exec = '''def execution_status(rec,phase):
+              if not rec:return "⚠️ Pas de recommandation modèle exploitable."
+              e=rec.get("winamax_eval");minimum=rec.get("min_price")
+              if not e:
+                  return f"⚠️ **Cote Winamax absente du flux** • jouer uniquement si cote ≥ **{minimum:.2f}**\\n💰 **Mise conseillée : 0u** — attendre une cote exploitable"
+              price=e["price"];cu=num(e.get("candidate_units"),0);cs=num(e.get("candidate_stake_eur"),0)
+              if price+1e-9<minimum:
+                  return f"❌ **BON PICK — PRIX TROP BAS** • Winamax {price:.2f} • minimum modèle **{minimum:.2f}**\\n💰 **Mise conseillée : 0u**"
+              if phase=="EARLY":
+                  if e.get("qualified") and cu>=1:
+                      return f"👀 **PRIX SUFFISANT ({price:.2f})**, mais phase EARLY : surveillance uniquement\\n💰 **Mise théorique si la cote tient : {int(cu)}u = {cs:.2f} €** • mise maintenant **0u**"
+                  return f"👀 **PRIX SUFFISANT ({price:.2f})**, mais phase EARLY : surveillance uniquement\\n💰 **Mise théorique : 0u**"
+              if e.get("selected"):
+                  return f"✅ **PARI RETENU @ {price:.2f}**\\n💰 **Mise recommandée : {int(num(e.get('units'),0))}u = {e['stake_eur']:.2f} €**"
+              if e.get("qualified"):
+                  return f"🟠 **PRIX JOUABLE @ {price:.2f}**, mais non retenu par les limites portefeuille\\n💰 Mise théorique Kelly **{int(cu)}u = {cs:.2f} €** • **mise portefeuille : 0u**"
+              return f"⚪ **PAS DE MISE** @ {price:.2f} • {e.get('reason','critères insuffisants')}\\n💰 **Mise conseillée : 0u**"'''
+          replace_once(old_exec, new_exec, 'Discord execution_status')
+
+          old_fmt = "{e['units']:.2f}u"
+          count_fmt = s.count(old_fmt)
+          if count_fmt != 2:
+              raise SystemExit(f'unit display: expected 2 occurrences, found {count_fmt}')
+          s = s.replace(old_fmt, "{int(num(e['units'],0))}u")
+
+          replace_once(
+          '# ============================== V10 PROFESSIONAL ==============================\nVERSION="10.0.0"',
+          '# ============================== V10 PROFESSIONAL ==============================\nVERSION="10.0.1"',
+          'V10 patch version')
+          replace_once(
+          'RECOMMENDATION_VERSION="model-first-mainline-calibrated-v6"',
+          'RECOMMENDATION_VERSION="model-first-mainline-calibrated-v7"',
+          'recommendation version')
+
+          replace_once(
+          'assert SCHEMA_VERSION==10 and RUN_MODEL_MIN_GAMES>=450 and CAL_MIN_GAMES>=500;print("SELF-TEST MLB BETTING BOT V10 OK")',
+          'assert SCHEMA_VERSION==10 and RUN_MODEL_MIN_GAMES>=450 and CAL_MIN_GAMES>=500;assert MAX_STAKE_UNITS<3 or (integer_stake_units(.74*UNIT)[0]==0 and integer_stake_units(.75*UNIT)[0]==1 and integer_stake_units(1.49*UNIT)[0]==1 and integer_stake_units(1.50*UNIT)[0]==2 and integer_stake_units(2.49*UNIT)[0]==2 and integer_stake_units(2.50*UNIT)[0]==3);assert round_down_units(1.99*UNIT)[0]<=1 and round_down_units(2.00*UNIT)[0]<=2;print("SELF-TEST MLB BETTING BOT V10 OK")',
+          'integer stake self-test')
+
+          path.write_text(s, encoding='utf-8')
+          PY
+
+          python -m py_compile bot.py
+          BANKROLL=10 UNIT=0.5 MAX_STAKE_UNITS=3 python bot.py --self-test
+
+      - name: Commit validated hotfix
+        shell: bash
+        run: |
+          git config user.name "MLB Betting Bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add bot.py
+          git commit -m "feat(v10): integer 1-3u stake sizing"
+          git push origin HEAD:hotfix-integer-stakes-20260811
