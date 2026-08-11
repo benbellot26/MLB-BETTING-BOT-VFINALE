@@ -26,9 +26,16 @@ def settle_market(market,name,point,home,away,home_score,away_score):
         over=str(name).lower()=="over";return "W" if ((total>line)==over) else "L"
     return None
 def settle_record_predictions(record):
-    final=record.get("final") or record.get("final_score") or record.get("result") or {};hs=final.get("home_score",final.get("home"));as_=final.get("away_score",final.get("away"))
+    final=record.get("final") or record.get("final_score") or record.get("result") or {}
+    hs=record.get("home_score")
+    as_=record.get("away_score")
+    if hs is None:hs=final.get("home_score",final.get("home"))
+    if as_ is None:as_=final.get("away_score",final.get("away"))
     if hs is None or as_ is None:return 0
-    home=record.get("home") or final.get("home_name") or "";away=record.get("away") or final.get("away_name") or "";changed=0
+    first=(record.get("predictions") or [{}])[0]
+    home=record.get("home") or final.get("home_name") or first.get("home") or ""
+    away=record.get("away") or final.get("away_name") or first.get("away") or ""
+    changed=0
     for p in record.get("predictions",[]) or []:
         if p.get("result") in ("W","L","P"):continue
         r=settle_market(p.get("market"),p.get("name"),p.get("point"),home,away,hs,as_)
@@ -50,6 +57,7 @@ def performance_report(hist):
     return {"overall":prediction_metrics(preds),"by_market":{m:prediction_metrics([p for p in preds if p.get("market")==m]) for m in MARKETS},"by_phase":{ph:prediction_metrics([p for p in preds if p.get("phase")==ph]) for ph in PHASES},"by_confidence":{f"{lo}-{lo+1}":prediction_metrics([p for p in preds if lo<=num(p.get("confidence"))<lo+1]) for lo in (4,5,6,7,8,9)}}
 def self_test():
     assert settle_market("ML","Home",None,"Home","Away",5,3)=="W" and settle_market("RUNLINE","Away",1.0,"Home","Away",5,4)=="P" and settle_market("TOTAL","Over",9,"Home","Away",5,4)=="P" and settle_market("TOTAL","Under",9.5,"Home","Away",5,4)=="W"
+    record={"home":"Home","away":"Away","home_score":5,"away_score":4,"predictions":[{"market":"RUNLINE","name":"Away","point":1.0,"result":None}]};assert settle_record_predictions(record)==1 and record["predictions"][0]["result"]=="P"
     preds=[{"result":"W","p_model":.7,"market":"ML","phase":"FINAL","confidence":7.2},{"result":"L","p_model":.6,"market":"ML","phase":"FINAL","confidence":7.1},{"result":"P","p_model":.55,"market":"RUNLINE","phase":"LATE","confidence":6.4}];r=performance_report({"g":{"predictions":preds}});assert r["overall"]["n"]==3 and r["overall"]["n_wl"]==2 and r["overall"]["logloss"] is not None
     print("SELF-TEST V10 LEDGER/METRICS OK",r["overall"])
 if __name__=="__main__":self_test()
