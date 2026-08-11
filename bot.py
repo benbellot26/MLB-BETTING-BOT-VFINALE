@@ -686,23 +686,24 @@ def attach_model_recommendations(result):
 def model_rec_payload(rec):
     if not rec:return None
     return {k:v for k,v in rec.items() if k!="winamax_eval"}
+def displayed_stake_units(rec):
+    c=num((rec or {}).get("confidence"),0)
+    max_u=max(0,int(math.floor(MAX_STAKE_UNITS+1e-9)))
+    if c<MIN_PLAN_CONF or max_u<1:return 0
+    u=1 if c<7.0 else 2 if c<8.0 else 3
+    return min(u,max_u)
 def execution_status(rec,phase):
     if not rec:return "⚠️ Pas de recommandation modèle exploitable."
-    e=rec.get("winamax_eval");minimum=rec.get("min_price")
+    e=rec.get("winamax_eval");minimum=rec.get("min_price");du=displayed_stake_units(rec);ds=round(du*UNIT,2)
     if not e:
         return f"⚠️ **Cote Winamax absente du flux** • jouer uniquement si cote ≥ **{minimum:.2f}**\n💰 **Mise conseillée : 0u** — attendre une cote exploitable"
-    price=e["price"];cu=num(e.get("candidate_units"),0);cs=num(e.get("candidate_stake_eur"),0)
+    price=num(e.get("price"),0)
     if price+1e-9<minimum:
         return f"❌ **BON PICK — PRIX TROP BAS** • Winamax {price:.2f} • minimum modèle **{minimum:.2f}**\n💰 **Mise conseillée : 0u**"
-    if phase=="EARLY":
-        if e.get("qualified") and cu>=1:
-            return f"👀 **PRIX SUFFISANT ({price:.2f})** • phase EARLY\n💰 **Mise recommandée si pari pris maintenant : {int(cu)}u = {cs:.2f} €** • simulation FINAL avec données/cote actuelles"
-        return f"👀 **PRIX SUFFISANT ({price:.2f})** • phase EARLY\n💰 **Mise recommandée si pari pris maintenant : 0u** • critères actuels insuffisants"
-    if e.get("selected"):
-        return f"✅ **PARI RETENU @ {price:.2f}**\n💰 **Mise recommandée : {int(num(e.get('units'),0))}u = {e['stake_eur']:.2f} €**"
-    if e.get("qualified"):
-        return f"🟠 **PRIX JOUABLE @ {price:.2f}**, mais non retenu par les limites portefeuille\n💰 Mise théorique Kelly **{int(cu)}u = {cs:.2f} €** • **mise portefeuille : 0u**"
-    return f"⚪ **PAS DE MISE** @ {price:.2f} • {e.get('reason','critères insuffisants')}\n💰 **Mise conseillée : 0u**"
+    if du<=0:
+        return f"⚪ **PRIX SUFFISANT ({price:.2f})**, mais confiance sous le seuil {MIN_PLAN_CONF:.1f}/10\n💰 **Mise conseillée : 0u**"
+    phase_txt=f" • phase {phase}" if phase else ""
+    return f"✅ **PRIX SUFFISANT ({price:.2f})**{phase_txt}\n💰 **Mise recommandée : {du}u = {ds:.2f} €** • basée sur la confiance modèle, indépendante de l’EV/Kelly"
 def model_rec_text(rec):
     if not rec:return "Aucune recommandation modèle suffisamment définie."
     market=rec["market"];pt=""
@@ -1022,12 +1023,12 @@ def main():
     perf=performance(hist);logging.info("V%s terminé | analyses=%d | messages=%d | exposition=%.2f/%.2f€ | snapshots=%d",VERSION,len(results),published,portfolio["allocated"],portfolio["daily_cap"],sum(len(r.get("snapshots",[])) for r in hist.values()));logging.info("Performance | games=%d direction=%s Brier modèle=%s marché=%s | bets=%d profit=%.2f€ ROI=%s | CLV=%s pts n=%d",perf["games"],pct(perf["direction"]) if perf["direction"] is not None else "-",f"{perf['brier_model']:.4f}" if perf["brier_model"] is not None else "-",f"{perf['brier_market']:.4f}" if perf["brier_market"] is not None else "-",perf["bets"],perf["profit"],pct(perf["roi"]) if perf["roi"] is not None else "-",f"{perf['clv_pts']:+.2f}" if perf["clv_pts"] is not None else "-",perf["clv_n"])
 
 # ============================== V10 PROFESSIONAL ==============================
-VERSION="10.0.2"
+VERSION="10.0.3"
 SCHEMA_VERSION=10
 FEATURE_VERSION="10.2.0"
 MODEL_VERSION="runs-structural-phase-residual-v6"
 VERDICT_VERSION="direction-calibrated-v5"
-RECOMMENDATION_VERSION="model-first-mainline-calibrated-v8"
+RECOMMENDATION_VERSION="model-first-mainline-calibrated-v9"
 HISTORY_FILE=Path(os.getenv("HISTORY_FILE","data/mlb_history_v10.jsonl"))
 ARCHIVE_DIR=HISTORY_FILE.parent/"archive_v10"
 STATE_FILE=HISTORY_FILE.parent/"v10_state.json"
@@ -1333,7 +1334,7 @@ def send_daily_plan(results):
     return send_embed("🎟️ PLAN V10 — JUSQU'À 3 SIMPLES + COMBINÉ",[("🕒 État du run",f"{NOW.astimezone(PARIS).strftime('%d/%m/%Y %H:%M')} (Paris) • phases : {phase_note}"),("🎯 SIMPLES QUALIFIÉS",simples),("🧩 COMBINÉ HORS SIMPLES",combo_text),("🛡️ Règle V10","Jusqu'à 3 simples, jamais forcés. Combiné hors matchs des simples, pushes et exposition bankroll pris en compte.")],5763719)
 
 def v10_self_test():
-    _V9_SELF_TEST();neutral={"runsPerGame":4.45,"ops":.710};opp={"gamesPlayed":100,"runs":445,"era":4.35};recent={"games":10,"runs_pg":4.45};bp={"era":4.35,"whip":1.32,"load":.5};line={"count":9,"weighted_ops":.710};split={"_shrunk_ops":.710,"_pa":300};sc={"xwoba":.317,"pa":2000};wx={"run_adj":0};sp={"gs":20,"ip":106,"era":4.35,"whip":1.32,"k9":8.3,"bb9":3.2};base=v10_advanced_base_runs(neutral,opp,recent,sp,bp,line,split,sc,1,wx,False);ace=dict(sp);ace.update({"era":2.3,"whip":1.0,"k9":11,"bb9":2});weak=dict(sp);weak.update({"era":6.2,"whip":1.65,"k9":6.2,"bb9":5});assert v10_advanced_base_runs(neutral,opp,recent,ace,bp,line,split,sc,1,wx,False)<base<v10_advanced_base_runs(neutral,opp,recent,weak,bp,line,split,sc,1,wx,False);assert model_signal_confidence(.72,.95,.58,1)<=6 and model_signal_confidence(.72,.95,.58,2)<=7.5;assert v10_settle_market("RUNLINE","Away",1,"Home","Away",5,4)=="P" and v10_settle_market("TOTAL","Over",9,"Home","Away",5,4)=="P";pw,pp,pl=v10_calibrate_tuple((1,0),.55,.08,.37);assert abs(pp-.08)<1e-9 and abs(pw+pp+pl-1)<1e-9;assert SCHEMA_VERSION==10 and RUN_MODEL_MIN_GAMES>=450 and CAL_MIN_GAMES>=500;assert MAX_STAKE_UNITS<3 or (integer_stake_units(.24*UNIT)[0]==0 and integer_stake_units(.25*UNIT)[0]==1 and integer_stake_units(1.49*UNIT)[0]==1 and integer_stake_units(1.50*UNIT)[0]==2 and integer_stake_units(2.49*UNIT)[0]==2 and integer_stake_units(2.50*UNIT)[0]==3);assert round_down_units(1.99*UNIT)[0]<=1 and round_down_units(2.00*UNIT)[0]<=2;print("SELF-TEST MLB BETTING BOT V10 OK")
+    _V9_SELF_TEST();neutral={"runsPerGame":4.45,"ops":.710};opp={"gamesPlayed":100,"runs":445,"era":4.35};recent={"games":10,"runs_pg":4.45};bp={"era":4.35,"whip":1.32,"load":.5};line={"count":9,"weighted_ops":.710};split={"_shrunk_ops":.710,"_pa":300};sc={"xwoba":.317,"pa":2000};wx={"run_adj":0};sp={"gs":20,"ip":106,"era":4.35,"whip":1.32,"k9":8.3,"bb9":3.2};base=v10_advanced_base_runs(neutral,opp,recent,sp,bp,line,split,sc,1,wx,False);ace=dict(sp);ace.update({"era":2.3,"whip":1.0,"k9":11,"bb9":2});weak=dict(sp);weak.update({"era":6.2,"whip":1.65,"k9":6.2,"bb9":5});assert v10_advanced_base_runs(neutral,opp,recent,ace,bp,line,split,sc,1,wx,False)<base<v10_advanced_base_runs(neutral,opp,recent,weak,bp,line,split,sc,1,wx,False);assert model_signal_confidence(.72,.95,.58,1)<=6 and model_signal_confidence(.72,.95,.58,2)<=7.5;assert v10_settle_market("RUNLINE","Away",1,"Home","Away",5,4)=="P" and v10_settle_market("TOTAL","Over",9,"Home","Away",5,4)=="P";pw,pp,pl=v10_calibrate_tuple((1,0),.55,.08,.37);assert abs(pp-.08)<1e-9 and abs(pw+pp+pl-1)<1e-9;assert SCHEMA_VERSION==10 and RUN_MODEL_MIN_GAMES>=450 and CAL_MIN_GAMES>=500;assert displayed_stake_units({"confidence":6.19})==0 and displayed_stake_units({"confidence":6.2})==1 and displayed_stake_units({"confidence":6.99})==1 and displayed_stake_units({"confidence":7.0})==2 and displayed_stake_units({"confidence":7.99})==2 and displayed_stake_units({"confidence":8.0})==min(3,int(MAX_STAKE_UNITS));assert MAX_STAKE_UNITS<3 or (integer_stake_units(.24*UNIT)[0]==0 and integer_stake_units(.25*UNIT)[0]==1 and integer_stake_units(1.49*UNIT)[0]==1 and integer_stake_units(1.50*UNIT)[0]==2 and integer_stake_units(2.49*UNIT)[0]==2 and integer_stake_units(2.50*UNIT)[0]==3);assert round_down_units(1.99*UNIT)[0]<=1 and round_down_units(2.00*UNIT)[0]<=2;print("SELF-TEST MLB BETTING BOT V10 OK")
 
 if __name__=="__main__":
     try:
