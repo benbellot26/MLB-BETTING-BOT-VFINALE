@@ -37,37 +37,130 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Correctif Discord V9.0.3
+      - name: Correctif marchés de référence V9.0.4
         run: |
           python - <<'PY'
           from pathlib import Path
 
           p = Path("bot.py")
           s = p.read_text(encoding="utf-8")
-          s = s.replace('VERSION="9.0.2"', 'VERSION="9.0.3"', 1)
-          s = s.replace('FEATURE_VERSION="9.0.2"', 'FEATURE_VERSION="9.0.3"', 1)
+          s = s.replace('VERSION="9.0.3"', 'VERSION="9.0.4"', 1)
 
-          start = s.index('def should_publish(rec,s):')
-          end = s.index('\ndef discord_request', start)
-          replacement = '''def should_publish(rec,s):
-              snaps=rec.get("snapshots",[])
-              if not snaps:return True
-              last=snaps[-1]
-              if last.get("feature_version")!=s.get("feature_version"):return True
-              if last.get("phase")!=s.get("phase"):return True
-              if last.get("directional_pick")!=s.get("directional_pick"):return True
-              if abs(num(last.get("direction_confidence"))-num(s.get("direction_confidence")))>=.7:return True
-              if last.get("home_lineup_count",0)<8<=s.get("home_lineup_count",0) or last.get("away_lineup_count",0)<8<=s.get("away_lineup_count",0):return True
-              last_h=bool((last.get("home_statcast") or {}).get("available"));new_h=bool((s.get("home_statcast") or {}).get("available"))
-              last_a=bool((last.get("away_statcast") or {}).get("available"));new_a=bool((s.get("away_statcast") or {}).get("available"))
-              if (not last_h and new_h) or (not last_a and new_a):return True
-              a={(p["market"],p["name"],p.get("point")) for p in last.get("selected_picks",[])}
-              b={(p["market"],p["name"],p.get("point")) for p in s.get("selected_picks",[])}
-              return a!=b
+          # Message Winamax explicite lorsque RL/Totals ne sont pas présents dans le flux.
+          start = s.index('def eval_text(e,phase):')
+          end = s.index('\ndef fmt_statcast', start)
+          eval_block = '''def eval_text(e,phase,market=None):
+              if not e:
+                  labels={"ML":"💵 MONEYLINE","RUNLINE":"⚾ RUN LINE","TOTAL":"📈 TOTAL"}
+                  label=labels.get(market,"Marché")
+                  if market in ("RUNLINE","TOTAL"):
+                      return f"**{label}**\\n⚠️ Prix Winamax absent du flux The Odds API. La ligne reste analysée via le consensus des bookmakers de référence."
+                  return f"**{label}**\\n⚠️ Prix Winamax absent du flux The Odds API."
+              pt=f" {e['point']:+g}" if e["point"] is not None and e["market"]=="RUNLINE" else f" {e['point']:g}" if e["point"] is not None else ""
+              base=f"**{e['market']} — {e['name']}{pt} @ {e['price']:.2f}**\\nProb {pct(e['p_cond'])} • Fair {e['fair']:.2f} • Edge {e['edge']*100:+.1f} pts • EV {e['ev']*100:+.1f}% • refs {e['refs']}"
+              if e["selected"]:return base+f"\\n✅ **PARI RETENU** • {e['units']:.2f}u = {e['stake_eur']:.2f} €"
+              if e["qualified"] and phase=="EARLY":return base+"\\n👀 **WATCHLIST EARLY** • critères passés, mais aucune mise autorisée avant LATE/FINAL"
+              if e["qualified"]:return base+"\\n🟠 Qualifié mais non retenu par le portefeuille • "+(e["portfolio_reason"] or "limite de risque")
+              return base+"\\n⚪ Non retenu • "+e["reason"]
           '''
-          s = s[:start] + replacement + s[end:]
-          p.write_text(s, encoding="utf-8")
-          print("Correctif Discord V9.0.3 injecté")
+          s = s[:start] + eval_block + s[end:]
+
+          helper = '''def reference_market_views(result,market):
+              market_key="spreads" if market=="RUNLINE" else "totals"
+              support={}
+              labels={}
+              for b,m in market_rows(result["event"],market_key):
+                  if b.get("key") not in REF_BOOKS:continue
+                  for o in m.get("outcomes",[]):
+                      if o.get("point") is None:continue
+                      name=o.get("name");point=round(num(o.get("point")),3)
+                      key=(norm_name(name),point) if market=="RUNLINE" else (str(name).lower(),point)
+                      support[key]=support.get(key,0)+1;labels[key]=(name,point)
+              views=[]
+              for key,count in support.items():
+                  name,point=labels[key]
+                  con=consensus(result["event"],market_key,name,point)
+                  if con.get("p") is None or con.get("n",0)<2:continue
+                  probs=line_probs(result["hmu"],result["amu"],result["disp_state"]["alpha_home"],result["disp_state"]["alpha_away"],market,name,point,result["ctx"]["home"],result["ctx"]["away"])
+                  pw,pp,pl=probs;nonpush=pw+pl
+                  if nonpush<=0:continue
+                  p_model=pw/nonpush;edge=p_model-con["p"]
+                  if edge<=0:continue
+                  win_eval=next((e for e in result.get("evals",[]) if e.get("market")==market and norm_name(e.get("name"))==norm_name(name) and abs(num(e.get("point"))-point)<1e-6),None)
+                  confidence=clamp(4.8+min(2.8,max(0,edge)/.12*2.8)+max(0,result["quality"]-.60)*1.5+min(.7,max(0,con["n"]-2)*.15),4.5,9.4)
+                  views.append({"market":market,"name":name,"point":point,"p_model":p_model,"p_market":con["p"],"edge":edge,"refs":con["n"],"support":count,"confidence":confidence,"winamax_price":win_eval.get("price") if win_eval else None,"winamax_qualified":bool(win_eval and win_eval.get("qualified")),"winamax_selected":bool(win_eval and win_eval.get("selected")),"units":win_eval.get("units",0) if win_eval else 0,"ev":win_eval.get("ev") if win_eval else None})
+              return views
+          def reference_best_view(result,market):
+              xs=reference_market_views(result,market)
+              return max(xs,key=lambda x:(x["confidence"],x["edge"],x["support"])) if xs else None
+          def reference_view_text(result,market):
+              v=reference_best_view(result,market)
+              label="⚾ RUN LINE" if market=="RUNLINE" else "📈 TOTAL"
+              if not v:return f"**{label}**\\n⚠️ Aucun prix Winamax dans le flux et consensus de référence insuffisant pour classer ce marché."
+              pt=f"{v['point']:+g}" if market=="RUNLINE" else f"{v['point']:g}"
+              selection=f"{v['name']} {pt}"
+              emoji,band,_=confidence_band(v["confidence"])
+              price=(f"Winamax @ **{v['winamax_price']:.2f}**" if v["winamax_price"] else "⚠️ Prix Winamax absent du flux API")
+              return f"**{label} — analyse de référence**\\n**{selection}** • modèle {pct(v['p_model'])} • marché {pct(v['p_market'])} • avantage modèle {v['edge']*100:+.1f} pts • refs {v['refs']}\\n{emoji} Signal **{v['confidence']:.1f}/10 — {band}**\\n{price} • pas de mise sans prix Winamax exploitable" if not v["winamax_price"] else f"**{label} — analyse de référence**\\n**{selection}** • modèle {pct(v['p_model'])} • marché {pct(v['p_market'])} • avantage modèle {v['edge']*100:+.1f} pts • refs {v['refs']}\\n{emoji} Signal **{v['confidence']:.1f}/10 — {band}**\\n{price}"
+          def market_display(result,market):
+              e=representative(result["evals"],market)
+              if e:return eval_text(e,result["phase"],market)
+              if market in ("RUNLINE","TOTAL"):return reference_view_text(result,market)
+              return eval_text(None,result["phase"],market)
+          '''
+
+          hstart = s.find('def reference_market_views(result,market):')
+          send_pos = s.index('def send_game(')
+          if hstart >= 0:
+              s = s[:hstart] + helper + '\n' + s[send_pos:]
+          else:
+              s = s[:send_pos] + helper + '\n' + s[send_pos:]
+
+          old = '".join(eval_text(representative(result["evals"],m),result["phase"]) for m in ("ML","RUNLINE","TOTAL"))'
+          new = '".join(market_display(result,m) for m in ("ML","RUNLINE","TOTAL"))'
+          if old not in s:
+              raise SystemExit("Expression marchés Discord introuvable")
+          s = s.replace(old,new,1)
+
+          top_start=s.index('def top_signature(results):')
+          top_end=s.index('\ndef performance(hist):',top_start)
+          top_block='''def top_signature(results):
+              payload=[]
+              for r in sorted(results,key=lambda x:str(x["game_pk"])):
+                  refs=[]
+                  for market in ("RUNLINE","TOTAL"):
+                      v=reference_best_view(r,market)
+                      refs.append(None if not v else [market,v["name"],v["point"],round(v["p_model"],4),round(v["p_market"],4),round(v["confidence"],1),v["winamax_price"]])
+                  payload.append([r["game_pk"],r["verdict"]["side"],round(r["verdict"]["confidence"],1),refs])
+              return hashlib.sha1(json.dumps(payload,sort_keys=True,ensure_ascii=False).encode()).hexdigest()
+          def send_top_messages(results,state):
+              sig=top_signature(results)
+              if state.get("top_signature")==sig:logging.info("Top 3 inchangé — Discord non renvoyé");return False
+              dirs=sorted([r for r in results if r["verdict"]["type"]!="UNCERTAIN"],key=lambda r:r["verdict"]["confidence"],reverse=True)[:3]
+              body="\\n\\n".join(f"**#{i+1} {r['ctx']['away']} @ {r['ctx']['home']}**\\n{confidence_band(r['verdict']['confidence'])[0]} **{r['verdict']['side']}** • {r['verdict']['confidence']:.1f}/10 • {confidence_band(r['verdict']['confidence'])[1]} • phase {r['phase']}" for i,r in enumerate(dirs)) or "Aucune lecture claire."
+              ok=send_embed("🏆 TOP 3 LECTURES MONEYLINE",[("Direction",body)],16766720)
+              for market,title in (("RUNLINE","⚾ TOP 3 RUN LINE"),("TOTAL","📈 TOP 3 TOTAUX")):
+                  xs=[]
+                  for r in results:
+                      v=reference_best_view(r,market)
+                      if v:xs.append((r,v))
+                  xs=sorted(xs,key=lambda x:(x[1]["confidence"],x[1]["edge"],x[1]["support"]),reverse=True)[:3]
+                  blocks=[]
+                  for i,(r,v) in enumerate(xs):
+                      pt=f"{v['point']:+g}" if market=="RUNLINE" else f"{v['point']:g}"
+                      emoji,band,_=confidence_band(v["confidence"])
+                      price=f"Winamax @ **{v['winamax_price']:.2f}**" if v["winamax_price"] else "⚠️ Prix Winamax absent du flux API"
+                      status=(f" • ✅ {v['units']:.2f}u" if v["winamax_selected"] else " • 👀 qualifié" if v["winamax_qualified"] else "")
+                      blocks.append(f"**#{i+1} {r['ctx']['away']} @ {r['ctx']['home']}**\\n{emoji} **{v['name']} {pt}** • modèle {pct(v['p_model'])} • marché {pct(v['p_market'])}\\nAvantage modèle **{v['edge']*100:+.1f} pts** • confiance **{v['confidence']:.1f}/10 — {band}** • refs {v['refs']}\\n{price}{status}")
+                  txt="\\n\\n".join(blocks) if blocks else "Aucune ligne de référence suffisamment couverte aujourd'hui."
+                  ok=send_embed(title,[("Classement prédictif V9.0.4",txt)],16766720) and ok
+              if ok:state["top_signature"]=sig;save_state(state)
+              return ok
+          '''
+          s=s[:top_start]+top_block+s[top_end:]
+
+          p.write_text(s,encoding="utf-8")
+          print("Correctif marchés de référence V9.0.4 injecté")
           PY
 
       - name: Validation Python
@@ -122,6 +215,6 @@ jobs:
             echo "Code et données V9 inchangés."
             exit 0
           fi
-          git commit -m "fix: V9.0.3 Discord refresh + update data [skip ci]"
+          git commit -m "fix: V9.0.4 reference markets + update data [skip ci]"
           git pull --rebase origin main
           git push
