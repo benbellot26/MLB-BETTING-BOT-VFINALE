@@ -83,13 +83,29 @@ def game_context_v10(game):
         lg,
     )
 
-    ctx["base_home_v9"] = ctx["base_home"]
-    ctx["base_away_v9"] = ctx["base_away"]
+    old_home = ctx["base_home"]
+    old_away = ctx["base_away"]
+    ctx["base_home_v9"] = old_home
+    ctx["base_away_v9"] = old_away
     ctx["base_home"] = home_mu
     ctx["base_away"] = away_mu
     ctx["base_engine"] = "advanced-baseball-v10"
     ctx["expected_away_sp_ip"] = expected_starter_ip(away_sp)
     ctx["expected_home_sp_ip"] = expected_starter_ip(home_sp)
+
+    core.logging.info(
+        "V10 RUN BASE | %s @ %s | H %.2f→%.2f (%+.2f) | A %.2f→%.2f (%+.2f) | SP IP H/A %.2f/%.2f",
+        ctx["away"],
+        ctx["home"],
+        old_home,
+        home_mu,
+        home_mu - old_home,
+        old_away,
+        away_mu,
+        away_mu - old_away,
+        ctx["expected_home_sp_ip"],
+        ctx["expected_away_sp_ip"],
+    )
     return ctx
 
 
