@@ -37,130 +37,232 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Correctif marchés de référence V9.0.4
+      - name: Correctif recommandations modèle V9.1
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
 
-          p = Path("bot.py")
-          s = p.read_text(encoding="utf-8")
-          s = s.replace('VERSION="9.0.3"', 'VERSION="9.0.4"', 1)
+          p=Path("bot.py")
+          s=p.read_text(encoding="utf-8")
+          s=re.sub(r'VERSION="9\.0\.[0-9]+"','VERSION="9.1.0"',s,count=1)
+          if 'RECOMMENDATION_VERSION=' not in s:
+              s=s.replace('DIST_VERSION="nb-mle-split-v2"','DIST_VERSION="nb-mle-split-v2"\nRECOMMENDATION_VERSION="model-first-v1"',1)
 
-          # Message Winamax explicite lorsque RL/Totals ne sont pas présents dans le flux.
-          start = s.index('def eval_text(e,phase):')
-          end = s.index('\ndef fmt_statcast', start)
-          eval_block = '''def eval_text(e,phase,market=None):
-              if not e:
-                  labels={"ML":"💵 MONEYLINE","RUNLINE":"⚾ RUN LINE","TOTAL":"📈 TOTAL"}
-                  label=labels.get(market,"Marché")
-                  if market in ("RUNLINE","TOTAL"):
-                      return f"**{label}**\\n⚠️ Prix Winamax absent du flux The Odds API. La ligne reste analysée via le consensus des bookmakers de référence."
-                  return f"**{label}**\\n⚠️ Prix Winamax absent du flux The Odds API."
-              pt=f" {e['point']:+g}" if e["point"] is not None and e["market"]=="RUNLINE" else f" {e['point']:g}" if e["point"] is not None else ""
-              base=f"**{e['market']} — {e['name']}{pt} @ {e['price']:.2f}**\\nProb {pct(e['p_cond'])} • Fair {e['fair']:.2f} • Edge {e['edge']*100:+.1f} pts • EV {e['ev']*100:+.1f}% • refs {e['refs']}"
-              if e["selected"]:return base+f"\\n✅ **PARI RETENU** • {e['units']:.2f}u = {e['stake_eur']:.2f} €"
-              if e["qualified"] and phase=="EARLY":return base+"\\n👀 **WATCHLIST EARLY** • critères passés, mais aucune mise autorisée avant LATE/FINAL"
-              if e["qualified"]:return base+"\\n🟠 Qualifié mais non retenu par le portefeuille • "+(e["portfolio_reason"] or "limite de risque")
-              return base+"\\n⚪ Non retenu • "+e["reason"]
+          # L'exécution d'un pari utilise désormais la probabilité du modèle pur.
+          start=s.index('def stake_candidate(')
+          end=s.index('\ndef snapshot_phase',start)
+          block=r'''def stake_candidate(pw,pp,pl,price):
+              np=pw+pl
+              if np<=0 or price<=1:return 0,0
+              p=pw/np;b=price-1;k=max(0,(p*price-1)/b);eur=min(BANKROLL*k*.25,UNIT*MAX_STAKE_UNITS);return round_down_units(eur)
+          def min_acceptable_price(pw,pp,pl):
+              nonpush=pw+pl
+              if pw<=0 or nonpush<=0:return None
+              pcond=pw/nonpush
+              ev_price=(1+MIN_EV-pp)/pw
+              edge_price=1/(pcond-MIN_EDGE) if pcond>MIN_EDGE else 99.0
+              return max((1-pp)/pw,ev_price,edge_price)
+          def evaluate(ctx,quality,kind,name,price,point,model_tuple,cons):
+              pw,pp,pl=model_tuple
+              nonpush=pw+pl;pcond=pw/nonpush if nonpush else .5
+              edge=pcond-1/price;ev=pw*price+pp-1;fair=(1-pp)/pw if pw>0 else 99;reasons=[]
+              if quality<MIN_QUALITY:reasons.append(f"qualité {quality*10:.1f}/10 < {MIN_QUALITY*10:.1f}")
+              if edge<MIN_EDGE:reasons.append(f"prix: edge {edge*100:+.1f} pts < {MIN_EDGE*100:.1f}")
+              if ev<MIN_EV:reasons.append(f"prix: EV {ev*100:+.1f}% < {MIN_EV*100:.1f}%")
+              cu,cs=stake_candidate(pw,pp,pl,price)
+              if not reasons and cu<=0:reasons.append("Kelly prudent < 0.25u")
+              return {"market":kind,"name":name,"point":point,"price":price,"p_win":pw,"p_push":pp,"p_loss":pl,"p_cond":pcond,"fair":fair,"min_price":min_acceptable_price(pw,pp,pl),"edge":edge,"ev":ev,"quality":quality,"refs":cons.get("n",0),"market_prob":cons.get("p"),"qualified":not reasons,"reason":"OK" if not reasons else " ; ".join(reasons),"candidate_units":cu,"candidate_stake_eur":cs,"selected":False,"units":0.0,"stake_eur":0.0,"portfolio_reason":"","model_recommended":False}
           '''
-          s = s[:start] + eval_block + s[end:]
+          s=s[:start]+block+s[end:]
 
-          helper = '''def reference_market_views(result,market):
-              market_key="spreads" if market=="RUNLINE" else "totals"
-              support={}
-              labels={}
-              for b,m in market_rows(result["event"],market_key):
+          # Le ML Winamax n'est plus mélangé au consensus marché pour décider du prix.
+          s=s.replace('p=p_ensemble if norm_name(name)==norm_name(ctx["home"]) else 1-p_ensemble','p=p_model if norm_name(name)==norm_name(ctx["home"]) else 1-p_model',1)
+
+          # Recommandations propres au modèle : ML, Run Line et Total.
+          alloc_pos=s.index('def allocate_portfolio(')
+          helper=r'''def model_signal_confidence(p_model,quality,p_market=None,refs=0):
+              strength=max(0,p_model-.5)
+              gap=abs(p_model-p_market) if p_market is not None else 0
+              return clamp(4.4+min(2.9,strength/.18*2.9)+max(0,quality-.55)*2.0+min(1.0,gap/.12)+min(.4,max(0,refs-2)*.10),4.2,9.6)
+          def winamax_eval_for(result,market,name,point=None):
+              for e in result.get("evals",[]):
+                  if e.get("market")!=market:continue
+                  same=(str(e.get("name")).lower()==str(name).lower()) if market=="TOTAL" else (norm_name(e.get("name"))==norm_name(name))
+                  line=True if point is None else abs(num(e.get("point"))-num(point))<1e-6
+                  if same and line:return e
+              return None
+          def model_line_views(result,market):
+              mk="spreads" if market=="RUNLINE" else "totals"
+              candidates={}
+              for b,m in market_rows(result["event"],mk):
                   if b.get("key") not in REF_BOOKS:continue
                   for o in m.get("outcomes",[]):
                       if o.get("point") is None:continue
                       name=o.get("name");point=round(num(o.get("point")),3)
                       key=(norm_name(name),point) if market=="RUNLINE" else (str(name).lower(),point)
-                      support[key]=support.get(key,0)+1;labels[key]=(name,point)
+                      candidates[key]=(name,point)
               views=[]
-              for key,count in support.items():
-                  name,point=labels[key]
-                  con=consensus(result["event"],market_key,name,point)
-                  if con.get("p") is None or con.get("n",0)<2:continue
+              for name,point in candidates.values():
+                  con=consensus(result["event"],mk,name,point)
                   probs=line_probs(result["hmu"],result["amu"],result["disp_state"]["alpha_home"],result["disp_state"]["alpha_away"],market,name,point,result["ctx"]["home"],result["ctx"]["away"])
                   pw,pp,pl=probs;nonpush=pw+pl
                   if nonpush<=0:continue
-                  p_model=pw/nonpush;edge=p_model-con["p"]
-                  if edge<=0:continue
-                  win_eval=next((e for e in result.get("evals",[]) if e.get("market")==market and norm_name(e.get("name"))==norm_name(name) and abs(num(e.get("point"))-point)<1e-6),None)
-                  confidence=clamp(4.8+min(2.8,max(0,edge)/.12*2.8)+max(0,result["quality"]-.60)*1.5+min(.7,max(0,con["n"]-2)*.15),4.5,9.4)
-                  views.append({"market":market,"name":name,"point":point,"p_model":p_model,"p_market":con["p"],"edge":edge,"refs":con["n"],"support":count,"confidence":confidence,"winamax_price":win_eval.get("price") if win_eval else None,"winamax_qualified":bool(win_eval and win_eval.get("qualified")),"winamax_selected":bool(win_eval and win_eval.get("selected")),"units":win_eval.get("units",0) if win_eval else 0,"ev":win_eval.get("ev") if win_eval else None})
+                  pm=pw/nonpush
+                  if pm<.50:continue
+                  mp=con.get("p");market_gap=pm-mp if mp is not None else None
+                  conf=model_signal_confidence(pm,result["quality"],mp,con.get("n",0))
+                  we=winamax_eval_for(result,market,name,point)
+                  views.append({"market":market,"name":name,"point":point,"p_model":pm,"p_win":pw,"p_push":pp,"p_loss":pl,"p_market":mp,"market_gap":market_gap,"refs":con.get("n",0),"fair":(1-pp)/pw if pw>0 else 99,"min_price":min_acceptable_price(pw,pp,pl),"confidence":conf,"winamax_eval":we})
               return views
-          def reference_best_view(result,market):
-              xs=reference_market_views(result,market)
-              return max(xs,key=lambda x:(x["confidence"],x["edge"],x["support"])) if xs else None
-          def reference_view_text(result,market):
-              v=reference_best_view(result,market)
-              label="⚾ RUN LINE" if market=="RUNLINE" else "📈 TOTAL"
-              if not v:return f"**{label}**\\n⚠️ Aucun prix Winamax dans le flux et consensus de référence insuffisant pour classer ce marché."
-              pt=f"{v['point']:+g}" if market=="RUNLINE" else f"{v['point']:g}"
-              selection=f"{v['name']} {pt}"
-              emoji,band,_=confidence_band(v["confidence"])
-              price=(f"Winamax @ **{v['winamax_price']:.2f}**" if v["winamax_price"] else "⚠️ Prix Winamax absent du flux API")
-              return f"**{label} — analyse de référence**\\n**{selection}** • modèle {pct(v['p_model'])} • marché {pct(v['p_market'])} • avantage modèle {v['edge']*100:+.1f} pts • refs {v['refs']}\\n{emoji} Signal **{v['confidence']:.1f}/10 — {band}**\\n{price} • pas de mise sans prix Winamax exploitable" if not v["winamax_price"] else f"**{label} — analyse de référence**\\n**{selection}** • modèle {pct(v['p_model'])} • marché {pct(v['p_market'])} • avantage modèle {v['edge']*100:+.1f} pts • refs {v['refs']}\\n{emoji} Signal **{v['confidence']:.1f}/10 — {band}**\\n{price}"
-          def market_display(result,market):
-              e=representative(result["evals"],market)
-              if e:return eval_text(e,result["phase"],market)
-              if market in ("RUNLINE","TOTAL"):return reference_view_text(result,market)
-              return eval_text(None,result["phase"],market)
+          def best_model_line(result,market):
+              xs=model_line_views(result,market)
+              if not xs:return None
+              return max(xs,key=lambda v:(v["confidence"]+(max(0,v["market_gap"] or 0)*8),v["p_model"],v["refs"]))
+          def attach_model_recommendations(result):
+              home=result["ctx"]["home"];away=result["ctx"]["away"]
+              side=home if result["p_model"]>=.5 else away
+              pm=result["p_model"] if side==home else 1-result["p_model"]
+              mp=None if result["con"].get("p") is None else (result["con"]["p"] if side==home else 1-result["con"]["p"])
+              ml_eval=winamax_eval_for(result,"ML",side,None)
+              ml={"market":"ML","name":side,"point":None,"p_model":pm,"p_win":pm,"p_push":0.0,"p_loss":1-pm,"p_market":mp,"market_gap":pm-mp if mp is not None else None,"refs":result["con"].get("n",0),"fair":1/pm,"min_price":min_acceptable_price(pm,0,1-pm),"confidence":model_signal_confidence(pm,result["quality"],mp,result["con"].get("n",0)),"winamax_eval":ml_eval}
+              recs={"ML":ml,"RUNLINE":best_model_line(result,"RUNLINE"),"TOTAL":best_model_line(result,"TOTAL")}
+              result["model_recs"]=recs
+              for e in result.get("evals",[]):e["model_recommended"]=False
+              for rec in recs.values():
+                  if rec and rec.get("winamax_eval") is not None:rec["winamax_eval"]["model_recommended"]=True
+              return recs
+          def model_rec_payload(rec):
+              if not rec:return None
+              return {k:v for k,v in rec.items() if k!="winamax_eval"}
+          def execution_status(rec,phase):
+              if not rec:return "⚠️ Pas de recommandation modèle exploitable."
+              e=rec.get("winamax_eval");minimum=rec.get("min_price")
+              if not e:
+                  return f"⚠️ **Cote Winamax absente du flux** • jouer uniquement si cote ≥ **{minimum:.2f}**"
+              price=e["price"]
+              if price+1e-9<minimum:
+                  return f"❌ **BON PICK — PRIX TROP BAS** • Winamax {price:.2f} • minimum modèle **{minimum:.2f}**"
+              if phase=="EARLY":
+                  return f"👀 **PRIX SUFFISANT ({price:.2f})**, mais phase EARLY : surveillance uniquement"
+              if e.get("selected"):
+                  return f"✅ **PARI RETENU @ {price:.2f}** • {e['units']:.2f}u = {e['stake_eur']:.2f} €"
+              if e.get("qualified"):
+                  return f"🟠 **PRIX JOUABLE @ {price:.2f}**, mais non retenu par les limites portefeuille"
+              return f"⚪ Winamax {price:.2f} • modèle exige ≥ **{minimum:.2f}**"
+          def model_rec_text(rec):
+              if not rec:return "Aucune recommandation modèle suffisamment définie."
+              market=rec["market"];pt=""
+              if rec.get("point") is not None:pt=(f" {rec['point']:+g}" if market=="RUNLINE" else f" {rec['point']:g}")
+              market_txt=pct(rec.get("p_market")) if rec.get("p_market") is not None else "N/A"
+              gap=f"{rec['market_gap']*100:+.1f} pts" if rec.get("market_gap") is not None else "N/A"
+              emoji,band,_=confidence_band(rec["confidence"])
+              return f"**{rec['name']}{pt}** • modèle **{pct(rec['p_model'])}** • marché réf. {market_txt} • écart {gap}\nFair **{rec['fair']:.2f}** • cote mini **{rec['min_price']:.2f}** • {emoji} **{rec['confidence']:.1f}/10 — {band}**"
           '''
+          # Supprime une éventuelle ancienne couche V9.0.4 avant d'insérer V9.1.
+          old_ref=s.find('def reference_market_views(result,market):')
+          if old_ref>=0 and old_ref<alloc_pos:
+              s=s[:old_ref]+s[alloc_pos:]
+              alloc_pos=s.index('def allocate_portfolio(')
+          s=s[:alloc_pos]+helper+'\n'+s[alloc_pos:]
 
-          hstart = s.find('def reference_market_views(result,market):')
-          send_pos = s.index('def send_game(')
-          if hstart >= 0:
-              s = s[:hstart] + helper + '\n' + s[send_pos:]
-          else:
-              s = s[:send_pos] + helper + '\n' + s[send_pos:]
+          # Portefeuille : seulement les sélections que le modèle a lui-même recommandées.
+          astart=s.index('def allocate_portfolio(')
+          aend=s.index('\ndef analyze_base',astart)
+          alloc=r'''def allocate_portfolio(results):
+              daily_cap=BANKROLL*MAX_DAILY_EXPOSURE_PCT;game_cap=BANKROLL*MAX_GAME_EXPOSURE_PCT;remaining=daily_cap;chosen={};candidates=[]
+              for r in results:
+                  if r["phase"]=="EARLY":
+                      for e in r["evals"]:
+                          if e.get("qualified") and e.get("model_recommended"):e["portfolio_reason"]="WATCHLIST EARLY — aucune mise autorisée"
+                      continue
+                  for e in r["evals"]:
+                      if e.get("qualified") and e.get("model_recommended"):candidates.append((e["ev"]*e["quality"]+max(0,e["edge"])*.5,r,e))
+              for _,r,e in sorted(candidates,key=lambda x:x[0],reverse=True):
+                  gid=str(r["game_pk"]);existing=chosen.setdefault(gid,[])
+                  if len(existing)>=MAX_BETS_PER_GAME:e["portfolio_reason"]="limite de paris par match";continue
+                  used=sum(x["stake_eur"] for x in existing);room_game=max(0,game_cap-used)
+                  if remaining<=0:e["portfolio_reason"]="exposition quotidienne maximale atteinte";continue
+                  f=correlation_factor(existing,e);target=min(e["candidate_stake_eur"]*f,remaining,room_game);u,stake=round_down_units(target)
+                  if u<.25:e["portfolio_reason"]="mise réduite sous 0.25u par contrôle portefeuille";continue
+                  e.update({"selected":True,"units":u,"stake_eur":stake,"portfolio_reason":"OK"});existing.append(e);remaining-=stake
+              return {"daily_cap":round(daily_cap,2),"allocated":round(daily_cap-remaining,2),"remaining":round(remaining,2),"game_cap":round(game_cap,2)}
+          '''
+          s=s[:astart]+alloc+s[aend:]
 
-          old = '".join(eval_text(representative(result["evals"],m),result["phase"]) for m in ("ML","RUNLINE","TOTAL"))'
-          new = '".join(market_display(result,m) for m in ("ML","RUNLINE","TOTAL"))'
-          if old not in s:
-              raise SystemExit("Expression marchés Discord introuvable")
-          s = s.replace(old,new,1)
+          # Le ledger ne conserve que les paris correspondant aux recommandations du modèle.
+          s=s.replace('qualified={recommendation_key(e):e for e in evals if e["qualified"]}','qualified={recommendation_key(e):e for e in evals if e.get("qualified") and e.get("model_recommended")}',1)
 
-          top_start=s.index('def top_signature(results):')
-          top_end=s.index('\ndef performance(hist):',top_start)
-          top_block='''def top_signature(results):
+          # Snapshot V9.1 : stocke les recommandations du modèle indépendamment des prix.
+          bstart=s.index('def build_snapshot(')
+          bend=s.index('\ndef should_publish',bstart)
+          build=r'''def build_snapshot(result,rec):
+              sid=f"{result['game_pk']}-{NOW.strftime('%Y%m%dT%H%M%S')}";sel=[e for e in result["evals"] if e.get("selected")];qualified=[e for e in result["evals"] if e.get("qualified") and e.get("model_recommended")]
+              return {"snapshot_id":sid,"feature_version":FEATURE_VERSION,"model_version":MODEL_VERSION,"verdict_version":VERDICT_VERSION,"distribution_version":DIST_VERSION,"recommendation_version":RECOMMENDATION_VERSION,"engine_mode":result["engine"],"phase":result["phase"],"role":snapshot_role(rec,result["phase"]),"analyzed_at":NOW.isoformat(),"seconds_to_game":round(result["seconds"]),"odds_event_id":result["event"].get("id"),"odds_commence":result["event"].get("commence_time"),"match_delta_min":round(result["delta"],1),"base_home":round(result["ctx"]["base_home"],4),"base_away":round(result["ctx"]["base_away"],4),"home_mu":round(result["hmu"],4),"away_mu":round(result["amu"],4),"run_features_home":[round(x,6) for x in result["ctx"]["run_features_home"]],"run_features_away":[round(x,6) for x in result["ctx"]["run_features_away"]],"p_model_raw":round(result["p_model_raw"],6),"p_model":round(result["p_model"],6),"market_home":round(result["con"]["p"],6) if result["con"]["p"] is not None else None,"p_ensemble":round(result["p_ensemble"],6),"market_refs":result["con"]["n"],"market_disp":result["con"]["disp"],"market_age_min":result["con"]["age_min"],"quality":round(result["quality"],4),"verdict_type":result["verdict"]["type"],"directional_pick":result["verdict"]["side"],"confidence_base":round(result["verdict"]["confidence_base"],3),"direction_confidence":round(result["verdict"]["confidence"],3),"home_lineup_count":result["ctx"]["home_lineup"]["count"],"away_lineup_count":result["ctx"]["away_lineup"]["count"],"home_statcast":result["ctx"]["home_statcast"],"away_statcast":result["ctx"]["away_statcast"],"model_recommendations":{k:model_rec_payload(v) for k,v in result.get("model_recs",{}).items()},"market_snapshot":serialize_market(result["event"]),"qualified_candidates":[{k:v for k,v in e.items() if k not in ("portfolio_reason",)} for e in qualified],"selected_picks":[{k:v for k,v in e.items() if k not in ("portfolio_reason",)} for e in sel]}
+          '''
+          s=s[:bstart]+build+s[bend:]
+
+          # Discord : sépare clairement PRÉDICTION, BENCHMARK et PRIX D'EXÉCUTION.
+          dstart=s.index('def send_game(')
+          dend=s.index('\ndef top_signature',dstart)
+          send=r'''def send_game(result,snap,portfolio):
+              ctx=result["ctx"];v=result["verdict"];emoji,label,color=confidence_band(v["confidence"]);disp=result["disp_state"];recs=result.get("model_recs",{})
+              probs=f"Modèle indépendant **{ctx['home']} {pct(result['p_model'])}** • {ctx['away']} {pct(1-result['p_model'])}\nMarché de référence **{pct(result['con']['p'])} {ctx['home']}** ({result['con']['n']} books)\nProjection: **{ctx['home']} {result['hmu']:.2f} – {result['amu']:.2f} {ctx['away']}** • total {result['hmu']+result['amu']:.2f}\nNB α H/A={disp['alpha_home']:.2f}/{disp['alpha_away']:.2f} • extras domicile {pct(result['extra_home'])} • phase **{result['phase']}** / {snap['role']}"
+              direction=v["text"]+f"\n{emoji} Confiance lecture marché: **{v['confidence']:.1f}/10 — {label}**"
+              starters=f"{ctx['away']}: **{ctx['away_sp']}** • {pitcher_line(ctx['away_sp_stats'],ctx['away_hand'])}\n{ctx['home']}: **{ctx['home_sp']}** • {pitcher_line(ctx['home_sp_stats'],ctx['home_hand'])}"
+              advanced=f"Lineups H/A: **{ctx['home_lineup']['count']}/9 – {ctx['away_lineup']['count']}/9** • OPS pondéré {ctx['home_lineup']['weighted_ops'] if ctx['home_lineup']['weighted_ops'] else 'N/A'} / {ctx['away_lineup']['weighted_ops'] if ctx['away_lineup']['weighted_ops'] else 'N/A'}\nSplits vs main opposée PA: {int(num(ctx['home_split'].get('_pa')))} / {int(num(ctx['away_split'].get('_pa')))}\nStatcast {ctx['home']}: {fmt_statcast(ctx['home_statcast'])}\nStatcast {ctx['away']}: {fmt_statcast(ctx['away_statcast'])}\nBullpen ERA H/A: {ctx['home_bp']['era']:.2f}/{ctx['away_bp']['era']:.2f} • fatigue {ctx['home_bp']['load']:.2f}/{ctx['away_bp']['load']:.2f}"
+              context=f"Park {ctx['park']:.3f} • météo: {ctx['weather']['text']}\nForme 10: {ctx['home']} {ctx['home_recent']['win_pct']*100:.0f}% (RD {ctx['home_recent']['run_diff_pg']:+.2f}/g) • {ctx['away']} {ctx['away_recent']['win_pct']*100:.0f}% (RD {ctx['away_recent']['run_diff_pg']:+.2f}/g)\nQualité adaptée à la phase: **{result['quality']*10:.1f}/10**"
+              model_text="\n\n".join(f"**{'🏆 MONEYLINE' if m=='ML' else '⚾ RUN LINE' if m=='RUNLINE' else '📈 TOTAL'}**\n{model_rec_text(recs.get(m))}" for m in ("ML","RUNLINE","TOTAL"))
+              exec_text="\n\n".join(f"**{'ML' if m=='ML' else 'RUN LINE' if m=='RUNLINE' else 'TOTAL'}** — {execution_status(recs.get(m),result['phase'])}" for m in ("ML","RUNLINE","TOTAL"))
+              selected=[e for e in result["evals"] if e.get("selected")]
+              final="\n".join(f"• **{e['market']} {e['name']} {e['point'] if e['point'] is not None else ''} @ {e['price']:.2f}** • {e['units']:.2f}u" for e in selected) if selected else ("👀 Aucune mise en phase EARLY — les recommandations du modèle restent valides comme watchlist." if result["phase"]=="EARLY" else "Aucune mise exécutée : les recommandations et le prix disponible sont deux décisions séparées.")
+              risk=f"Exposition journée: **{portfolio['allocated']:.2f} € / {portfolio['daily_cap']:.2f} €** • plafond/match {portfolio['game_cap']:.2f} €"
+              return send_embed(f"⚾ MLB V{VERSION} • {ctx['away']} @ {ctx['home']}",[("🕒 Match",local_time(result["game"]["gameDate"])+" (Paris)"),("🎯 Modèle indépendant",probs),("🧭 Benchmark marché",direction),("🧑 Starters",starters),("🧪 Lineup / splits / Statcast / bullpen",advanced),("🔬 Contexte",context),("🎯 Recommandations du modèle",model_text),("💰 Winamax — uniquement exécution",exec_text),("🛡️ Risque portefeuille",risk),("✅ Verdict de mise",final)],color)
+          '''
+          s=s[:dstart]+send+s[dend:]
+
+          # Top 3 : classement des recommandations du modèle, jamais des prix Winamax.
+          tstart=s.index('def top_signature(results):')
+          tend=s.index('\ndef performance(hist):',tstart)
+          tops=r'''def top_signature(results):
               payload=[]
               for r in sorted(results,key=lambda x:str(x["game_pk"])):
-                  refs=[]
-                  for market in ("RUNLINE","TOTAL"):
-                      v=reference_best_view(r,market)
-                      refs.append(None if not v else [market,v["name"],v["point"],round(v["p_model"],4),round(v["p_market"],4),round(v["confidence"],1),v["winamax_price"]])
-                  payload.append([r["game_pk"],r["verdict"]["side"],round(r["verdict"]["confidence"],1),refs])
+                  payload.append([r["game_pk"],[(m,(None if not r.get("model_recs",{}).get(m) else [r["model_recs"][m]["name"],r["model_recs"][m].get("point"),round(r["model_recs"][m]["p_model"],4),round(r["model_recs"][m]["confidence"],1)])) for m in ("ML","RUNLINE","TOTAL")]])
               return hashlib.sha1(json.dumps(payload,sort_keys=True,ensure_ascii=False).encode()).hexdigest()
           def send_top_messages(results,state):
               sig=top_signature(results)
-              if state.get("top_signature")==sig:logging.info("Top 3 inchangé — Discord non renvoyé");return False
-              dirs=sorted([r for r in results if r["verdict"]["type"]!="UNCERTAIN"],key=lambda r:r["verdict"]["confidence"],reverse=True)[:3]
-              body="\\n\\n".join(f"**#{i+1} {r['ctx']['away']} @ {r['ctx']['home']}**\\n{confidence_band(r['verdict']['confidence'])[0]} **{r['verdict']['side']}** • {r['verdict']['confidence']:.1f}/10 • {confidence_band(r['verdict']['confidence'])[1]} • phase {r['phase']}" for i,r in enumerate(dirs)) or "Aucune lecture claire."
-              ok=send_embed("🏆 TOP 3 LECTURES MONEYLINE",[("Direction",body)],16766720)
-              for market,title in (("RUNLINE","⚾ TOP 3 RUN LINE"),("TOTAL","📈 TOP 3 TOTAUX")):
+              if state.get("top_signature")==sig:logging.info("Top 3 modèle inchangé — Discord non renvoyé");return False
+              ok=True
+              for market,title in (("ML","🏆 TOP 3 MONEYLINE — MODÈLE"),("RUNLINE","⚾ TOP 3 RUN LINE — MODÈLE"),("TOTAL","📈 TOP 3 TOTAUX — MODÈLE")):
                   xs=[]
                   for r in results:
-                      v=reference_best_view(r,market)
-                      if v:xs.append((r,v))
-                  xs=sorted(xs,key=lambda x:(x[1]["confidence"],x[1]["edge"],x[1]["support"]),reverse=True)[:3]
+                      rec=r.get("model_recs",{}).get(market)
+                      if rec:xs.append((r,rec))
+                  xs=sorted(xs,key=lambda x:(x[1]["confidence"],x[1]["p_model"],x[1].get("market_gap") or -9),reverse=True)[:3]
                   blocks=[]
-                  for i,(r,v) in enumerate(xs):
-                      pt=f"{v['point']:+g}" if market=="RUNLINE" else f"{v['point']:g}"
-                      emoji,band,_=confidence_band(v["confidence"])
-                      price=f"Winamax @ **{v['winamax_price']:.2f}**" if v["winamax_price"] else "⚠️ Prix Winamax absent du flux API"
-                      status=(f" • ✅ {v['units']:.2f}u" if v["winamax_selected"] else " • 👀 qualifié" if v["winamax_qualified"] else "")
-                      blocks.append(f"**#{i+1} {r['ctx']['away']} @ {r['ctx']['home']}**\\n{emoji} **{v['name']} {pt}** • modèle {pct(v['p_model'])} • marché {pct(v['p_market'])}\\nAvantage modèle **{v['edge']*100:+.1f} pts** • confiance **{v['confidence']:.1f}/10 — {band}** • refs {v['refs']}\\n{price}{status}")
-                  txt="\\n\\n".join(blocks) if blocks else "Aucune ligne de référence suffisamment couverte aujourd'hui."
-                  ok=send_embed(title,[("Classement prédictif V9.0.4",txt)],16766720) and ok
+                  for i,(r,rec) in enumerate(xs):
+                      pt="" if rec.get("point") is None else (f" {rec['point']:+g}" if market=="RUNLINE" else f" {rec['point']:g}")
+                      emoji,band,_=confidence_band(rec["confidence"]);mp=pct(rec.get("p_market")) if rec.get("p_market") is not None else "N/A";gap=f"{rec['market_gap']*100:+.1f} pts" if rec.get("market_gap") is not None else "N/A"
+                      blocks.append(f"**#{i+1} {r['ctx']['away']} @ {r['ctx']['home']}**\n{emoji} **{rec['name']}{pt}** • modèle **{pct(rec['p_model'])}** • marché {mp} • écart {gap}\nFair **{rec['fair']:.2f}** • **cote mini {rec['min_price']:.2f}** • confiance **{rec['confidence']:.1f}/10 — {band}**\n{execution_status(rec,r['phase'])}")
+                  txt="\n\n".join(blocks) if blocks else "Aucune recommandation modèle suffisamment définie."
+                  ok=send_embed(title,[("Classement prédictif V9.1",txt)],16766720) and ok
               if ok:state["top_signature"]=sig;save_state(state)
               return ok
           '''
-          s=s[:top_start]+top_block+s[top_end:]
+          s=s[:tstart]+tops+s[tend:]
+
+          # Attache les recommandations avant l'allocation portefeuille.
+          old='try:r=analyze_base(g,pair[0],pair[1],states,hist);r["disp_state"]=disp_state;results.append(r)'
+          new='try:r=analyze_base(g,pair[0],pair[1],states,hist);r["disp_state"]=disp_state;attach_model_recommendations(r);results.append(r)'
+          if old not in s:raise SystemExit("Point d'injection main introuvable")
+          s=s.replace(old,new,1)
+
+          # Les tests portefeuille doivent représenter une recommandation du modèle.
+          s=s.replace('"market":"ML","name":"A"}]};allocate_portfolio([early])','"market":"ML","name":"A","model_recommended":True}]};allocate_portfolio([early])',1)
+          s=s.replace('"market":"ML","name":"A"}]};port=allocate_portfolio([late])','"market":"ML","name":"A","model_recommended":True}]};port=allocate_portfolio([late])',1)
 
           p.write_text(s,encoding="utf-8")
-          print("Correctif marchés de référence V9.0.4 injecté")
+          print("Correctif V9.1 modèle-first injecté")
           PY
 
       - name: Validation Python
@@ -215,6 +317,6 @@ jobs:
             echo "Code et données V9 inchangés."
             exit 0
           fi
-          git commit -m "fix: V9.0.4 reference markets + update data [skip ci]"
+          git commit -m "feat: V9.1 model-first recommendations + update data [skip ci]"
           git pull --rebase origin main
           git push
