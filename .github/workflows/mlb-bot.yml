@@ -1,10 +1,14 @@
-name: MLB Betting Bot V8
+name: MLB Betting Bot V8.1
 
 on:
   workflow_dispatch:
 
   schedule:
     - cron: "17 16 * * *"
+      timezone: "Europe/Paris"
+    - cron: "17 20 * * *"
+      timezone: "Europe/Paris"
+    - cron: "47 23 * * *"
       timezone: "Europe/Paris"
 
 permissions:
@@ -18,7 +22,7 @@ jobs:
   run-bot:
     name: Exécution du Bot
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
 
     steps:
       - name: Récupération du repository
@@ -32,24 +36,22 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Informations environnement
+      - name: Validation Python
         run: |
           python --version
-          git --version
+          python -m py_compile bot.py
 
       - name: Exécution du Bot
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-
           BANKROLL: ${{ vars.BANKROLL }}
           UNIT: ${{ vars.UNIT }}
           MAX_STAKE_UNITS: ${{ vars.MAX_STAKE_UNITS }}
           MIN_EV: ${{ vars.MIN_EV }}
           MIN_EDGE: ${{ vars.MIN_EDGE }}
-
           HISTORY_FILE: data/mlb_history_v8.jsonl
-
+          MATCH_MAX_DELTA_HOURS: "2.5"
         run: |
           mkdir -p data
           python bot.py
@@ -89,5 +91,6 @@ jobs:
             exit 0
           fi
 
-          git commit -m "data: update MLB V8 history [skip ci]"
+          git commit -m "data: update MLB V8.1 history [skip ci]"
+          git pull --rebase origin main
           git push
