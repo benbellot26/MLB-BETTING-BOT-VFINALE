@@ -683,17 +683,19 @@ def execution_status(rec,phase):
     if not rec:return "⚠️ Pas de recommandation modèle exploitable."
     e=rec.get("winamax_eval");minimum=rec.get("min_price")
     if not e:
-        return f"⚠️ **Cote Winamax absente du flux** • jouer uniquement si cote ≥ **{minimum:.2f}**"
-    price=e["price"]
+        return f"⚠️ **Cote Winamax absente du flux** • jouer uniquement si cote ≥ **{minimum:.2f}**\n💰 **Mise conseillée : 0.00u** — attendre une cote exploitable"
+    price=e["price"];cu=num(e.get("candidate_units"),0);cs=num(e.get("candidate_stake_eur"),0)
     if price+1e-9<minimum:
-        return f"❌ **BON PICK — PRIX TROP BAS** • Winamax {price:.2f} • minimum modèle **{minimum:.2f}**"
+        return f"❌ **BON PICK — PRIX TROP BAS** • Winamax {price:.2f} • minimum modèle **{minimum:.2f}**\n💰 **Mise conseillée : 0.00u**"
     if phase=="EARLY":
-        return f"👀 **PRIX SUFFISANT ({price:.2f})**, mais phase EARLY : surveillance uniquement"
+        if e.get("qualified") and cu>=.25:
+            return f"👀 **PRIX SUFFISANT ({price:.2f})**, mais phase EARLY : surveillance uniquement\n💰 **Mise théorique si la cote tient : {cu:.2f}u = {cs:.2f} €** • mise maintenant **0u**"
+        return f"👀 **PRIX SUFFISANT ({price:.2f})**, mais phase EARLY : surveillance uniquement\n💰 **Mise théorique : 0.00u**"
     if e.get("selected"):
-        return f"✅ **PARI RETENU @ {price:.2f}** • {e['units']:.2f}u = {e['stake_eur']:.2f} €"
+        return f"✅ **PARI RETENU @ {price:.2f}**\n💰 **Mise recommandée : {e['units']:.2f}u = {e['stake_eur']:.2f} €**"
     if e.get("qualified"):
-        return f"🟠 **PRIX JOUABLE @ {price:.2f}**, mais non retenu par les limites portefeuille"
-    return f"⚪ Winamax {price:.2f} • modèle exige ≥ **{minimum:.2f}**"
+        return f"🟠 **PRIX JOUABLE @ {price:.2f}**, mais non retenu par les limites portefeuille\n💰 Kelly brut **{cu:.2f}u = {cs:.2f} €** • **mise portefeuille : 0u**"
+    return f"⚪ Winamax {price:.2f} • modèle exige ≥ **{minimum:.2f}**\n💰 **Mise conseillée : 0.00u**"
 def model_rec_text(rec):
     if not rec:return "Aucune recommandation modèle suffisamment définie."
     market=rec["market"];pt=""
