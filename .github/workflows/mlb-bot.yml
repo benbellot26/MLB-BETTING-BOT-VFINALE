@@ -1,4 +1,4 @@
-name: MLB Betting Bot V7
+name: MLB Betting Bot V8
 
 on:
   workflow_dispatch:
@@ -48,16 +48,33 @@ jobs:
           MIN_EV: ${{ vars.MIN_EV }}
           MIN_EDGE: ${{ vars.MIN_EDGE }}
 
-          HISTORY_FILE: data/mlb_history.jsonl
+          HISTORY_FILE: data/mlb_history_v8.jsonl
 
         run: |
           mkdir -p data
           python bot.py
 
-      - name: Sauvegarde historique ML
-        if: always()
+      - name: Validation historique V8
+        if: success()
         run: |
-          if [ ! -f data/mlb_history.jsonl ]; then
+          if [ ! -f data/mlb_history_v8.jsonl ]; then
+            echo "Aucun historique V8 à sauvegarder."
+            exit 0
+          fi
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('data/mlb_history_v8.jsonl')
+          for n, line in enumerate(p.read_text(encoding='utf-8').splitlines(), 1):
+              if line.strip():
+                  json.loads(line)
+          print('Historique V8 valide')
+          PY
+
+      - name: Sauvegarde historique V8
+        if: success()
+        run: |
+          if [ ! -f data/mlb_history_v8.jsonl ]; then
             echo "Aucun historique à sauvegarder."
             exit 0
           fi
@@ -65,12 +82,12 @@ jobs:
           git config user.name "MLB Betting Bot"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git add data/mlb_history.jsonl
+          git add data/mlb_history_v8.jsonl
 
           if git diff --cached --quiet; then
             echo "Historique inchangé."
             exit 0
           fi
 
-          git commit -m "data: update MLB history [skip ci]"
+          git commit -m "data: update MLB V8 history [skip ci]"
           git push
