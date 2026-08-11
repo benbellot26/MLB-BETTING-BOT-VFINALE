@@ -1,4 +1,4 @@
-name: MLB Betting Bot V8.1
+name: MLB Betting Bot V9
 
 on:
   workflow_dispatch:
@@ -10,19 +10,21 @@ on:
       timezone: "Europe/Paris"
     - cron: "47 23 * * *"
       timezone: "Europe/Paris"
+    - cron: "17 2 * * *"
+      timezone: "Europe/Paris"
 
 permissions:
   contents: write
 
 concurrency:
-  group: mlb-betting-bot
+  group: mlb-betting-bot-v9
   cancel-in-progress: false
 
 jobs:
   run-bot:
-    name: Exécution du Bot
+    name: Exécution du Bot V9
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
 
     steps:
       - name: Récupération du repository
@@ -40,6 +42,7 @@ jobs:
         run: |
           python --version
           python -m py_compile bot.py
+          python bot.py --self-test
 
       - name: Exécution du Bot
         env:
@@ -50,47 +53,52 @@ jobs:
           MAX_STAKE_UNITS: ${{ vars.MAX_STAKE_UNITS }}
           MIN_EV: ${{ vars.MIN_EV }}
           MIN_EDGE: ${{ vars.MIN_EDGE }}
-          HISTORY_FILE: data/mlb_history_v8.jsonl
-          MATCH_MAX_DELTA_HOURS: "2.5"
+          MAX_DAILY_EXPOSURE_PCT: "0.30"
+          MAX_GAME_EXPOSURE_PCT: "0.15"
+          MAX_BETS_PER_GAME: "2"
+          HISTORY_FILE: data/mlb_history_v9.jsonl
+          MATCH_MAX_DELTA_HOURS: "2.0"
+          ARCHIVE_AFTER_DAYS: "45"
         run: |
           mkdir -p data
           python bot.py
 
-      - name: Validation historique V8
+      - name: Validation données V9
         if: success()
         run: |
-          if [ ! -f data/mlb_history_v8.jsonl ]; then
-            echo "Aucun historique V8 à sauvegarder."
-            exit 0
-          fi
           python - <<'PY'
           import json
           from pathlib import Path
-          p = Path('data/mlb_history_v8.jsonl')
-          for n, line in enumerate(p.read_text(encoding='utf-8').splitlines(), 1):
-              if line.strip():
-                  json.loads(line)
-          print('Historique V8 valide')
+
+          paths = [Path('data/mlb_history_v9.jsonl')]
+          paths += sorted(Path('data/archive_v9').glob('*.jsonl')) if Path('data/archive_v9').exists() else []
+          for p in paths:
+              if not p.exists():
+                  continue
+              for n, line in enumerate(p.read_text(encoding='utf-8').splitlines(), 1):
+                  if line.strip():
+                      json.loads(line)
+              print(f'{p}: valide')
+
+          state = Path('data/v9_state.json')
+          if state.exists():
+              json.loads(state.read_text(encoding='utf-8'))
+              print(f'{state}: valide')
           PY
 
-      - name: Sauvegarde historique V8
+      - name: Sauvegarde historique V9
         if: success()
         run: |
-          if [ ! -f data/mlb_history_v8.jsonl ]; then
-            echo "Aucun historique à sauvegarder."
-            exit 0
-          fi
-
           git config user.name "MLB Betting Bot"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git add data/mlb_history_v8.jsonl
+          git add data/mlb_history_v9.jsonl data/v9_state.json data/archive_v9 2>/dev/null || true
 
           if git diff --cached --quiet; then
-            echo "Historique inchangé."
+            echo "Données V9 inchangées."
             exit 0
           fi
 
-          git commit -m "data: update MLB V8.1 history [skip ci]"
+          git commit -m "data: update MLB V9 history [skip ci]"
           git pull --rebase origin main
           git push
