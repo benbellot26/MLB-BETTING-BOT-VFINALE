@@ -911,7 +911,6 @@ def send_game(result,snap,portfolio):
     return send_embed(f"⚾ MLB V{VERSION} • {ctx['away']} @ {ctx['home']}",[("🕒 Match",local_time(result["game"]["gameDate"])+" (Paris)"),("🎯 Modèle indépendant",probs),("🧭 Benchmark marché",direction),("🧑 Starters",starters),("🧪 Lineup / splits / Statcast / bullpen",advanced),("🔬 Contexte",context),("🎯 Recommandations du modèle",model_text),("💰 Winamax — uniquement exécution",exec_text),("🛡️ Risque portefeuille",risk),("✅ Verdict de mise",final)],color)
 
 def send_top_messages(results,state):
-    # V9.1.1 : les 3 Top 3 sont envoyés à CHAQUE run, même s'ils n'ont pas changé.
     ok=True
     for market,title in (("ML","🏆 TOP 3 MONEYLINE — MODÈLE"),("RUNLINE","⚾ TOP 3 RUN LINE — MODÈLE"),("TOTAL","📈 TOP 3 TOTAUX — MODÈLE")):
         xs=[]
@@ -922,14 +921,11 @@ def send_top_messages(results,state):
         blocks=[]
         for i,(r,rec) in enumerate(xs):
             pt="" if rec.get("point") is None else (f" {rec['point']:+g}" if market=="RUNLINE" else f" {rec['point']:g}")
-            emoji,band,_=confidence_band(rec["confidence"])
-            mp=pct(rec.get("p_market")) if rec.get("p_market") is not None else "N/A"
-            gap=f"{rec['market_gap']*100:+.1f} pts" if rec.get("market_gap") is not None else "N/A"
+            emoji,band,_=confidence_band(rec["confidence"]);mp=pct(rec.get("p_market")) if rec.get("p_market") is not None else "N/A";gap=f"{rec['market_gap']*100:+.1f} pts" if rec.get("market_gap") is not None else "N/A"
             blocks.append(f"**#{i+1} {r['ctx']['away']} @ {r['ctx']['home']}**\n{emoji} **{rec['name']}{pt}** • modèle **{pct(rec['p_model'])}** • marché {mp} • écart {gap}\nFair **{rec['fair']:.2f}** • **cote mini {rec['min_price']:.2f}** • confiance **{rec['confidence']:.1f}/10 — {band}**\n{execution_status(rec,r['phase'])}")
         txt="\n\n".join(blocks) if blocks else "Aucune recommandation modèle suffisamment définie."
         ok=send_embed(title,[("Classement prédictif V9.1.1",txt)],16766720) and ok
-    logging.info("Top 3 modèle envoyés pour ce run")
-    return ok
+    logging.info("Top 3 modèle envoyés pour ce run");return ok
 
 def daily_plan_pool(results):
     pool=[]
@@ -937,11 +933,8 @@ def daily_plan_pool(results):
         for market in ("ML","RUNLINE","TOTAL"):
             rec=r.get("model_recs",{}).get(market)
             if not rec:continue
-            gap=max(0.0,num(rec.get("market_gap"),0.0))
-            score=num(rec.get("confidence"),0)+gap*4+max(0,num(rec.get("p_model"),.5)-.5)*1.5
-            pool.append({"result":r,"rec":rec,"score":score})
+            gap=max(0.0,num(rec.get("market_gap"),0.0));score=num(rec.get("confidence"),0)+gap*4+max(0,num(rec.get("p_model"),.5)-.5)*1.5;pool.append({"result":r,"rec":rec,"score":score})
     return sorted(pool,key=lambda x:(x["score"],x["rec"]["confidence"],x["rec"]["p_model"]),reverse=True)
-
 def choose_distinct_games(pool,n,banned_games=None,min_conf=None):
     banned=set(banned_games or []);used=set();out=[]
     for item in pool:
@@ -951,55 +944,27 @@ def choose_distinct_games(pool,n,banned_games=None,min_conf=None):
         out.append(item);used.add(gid)
         if len(out)>=n:break
     return out
-
 def plan_pick_text(item,index=None):
-    r=item["result"];rec=item["rec"];market=rec["market"]
-    pt="" if rec.get("point") is None else (f" {rec['point']:+g}" if market=="RUNLINE" else f" {rec['point']:g}")
-    label="ML" if market=="ML" else "RL" if market=="RUNLINE" else "TOTAL"
-    emoji,band,_=confidence_band(rec["confidence"])
-    prefix=f"**#{index}** " if index is not None else "• "
-    return f"{prefix}{emoji} **{rec['name']}{pt} [{label}]**\n{r['ctx']['away']} @ {r['ctx']['home']} • phase {r['phase']}\nModèle **{pct(rec['p_model'])}** • confiance **{rec['confidence']:.1f}/10 — {band}** • fair {rec['fair']:.2f} • **cote mini {rec['min_price']:.2f}**\n{execution_status(rec,r['phase'])}"
-
+    r=item["result"];rec=item["rec"];market=rec["market"];pt="" if rec.get("point") is None else (f" {rec['point']:+g}" if market=="RUNLINE" else f" {rec['point']:g}");label="ML" if market=="ML" else "RL" if market=="RUNLINE" else "TOTAL";emoji,band,_=confidence_band(rec["confidence"]);prefix=f"**#{index}** " if index is not None else "• ";return f"{prefix}{emoji} **{rec['name']}{pt} [{label}]**\n{r['ctx']['away']} @ {r['ctx']['home']} • phase {r['phase']}\nModèle **{pct(rec['p_model'])}** • confiance **{rec['confidence']:.1f}/10 — {band}** • fair {rec['fair']:.2f} • **cote mini {rec['min_price']:.2f}**\n{execution_status(rec,r['phase'])}"
 def build_daily_plan(results):
-    pool=daily_plan_pool(results)
-    singles=choose_distinct_games(pool,3)
-    single_games={str(x["result"]["game_pk"]) for x in singles}
-
-    # Le combiné n'utilise aucun des matchs choisis en simples et une seule sélection par match.
-    combo=choose_distinct_games(pool,3,banned_games=single_games,min_conf=5.8)
-    if len(combo)<2:
-        combo=choose_distinct_games(pool,2,banned_games=single_games)
-
+    pool=daily_plan_pool(results);singles=choose_distinct_games(pool,3);single_games={str(x["result"]["game_pk"]) for x in singles};combo=choose_distinct_games(pool,3,banned_games=single_games,min_conf=5.8)
+    if len(combo)<2:combo=choose_distinct_games(pool,2,banned_games=single_games)
     return singles,combo
-
 def send_daily_plan(results):
-    singles,combo=build_daily_plan(results)
-    phase_note=" • ".join(sorted({x["result"]["phase"] for x in singles+combo})) if singles or combo else "N/A"
-    simples="\n\n".join(plan_pick_text(x,i+1) for i,x in enumerate(singles)) if singles else "Pas assez de recommandations modèle pour proposer des simples aujourd'hui."
-
+    singles,combo=build_daily_plan(results);phase_note=" • ".join(sorted({x["result"]["phase"] for x in singles+combo})) if singles or combo else "N/A";simples="\n\n".join(plan_pick_text(x,i+1) for i,x in enumerate(singles)) if singles else "Pas assez de recommandations modèle pour proposer des simples aujourd'hui."
     if len(combo)>=2:
         legs=[];min_combo=1.0;current_combo=1.0;all_prices=True;all_prices_ok=True
         for item in combo:
-            r=item["result"];rec=item["rec"];market=rec["market"]
-            pt="" if rec.get("point") is None else (f" {rec['point']:+g}" if market=="RUNLINE" else f" {rec['point']:g}")
-            label="ML" if market=="ML" else "RL" if market=="RUNLINE" else "TOTAL"
-            min_combo*=num(rec.get("min_price"),1)
-            e=rec.get("winamax_eval");price=num(e.get("price"),0) if e else 0
+            r=item["result"];rec=item["rec"];market=rec["market"];pt="" if rec.get("point") is None else (f" {rec['point']:+g}" if market=="RUNLINE" else f" {rec['point']:g}");label="ML" if market=="ML" else "RL" if market=="RUNLINE" else "TOTAL";min_combo*=num(rec.get("min_price"),1);e=rec.get("winamax_eval");price=num(e.get("price"),0) if e else 0
             if price<=1:all_prices=False
             else:
                 current_combo*=price
                 if price+1e-9<num(rec.get("min_price"),99):all_prices_ok=False
             legs.append(f"• **{rec['name']}{pt} [{label}]** — {r['ctx']['away']} @ {r['ctx']['home']} • conf {rec['confidence']:.1f}/10 • mini {rec['min_price']:.2f}"+(f" • Winamax {price:.2f}" if price>1 else " • cote Winamax à vérifier"))
-        if all_prices:
-            price_status=(f"✅ Toutes les jambes passent leur cote mini • cote combinée actuelle ≈ **{current_combo:.2f}**" if all_prices_ok else f"❌ Au moins une jambe est sous sa cote mini • cote combinée actuelle ≈ **{current_combo:.2f}**")
-        else:
-            price_status="⚠️ Une ou plusieurs cotes Winamax sont absentes du flux : vérifier chaque cote avant de jouer."
+        price_status=(f"✅ Toutes les jambes passent leur cote mini • cote combinée actuelle ≈ **{current_combo:.2f}**" if all_prices_ok else f"❌ Au moins une jambe est sous sa cote mini • cote combinée actuelle ≈ **{current_combo:.2f}**") if all_prices else "⚠️ Une ou plusieurs cotes Winamax sont absentes du flux : vérifier chaque cote avant de jouer."
         combo_text="\n".join(legs)+f"\n\nCote mini combinée théorique : **{min_combo:.2f}**\n{price_status}"
-    else:
-        combo_text="Pas assez de sélections indépendantes pour recommander un combiné sans forcer des choix faibles."
-
-    note=("Ce plan est généré à chaque run. En phase EARLY, il s'agit d'un plan provisoire : les lineups et les prix peuvent encore évoluer. "
-          "Le combiné exclut volontairement tous les matchs utilisés dans les 3 simples.")
+    else:combo_text="Pas assez de sélections indépendantes pour recommander un combiné sans forcer des choix faibles."
+    note=("Ce plan est généré à chaque run. En phase EARLY, il s'agit d'un plan provisoire : les lineups et les prix peuvent encore évoluer. Le combiné exclut volontairement tous les matchs utilisés dans les 3 simples.")
     return send_embed("🎟️ PLAN DE PARIS DU RUN — 3 SIMPLES + 1 COMBINÉ",[("🕒 État du run",f"{NOW.astimezone(PARIS).strftime('%d/%m/%Y %H:%M')} (Paris) • phases présentes : {phase_note}"),("🎯 3 SIMPLES DU MODÈLE",simples),("🧩 COMBINÉ DU MODÈLE — hors simples",combo_text),("ℹ️ Règle",note)],5763719)
 
 def performance(hist):
@@ -1044,13 +1009,326 @@ def main():
         logging.info("%s @ %s | %s %s | lineups=%d/%d statcast=%s/%s | %s %s %.1f/10 | qualified=%d bets=%d%s",r["ctx"]["away"],r["ctx"]["home"],r["phase"],snap["role"],r["ctx"]["home_lineup"]["count"],r["ctx"]["away_lineup"]["count"],r["ctx"]["home_statcast"]["available"],r["ctx"]["away_statcast"]["available"],r["verdict"]["type"],r["verdict"]["side"],r["verdict"]["confidence"],sum(e["qualified"] for e in r["evals"]),sum(e["selected"] for e in r["evals"])," | Discord update" if sent else "")
     write_history(hist)
     if discord_ok and results:
-        send_top_messages(results,state)
-        send_daily_plan(results)
+        send_top_messages(results,state);send_daily_plan(results)
     perf=performance(hist);logging.info("V%s terminé | analyses=%d | messages=%d | exposition=%.2f/%.2f€ | snapshots=%d",VERSION,len(results),published,portfolio["allocated"],portfolio["daily_cap"],sum(len(r.get("snapshots",[])) for r in hist.values()));logging.info("Performance | games=%d direction=%s Brier modèle=%s marché=%s | bets=%d profit=%.2f€ ROI=%s | CLV=%s pts n=%d",perf["games"],pct(perf["direction"]) if perf["direction"] is not None else "-",f"{perf['brier_model']:.4f}" if perf["brier_model"] is not None else "-",f"{perf['brier_market']:.4f}" if perf["brier_market"] is not None else "-",perf["bets"],perf["profit"],pct(perf["roi"]) if perf["roi"] is not None else "-",f"{perf['clv_pts']:+.2f}" if perf["clv_pts"] is not None else "-",perf["clv_n"])
+
+# ============================== V10 PROFESSIONAL ==============================
+VERSION="10.0.0"
+SCHEMA_VERSION=10
+FEATURE_VERSION="10.2.0"
+MODEL_VERSION="runs-structural-phase-residual-v6"
+VERDICT_VERSION="direction-calibrated-v5"
+RECOMMENDATION_VERSION="model-first-mainline-calibrated-v6"
+HISTORY_FILE=Path(os.getenv("HISTORY_FILE","data/mlb_history_v10.jsonl"))
+ARCHIVE_DIR=HISTORY_FILE.parent/"archive_v10"
+STATE_FILE=HISTORY_FILE.parent/"v10_state.json"
+RUN_MODEL_MIN_GAMES=max(450,int(os.getenv("RUN_MODEL_MIN_GAMES","450") or 450))
+CAL_MIN_GAMES=max(500,int(os.getenv("CAL_MIN_GAMES","500") or 500))
+MIN_PLAN_CONF=float(os.getenv("MIN_PLAN_CONF","6.2") or 6.2)
+MIN_COMBO_CONF=float(os.getenv("MIN_COMBO_CONF","6.5") or 6.5)
+MAX_COMBO_EXPOSURE_PCT=float(os.getenv("MAX_COMBO_EXPOSURE_PCT","0.05") or .05)
+V10_PHASES=("EARLY","LATE","FINAL");V10_MARKETS=("ML","RUNLINE","TOTAL")
+_V10_HIST={};_V10_MARKET_CAL=None;_V10_RUN_PARENT=None;_V10_LAST_PORTFOLIO={"allocated":0.0,"daily_cap":BANKROLL*MAX_DAILY_EXPOSURE_PCT,"remaining":BANKROLL*MAX_DAILY_EXPOSURE_PCT}
+_V9_GAME_CONTEXT=game_context;_V9_ANALYZE_BASE=analyze_base;_V9_ATTACH_RECS=attach_model_recommendations;_V9_ALLOCATE=allocate_portfolio;_V9_BUILD_SNAPSHOT=build_snapshot;_V9_SYNC_RECS=sync_recommendations;_V9_ENSURE_RECORD=ensure_record;_V9_SETTLE_HISTORY=settle_history;_V9_WRITE_HISTORY=write_history;_V9_PERFORMANCE=performance;_V9_MARKET_VERDICT=market_verdict;_V9_SELF_TEST=self_test
+
+def v10_safe_ratio(v,base,lo=.65,hi=1.55):return 1.0 if base<=0 else clamp(num(v,base)/base,lo,hi)
+def v10_expected_starter_ip(sp):
+    gs=max(0.0,num((sp or {}).get("gs"),0));ip=max(0.0,num((sp or {}).get("ip"),0));raw=ip/gs if gs>=3 and ip>0 else 5.3;w=gs/(gs+8.0);return clamp(5.3+w*(raw-5.3),4.0,6.5)
+def v10_advanced_base_runs(own_h,opp_p,own_recent,opp_sp,opp_bp,lineup,split,statcast,park,wx,home):
+    lg=league_baselines();rpg=num(own_h.get("runsPerGame"),lg["rpg"]);ops=num(own_h.get("ops"),lg["ops"]);gp=max(1.0,num(opp_p.get("gamesPlayed"),0));runs_allowed=num(opp_p.get("runs"),0);opp_ra=runs_allowed/gp if runs_allowed>0 else lg["rpg"]*v10_safe_ratio(num(opp_p.get("era"),lg["era"]),lg["era"],.72,1.35);log_mu=math.log(lg["rpg"]);log_mu+=.34*math.log(v10_safe_ratio(rpg,lg["rpg"],.70,1.35));log_mu+=.20*math.log(v10_safe_ratio(ops,lg["ops"],.82,1.18));log_mu+=.14*math.log(v10_safe_ratio(opp_ra,lg["rpg"],.72,1.38))
+    if num((own_recent or {}).get("games"),0)>=5:log_mu+=.08*math.log(v10_safe_ratio(num(own_recent.get("runs_pg"),rpg),lg["rpg"],.72,1.38))
+    sip=v10_expected_starter_ip(opp_sp);starter_share=sip/9.0;bullpen_share=1-starter_share;sp_era=num(opp_sp.get("era"),lg["era"]);sp_whip=num(opp_sp.get("whip"),lg["whip"]);sp_k9=num(opp_sp.get("k9"),8.3);sp_bb9=num(opp_sp.get("bb9"),3.2);sp_quality=(sp_era-lg["era"])/1.45+.45*(sp_whip-lg["whip"])/.28+.18*((sp_bb9-3.2)/1.4-(sp_k9-8.3)/2.4);log_mu+=starter_share*clamp(sp_quality,-1.10,1.10)*.23;bp_era=num((opp_bp or {}).get("era"),lg["era"]);bp_whip=num((opp_bp or {}).get("whip"),lg["whip"]);bp_load=num((opp_bp or {}).get("load"),.5);bp_quality=(bp_era-lg["era"])/1.55+.35*(bp_whip-lg["whip"])/.30+.35*(bp_load-.5)/.60;log_mu+=bullpen_share*clamp(bp_quality,-1.0,1.2)*.22
+    lineup_ops=(lineup or {}).get("weighted_ops");lineup_count=int(num((lineup or {}).get("count"),0))
+    if lineup_ops is not None and lineup_count>=7:log_mu+=clamp(lineup_count/9.0,0,1)*.18*clamp((num(lineup_ops,ops)-ops)/.080,-1,1)
+    split_ops=(split or {}).get("_shrunk_ops");split_pa=num((split or {}).get("_pa"),0)
+    if split_ops is not None and split_pa>=40:log_mu+=clamp(split_pa/250.0,.20,1.0)*.13*clamp((num(split_ops,ops)-ops)/.080,-1,1)
+    xwoba=(statcast or {}).get("xwoba");pa=num((statcast or {}).get("pa"),0)
+    if xwoba is not None:log_mu+=clamp(pa/1800.0,.25,1.0)*.12*clamp((num(xwoba,.317)-.317)/.045,-1,1)
+    log_mu+=.55*math.log(clamp(num(park,1.0),.88,1.16));log_mu+=clamp(num((wx or {}).get("run_adj"),0),-.25,.30)*.10;return clamp(math.exp(log_mu)+(0.08 if home else 0.0),2.0,8.2)
+def game_context(g):
+    ctx=_V9_GAME_CONTEXT(g);hh=season_stats(ctx["home_id"],"hitting");hp=season_stats(ctx["home_id"],"pitching");ah=season_stats(ctx["away_id"],"hitting");ap=season_stats(ctx["away_id"],"pitching");hs=dict(shrunk_pitcher(ctx.get("home_sp_stats") or {}));ass=dict(shrunk_pitcher(ctx.get("away_sp_stats") or {}));hs["gs"]=max(0,num((ctx.get("home_sp_stats") or {}).get("gamesStarted"),0));ass["gs"]=max(0,num((ctx.get("away_sp_stats") or {}).get("gamesStarted"),0));h=v10_advanced_base_runs(hh,ap,ctx["home_recent"],ass,ctx["away_bp"],ctx["home_lineup"],ctx["home_split"],ctx["home_statcast"],ctx["park"],ctx["weather"],True);a=v10_advanced_base_runs(ah,hp,ctx["away_recent"],hs,ctx["home_bp"],ctx["away_lineup"],ctx["away_split"],ctx["away_statcast"],ctx["park"],ctx["weather"],False);ctx["base_home_v9"]=ctx["base_home"];ctx["base_away_v9"]=ctx["base_away"];ctx["base_home"]=h;ctx["base_away"]=a;ctx["structural_adj_home"]=h-ctx["base_home_v9"];ctx["structural_adj_away"]=a-ctx["base_away_v9"];ctx["base_engine"]="advanced-baseball-v10";ctx["expected_home_sp_ip"]=v10_expected_starter_ip(hs);ctx["expected_away_sp_ip"]=v10_expected_starter_ip(ass);logging.info("V10 RUN BASE | %s @ %s | H %.2f→%.2f (%+.2f) | A %.2f→%.2f (%+.2f)",ctx["away"],ctx["home"],ctx["base_home_v9"],h,ctx["structural_adj_home"],ctx["base_away_v9"],a,ctx["structural_adj_away"]);return ctx
+
+def v10_phase_snapshot(record,phase):
+    xs=[s for s in record.get("snapshots",[]) if num(s.get("seconds_to_game"),-1)>=0 and s.get("phase")==phase and s.get("feature_version")==FEATURE_VERSION and s.get("model_version")==MODEL_VERSION and s.get("distribution_version")==DIST_VERSION];return max(xs,key=lambda s:s.get("analyzed_at","")) if xs else None
+def latest_pregame_snapshot(record,feature=None):
+    feature=feature or FEATURE_VERSION;xs=[s for s in record.get("snapshots",[]) if num(s.get("seconds_to_game"),-1)>=0 and s.get("feature_version")==feature and s.get("model_version")==MODEL_VERSION and s.get("distribution_version")==DIST_VERSION];return max(xs,key=lambda s:s.get("analyzed_at","")) if xs else None
+def v10_training_games_phase(hist,phase):
+    out=[]
+    for r in hist.values():
+        if r.get("status")!="FINAL":continue
+        s=v10_phase_snapshot(r,phase)
+        if not s:continue
+        try:out.append((r.get("game_date",""),s,float(r["home_score"]),float(r["away_score"])))
+        except Exception:pass
+    out.sort(key=lambda x:x[0]);return out
+def v10_run_state_phase(hist,phase):
+    games=v10_training_games_phase(hist,phase);out={"phase":phase,"active":False,"model":None,"n":len(games),"rmse_model":None,"rmse_base":None,"gain_prob":0.0,"folds":0}
+    if len(games)<RUN_MODEL_MIN_GAMES:return out
+    base_losses=[];new_losses=[];folds=walk_folds(len(games),180)
+    for cut,end in folds:
+        rows=[]
+        for _,s,hs,as_ in games[:cut]:rows += [(s["run_features_home"],hs-num(s["base_home"])),(s["run_features_away"],as_-num(s["base_away"]))]
+        if not rows:continue
+        m=fit_linear(rows)
+        for _,s,hs,as_ in games[cut:end]:
+            ph=num(s["base_home"])+clamp(linear_predict(m,s["run_features_home"]),-2,2);pa=num(s["base_away"])+clamp(linear_predict(m,s["run_features_away"]),-2,2);base_losses += [rmse_loss(num(s["base_home"]),hs),rmse_loss(num(s["base_away"]),as_)];new_losses += [rmse_loss(ph,hs),rmse_loss(pa,as_)]
+    if not base_losses:return out
+    rb=math.sqrt(mean(base_losses));rn=math.sqrt(mean(new_losses));gp=bootstrap_gain_prob(base_losses,new_losses);out.update({"rmse_base":rb,"rmse_model":rn,"gain_prob":gp,"folds":len(folds)})
+    if rn+.035<rb and gp>=.90:
+        rows=[]
+        for _,s,hs,as_ in games:rows += [(s["run_features_home"],hs-num(s["base_home"])),(s["run_features_away"],as_-num(s["base_away"]))]
+        out.update({"active":True,"model":fit_linear(rows)})
+    return out
+def run_model_state(hist):
+    global _V10_RUN_PARENT,_V10_HIST,_V10_MARKET_CAL
+    _V10_HIST=hist;_V10_MARKET_CAL=None;states={p:v10_run_state_phase(hist,p) for p in V10_PHASES};_V10_RUN_PARENT={"active":any(x["active"] for x in states.values()),"model":None,"n":sum(x["n"] for x in states.values()),"rmse_model":next((x["rmse_model"] for x in reversed(tuple(states.values())) if x["rmse_model"] is not None),None),"rmse_base":next((x["rmse_base"] for x in reversed(tuple(states.values())) if x["rmse_base"] is not None),None),"gain_prob":max((x["gain_prob"] for x in states.values()),default=0),"folds":sum(x["folds"] for x in states.values()),"phase_states":states};return _V10_RUN_PARENT
+def v10_ml_cal_state_phase(hist,phase,engine):
+    rows=[]
+    for r in hist.values():
+        if r.get("status")!="FINAL":continue
+        s=v10_phase_snapshot(r,phase)
+        if s and s.get("engine_mode")==engine and s.get("p_model_raw") is not None:rows.append((r.get("game_date",""),num(s["p_model_raw"],.5),int(r.get("home_win",0))))
+    rows.sort();out={"phase":phase,"active":False,"model":None,"n":len(rows),"brier_raw":None,"brier_cal":None,"gain_prob":0.0,"folds":0}
+    if len(rows)<CAL_MIN_GAMES:return out
+    base_losses=[];new_losses=[];folds=walk_folds(len(rows),220)
+    for cut,end in folds:
+        m=fit_platt([(p,y) for _,p,y in rows[:cut]])
+        for _,p,y in rows[cut:end]:base_losses.append((p-y)**2);new_losses.append((platt_predict(m,p)-y)**2)
+    if not base_losses:return out
+    br=mean(base_losses);bc=mean(new_losses);gp=bootstrap_gain_prob(base_losses,new_losses);out.update({"brier_raw":br,"brier_cal":bc,"gain_prob":gp,"folds":len(folds)})
+    if bc+.001<br and gp>=.90:out.update({"active":True,"model":fit_platt([(p,y) for _,p,y in rows])})
+    return out
+def calibration_state(hist,_engine_mode):
+    parent=_V10_RUN_PARENT or run_model_state(hist);states={ph:v10_ml_cal_state_phase(hist,ph,"learned-runs" if parent["phase_states"][ph]["active"] else "base-runs") for ph in V10_PHASES};return {"active":any(x["active"] for x in states.values()),"model":None,"n":sum(x["n"] for x in states.values()),"brier_raw":None,"brier_cal":None,"gain_prob":max((x["gain_prob"] for x in states.values()),default=0),"folds":sum(x["folds"] for x in states.values()),"phase_states":states}
+def v10_skill_state_phase(hist,phase,engine):
+    pm=[];pk=[];ys=[]
+    for r in hist.values():
+        if r.get("status")!="FINAL":continue
+        s=v10_phase_snapshot(r,phase)
+        if not s or s.get("engine_mode")!=engine or s.get("p_model") is None or s.get("market_home") is None:continue
+        pm.append(num(s["p_model"],.5));pk.append(num(s["market_home"],.5));ys.append(int(r.get("home_win",0)))
+    if len(ys)<60:return {"phase":phase,"n":len(ys),"brier_model":None,"brier_market":None,"model_weight":.42}
+    bm=brier(pm,ys);bk=brier(pk,ys);return {"phase":phase,"n":len(ys),"brier_model":bm,"brier_market":bk,"model_weight":clamp(.42+(bk-bm)*8,.25,.68)}
+def skill_state(hist,_engine_mode):
+    parent=_V10_RUN_PARENT or run_model_state(hist);states={ph:v10_skill_state_phase(hist,ph,"learned-runs" if parent["phase_states"][ph]["active"] else "base-runs") for ph in V10_PHASES};return {"n":sum(x["n"] for x in states.values()),"brier_model":None,"brier_market":None,"model_weight":.42,"phase_states":states}
+def v10_select_phase_states(states,phase):
+    rp,disp,cp,sp=states;return rp.get("phase_states",{}).get(phase,{"active":False,"model":None,"n":0}),disp,cp.get("phase_states",{}).get(phase,{"active":False,"model":None,"n":0}),sp.get("phase_states",{}).get(phase,{"n":0,"model_weight":.42})
+def analyze_base(g,event,delta,states,hist):
+    phase=snapshot_phase((parse_dt(g["gameDate"])-NOW).total_seconds());chosen=v10_select_phase_states(states,phase);r=_V9_ANALYZE_BASE(g,event,delta,chosen,hist);r["phase_model_n"]=chosen[0].get("n",0);r["phase_cal_n"]=chosen[2].get("n",0);r["phase_skill_n"]=chosen[3].get("n",0);return r
+
+def v10_refs_cap(refs):refs=int(max(0,num(refs,0)));return 5.4 if refs<=0 else 6.0 if refs==1 else 7.5 if refs==2 else 8.8 if refs==3 else 9.5
+def v10_quality_cap(q):q=clamp(num(q,0),0,1);return 5.3 if q<.50 else 6.2 if q<.60 else 7.3 if q<.70 else 8.4 if q<.80 else 9.5
+def model_signal_confidence(p_model,quality,p_market=None,refs=0):
+    p=clamp(num(p_model,.5),.001,.999);q=clamp(num(quality,0),0,1);refs_i=int(max(0,num(refs,0)));score=4.15+clamp((q-.45)/.45,0,1)*2.05+clamp(abs(p-.5)/.20,0,1)*1.15+{0:0,1:.15,2:.40,3:.62}.get(min(refs_i,3),.62)
+    if refs_i>=4:score+=min(.28,(refs_i-3)*.07)
+    if p_market is None:score-=.20
+    else:
+        gap=abs(p-num(p_market,.5));score += .25 if gap<=.025 and refs_i>=3 else .10 if gap<=.05 and refs_i>=3 else 0 if gap<=.08 else -.25 if gap<=.11 else -.55 if gap<=.15 else -.90
+    if q<.60 and abs(p-.5)>.12:score-=.35
+    if q<.50:score-=.25
+    return round(min(clamp(score,4.0,9.5),v10_refs_cap(refs_i),v10_quality_cap(q)),2)
+def market_verdict(ctx,p_model,p_market,meta,skill,hist,engine_mode,quality):
+    v=_V9_MARKET_VERDICT(ctx,p_model,p_market,meta,skill,hist,engine_mode,quality);v["confidence"]=min(num(v.get("confidence"),0),v10_refs_cap(meta.get("n",0)),v10_quality_cap(quality));return v
+
+def v10_fresh_market_rows(event,key):
+    for b,m in market_rows(event,key):
+        if b.get("key") not in REF_BOOKS:continue
+        try:stamp=m.get("last_update",b.get("last_update"));age=max(0,(NOW-parse_dt(stamp)).total_seconds()/60) if stamp else 0
+        except Exception:age=0
+        if age<=90:yield b,m
+def v10_main_total_line(event):
+    votes=[]
+    for b,m in v10_fresh_market_rows(event,"totals"):
+        points={}
+        for o in m.get("outcomes",[]):
+            n=str(o.get("name","")).lower()
+            if n in ("over","under") and o.get("point") is not None:points.setdefault(round(num(o["point"]),3),{})[n]=num(o.get("price"))
+        cand=[]
+        for pt,pair in points.items():
+            if pair.get("over",0)>1 and pair.get("under",0)>1:a=1/pair["over"];c=1/pair["under"];cand.append((abs(a/(a+c)-.5),pt))
+        if cand:votes.append((b.get("key"),min(cand)[1]))
+    if not votes:return None
+    counts={pt:sum(v==pt for _,v in votes) for _,pt in votes};mx=max(counts.values());med=median([v for _,v in votes]);pt=min([p for p,n in counts.items() if n==mx],key=lambda x:(abs(x-med),x));return {"point":pt,"votes":counts[pt],"total_books":len(votes),"support_ratio":counts[pt]/len(votes)}
+def v10_main_spread_line(event,home,away):
+    votes=[]
+    for b,m in v10_fresh_market_rows(event,"spreads"):
+        homes=[];aways=[]
+        for o in m.get("outcomes",[]):
+            if o.get("point") is None:continue
+            row=(round(num(o["point"]),3),num(o.get("price")))
+            if norm_name(o.get("name"))==norm_name(home):homes.append(row)
+            elif norm_name(o.get("name"))==norm_name(away):aways.append(row)
+        cand=[]
+        for hp,hpr in homes:
+            for ap,apr in aways:
+                if abs(hp+ap)<=1e-6 and hpr>1 and apr>1:a=1/hpr;c=1/apr;cand.append((abs(abs(hp)-1.5),abs(a/(a+c)-.5),hp))
+        if cand:votes.append((b.get("key"),min(cand)[2]))
+    if not votes:return None
+    counts={pt:sum(v==pt for _,v in votes) for _,pt in votes};mx=max(counts.values());med=median([v for _,v in votes]);pt=min([p for p,n in counts.items() if n==mx],key=lambda x:(abs(abs(x)-1.5),abs(x-med),x));return {"home_point":pt,"away_point":-pt,"votes":counts[pt],"total_books":len(votes),"support_ratio":counts[pt]/len(votes)}
+def v10_main_line_view(result,market,name,point,meta):
+    mk="spreads" if market=="RUNLINE" else "totals";con=consensus(result["event"],mk,name,point);pw,pp,pl=line_probs(result["hmu"],result["amu"],result["disp_state"]["alpha_home"],result["disp_state"]["alpha_away"],market,name,point,result["ctx"]["home"],result["ctx"]["away"]);nonpush=pw+pl
+    if nonpush<=0:return None
+    pm=pw/nonpush;mp=con.get("p");return {"market":market,"name":name,"point":point,"p_model":pm,"p_win":pw,"p_push":pp,"p_loss":pl,"p_market":mp,"market_gap":pm-mp if mp is not None else None,"refs":con.get("n",0),"fair":(1-pp)/pw if pw>0 else 99,"min_price":min_acceptable_price(pw,pp,pl),"confidence":model_signal_confidence(pm,result["quality"],mp,con.get("n",0)),"winamax_eval":winamax_eval_for(result,market,name,point),"main_line":True,"main_line_votes":meta["votes"],"main_line_total_books":meta["total_books"],"main_line_support":meta["support_ratio"]}
+def model_line_views(result,market):
+    if market=="RUNLINE":meta=v10_main_spread_line(result["event"],result["ctx"]["home"],result["ctx"]["away"]);pairs=[] if not meta else [(result["ctx"]["home"],meta["home_point"]),(result["ctx"]["away"],meta["away_point"])]
+    elif market=="TOTAL":meta=v10_main_total_line(result["event"]);pairs=[] if not meta else [("Over",meta["point"]),("Under",meta["point"])]
+    else:return []
+    return [v for name,pt in pairs for v in [v10_main_line_view(result,market,name,pt,meta)] if v]
+def best_model_line(result,market):xs=model_line_views(result,market);return max(xs,key=lambda v:(v["p_model"],v["confidence"],v["refs"])) if xs else None
+
+def v10_logloss(ps,ys):return mean(-(y*math.log(clamp(p,.001,.999))+(1-y)*math.log(clamp(1-p,.001,.999))) for p,y in zip(ps,ys)) if ps else None
+def v10_fit_platt(ps,ys,epochs=700,lr=.035,l2=.015):
+    if len(ps)<8:return None
+    a,b=1.0,0.0;xs=[logit(clamp(p,.001,.999)) for p in ps];n=len(xs)
+    for _ in range(epochs):
+        ga=gb=0.0
+        for x,y in zip(xs,ys):q=sigmoid(a*x+b);e=q-y;ga+=e*x;gb+=e
+        a-=lr*(ga/n+l2*(a-1));b-=lr*(gb/n+l2*b)
+    return a,b
+def v10_platt_predict(m,p):return clamp(sigmoid(m[0]*logit(clamp(p,.001,.999))+m[1])) if m else clamp(p,.001,.999)
+def v10_calibrate_tuple(m,pw,pp,pl):
+    s=max(0,pw)+max(0,pp)+max(0,pl)
+    if s<=0:return .5,0,.5
+    pw,pp,pl=max(0,pw)/s,max(0,pp)/s,max(0,pl)/s;np=pw+pl
+    if np<=0:return 0,1,0
+    q=v10_platt_predict(m,pw/np);mass=1-pp;return mass*q,pp,mass*(1-q)
+def v10_settled_predictions(hist,market=None,phase=None):
+    rows=[]
+    for r in hist.values():
+        for p in r.get("predictions",[]):
+            if market and p.get("market")!=market:continue
+            if phase and p.get("phase")!=phase:continue
+            if p.get("result") in ("W","L","P"):rows.append(p)
+    rows.sort(key=lambda x:(x.get("analyzed_at",""),x.get("prediction_id","")));return rows
+def v10_market_cal_state(hist,market,phase):
+    rows=[r for r in v10_settled_predictions(hist,market,phase) if r.get("result") in ("W","L")];out={"market":market,"phase":phase,"n":len(rows),"active":False,"model":None,"brier_raw":None,"brier_cal":None,"logloss_raw":None,"logloss_cal":None}
+    if len(rows)<CAL_MIN_GAMES:return out
+    cut=max(30,int(len(rows)*.8));train,val=rows[:cut],rows[cut:]
+    if len(val)<20:return out
+    tp=[clamp(num(r.get("p_model_raw",r.get("p_model",.5))),.001,.999) for r in train];ty=[1 if r["result"]=="W" else 0 for r in train];vp=[clamp(num(r.get("p_model_raw",r.get("p_model",.5))),.001,.999) for r in val];vy=[1 if r["result"]=="W" else 0 for r in val];m=v10_fit_platt(tp,ty);cp=[v10_platt_predict(m,p) for p in vp];br0=brier(vp,vy);br1=brier(cp,vy);ll0=v10_logloss(vp,vy);ll1=v10_logloss(cp,vy);active=br1 is not None and br1<=br0*.997 and ll1 is not None and ll1<=ll0*.997;out.update({"active":active,"model":v10_fit_platt([clamp(num(r.get("p_model_raw",r.get("p_model",.5))),.001,.999) for r in rows],[1 if r["result"]=="W" else 0 for r in rows]) if active else None,"brier_raw":br0,"brier_cal":br1,"logloss_raw":ll0,"logloss_cal":ll1});return out
+def v10_market_cal_states():
+    global _V10_MARKET_CAL
+    if _V10_MARKET_CAL is None:_V10_MARKET_CAL={ph:{m:v10_market_cal_state(_V10_HIST,m,ph) for m in V10_MARKETS} for ph in V10_PHASES}
+    return _V10_MARKET_CAL
+def v10_refresh_execution(rec,result):
+    e=rec.get("winamax_eval")
+    if not e:return
+    price=num(e.get("price"),0)
+    if price<=1:return
+    pw,pp,pl=rec["p_win"],rec["p_push"],rec["p_loss"];np=pw+pl;pcond=pw/np if np else .5;edge=pcond-1/price;ev=pw*price+pp-1;cu,cs=stake_candidate(pw,pp,pl,price);reasons=[]
+    if result["quality"]<MIN_QUALITY:reasons.append("qualité insuffisante")
+    if edge<MIN_EDGE:reasons.append("edge prix insuffisant")
+    if ev<MIN_EV:reasons.append("EV prix insuffisante")
+    if not reasons and cu<=0:reasons.append("Kelly prudent < 0.25u")
+    e.update({"p_win":pw,"p_push":pp,"p_loss":pl,"p_cond":pcond,"fair":rec["fair"],"min_price":rec["min_price"],"edge":edge,"ev":ev,"quality":result["quality"],"qualified":not reasons,"reason":"OK" if not reasons else " ; ".join(reasons),"candidate_units":cu,"candidate_stake_eur":cs})
+def attach_model_recommendations(result):
+    recs=_V9_ATTACH_RECS(result);states=v10_market_cal_states();phase=result.get("phase","EARLY")
+    for market,rec in recs.items():
+        if not rec:continue
+        s=states.get(phase,{}).get(market,{});rec["p_model_raw"]=rec.get("p_model");rec["market_calibration_n"]=s.get("n",0);rec["market_calibration_active"]=bool(s.get("active"))
+        if s.get("active") and s.get("model"):
+            pw,pp,pl=v10_calibrate_tuple(s["model"],num(rec.get("p_win"),rec["p_model"]),num(rec.get("p_push"),0),num(rec.get("p_loss"),1-rec["p_model"]));np=pw+pl
+            if np>0:pm=pw/np;rec.update({"p_model":pm,"p_win":pw,"p_push":pp,"p_loss":pl});rec["fair"]=(1-pp)/pw if pw>0 else 99;rec["min_price"]=min_acceptable_price(pw,pp,pl);rec["market_gap"]=pm-rec["p_market"] if rec.get("p_market") is not None else None;rec["confidence"]=model_signal_confidence(pm,result["quality"],rec.get("p_market"),rec.get("refs",0));v10_refresh_execution(rec,result)
+    return recs
+
+def allocate_portfolio(results):
+    global _V10_LAST_PORTFOLIO
+    _V10_LAST_PORTFOLIO=_V9_ALLOCATE(results);return _V10_LAST_PORTFOLIO
+def ensure_record(hist,g):r=_V9_ENSURE_RECORD(hist,g);r["schema_version"]=10;r.setdefault("predictions",[]);return r
+def v10_prediction_id(game_pk,sid,market,name,point):return hashlib.sha1(f"{game_pk}|{sid}|{market}|{norm_name(name)}|{point}".encode()).hexdigest()[:20]
+def v10_prediction_payload(result,sid,rec,at):
+    e=rec.get("winamax_eval") or {};return {"prediction_id":v10_prediction_id(result["game_pk"],sid,rec["market"],rec["name"],rec.get("point")),"snapshot_id":sid,"game_pk":result["game_pk"],"analyzed_at":at,"phase":result["phase"],"market":rec["market"],"name":rec["name"],"point":rec.get("point"),"home":result["ctx"]["home"],"away":result["ctx"]["away"],"p_model_raw":rec.get("p_model_raw",rec.get("p_model")),"p_model":rec.get("p_model"),"p_win":rec.get("p_win"),"p_push":rec.get("p_push",0),"p_loss":rec.get("p_loss"),"p_market":rec.get("p_market"),"refs":rec.get("refs",0),"confidence":rec.get("confidence"),"fair":rec.get("fair"),"min_price":rec.get("min_price"),"quality":result.get("quality"),"winamax_price":e.get("price"),"winamax_qualified":bool(e.get("qualified")),"winamax_selected":bool(e.get("selected")),"result":None}
+def build_snapshot(result,rec):
+    snap=_V9_BUILD_SNAPSHOT(result,rec);snap["schema_version"]=10;snap["base_home_v9"]=round(result["ctx"].get("base_home_v9",result["ctx"]["base_home"]),4);snap["base_away_v9"]=round(result["ctx"].get("base_away_v9",result["ctx"]["base_away"]),4);snap["predictions"]=[v10_prediction_payload(result,snap["snapshot_id"],x,snap["analyzed_at"]) for x in (result.get("model_recs") or {}).values() if x];return snap
+def sync_recommendations(rec,evals,snap):
+    out=_V9_SYNC_RECS(rec,evals,snap)
+    if not any(s.get("snapshot_id")==snap.get("snapshot_id") for s in rec.get("snapshots",[])):return out
+    ledger=rec.setdefault("predictions",[]);known={x.get("prediction_id") for x in ledger}
+    for p in snap.get("predictions",[]):
+        if p["prediction_id"] not in known:ledger.append(dict(p));known.add(p["prediction_id"])
+    return out
+def v10_settle_market(market,name,point,home,away,hs,as_):
+    hs,as_=num(hs),num(as_)
+    if market=="ML":return "W" if ((hs>as_) if norm_name(name)==norm_name(home) else (as_>hs)) else "L"
+    if market=="RUNLINE":picked_home=norm_name(name)==norm_name(home);v=(hs if picked_home else as_)+num(point)-(as_ if picked_home else hs);return "W" if v>1e-9 else "L" if v<-1e-9 else "P"
+    if market=="TOTAL":v=hs+as_-num(point);return "P" if abs(v)<1e-9 else "W" if ((v>0)==(str(name).lower()=="over")) else "L"
+    return None
+def v10_settle_prediction_ledger(hist):
+    changed=0
+    for rec in hist.values():
+        if rec.get("status")!="FINAL":continue
+        hs=rec.get("home_score");as_=rec.get("away_score")
+        if hs is None or as_ is None:continue
+        for p in rec.get("predictions",[]):
+            if p.get("result") in ("W","L","P"):continue
+            z=v10_settle_market(p.get("market"),p.get("name"),p.get("point"),rec.get("home",""),rec.get("away",""),hs,as_)
+            if z:p["result"]=z;changed+=1
+    return changed
+def write_history(hist):v10_settle_prediction_ledger(hist);return _V9_WRITE_HISTORY(hist)
+def settle_history(hist):
+    n=_V9_SETTLE_HISTORY(hist);changed=v10_settle_prediction_ledger(hist)
+    if changed:_V9_WRITE_HISTORY(hist)
+    return n
+def v10_prediction_metrics(xs):
+    settled=[p for p in xs if p.get("result") in ("W","L","P")];wl=[p for p in settled if p["result"] in ("W","L")];ps=[num(p.get("p_model"),.5) for p in wl];ys=[1 if p["result"]=="W" else 0 for p in wl];return {"n":len(settled),"n_wl":len(wl),"pushes":len(settled)-len(wl),"wins":sum(ys),"accuracy":sum(ys)/len(ys) if ys else None,"brier":brier(ps,ys) if ps else None,"logloss":v10_logloss(ps,ys)}
+def v10_performance_report(hist):
+    xs=[p for r in hist.values() for p in r.get("predictions",[])];return {"overall":v10_prediction_metrics(xs),"by_market":{m:v10_prediction_metrics([p for p in xs if p.get("market")==m]) for m in V10_MARKETS},"by_phase":{ph:v10_prediction_metrics([p for p in xs if p.get("phase")==ph]) for ph in V10_PHASES},"by_confidence":{f"{lo}-{lo+1}":v10_prediction_metrics([p for p in xs if lo<=num(p.get("confidence"))<lo+1]) for lo in (4,5,6,7,8,9)}}
+def performance(hist):
+    out=_V9_PERFORMANCE(hist);report=v10_performance_report(hist);out["prediction_report"]=report;o=report["overall"];logging.info("V10 PRED METRICS | n=%d WL=%d pushes=%d accuracy=%s Brier=%s LogLoss=%s",o["n"],o["n_wl"],o["pushes"],pct(o["accuracy"]) if o["accuracy"] is not None else "-",f"{o['brier']:.4f}" if o["brier"] is not None else "-",f"{o['logloss']:.4f}" if o["logloss"] is not None else "-");return out
+
+def daily_plan_pool(results):
+    pool=[]
+    for r in results:
+        for market in V10_MARKETS:
+            rec=(r.get("model_recs") or {}).get(market)
+            if rec:pool.append({"result":r,"rec":rec,"score":num(rec.get("confidence"))+max(0,num(rec.get("p_model"),.5)-.5)*.80+num(r.get("quality"),.5)*.25})
+    return sorted(pool,key=lambda x:(x["score"],num(x["rec"].get("confidence")),num(x["rec"].get("p_model"))),reverse=True)
+def choose_distinct_games(pool,n,banned_games=None,min_conf=None):
+    banned={str(x) for x in (banned_games or set())};used=set();out=[]
+    for item in pool:
+        gid=str(item["result"]["game_pk"])
+        if gid in banned or gid in used or (min_conf is not None and num(item["rec"].get("confidence"))<min_conf):continue
+        out.append(item);used.add(gid)
+        if len(out)>=n:break
+    return out
+def build_daily_plan(results):
+    pool=daily_plan_pool(results);singles=choose_distinct_games(pool,3,min_conf=MIN_PLAN_CONF);banned={str(x["result"]["game_pk"]) for x in singles};combo=choose_distinct_games(pool,3,banned,min_conf=MIN_COMBO_CONF)
+    if len(combo)<2:combo=choose_distinct_games(pool,2,banned,min_conf=MIN_COMBO_CONF)
+    return singles,combo if len(combo)>=2 else []
+def v10_combo_metrics(combo):
+    if len(combo)<2:return {"valid":False,"legs":len(combo)}
+    pwin=noloss=expected=fair=minprod=quoted=1.0;all_prices=True;all_min=True
+    for item in combo:
+        r=item["rec"];pw=num(r.get("p_win"));pp=num(r.get("p_push"));pl=num(r.get("p_loss"));s=pw+pp+pl
+        if s<=0:return {"valid":False,"legs":len(combo)}
+        pw,pp,pl=pw/s,pp/s,pl/s;np=pw+pl
+        if np<=0:return {"valid":False,"legs":len(combo)}
+        e=r.get("winamax_eval") or {};price=num(e.get("price"),0);minimum=num(r.get("min_price"),99);pwin*=pw;noloss*=pw+pp;fair*=1/(pw/np);minprod*=minimum
+        if price<=1:all_prices=False
+        else:quoted*=price;expected*=pw*price+pp;all_min=all_min and price+1e-9>=minimum
+    return {"valid":True,"legs":len(combo),"p_all_win":pwin,"p_no_loss":noloss,"fair_conditional":fair,"min_product":minprod,"quoted_price":quoted if all_prices else None,"expected_multiplier":expected if all_prices else None,"ev":expected-1 if all_prices else None,"all_prices":all_prices,"all_legs_above_min":all_min if all_prices else False}
+def v10_combo_stake(combo):
+    m=v10_combo_metrics(combo)
+    if not m.get("valid") or not m.get("all_prices") or not m.get("all_legs_above_min") or m.get("ev") is None or m["ev"]<MIN_EV or any(x["result"].get("phase")=="EARLY" for x in combo):return 0.0
+    room=max(0,num(_V10_LAST_PORTFOLIO.get("daily_cap"),BANKROLL*MAX_DAILY_EXPOSURE_PCT)-num(_V10_LAST_PORTFOLIO.get("allocated"),0));cap=min(BANKROLL*MAX_COMBO_EXPOSURE_PCT,UNIT,room);q=max(.01,UNIT/4);return round(math.floor((cap/q)+1e-9)*q,2) if cap>=q else 0.0
+def send_daily_plan(results):
+    singles,combo=build_daily_plan(results);phase_note=" • ".join(sorted({x["result"]["phase"] for x in singles+combo})) if singles or combo else "N/A";simples="\n\n".join(plan_pick_text(x,i+1) for i,x in enumerate(singles)) if singles else f"**Aucun simple forcé.** Aucune sélection n'atteint le seuil V10 de {MIN_PLAN_CONF:.1f}/10."
+    if combo:
+        m=v10_combo_metrics(combo);legs=[]
+        for x in combo:
+            r=x["result"];rec=x["rec"];pt="" if rec.get("point") is None else (f" {rec['point']:+g}" if rec["market"]=="RUNLINE" else f" {rec['point']:g}");price=num((rec.get("winamax_eval") or {}).get("price"),0);legs.append(f"• **{rec['name']}{pt}** — {r['ctx']['away']} @ {r['ctx']['home']} • conf {rec['confidence']:.1f}/10 • mini {rec['min_price']:.2f}"+(f" • Winamax {price:.2f}" if price>1 else " • cote Winamax à vérifier"))
+        stake=v10_combo_stake(combo);combo_text="\n".join(legs)+f"\n\nP(toutes gagnantes) **{pct(m['p_all_win'])}** • P(aucune perdante) **{pct(m['p_no_loss'])}**\nFair conditionnelle ≈ **{m['fair_conditional']:.2f}** • produit cotes mini **{m['min_product']:.2f}**"
+        if m.get("quoted_price") is not None:combo_text+=f"\nCote actuelle ≈ **{m['quoted_price']:.2f}** • EV avec pushes **{m['ev']*100:+.1f}%**"
+        combo_text+=(f"\n✅ **COMBINÉ JOUABLE** • mise prudente **{stake:.2f} €**" if stake>0 else "\n⚠️ **SURVEILLANCE / NON JOUABLE aux prix actuels**")
+    else:combo_text=f"**Aucun combiné forcé.** Il faut au moins 2 matchs hors simples à ≥ {MIN_COMBO_CONF:.1f}/10."
+    return send_embed("🎟️ PLAN V10 — JUSQU'À 3 SIMPLES + COMBINÉ",[("🕒 État du run",f"{NOW.astimezone(PARIS).strftime('%d/%m/%Y %H:%M')} (Paris) • phases : {phase_note}"),("🎯 SIMPLES QUALIFIÉS",simples),("🧩 COMBINÉ HORS SIMPLES",combo_text),("🛡️ Règle V10","Jusqu'à 3 simples, jamais forcés. Combiné hors matchs des simples, pushes et exposition bankroll pris en compte.")],5763719)
+
+def v10_self_test():
+    _V9_SELF_TEST();neutral={"runsPerGame":4.45,"ops":.710};opp={"gamesPlayed":100,"runs":445,"era":4.35};recent={"games":10,"runs_pg":4.45};bp={"era":4.35,"whip":1.32,"load":.5};line={"count":9,"weighted_ops":.710};split={"_shrunk_ops":.710,"_pa":300};sc={"xwoba":.317,"pa":2000};wx={"run_adj":0};sp={"gs":20,"ip":106,"era":4.35,"whip":1.32,"k9":8.3,"bb9":3.2};base=v10_advanced_base_runs(neutral,opp,recent,sp,bp,line,split,sc,1,wx,False);ace=dict(sp);ace.update({"era":2.3,"whip":1.0,"k9":11,"bb9":2});weak=dict(sp);weak.update({"era":6.2,"whip":1.65,"k9":6.2,"bb9":5});assert v10_advanced_base_runs(neutral,opp,recent,ace,bp,line,split,sc,1,wx,False)<base<v10_advanced_base_runs(neutral,opp,recent,weak,bp,line,split,sc,1,wx,False);assert model_signal_confidence(.72,.95,.58,1)<=6 and model_signal_confidence(.72,.95,.58,2)<=7.5;assert v10_settle_market("RUNLINE","Away",1,"Home","Away",5,4)=="P" and v10_settle_market("TOTAL","Over",9,"Home","Away",5,4)=="P";pw,pp,pl=v10_calibrate_tuple((1,0),.55,.08,.37);assert abs(pp-.08)<1e-9 and abs(pw+pp+pl-1)<1e-9;assert SCHEMA_VERSION==10 and RUN_MODEL_MIN_GAMES>=450 and CAL_MIN_GAMES>=500;print("SELF-TEST MLB BETTING BOT V10 OK")
 
 if __name__=="__main__":
     try:
-        if "--self-test" in sys.argv:self_test()
+        if "--self-test" in sys.argv:v10_self_test()
         else:main()
     except KeyboardInterrupt:raise SystemExit(130)
-    except Exception:logging.exception("ERREUR FATALE");raise
+    except Exception:logging.exception("ERREUR FATALE V10");raise
