@@ -4,10 +4,11 @@ import base64, hashlib, zlib
 
 ROOT=Path(__file__).resolve().parent
 EXPECTED_SHA256="6440cc6c60e22c8a7477049caac30d213ba0092a66468122081063907aeba98f"
+PAYLOAD_NAMES=("00","01","02","03","03b","04","05","06","07")
 
 parts=[]
-for i in range(8):
-    p=ROOT/f"v10_payload_{i:02d}.txt"
+for name in PAYLOAD_NAMES:
+    p=ROOT/f"v10_payload_{name}.txt"
     if not p.exists():
         raise SystemExit(f"Payload V10 manquant: {p.name}")
     parts.append(p.read_text(encoding="utf-8").strip())
@@ -125,8 +126,8 @@ jobs:
 workflow=ROOT/".github/workflows/mlb-bot.yml"
 workflow.write_text(clean_workflow,encoding="utf-8")
 
-for i in range(8):
-    (ROOT/f"v10_payload_{i:02d}.txt").unlink(missing_ok=True)
+for name in PAYLOAD_NAMES:
+    (ROOT/f"v10_payload_{name}.txt").unlink(missing_ok=True)
 Path(__file__).unlink(missing_ok=True)
 
 print(f"Migration V10 appliquée • bot.py SHA256={actual}")
