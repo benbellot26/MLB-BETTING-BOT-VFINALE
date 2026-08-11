@@ -2,7 +2,6 @@ name: MLB Betting Bot V9
 
 on:
   workflow_dispatch:
-
   schedule:
     - cron: "17 16 * * *"
       timezone: "Europe/Paris"
@@ -38,92 +37,37 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Correctif Statcast V9.0.2
+      - name: Correctif Discord V9.0.3
         run: |
           python - <<'PY'
           from pathlib import Path
 
-          p = Path('bot.py')
-          s = p.read_text(encoding='utf-8')
-          s = s.replace('VERSION="9.0.1"', 'VERSION="9.0.2"', 1).replace('VERSION="9.0"', 'VERSION="9.0.2"', 1)
+          p = Path("bot.py")
+          s = p.read_text(encoding="utf-8")
+          s = s.replace('VERSION="9.0.2"', 'VERSION="9.0.3"', 1)
+          s = s.replace('FEATURE_VERSION="9.0.2"', 'FEATURE_VERSION="9.0.3"', 1)
 
-          start = s.index('def _savant_empty():') if 'def _savant_empty():' in s else s.index('def savant_league():')
-          end = s.index('\ndef split_hitting', start)
-
-          new_block = r'''SAVANT_TEAM_NAMES={
-              "angels":"Los Angeles Angels","astros":"Houston Astros","athletics":"Athletics","bluejays":"Toronto Blue Jays",
-              "braves":"Atlanta Braves","brewers":"Milwaukee Brewers","cardinals":"St. Louis Cardinals","cubs":"Chicago Cubs",
-              "dbacks":"Arizona Diamondbacks","diamondbacks":"Arizona Diamondbacks","dodgers":"Los Angeles Dodgers","giants":"San Francisco Giants",
-              "guardians":"Cleveland Guardians","mariners":"Seattle Mariners","marlins":"Miami Marlins","mets":"New York Mets",
-              "nationals":"Washington Nationals","orioles":"Baltimore Orioles","padres":"San Diego Padres","phillies":"Philadelphia Phillies",
-              "pirates":"Pittsburgh Pirates","rangers":"Texas Rangers","rays":"Tampa Bay Rays","reds":"Cincinnati Reds",
-              "redsox":"Boston Red Sox","rockies":"Colorado Rockies","royals":"Kansas City Royals","tigers":"Detroit Tigers",
-              "twins":"Minnesota Twins","whitesox":"Chicago White Sox","yankees":"New York Yankees"
-          }
-          SAVANT_TEAM_IDS={108:"Los Angeles Angels",109:"Arizona Diamondbacks",110:"Baltimore Orioles",111:"Boston Red Sox",112:"Chicago Cubs",113:"Cincinnati Reds",114:"Cleveland Guardians",115:"Colorado Rockies",116:"Detroit Tigers",117:"Houston Astros",118:"Kansas City Royals",119:"Los Angeles Dodgers",120:"Washington Nationals",121:"New York Mets",133:"Athletics",134:"Pittsburgh Pirates",135:"San Diego Padres",136:"Seattle Mariners",137:"San Francisco Giants",138:"St. Louis Cardinals",139:"Tampa Bay Rays",140:"Texas Rangers",141:"Toronto Blue Jays",142:"Minnesota Twins",143:"Philadelphia Phillies",144:"Atlanta Braves",145:"Chicago White Sox",146:"Miami Marlins",147:"New York Yankees",158:"Milwaukee Brewers"}
-          def _savant_empty():
-              return {name:{"xwoba":None,"xslg":None,"xba":None,"pa":0,"available":False,"source":"Baseball Savant Expected Statistics"} for name in TEAM_KEYS}
-          def _savant_team_name(cell):
-              raw=str(cell or "").strip();n=norm_name(raw)
-              if n in SAVANT_TEAM_NAMES:return SAVANT_TEAM_NAMES[n]
-              try:
-                  tid=int(float(raw))
-                  if tid in SAVANT_TEAM_IDS:return SAVANT_TEAM_IDS[tid]
-              except Exception:pass
-              tokens=set(re.findall(r"[A-Z]{2,3}",raw.upper()))
-              for name,keys in TEAM_KEYS.items():
-                  if n==norm_name(name) or any(k in tokens for k in keys):return name
-              return None
-          def _savant_get(row,*aliases):
-              for alias in aliases:
-                  k=_header_key(alias)
-                  if k in row and str(row[k]).strip()!="":return row[k]
-              return None
-          def _savant_apply_row(result,row):
-              team_cell=_savant_get(row,"team_name","team","team_name_alt","last_name","team_abbr","teamabbr","team_abbreviation","abbreviation")
-              team=_savant_team_name(team_cell)
-              if not team:
-                  team=_savant_team_name(_savant_get(row,"team_id","teamid"))
-              if not team:return False
-              xba=_fnum(_savant_get(row,"est_ba","xba","x_ba","estimated_ba","expected_batting_average"))
-              xslg=_fnum(_savant_get(row,"est_slg","xslg","x_slg","estimated_slg","expected_slugging"))
-              xwoba=_fnum(_savant_get(row,"est_woba","xwoba","x_woba","estimated_woba","expected_woba"))
-              pa=int(_fnum(_savant_get(row,"pa","plate_appearances","plateappearances")) or 0)
-              if not all(v is not None for v in (xba,xslg,xwoba)):return False
-              result[team]={"xwoba":xwoba,"xslg":xslg,"xba":xba,"pa":pa,"available":True,"source":"Baseball Savant Expected Statistics"}
-              return True
-          def _savant_parse_csv(raw,result):
-              csv_mod=__import__('csv');io_mod=__import__('io');text=raw.decode('utf-8-sig','replace')
-              if ',' not in text[:1000]:return 0,0,[],[]
-              reader=csv_mod.DictReader(io_mod.StringIO(text));recognized=total=0;samples=[];headers=[]
-              if reader.fieldnames:headers=[_header_key(x) for x in reader.fieldnames]
-              for original in reader:
-                  total+=1;row={_header_key(k):v for k,v in original.items() if k is not None}
-                  if len(samples)<5:samples.append(str(_savant_get(row,"team_name","team","last_name","team_id","abbreviation")))
-                  recognized+=int(_savant_apply_row(result,row))
-              return recognized,total,headers,samples
-          def savant_league():
-              key=("savant_league",SEASON,"v9.0.2")
-              if key in _CACHE:return _CACHE[key]
-              result=_savant_empty();base="https://baseballsavant.mlb.com/leaderboard/expected_statistics";params={"type":"batter-team","year":SEASON,"position":"","team":"","csv":"true"}
-              try:
-                  raw,hdr=http_raw(base,params,headers={"Accept":"text/csv,text/plain,*/*","Referer":"https://baseballsavant.mlb.com/"})
-                  recognized,total,headers,samples=_savant_parse_csv(raw,result)
-                  available=sum(1 for v in result.values() if v.get("available"))
-                  logging.info("Baseball Savant CSV | bytes=%d type=%s total=%d reconnus=%d valides=%d",len(raw),hdr.get("content-type","?"),total,recognized,available)
-                  logging.info("Baseball Savant CSV | headers=%s | samples=%s",",".join(headers[:12]),samples)
-                  if available<20:logging.warning("Statcast incomplet: %d équipes valides sur 30; données absentes neutralisées",available)
-              except Exception as e:
-                  logging.warning("Baseball Savant CSV indisponible: %s",e)
-              _CACHE[key]=result;return result
-          def savant_team(team_name):return savant_league().get(team_name,{"xwoba":None,"xslg":None,"xba":None,"pa":0,"available":False,"source":"Baseball Savant Expected Statistics"})
+          start = s.index('def should_publish(rec,s):')
+          end = s.index('\ndef discord_request', start)
+          replacement = '''def should_publish(rec,s):
+              snaps=rec.get("snapshots",[])
+              if not snaps:return True
+              last=snaps[-1]
+              if last.get("feature_version")!=s.get("feature_version"):return True
+              if last.get("phase")!=s.get("phase"):return True
+              if last.get("directional_pick")!=s.get("directional_pick"):return True
+              if abs(num(last.get("direction_confidence"))-num(s.get("direction_confidence")))>=.7:return True
+              if last.get("home_lineup_count",0)<8<=s.get("home_lineup_count",0) or last.get("away_lineup_count",0)<8<=s.get("away_lineup_count",0):return True
+              last_h=bool((last.get("home_statcast") or {}).get("available"));new_h=bool((s.get("home_statcast") or {}).get("available"))
+              last_a=bool((last.get("away_statcast") or {}).get("available"));new_a=bool((s.get("away_statcast") or {}).get("available"))
+              if (not last_h and new_h) or (not last_a and new_a):return True
+              a={(p["market"],p["name"],p.get("point")) for p in last.get("selected_picks",[])}
+              b={(p["market"],p["name"],p.get("point")) for p in s.get("selected_picks",[])}
+              return a!=b
           '''
-
-          s = s[:start] + new_block + s[end:]
-          if 'SAVANT_TEAM_NAMES' not in s or 'v9.0.2' not in s:
-              raise SystemExit('Le correctif Statcast V9.0.2 n’a pas été injecté')
-          p.write_text(s, encoding='utf-8')
-          print('Correctif Statcast V9.0.2 injecté dans bot.py')
+          s = s[:start] + replacement + s[end:]
+          p.write_text(s, encoding="utf-8")
+          print("Correctif Discord V9.0.3 injecté")
           PY
 
       - name: Validation Python
@@ -178,6 +122,6 @@ jobs:
             echo "Code et données V9 inchangés."
             exit 0
           fi
-          git commit -m "fix: Statcast V9.0.2 + update data [skip ci]"
+          git commit -m "fix: V9.0.3 Discord refresh + update data [skip ci]"
           git pull --rebase origin main
           git push
