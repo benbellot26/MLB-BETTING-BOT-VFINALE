@@ -40,19 +40,8 @@ jobs:
       - name: Validation Python V10
         run: |
           python --version
-          python -m py_compile \
-            bot.py \
-            v10_step1_engine.py \
-            v10_phase_models.py \
-            v10_main_lines.py \
-            v10_confidence.py \
-            v10_runner.py \
-            v10_step4_runner.py \
-            v10_market_calibration.py \
-            v10_plan.py \
-            v10_ledger.py \
-            v10_final_runner.py
-          python v10_final_runner.py --self-test
+          python -m py_compile bot.py
+          python bot.py --self-test
 
       - name: Exécution du Bot V10
         env:
@@ -66,7 +55,9 @@ jobs:
           MAX_DAILY_EXPOSURE_PCT: "0.30"
           MAX_GAME_EXPOSURE_PCT: "0.15"
           MAX_BETS_PER_GAME: "2"
-          V10_HISTORY_FILE: data/mlb_history_v10.jsonl
+          MAX_COMBO_EXPOSURE_PCT: "0.05"
+          MIN_PLAN_CONF: "6.2"
+          MIN_COMBO_CONF: "6.5"
           HISTORY_FILE: data/mlb_history_v10.jsonl
           MATCH_MAX_DELTA_HOURS: "2.0"
           ARCHIVE_AFTER_DAYS: "45"
@@ -74,7 +65,7 @@ jobs:
           CAL_MIN_GAMES: "500"
         run: |
           mkdir -p data
-          python v10_final_runner.py
+          python bot.py
 
       - name: Validation données V10
         if: success()
@@ -110,5 +101,5 @@ jobs:
             exit 0
           fi
           git commit -m "data: update V10 history [skip ci]"
-          git pull --rebase origin main
-          git push
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin "HEAD:$GITHUB_REF_NAME"
