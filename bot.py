@@ -6,9 +6,9 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 from html.parser import HTMLParser
 
-VERSION="9.0.1"
+VERSION="9.0.2"
 SCHEMA_VERSION=9
-FEATURE_VERSION="9.0"
+FEATURE_VERSION="9.0.2"
 MODEL_VERSION="runs-residual-walkforward-v3"
 VERDICT_VERSION="direction-calibrated-v3"
 DIST_VERSION="nb-mle-split-v2"
@@ -172,12 +172,29 @@ def _header_key(x):return re.sub(r"[^a-z0-9]","",str(x).lower())
 def _fnum(x):
     try:return float(str(x).replace(",","").replace("%",""))
     except Exception:return None
+SAVANT_TEAM_NAMES={
+    "angels":"Los Angeles Angels","astros":"Houston Astros","athletics":"Athletics","bluejays":"Toronto Blue Jays",
+    "braves":"Atlanta Braves","brewers":"Milwaukee Brewers","cardinals":"St. Louis Cardinals","cubs":"Chicago Cubs",
+    "dbacks":"Arizona Diamondbacks","diamondbacks":"Arizona Diamondbacks","dodgers":"Los Angeles Dodgers","giants":"San Francisco Giants",
+    "guardians":"Cleveland Guardians","mariners":"Seattle Mariners","marlins":"Miami Marlins","mets":"New York Mets",
+    "nationals":"Washington Nationals","orioles":"Baltimore Orioles","padres":"San Diego Padres","phillies":"Philadelphia Phillies",
+    "pirates":"Pittsburgh Pirates","rangers":"Texas Rangers","rays":"Tampa Bay Rays","reds":"Cincinnati Reds",
+    "redsox":"Boston Red Sox","rockies":"Colorado Rockies","royals":"Kansas City Royals","tigers":"Detroit Tigers",
+    "twins":"Minnesota Twins","whitesox":"Chicago White Sox","yankees":"New York Yankees"
+}
+SAVANT_TEAM_IDS={108:"Los Angeles Angels",109:"Arizona Diamondbacks",110:"Baltimore Orioles",111:"Boston Red Sox",112:"Chicago Cubs",113:"Cincinnati Reds",114:"Cleveland Guardians",115:"Colorado Rockies",116:"Detroit Tigers",117:"Houston Astros",118:"Kansas City Royals",119:"Los Angeles Dodgers",120:"Washington Nationals",121:"New York Mets",133:"Athletics",134:"Pittsburgh Pirates",135:"San Diego Padres",136:"Seattle Mariners",137:"San Francisco Giants",138:"St. Louis Cardinals",139:"Tampa Bay Rays",140:"Texas Rangers",141:"Toronto Blue Jays",142:"Minnesota Twins",143:"Philadelphia Phillies",144:"Atlanta Braves",145:"Chicago White Sox",146:"Miami Marlins",147:"New York Yankees",158:"Milwaukee Brewers"}
 def _savant_empty():
     return {name:{"xwoba":None,"xslg":None,"xba":None,"pa":0,"available":False,"source":"Baseball Savant Expected Statistics"} for name in TEAM_KEYS}
 def _savant_team_name(cell):
-    text=str(cell or "").upper();tokens=set(re.findall(r"[A-Z]{2,3}",text));normalized=norm_name(cell)
+    raw=str(cell or "").strip();n=norm_name(raw)
+    if n in SAVANT_TEAM_NAMES:return SAVANT_TEAM_NAMES[n]
+    try:
+        tid=int(float(raw))
+        if tid in SAVANT_TEAM_IDS:return SAVANT_TEAM_IDS[tid]
+    except Exception:pass
+    tokens=set(re.findall(r"[A-Z]{2,3}",raw.upper()))
     for name,keys in TEAM_KEYS.items():
-        if normalized==norm_name(name) or any(k in tokens for k in keys):return name
+        if n==norm_name(name) or any(k in tokens for k in keys):return name
     return None
 def _savant_get(row,*aliases):
     for alias in aliases:
@@ -185,64 +202,41 @@ def _savant_get(row,*aliases):
         if k in row and str(row[k]).strip()!="":return row[k]
     return None
 def _savant_apply_row(result,row):
-    team=_savant_team_name(_savant_get(row,"team","team_name","teamname","team_abbr","teamabbr","team_abbreviation"))
+    team_cell=_savant_get(row,"team_name","team","team_name_alt","last_name","team_abbr","teamabbr","team_abbreviation","abbreviation")
+    team=_savant_team_name(team_cell)
+    if not team:
+        team=_savant_team_name(_savant_get(row,"team_id","teamid"))
     if not team:return False
-    xba=_fnum(_savant_get(row,"xba","x_ba","est_ba","estimated_ba","expected_batting_average"))
-    xslg=_fnum(_savant_get(row,"xslg","x_slg","est_slg","estimated_slg","expected_slugging"))
-    xwoba=_fnum(_savant_get(row,"xwoba","x_woba","est_woba","estimated_woba","expected_woba"))
+    xba=_fnum(_savant_get(row,"est_ba","xba","x_ba","estimated_ba","expected_batting_average"))
+    xslg=_fnum(_savant_get(row,"est_slg","xslg","x_slg","estimated_slg","expected_slugging"))
+    xwoba=_fnum(_savant_get(row,"est_woba","xwoba","x_woba","estimated_woba","expected_woba"))
     pa=int(_fnum(_savant_get(row,"pa","plate_appearances","plateappearances")) or 0)
-    if not any(v is not None for v in (xba,xslg,xwoba)):return False
-    result[team]={"xwoba":xwoba,"xslg":xslg,"xba":xba,"pa":pa,"available":all(v is not None for v in (xba,xslg,xwoba)),"source":"Baseball Savant Expected Statistics"}
+    if not all(v is not None for v in (xba,xslg,xwoba)):return False
+    result[team]={"xwoba":xwoba,"xslg":xslg,"xba":xba,"pa":pa,"available":True,"source":"Baseball Savant Expected Statistics"}
     return True
 def _savant_parse_csv(raw,result):
-    try:
-        csv_mod=__import__('csv');io_mod=__import__('io');text=raw.decode('utf-8-sig','replace')
-        if ',' not in text[:1000]:return 0
-        reader=csv_mod.DictReader(io_mod.StringIO(text));count=0
-        for original in reader:
-            row={_header_key(k):v for k,v in original.items() if k is not None}
-            count+=int(_savant_apply_row(result,row))
-        return count
-    except Exception:return 0
-def _savant_parse_html(raw,result):
-    try:
-        parser=TableParser();parser.feed(raw.decode('utf-8','replace'));count=0
-        for table in parser.tables:
-            header_idx=None;headers=None
-            for i,row in enumerate(table):
-                h=[_header_key(x) for x in row]
-                has_team=any(x in h for x in ('team','teamname','teamabbr','teamabbreviation'))
-                has_xba=any(x in h for x in ('xba','estba','estimatedba'))
-                has_xslg=any(x in h for x in ('xslg','estslg','estimatedslg'))
-                has_xwoba=any(x in h for x in ('xwoba','estwoba','estimatedwoba'))
-                if has_team and has_xba and has_xslg and has_xwoba:header_idx=i;headers=h;break
-            if header_idx is None:continue
-            for values in table[header_idx+1:]:
-                if len(values)<len(headers):continue
-                row=dict(zip(headers,values));count+=int(_savant_apply_row(result,row))
-        return count
-    except Exception:return 0
+    csv_mod=__import__('csv');io_mod=__import__('io');text=raw.decode('utf-8-sig','replace')
+    if ',' not in text[:1000]:return 0,0,[],[]
+    reader=csv_mod.DictReader(io_mod.StringIO(text));recognized=total=0;samples=[];headers=[]
+    if reader.fieldnames:headers=[_header_key(x) for x in reader.fieldnames]
+    for original in reader:
+        total+=1;row={_header_key(k):v for k,v in original.items() if k is not None}
+        if len(samples)<5:samples.append(str(_savant_get(row,"team_name","team","last_name","team_id","abbreviation")))
+        recognized+=int(_savant_apply_row(result,row))
+    return recognized,total,headers,samples
 def savant_league():
-    key=("savant_league",SEASON,"v9.0.1")
+    key=("savant_league",SEASON,"v9.0.2")
     if key in _CACHE:return _CACHE[key]
-    result=_savant_empty();base="https://baseballsavant.mlb.com/leaderboard/expected_statistics";params={"type":"batter-team","year":SEASON,"position":"","team":"","min":"q","filterType":"bip","sort":10,"sortDir":"desc"};rows=0;mode="none"
+    result=_savant_empty();base="https://baseballsavant.mlb.com/leaderboard/expected_statistics";params={"type":"batter-team","year":SEASON,"position":"","team":"","csv":"true"}
     try:
-        csv_params=dict(params);csv_params["csv"]="true"
-        raw,hdr=http_raw(base,csv_params,headers={"Accept":"text/csv,text/plain,text/html,*/*","Referer":"https://baseballsavant.mlb.com/"})
-        rows=_savant_parse_csv(raw,result)
-        if rows:mode="csv"
-        else:
-            rows=_savant_parse_html(raw,result)
-            if rows:mode="html-csv-url"
-        logging.info("Baseball Savant essai CSV | bytes=%d type=%s rows=%d",len(raw),hdr.get("content-type","?"),rows)
-    except Exception as e:logging.warning("Baseball Savant CSV: %s",e)
-    if rows<20:
-        try:
-            result=_savant_empty();raw,hdr=http_raw(base,params,headers={"Accept":"text/html,application/xhtml+xml,*/*","Referer":"https://baseballsavant.mlb.com/"});rows=_savant_parse_html(raw,result);mode="html" if rows else mode
-            logging.info("Baseball Savant essai HTML | bytes=%d type=%s tables/rows=%d",len(raw),hdr.get("content-type","?"),rows)
-        except Exception as e:logging.warning("Baseball Savant HTML: %s",e)
-    available=sum(1 for v in result.values() if v.get("available"))
-    logging.info("Baseball Savant | mode=%s | équipes Statcast valides=%d | lignes reconnues=%d",mode,available,rows)
+        raw,hdr=http_raw(base,params,headers={"Accept":"text/csv,text/plain,*/*","Referer":"https://baseballsavant.mlb.com/"})
+        recognized,total,headers,samples=_savant_parse_csv(raw,result)
+        available=sum(1 for v in result.values() if v.get("available"))
+        logging.info("Baseball Savant CSV | bytes=%d type=%s total=%d reconnus=%d valides=%d",len(raw),hdr.get("content-type","?"),total,recognized,available)
+        logging.info("Baseball Savant CSV | headers=%s | samples=%s",",".join(headers[:12]),samples)
+        if available<20:logging.warning("Statcast incomplet: %d équipes valides sur 30; données absentes neutralisées",available)
+    except Exception as e:
+        logging.warning("Baseball Savant CSV indisponible: %s",e)
     _CACHE[key]=result;return result
 def savant_team(team_name):return savant_league().get(team_name,{"xwoba":None,"xslg":None,"xba":None,"pa":0,"available":False,"source":"Baseball Savant Expected Statistics"})
 
