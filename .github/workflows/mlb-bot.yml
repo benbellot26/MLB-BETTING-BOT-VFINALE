@@ -1,0 +1,76 @@
+name: MLB Betting Bot V7
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    - cron: "17 16 * * *"
+      timezone: "Europe/Paris"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mlb-betting-bot
+  cancel-in-progress: false
+
+jobs:
+  run-bot:
+    name: Exécution du Bot
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Récupération du repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Installation de Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Informations environnement
+        run: |
+          python --version
+          git --version
+
+      - name: Exécution du Bot
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+
+          BANKROLL: ${{ vars.BANKROLL }}
+          UNIT: ${{ vars.UNIT }}
+          MAX_STAKE_UNITS: ${{ vars.MAX_STAKE_UNITS }}
+          MIN_EV: ${{ vars.MIN_EV }}
+          MIN_EDGE: ${{ vars.MIN_EDGE }}
+
+          HISTORY_FILE: data/mlb_history.jsonl
+
+        run: |
+          mkdir -p data
+          python bot.py
+
+      - name: Sauvegarde historique ML
+        if: always()
+        run: |
+          if [ ! -f data/mlb_history.jsonl ]; then
+            echo "Aucun historique à sauvegarder."
+            exit 0
+          fi
+
+          git config user.name "MLB Betting Bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add data/mlb_history.jsonl
+
+          if git diff --cached --quiet; then
+            echo "Historique inchangé."
+            exit 0
+          fi
+
+          git commit -m "data: update MLB history [skip ci]"
+          git push
