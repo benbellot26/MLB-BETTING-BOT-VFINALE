@@ -1,0 +1,29 @@
+name: V10 Pull Request Self-Test
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  self-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile
+        run: python -m py_compile bot.py
+      - name: Self-test
+        env:
+          BANKROLL: "10"
+          UNIT: "0.5"
+          MAX_STAKE_UNITS: "3"
+          RUN_MODEL_MIN_GAMES: "450"
+          CAL_MIN_GAMES: "500"
+        run: python bot.py --self-test
