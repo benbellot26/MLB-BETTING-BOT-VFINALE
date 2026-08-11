@@ -6,7 +6,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 from html.parser import HTMLParser
 
-VERSION="9.1.0"
+VERSION="9.1.1"
 SCHEMA_VERSION=9
 FEATURE_VERSION="9.0.3"
 MODEL_VERSION="runs-residual-walkforward-v3"
@@ -910,14 +910,8 @@ def send_game(result,snap,portfolio):
     risk=f"Exposition journée: **{portfolio['allocated']:.2f} € / {portfolio['daily_cap']:.2f} €** • plafond/match {portfolio['game_cap']:.2f} €"
     return send_embed(f"⚾ MLB V{VERSION} • {ctx['away']} @ {ctx['home']}",[("🕒 Match",local_time(result["game"]["gameDate"])+" (Paris)"),("🎯 Modèle indépendant",probs),("🧭 Benchmark marché",direction),("🧑 Starters",starters),("🧪 Lineup / splits / Statcast / bullpen",advanced),("🔬 Contexte",context),("🎯 Recommandations du modèle",model_text),("💰 Winamax — uniquement exécution",exec_text),("🛡️ Risque portefeuille",risk),("✅ Verdict de mise",final)],color)
 
-def top_signature(results):
-    payload=[]
-    for r in sorted(results,key=lambda x:str(x["game_pk"])):
-        payload.append([r["game_pk"],[(m,(None if not r.get("model_recs",{}).get(m) else [r["model_recs"][m]["name"],r["model_recs"][m].get("point"),round(r["model_recs"][m]["p_model"],4),round(r["model_recs"][m]["confidence"],1)])) for m in ("ML","RUNLINE","TOTAL")]])
-    return hashlib.sha1(json.dumps(payload,sort_keys=True,ensure_ascii=False).encode()).hexdigest()
 def send_top_messages(results,state):
-    sig=top_signature(results)
-    if state.get("top_signature")==sig:logging.info("Top 3 modèle inchangé — Discord non renvoyé");return False
+    # V9.1.1 : les 3 Top 3 sont envoyés à CHAQUE run, même s'ils n'ont pas changé.
     ok=True
     for market,title in (("ML","🏆 TOP 3 MONEYLINE — MODÈLE"),("RUNLINE","⚾ TOP 3 RUN LINE — MODÈLE"),("TOTAL","📈 TOP 3 TOTAUX — MODÈLE")):
         xs=[]
@@ -928,12 +922,85 @@ def send_top_messages(results,state):
         blocks=[]
         for i,(r,rec) in enumerate(xs):
             pt="" if rec.get("point") is None else (f" {rec['point']:+g}" if market=="RUNLINE" else f" {rec['point']:g}")
-            emoji,band,_=confidence_band(rec["confidence"]);mp=pct(rec.get("p_market")) if rec.get("p_market") is not None else "N/A";gap=f"{rec['market_gap']*100:+.1f} pts" if rec.get("market_gap") is not None else "N/A"
+            emoji,band,_=confidence_band(rec["confidence"])
+            mp=pct(rec.get("p_market")) if rec.get("p_market") is not None else "N/A"
+            gap=f"{rec['market_gap']*100:+.1f} pts" if rec.get("market_gap") is not None else "N/A"
             blocks.append(f"**#{i+1} {r['ctx']['away']} @ {r['ctx']['home']}**\n{emoji} **{rec['name']}{pt}** • modèle **{pct(rec['p_model'])}** • marché {mp} • écart {gap}\nFair **{rec['fair']:.2f}** • **cote mini {rec['min_price']:.2f}** • confiance **{rec['confidence']:.1f}/10 — {band}**\n{execution_status(rec,r['phase'])}")
         txt="\n\n".join(blocks) if blocks else "Aucune recommandation modèle suffisamment définie."
-        ok=send_embed(title,[("Classement prédictif V9.1",txt)],16766720) and ok
-    if ok:state["top_signature"]=sig;save_state(state)
+        ok=send_embed(title,[("Classement prédictif V9.1.1",txt)],16766720) and ok
+    logging.info("Top 3 modèle envoyés pour ce run")
     return ok
+
+def daily_plan_pool(results):
+    pool=[]
+    for r in results:
+        for market in ("ML","RUNLINE","TOTAL"):
+            rec=r.get("model_recs",{}).get(market)
+            if not rec:continue
+            gap=max(0.0,num(rec.get("market_gap"),0.0))
+            score=num(rec.get("confidence"),0)+gap*4+max(0,num(rec.get("p_model"),.5)-.5)*1.5
+            pool.append({"result":r,"rec":rec,"score":score})
+    return sorted(pool,key=lambda x:(x["score"],x["rec"]["confidence"],x["rec"]["p_model"]),reverse=True)
+
+def choose_distinct_games(pool,n,banned_games=None,min_conf=None):
+    banned=set(banned_games or []);used=set();out=[]
+    for item in pool:
+        r=item["result"];rec=item["rec"];gid=str(r["game_pk"])
+        if gid in banned or gid in used:continue
+        if min_conf is not None and num(rec.get("confidence"),0)<min_conf:continue
+        out.append(item);used.add(gid)
+        if len(out)>=n:break
+    return out
+
+def plan_pick_text(item,index=None):
+    r=item["result"];rec=item["rec"];market=rec["market"]
+    pt="" if rec.get("point") is None else (f" {rec['point']:+g}" if market=="RUNLINE" else f" {rec['point']:g}")
+    label="ML" if market=="ML" else "RL" if market=="RUNLINE" else "TOTAL"
+    emoji,band,_=confidence_band(rec["confidence"])
+    prefix=f"**#{index}** " if index is not None else "• "
+    return f"{prefix}{emoji} **{rec['name']}{pt} [{label}]**\n{r['ctx']['away']} @ {r['ctx']['home']} • phase {r['phase']}\nModèle **{pct(rec['p_model'])}** • confiance **{rec['confidence']:.1f}/10 — {band}** • fair {rec['fair']:.2f} • **cote mini {rec['min_price']:.2f}**\n{execution_status(rec,r['phase'])}"
+
+def build_daily_plan(results):
+    pool=daily_plan_pool(results)
+    singles=choose_distinct_games(pool,3)
+    single_games={str(x["result"]["game_pk"]) for x in singles}
+
+    # Le combiné n'utilise aucun des matchs choisis en simples et une seule sélection par match.
+    combo=choose_distinct_games(pool,3,banned_games=single_games,min_conf=5.8)
+    if len(combo)<2:
+        combo=choose_distinct_games(pool,2,banned_games=single_games)
+
+    return singles,combo
+
+def send_daily_plan(results):
+    singles,combo=build_daily_plan(results)
+    phase_note=" • ".join(sorted({x["result"]["phase"] for x in singles+combo})) if singles or combo else "N/A"
+    simples="\n\n".join(plan_pick_text(x,i+1) for i,x in enumerate(singles)) if singles else "Pas assez de recommandations modèle pour proposer des simples aujourd'hui."
+
+    if len(combo)>=2:
+        legs=[];min_combo=1.0;current_combo=1.0;all_prices=True;all_prices_ok=True
+        for item in combo:
+            r=item["result"];rec=item["rec"];market=rec["market"]
+            pt="" if rec.get("point") is None else (f" {rec['point']:+g}" if market=="RUNLINE" else f" {rec['point']:g}")
+            label="ML" if market=="ML" else "RL" if market=="RUNLINE" else "TOTAL"
+            min_combo*=num(rec.get("min_price"),1)
+            e=rec.get("winamax_eval");price=num(e.get("price"),0) if e else 0
+            if price<=1:all_prices=False
+            else:
+                current_combo*=price
+                if price+1e-9<num(rec.get("min_price"),99):all_prices_ok=False
+            legs.append(f"• **{rec['name']}{pt} [{label}]** — {r['ctx']['away']} @ {r['ctx']['home']} • conf {rec['confidence']:.1f}/10 • mini {rec['min_price']:.2f}"+(f" • Winamax {price:.2f}" if price>1 else " • cote Winamax à vérifier"))
+        if all_prices:
+            price_status=(f"✅ Toutes les jambes passent leur cote mini • cote combinée actuelle ≈ **{current_combo:.2f}**" if all_prices_ok else f"❌ Au moins une jambe est sous sa cote mini • cote combinée actuelle ≈ **{current_combo:.2f}**")
+        else:
+            price_status="⚠️ Une ou plusieurs cotes Winamax sont absentes du flux : vérifier chaque cote avant de jouer."
+        combo_text="\n".join(legs)+f"\n\nCote mini combinée théorique : **{min_combo:.2f}**\n{price_status}"
+    else:
+        combo_text="Pas assez de sélections indépendantes pour recommander un combiné sans forcer des choix faibles."
+
+    note=("Ce plan est généré à chaque run. En phase EARLY, il s'agit d'un plan provisoire : les lineups et les prix peuvent encore évoluer. "
+          "Le combiné exclut volontairement tous les matchs utilisés dans les 3 simples.")
+    return send_embed("🎟️ PLAN DE PARIS DU RUN — 3 SIMPLES + 1 COMBINÉ",[("🕒 État du run",f"{NOW.astimezone(PARIS).strftime('%d/%m/%Y %H:%M')} (Paris) • phases présentes : {phase_note}"),("🎯 3 SIMPLES DU MODÈLE",simples),("🧩 COMBINÉ DU MODÈLE — hors simples",combo_text),("ℹ️ Règle",note)],5763719)
 
 def performance(hist):
     rows=[];bets=[]
@@ -976,7 +1043,9 @@ def main():
         if sent:mark_published(rec,[e for e in r["evals"] if e["selected"]],snap);published+=1
         logging.info("%s @ %s | %s %s | lineups=%d/%d statcast=%s/%s | %s %s %.1f/10 | qualified=%d bets=%d%s",r["ctx"]["away"],r["ctx"]["home"],r["phase"],snap["role"],r["ctx"]["home_lineup"]["count"],r["ctx"]["away_lineup"]["count"],r["ctx"]["home_statcast"]["available"],r["ctx"]["away_statcast"]["available"],r["verdict"]["type"],r["verdict"]["side"],r["verdict"]["confidence"],sum(e["qualified"] for e in r["evals"]),sum(e["selected"] for e in r["evals"])," | Discord update" if sent else "")
     write_history(hist)
-    if discord_ok and results:send_top_messages(results,state)
+    if discord_ok and results:
+        send_top_messages(results,state)
+        send_daily_plan(results)
     perf=performance(hist);logging.info("V%s terminé | analyses=%d | messages=%d | exposition=%.2f/%.2f€ | snapshots=%d",VERSION,len(results),published,portfolio["allocated"],portfolio["daily_cap"],sum(len(r.get("snapshots",[])) for r in hist.values()));logging.info("Performance | games=%d direction=%s Brier modèle=%s marché=%s | bets=%d profit=%.2f€ ROI=%s | CLV=%s pts n=%d",perf["games"],pct(perf["direction"]) if perf["direction"] is not None else "-",f"{perf['brier_model']:.4f}" if perf["brier_model"] is not None else "-",f"{perf['brier_market']:.4f}" if perf["brier_market"] is not None else "-",perf["bets"],perf["profit"],pct(perf["roi"]) if perf["roi"] is not None else "-",f"{perf['clv_pts']:+.2f}" if perf["clv_pts"] is not None else "-",perf["clv_n"])
 
 if __name__=="__main__":
