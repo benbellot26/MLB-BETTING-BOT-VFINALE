@@ -38,6 +38,101 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Correctif Statcast V9.0.1
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('bot.py')
+          s = p.read_text(encoding='utf-8')
+
+          s = s.replace('VERSION="9.0"', 'VERSION="9.0.1"', 1)
+
+          start = s.index('def savant_league():')
+          end = s.index('\ndef split_hitting', start)
+
+          new_block = r'''def _savant_empty():
+              return {name:{"xwoba":None,"xslg":None,"xba":None,"pa":0,"available":False,"source":"Baseball Savant Expected Statistics"} for name in TEAM_KEYS}
+          def _savant_team_name(cell):
+              text=str(cell or "").upper();tokens=set(re.findall(r"[A-Z]{2,3}",text));normalized=norm_name(cell)
+              for name,keys in TEAM_KEYS.items():
+                  if normalized==norm_name(name) or any(k in tokens for k in keys):return name
+              return None
+          def _savant_get(row,*aliases):
+              for alias in aliases:
+                  k=_header_key(alias)
+                  if k in row and str(row[k]).strip()!="":return row[k]
+              return None
+          def _savant_apply_row(result,row):
+              team=_savant_team_name(_savant_get(row,"team","team_name","teamname","team_abbr","teamabbr","team_abbreviation"))
+              if not team:return False
+              xba=_fnum(_savant_get(row,"xba","x_ba","est_ba","estimated_ba","expected_batting_average"))
+              xslg=_fnum(_savant_get(row,"xslg","x_slg","est_slg","estimated_slg","expected_slugging"))
+              xwoba=_fnum(_savant_get(row,"xwoba","x_woba","est_woba","estimated_woba","expected_woba"))
+              pa=int(_fnum(_savant_get(row,"pa","plate_appearances","plateappearances")) or 0)
+              if not any(v is not None for v in (xba,xslg,xwoba)):return False
+              result[team]={"xwoba":xwoba,"xslg":xslg,"xba":xba,"pa":pa,"available":all(v is not None for v in (xba,xslg,xwoba)),"source":"Baseball Savant Expected Statistics"}
+              return True
+          def _savant_parse_csv(raw,result):
+              try:
+                  csv_mod=__import__('csv');io_mod=__import__('io');text=raw.decode('utf-8-sig','replace')
+                  if ',' not in text[:1000]:return 0
+                  reader=csv_mod.DictReader(io_mod.StringIO(text));count=0
+                  for original in reader:
+                      row={_header_key(k):v for k,v in original.items() if k is not None}
+                      count+=int(_savant_apply_row(result,row))
+                  return count
+              except Exception:return 0
+          def _savant_parse_html(raw,result):
+              try:
+                  parser=TableParser();parser.feed(raw.decode('utf-8','replace'));count=0
+                  for table in parser.tables:
+                      header_idx=None;headers=None
+                      for i,row in enumerate(table):
+                          h=[_header_key(x) for x in row]
+                          has_team=any(x in h for x in ('team','teamname','teamabbr','teamabbreviation'))
+                          has_xba=any(x in h for x in ('xba','estba','estimatedba'))
+                          has_xslg=any(x in h for x in ('xslg','estslg','estimatedslg'))
+                          has_xwoba=any(x in h for x in ('xwoba','estwoba','estimatedwoba'))
+                          if has_team and has_xba and has_xslg and has_xwoba:header_idx=i;headers=h;break
+                      if header_idx is None:continue
+                      for values in table[header_idx+1:]:
+                          if len(values)<len(headers):continue
+                          row=dict(zip(headers,values));count+=int(_savant_apply_row(result,row))
+                  return count
+              except Exception:return 0
+          def savant_league():
+              key=("savant_league",SEASON,"v9.0.1")
+              if key in _CACHE:return _CACHE[key]
+              result=_savant_empty();base="https://baseballsavant.mlb.com/leaderboard/expected_statistics";params={"type":"batter-team","year":SEASON,"position":"","team":"","min":"q","filterType":"bip","sort":10,"sortDir":"desc"};rows=0;mode="none"
+              try:
+                  csv_params=dict(params);csv_params["csv"]="true"
+                  raw,hdr=http_raw(base,csv_params,headers={"Accept":"text/csv,text/plain,text/html,*/*","Referer":"https://baseballsavant.mlb.com/"})
+                  rows=_savant_parse_csv(raw,result)
+                  if rows:mode="csv"
+                  else:
+                      rows=_savant_parse_html(raw,result)
+                      if rows:mode="html-csv-url"
+                  logging.info("Baseball Savant essai CSV | bytes=%d type=%s rows=%d",len(raw),hdr.get("content-type","?"),rows)
+              except Exception as e:logging.warning("Baseball Savant CSV: %s",e)
+              if rows<20:
+                  try:
+                      result=_savant_empty();raw,hdr=http_raw(base,params,headers={"Accept":"text/html,application/xhtml+xml,*/*","Referer":"https://baseballsavant.mlb.com/"});rows=_savant_parse_html(raw,result);mode="html" if rows else mode
+                      logging.info("Baseball Savant essai HTML | bytes=%d type=%s tables/rows=%d",len(raw),hdr.get("content-type","?"),rows)
+                  except Exception as e:logging.warning("Baseball Savant HTML: %s",e)
+              available=sum(1 for v in result.values() if v.get("available"))
+              logging.info("Baseball Savant | mode=%s | équipes Statcast valides=%d | lignes reconnues=%d",mode,available,rows)
+              _CACHE[key]=result;return result
+          def savant_team(team_name):return savant_league().get(team_name,{"xwoba":None,"xslg":None,"xba":None,"pa":0,"available":False,"source":"Baseball Savant Expected Statistics"})
+          '''
+
+          s = s[:start] + new_block + s[end:]
+          if 'baseballsavant.mlb.com/leaderboard/expected_statistics' not in s:
+              raise SystemExit('Le correctif Statcast n’a pas été injecté')
+          p.write_text(s, encoding='utf-8')
+          print('Correctif Statcast V9.0.1 injecté dans bot.py')
+          PY
+
       - name: Validation Python
         run: |
           python --version
@@ -86,19 +181,19 @@ jobs:
               print(f'{state}: valide')
           PY
 
-      - name: Sauvegarde historique V9
+      - name: Sauvegarde code et historique V9
         if: success()
         run: |
           git config user.name "MLB Betting Bot"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git add data/mlb_history_v9.jsonl data/v9_state.json data/archive_v9 2>/dev/null || true
+          git add bot.py data/mlb_history_v9.jsonl data/v9_state.json data/archive_v9 2>/dev/null || true
 
           if git diff --cached --quiet; then
-            echo "Données V9 inchangées."
+            echo "Code et données V9 inchangés."
             exit 0
           fi
 
-          git commit -m "data: update MLB V9 history [skip ci]"
+          git commit -m "fix: Statcast V9.0.1 + update data [skip ci]"
           git pull --rebase origin main
           git push
