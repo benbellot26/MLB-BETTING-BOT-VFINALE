@@ -21,7 +21,9 @@ jobs:
         with:
           python-version: '3.12'
       - name: Apply V10.0.11 layer
-        run: python tools/patch_v1011.py
+        run: |
+          python tools/patch_v1011.py
+          python tools/patch_v1011_fix.py
       - name: Compile
         run: python -m py_compile bot.py
       - name: Self test
@@ -32,6 +34,7 @@ jobs:
           grep -q 'winamax_price_gate_enabled' bot.py
           grep -q 'alternate_totals' bot.py
           grep -q 'option_recs' bot.py
+          grep -q '_V1010_ALLOCATE_011' bot.py
       - name: Commit patched bot
         run: |
           git config user.name "github-actions[bot]"
