@@ -1,0 +1,63 @@
+name: MLB 2026 Walk-Forward Backtest
+
+on:
+  push:
+    branches: [backtest-2026-walkforward]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mlb-backtest-2026
+  cancel-in-progress: false
+
+jobs:
+  backtest:
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: backtest-2026-walkforward
+
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate backtest script
+        run: python -m py_compile backtest_2026.py
+
+      - name: Run leakage-safe 2026 replay
+        env:
+          BACKTEST_START: '2026-03-01'
+          BACKTEST_END: '2026-08-11'
+          BACKTEST_WORKERS: '12'
+        run: python backtest_2026.py
+
+      - name: Validate generated files
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('data/mlb_backtest_2026.jsonl')
+          rows=[json.loads(x) for x in p.read_text(encoding='utf-8').splitlines() if x.strip()]
+          assert len(rows) >= 1000, f'backtest too small: {len(rows)}'
+          assert len({r['game_pk'] for r in rows}) == len(rows), 'duplicate games'
+          rep=json.loads(Path('data/mlb_backtest_2026_report.json').read_text(encoding='utf-8'))
+          assert rep['games'] == len(rows)
+          assert rep['methodology']['walk_forward'] is True
+          assert rep['methodology']['future_game_stats_used'] is False
+          print(f'validated {len(rows)} unique walk-forward games')
+          PY
+
+      - name: Commit backtest results to branch
+        run: |
+          git config user.name 'MLB Betting Bot'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add data/mlb_backtest_2026.jsonl data/mlb_backtest_2026_report.json data/mlb_backtest_2026_report.md
+          git commit -m 'data: 2026 walk-forward backtest results [skip ci]'
+          git push origin HEAD:backtest-2026-walkforward
