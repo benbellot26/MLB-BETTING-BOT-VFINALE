@@ -1,0 +1,45 @@
+name: V10.0.7 Smoke
+
+on:
+  push:
+    branches: [v10-0-7-selective-betting-20260812]
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v10-0-7-selective-betting-20260812
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Real state and synthetic slate smoke test
+        run: |
+          python - <<'PY'
+          import bot
+          hist=bot.load_history()
+          state=bot.run_model_state(hist)
+          fs=state['phase_states']['FINAL']
+          assert fs['n'] >= 1700, fs['n']
+          assert fs.get('recent_guard_pass') is not None
+          print('FINAL residual:', 'active='+str(fs['active']), 'n='+str(fs['n']), 'guard='+str(fs['recent_guard_pass']), 'recent_n='+str(fs['recent_guard_n']), 'rmse_model='+str(round(fs['recent_rmse_model'],4)), 'rmse_base='+str(round(fs['recent_rmse_base'],4)), 'gain='+str(round(fs['recent_gain_prob'],3)))
+
+          results=[]
+          for i in range(4):
+              e={'price':1.90,'selected':False,'units':0.0,'stake_eur':0.0}
+              rec={'market':'ML','name':f'Team{i}','point':None,'p_model':.72,'p_effective':.65,'p_push':0.0,'confidence':7.2,'refs':4,'min_price_effective':1.70,'winamax_eval':e,'p_market':.55 if i%2==0 else .45}
+              results.append({'game_pk':100+i,'phase':'FINAL','quality':.76,'stability_alert':'OK','ctx':{'home':f'Team{i}','away':f'Opp{i}','home_sp':'Starter H','away_sp':'Starter A','home_lineup':{'count':9},'away_lineup':{'count':9}},'model_recs':{'ML':rec,'RUNLINE':None,'TOTAL':None},'evals':[e]})
+          port=bot.allocate_portfolio(results)
+          selected=[e for r in results for e in r['evals'] if e.get('official_selected')]
+          games=[r['game_pk'] for r in results if any(e.get('official_selected') for e in r['evals'])]
+          assert len(selected)<=3
+          assert sum(int(e.get('official_units',0)) for e in selected)<=4
+          assert len(games)==len(set(games))
+          assert port['official_count']==len(selected)
+          print('SLATE smoke:', port, 'selected=',len(selected))
+          PY
