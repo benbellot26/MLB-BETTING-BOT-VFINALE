@@ -1,0 +1,46 @@
+name: V10.0.13 Combo Validation
+
+on:
+  push:
+    branches:
+      - v10-0-13-combo-20260812
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-test:
+    if: ${{ !contains(github.event.head_commit.message, '[v1013 applied]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v10-0-13-combo-20260812
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply V10.0.13 combo layer
+        run: python tools/patch_v1013.py
+      - name: Compile
+        run: python -m py_compile bot.py
+      - name: Self test
+        run: python bot.py --self-test
+      - name: Structural checks
+        run: |
+          grep -q 'VERSION="10.0.13"' bot.py
+          grep -q 'V10.0.13 OFFICIAL COMBO' bot.py
+          grep -q 'Combiné officiel — 2 sélections' bot.py
+          grep -q 'combo_legs' bot.py
+          grep -q 'V1013_COMBO_UNITS' bot.py
+      - name: Commit patched bot
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add bot.py
+          if git diff --cached --quiet; then
+            echo "No bot.py changes"
+            exit 0
+          fi
+          git commit -m "V10.0.13 — restore official 2-leg combo [v1013 applied]"
+          git push origin HEAD:v10-0-13-combo-20260812
