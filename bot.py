@@ -1334,6 +1334,129 @@ def send_daily_plan(results):
 def v10_self_test():
     _V9_SELF_TEST();neutral={"runsPerGame":4.45,"ops":.710};opp={"gamesPlayed":100,"runs":445,"era":4.35};recent={"games":10,"runs_pg":4.45};bp={"era":4.35,"whip":1.32,"load":.5};line={"count":9,"weighted_ops":.710};split={"_shrunk_ops":.710,"_pa":300};sc={"xwoba":.317,"pa":2000};wx={"run_adj":0};sp={"gs":20,"ip":106,"era":4.35,"whip":1.32,"k9":8.3,"bb9":3.2};base=v10_advanced_base_runs(neutral,opp,recent,sp,bp,line,split,sc,1,wx,False);ace=dict(sp);ace.update({"era":2.3,"whip":1.0,"k9":11,"bb9":2});weak=dict(sp);weak.update({"era":6.2,"whip":1.65,"k9":6.2,"bb9":5});assert v10_advanced_base_runs(neutral,opp,recent,ace,bp,line,split,sc,1,wx,False)<base<v10_advanced_base_runs(neutral,opp,recent,weak,bp,line,split,sc,1,wx,False);assert model_signal_confidence(.72,.95,.58,1)<=6 and model_signal_confidence(.72,.95,.58,2)<=7.5;assert v10_settle_market("RUNLINE","Away",1,"Home","Away",5,4)=="P" and v10_settle_market("TOTAL","Over",9,"Home","Away",5,4)=="P";pw,pp,pl=v10_calibrate_tuple((1,0),.55,.08,.37);assert abs(pp-.08)<1e-9 and abs(pw+pp+pl-1)<1e-9;assert SCHEMA_VERSION==10 and RUN_MODEL_MIN_GAMES>=450 and CAL_MIN_GAMES>=500;assert "2u" in execution_status({"confidence":7.5,"min_price":1.80,"winamax_eval":{"price":1.50}},"EARLY") and "sous la cote mini" in execution_status({"confidence":7.5,"min_price":1.80,"winamax_eval":{"price":1.50}},"EARLY");assert "2u" in execution_status({"confidence":7.5,"min_price":1.80,"winamax_eval":None},"EARLY");assert displayed_stake_units({"confidence":6.19})==0 and displayed_stake_units({"confidence":6.2})==1 and displayed_stake_units({"confidence":6.99})==1 and displayed_stake_units({"confidence":7.0})==2 and displayed_stake_units({"confidence":7.99})==2 and displayed_stake_units({"confidence":8.0})==min(3,int(MAX_STAKE_UNITS));assert MAX_STAKE_UNITS<3 or (integer_stake_units(.24*UNIT)[0]==0 and integer_stake_units(.25*UNIT)[0]==1 and integer_stake_units(1.49*UNIT)[0]==1 and integer_stake_units(1.50*UNIT)[0]==2 and integer_stake_units(2.49*UNIT)[0]==2 and integer_stake_units(2.50*UNIT)[0]==3);assert round_down_units(1.99*UNIT)[0]<=1 and round_down_units(2.00*UNIT)[0]<=2;print("SELF-TEST MLB BETTING BOT V10 OK")
 
+# ========================== V10.0.5 METHODOLOGY FIXES ==========================
+_V10_GAME_CONTEXT_004=game_context
+_V10_BUILD_SNAPSHOT_004=build_snapshot
+_V10_SELF_TEST_004=v10_self_test
+
+VERSION="10.0.5"
+RECOMMENDATION_VERSION="model-first-mainline-calibrated-v11"
+V10_STRUCTURAL_CAP_RUNS=max(.10,float(os.getenv("V10_STRUCTURAL_CAP_RUNS","0.75") or .75))
+
+def v1005_component_terms(own_h,opp_p,own_recent,opp_sp,opp_bp,lineup,split,statcast,park,wx,home):
+    lg=league_baselines();rpg=num(own_h.get("runsPerGame"),lg["rpg"]);ops=num(own_h.get("ops"),lg["ops"])
+    gp=max(1.0,num(opp_p.get("gamesPlayed"),0));runs_allowed=num(opp_p.get("runs"),0)
+    opp_ra=runs_allowed/gp if runs_allowed>0 else lg["rpg"]*v10_safe_ratio(num(opp_p.get("era"),lg["era"]),lg["era"],.72,1.35)
+    terms=[
+        ("season_rpg",.34*math.log(v10_safe_ratio(rpg,lg["rpg"],.70,1.35))),
+        ("ops",.20*math.log(v10_safe_ratio(ops,lg["ops"],.82,1.18))),
+        ("opp_runs_allowed",.14*math.log(v10_safe_ratio(opp_ra,lg["rpg"],.72,1.38))),
+    ]
+    if num((own_recent or {}).get("games"),0)>=5:
+        terms.append(("recent_rpg",.08*math.log(v10_safe_ratio(num(own_recent.get("runs_pg"),rpg),lg["rpg"],.72,1.38))))
+    sip=v10_expected_starter_ip(opp_sp);starter_share=sip/9.0;bullpen_share=1-starter_share
+    sp_era=num(opp_sp.get("era"),lg["era"]);sp_whip=num(opp_sp.get("whip"),lg["whip"]);sp_k9=num(opp_sp.get("k9"),8.3);sp_bb9=num(opp_sp.get("bb9"),3.2)
+    sp_quality=(sp_era-lg["era"])/1.45+.45*(sp_whip-lg["whip"])/.28+.18*((sp_bb9-3.2)/1.4-(sp_k9-8.3)/2.4)
+    terms.append(("opposing_starter",starter_share*clamp(sp_quality,-1.10,1.10)*.23))
+    bp_era=num((opp_bp or {}).get("era"),lg["era"]);bp_whip=num((opp_bp or {}).get("whip"),lg["whip"]);bp_load=num((opp_bp or {}).get("load"),.5)
+    bp_quality=(bp_era-lg["era"])/1.55+.35*(bp_whip-lg["whip"])/.30+.35*(bp_load-.5)/.60
+    terms.append(("opposing_bullpen",bullpen_share*clamp(bp_quality,-1.0,1.2)*.22))
+    lineup_ops=(lineup or {}).get("weighted_ops");lineup_count=int(num((lineup or {}).get("count"),0))
+    if lineup_ops is not None and lineup_count>=7:
+        terms.append(("confirmed_lineup",clamp(lineup_count/9.0,0,1)*.18*clamp((num(lineup_ops,ops)-ops)/.080,-1,1)))
+    split_ops=(split or {}).get("_shrunk_ops");split_pa=num((split or {}).get("_pa"),0)
+    if split_ops is not None and split_pa>=40:
+        terms.append(("platoon_split",clamp(split_pa/250.0,.20,1.0)*.13*clamp((num(split_ops,ops)-ops)/.080,-1,1)))
+    xwoba=(statcast or {}).get("xwoba");pa=num((statcast or {}).get("pa"),0)
+    if xwoba is not None:
+        terms.append(("statcast_xwoba",clamp(pa/1800.0,.25,1.0)*.12*clamp((num(xwoba,.317)-.317)/.045,-1,1)))
+    terms.append(("park",.55*math.log(clamp(num(park,1.0),.88,1.16))))
+    terms.append(("weather",clamp(num((wx or {}).get("run_adj"),0),-.25,.30)*.10))
+    log_mu=math.log(lg["rpg"]);components=[];before=math.exp(log_mu)
+    for name,term in terms:
+        log_mu+=term;after=math.exp(log_mu);components.append({"name":name,"log_term":round(term,6),"delta_runs":round(after-before,4)});before=after
+    pre_clamp=math.exp(log_mu)+(0.08 if home else 0.0)
+    if home:components.append({"name":"home_bonus","log_term":None,"delta_runs":0.08})
+    return {"league_base":round(lg["rpg"],4),"components":components,"pre_clamp":round(pre_clamp,4),"formula_raw":round(clamp(pre_clamp,2.0,8.2),4),"expected_starter_ip":round(sip,3)}
+
+def v1005_side_diag(ctx,home_side,raw_v10,base_v9):
+    if home_side:
+        own_h=season_stats(ctx["home_id"],"hitting");opp_p=season_stats(ctx["away_id"],"pitching")
+        opp_sp=dict(shrunk_pitcher(ctx.get("away_sp_stats") or {}));opp_sp["gs"]=max(0,num((ctx.get("away_sp_stats") or {}).get("gamesStarted"),0))
+        diag=v1005_component_terms(own_h,opp_p,ctx["home_recent"],opp_sp,ctx["away_bp"],ctx["home_lineup"],ctx["home_split"],ctx["home_statcast"],ctx["park"],ctx["weather"],True)
+    else:
+        own_h=season_stats(ctx["away_id"],"hitting");opp_p=season_stats(ctx["home_id"],"pitching")
+        opp_sp=dict(shrunk_pitcher(ctx.get("home_sp_stats") or {}));opp_sp["gs"]=max(0,num((ctx.get("home_sp_stats") or {}).get("gamesStarted"),0))
+        diag=v1005_component_terms(own_h,opp_p,ctx["away_recent"],opp_sp,ctx["home_bp"],ctx["away_lineup"],ctx["away_split"],ctx["away_statcast"],ctx["park"],ctx["weather"],False)
+    raw_adj=raw_v10-base_v9;applied=clamp(raw_adj,-V10_STRUCTURAL_CAP_RUNS,V10_STRUCTURAL_CAP_RUNS);final=clamp(base_v9+applied,2.0,8.2)
+    diag.update({"v9_base":round(base_v9,4),"v10_raw":round(raw_v10,4),"raw_adjustment":round(raw_adj,4),"cap_runs":round(V10_STRUCTURAL_CAP_RUNS,3),"applied_adjustment":round(applied,4),"final_base":round(final,4),"capped":abs(applied-raw_adj)>1e-9})
+    return final,diag
+
+def game_context(g):
+    ctx=_V10_GAME_CONTEXT_004(g);raw_h=num(ctx.get("base_home"));raw_a=num(ctx.get("base_away"));v9_h=num(ctx.get("base_home_v9"),raw_h);v9_a=num(ctx.get("base_away_v9"),raw_a)
+    h,dh=v1005_side_diag(ctx,True,raw_h,v9_h);a,da=v1005_side_diag(ctx,False,raw_a,v9_a)
+    ctx["base_home_v10_raw"]=raw_h;ctx["base_away_v10_raw"]=raw_a
+    ctx["structural_adj_home_raw"]=raw_h-v9_h;ctx["structural_adj_away_raw"]=raw_a-v9_a
+    ctx["structural_adj_home"]=h-v9_h;ctx["structural_adj_away"]=a-v9_a
+    ctx["base_home"]=h;ctx["base_away"]=a;ctx["run_diagnostics_home"]=dh;ctx["run_diagnostics_away"]=da;ctx["structural_cap_runs"]=V10_STRUCTURAL_CAP_RUNS;ctx["base_engine"]="advanced-baseball-v10-safe-cap"
+    logging.info("V10 RUN SAFE | %s @ %s | H %.2f raw %.2f -> %.2f (%+.2f cap %.2f) | A %.2f raw %.2f -> %.2f (%+.2f cap %.2f)",ctx["away"],ctx["home"],v9_h,raw_h,h,h-v9_h,V10_STRUCTURAL_CAP_RUNS,v9_a,raw_a,a,a-v9_a,V10_STRUCTURAL_CAP_RUNS)
+    return ctx
+
+def build_snapshot(result,rec):
+    snap=_V10_BUILD_SNAPSHOT_004(result,rec);ctx=result.get("ctx") or {}
+    snap["structural_cap_runs"]=round(V10_STRUCTURAL_CAP_RUNS,3)
+    snap["base_home_v10_raw"]=round(num(ctx.get("base_home_v10_raw"),ctx.get("base_home")),4);snap["base_away_v10_raw"]=round(num(ctx.get("base_away_v10_raw"),ctx.get("base_away")),4)
+    snap["run_diagnostics_home"]=ctx.get("run_diagnostics_home");snap["run_diagnostics_away"]=ctx.get("run_diagnostics_away")
+    return snap
+
+def v10_settled_predictions(hist,market=None,phase=None):
+    best={}
+    for rec in hist.values():
+        gid=rec.get("game_pk")
+        for p in rec.get("predictions",[]):
+            if p.get("result") not in ("W","L","P"):continue
+            if market and p.get("market")!=market:continue
+            if phase and p.get("phase")!=phase:continue
+            pgid=p.get("game_pk",gid);key=(pgid,p.get("market"),p.get("phase")) if phase else (pgid,p.get("market"))
+            old=best.get(key)
+            if old is None or (str(p.get("analyzed_at","")),str(p.get("prediction_id","")))>(str(old.get("analyzed_at","")),str(old.get("prediction_id",""))):best[key]=p
+    return sorted(best.values(),key=lambda x:(x.get("analyzed_at",""),x.get("prediction_id","")))
+
+def v10_performance_report(hist):
+    xs=v10_settled_predictions(hist);by_phase={ph:v10_prediction_metrics(v10_settled_predictions(hist,phase=ph)) for ph in V10_PHASES}
+    return {"overall":v10_prediction_metrics(xs),"unique_games":len({p.get("game_pk") for p in xs}),"by_market":{m:v10_prediction_metrics([p for p in xs if p.get("market")==m]) for m in V10_MARKETS},"by_phase":by_phase,"by_confidence":{f"{lo}-{lo+1}":v10_prediction_metrics([p for p in xs if lo<=num(p.get("confidence"))<lo+1]) for lo in (4,5,6,7,8,9)}}
+
+def performance(hist):
+    out=_V9_PERFORMANCE(hist);report=v10_performance_report(hist);out["prediction_report"]=report;o=report["overall"]
+    logging.info("V10 PRED METRICS DEDUP | games=%d predictions=%d WL=%d pushes=%d accuracy=%s Brier=%s LogLoss=%s",report["unique_games"],o["n"],o["n_wl"],o["pushes"],pct(o["accuracy"]) if o["accuracy"] is not None else "-",f"{o['brier']:.4f}" if o["brier"] is not None else "-",f"{o['logloss']:.4f}" if o["logloss"] is not None else "-")
+    return out
+
+def execution_status(rec,phase):
+    if not rec:return "⚠️ Pas de recommandation modèle exploitable."
+    e=rec.get("winamax_eval");minimum=num(rec.get("min_price"),0);force=displayed_stake_units(rec);force_eur=round(force*UNIT,2);phase_txt=f" • phase {phase}" if phase else ""
+    force_txt=f"🔥 **Force modèle : {force}u**"+(f" = {force_eur:.2f} €" if force>0 else "")
+    actual=0
+    if not e or num(e.get("price"),0)<=1:
+        price_txt=f"ℹ️ **Winamax : cote absente du flux** • cote mini **{minimum:.2f}**{phase_txt}"
+    else:
+        price=num(e.get("price"),0)
+        if price+1e-9>=minimum:
+            actual=force;price_txt=f"✅ **Winamax {price:.2f}** • cote mini **{minimum:.2f}** atteinte{phase_txt}"
+        else:price_txt=f"⚠️ **Winamax {price:.2f} sous la cote mini {minimum:.2f}**{phase_txt}"
+    actual_eur=round(actual*UNIT,2);stake_txt=f"💰 **Mise recommandée : {actual}u"+(f" = {actual_eur:.2f} €" if actual>0 else "")+"**"
+    return f"{price_txt}\n{force_txt} • basée sur la confiance modèle\n{stake_txt} • prix utilisé uniquement comme filtre d'exécution"
+
+def v10_self_test():
+    _V10_SELF_TEST_004()
+    assert V10_STRUCTURAL_CAP_RUNS>0
+    assert abs(clamp(2.0,-V10_STRUCTURAL_CAP_RUNS,V10_STRUCTURAL_CAP_RUNS))<=V10_STRUCTURAL_CAP_RUNS+1e-9
+    fake={"1":{"game_pk":1,"predictions":[{"game_pk":1,"phase":"EARLY","market":"ML","analyzed_at":"2026-08-11T10:00:00+00:00","prediction_id":"a","p_model":.60,"result":"W"},{"game_pk":1,"phase":"EARLY","market":"ML","analyzed_at":"2026-08-11T11:00:00+00:00","prediction_id":"b","p_model":.61,"result":"W"},{"game_pk":1,"phase":"FINAL","market":"ML","analyzed_at":"2026-08-11T12:00:00+00:00","prediction_id":"c","p_model":.62,"result":"W"}]}}
+    assert len(v10_settled_predictions(fake))==1 and v10_settled_predictions(fake)[0]["prediction_id"]=="c"
+    assert len(v10_settled_predictions(fake,phase="EARLY"))==1 and v10_settled_predictions(fake,phase="EARLY")[0]["prediction_id"]=="b"
+    low=execution_status({"confidence":7.5,"min_price":1.80,"winamax_eval":{"price":1.50}},"EARLY");good=execution_status({"confidence":7.5,"min_price":1.80,"winamax_eval":{"price":1.85}},"EARLY")
+    assert "Force modèle : 2u" in low and "Mise recommandée : 0u" in low and "Mise recommandée : 2u" in good
+    print("SELF-TEST MLB BETTING BOT V10.0.5 OK")
+
 if __name__=="__main__":
     try:
         if "--self-test" in sys.argv:v10_self_test()
