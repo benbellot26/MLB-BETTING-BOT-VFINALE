@@ -1,0 +1,76 @@
+name: V10.0.6 Seed Integration CI
+
+on:
+  push:
+    branches: [v10-0-6-run-seed-20260812]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: v1006-integration
+  cancel-in-progress: false
+
+jobs:
+  integrate-and-validate:
+    if: ${{ !contains(github.event.head_commit.message, '[v1006 integrated]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v10-0-6-run-seed-20260812
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Insert deterministic V10.0.6 override
+        run: |
+          python -m py_compile v1006_patch.py
+          python v1006_patch.py
+
+      - name: Compile and self-test
+        run: |
+          python -m py_compile bot.py
+          python bot.py --self-test
+
+      - name: Validate seed training and betting isolation
+        run: |
+          python - <<'PY'
+          import bot
+          seed=bot.v1006_load_run_seed()
+          assert len(seed)>=1700
+          assert bot.v10_training_games_phase({},'EARLY')==[]
+          assert bot.v10_training_games_phase({},'LATE')==[]
+          assert len(bot.v10_training_games_phase({},'FINAL'))==len(seed)
+
+          # These learning paths must remain live-only.
+          assert bot.dispersion_state({})['n']==0
+          c=bot.calibration_state({},'base-runs')
+          assert sum(x['n'] for x in c['phase_states'].values())==0
+          s=bot.skill_state({},'base-runs')
+          assert sum(x['n'] for x in s['phase_states'].values())==0
+          assert bot.v10_market_cal_state({},'ML','FINAL')['n']==0
+
+          hist=bot.load_history()
+          state=bot.run_model_state(hist)
+          final=state['phase_states']['FINAL']
+          assert final['seed_n']>=1700
+          assert final['n']==final['seed_n']+final['live_n']
+          print('FINAL residual:', {k:final.get(k) for k in ('seed_n','live_n','n','active','rmse_base','rmse_model','gain_prob','folds')})
+          print('betting calibration remains live-only')
+          PY
+
+      - name: Verify live history untouched
+        run: |
+          git diff --exit-code -- data/mlb_history_v10.jsonl
+
+      - name: Commit bot integration
+        run: |
+          git config user.name 'MLB Betting Bot'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add bot.py
+          git commit -m 'feat: V10.0.6 seed residual runs from 2026 backtest [v1006 integrated]'
+          git push origin HEAD:v10-0-6-run-seed-20260812
