@@ -1,0 +1,345 @@
+name: V10.0.7 Selective Betting Validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    if: github.head_ref == 'v10-0-7-selective-betting-20260812'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply V10.0.7 deterministic source patch
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('bot.py')
+          src=p.read_text(encoding='utf-8')
+          tag='# ======================= V10.0.7 SELECTIVE BETTING ========================'
+          if tag not in src:
+              idx=src.rfind('\nif __name__=="__main__":')
+              if idx<0:
+                  raise SystemExit('final __main__ marker not found')
+              block=r'''
+# ======================= V10.0.7 SELECTIVE BETTING ========================
+# Risk layer built from the 2026 walk-forward evidence. It does NOT change the
+# baseball direction engine. It converts raw probabilities into a conservative
+# effective probability for betting decisions, caps residual corrections,
+# validates the residual challenger on a recent holdout, and limits the official
+# slate to at most 3 bets / 4 units / 1 bet per game. Top-3 messages remain
+# informational; only the PLAN OFFICIEL is considered playable.
+_V1006_SELF_TEST=v10_self_test
+_V1006_RUN_STATE_PHASE=v10_run_state_phase
+_V1006_ANALYZE_BASE=analyze_base
+_V1006_ATTACH_MODEL_RECS=attach_model_recommendations
+_V1006_ALLOCATE_PORTFOLIO=allocate_portfolio
+_V1006_EXECUTION_STATUS=execution_status
+_V1006_BUILD_SNAPSHOT=build_snapshot
+
+VERSION="10.0.7"
+RECOMMENDATION_VERSION="selective-effective-prob-v12"
+SELECTION_VERSION="slate-risk-v1"
+V1007_RESIDUAL_CAP_RUNS=max(.10,float(os.getenv("V1007_RESIDUAL_CAP_RUNS","0.65") or .65))
+V1007_MAX_DAILY_UNITS=max(1,int(os.getenv("V1007_MAX_DAILY_UNITS","4") or 4))
+V1007_MAX_OFFICIAL_BETS=max(1,min(3,int(os.getenv("V1007_MAX_OFFICIAL_BETS","3") or 3)))
+V1007_MAX_BETS_PER_GAME=1
+V1007_MIN_CONF=max(6.0,float(os.getenv("V1007_MIN_CONF","6.5") or 6.5))
+V1007_MIN_QUALITY=max(.50,float(os.getenv("V1007_MIN_QUALITY","0.70") or .70))
+V1007_MIN_REFS=max(1,int(os.getenv("V1007_MIN_REFS","2") or 2))
+V1007_MIN_EFFECTIVE={"ML":.60,"RUNLINE":.59,"TOTAL":.59}
+V1007_PREMIUM_EFFECTIVE=.64
+V1007_PREMIUM_CONF=7.8
+V1007_PREMIUM_QUALITY=.80
+V1007_PREMIUM_REFS=3
+V1007_RECENT_HOLDOUT=150
+V1007_RECENT_GAIN_PROB=.80
+V1007_ML_EMPIRICAL_ANCHORS=((.500,.500),(.524,.507),(.574,.523),(.623,.554),(.669,.592),(.718,.648),(.750,.660))
+_V1007_LAST_SLATE={"score":0.0,"grade":"FAIBLE","max_bets":0,"official_count":0,"units":0}
+
+def v1007_interp(x,anchors):
+    x=clamp(num(x,.5),anchors[0][0],anchors[-1][0])
+    for i in range(1,len(anchors)):
+        x0,y0=anchors[i-1];x1,y1=anchors[i]
+        if x<=x1:
+            t=(x-x0)/(x1-x0) if x1>x0 else 0
+            return y0+t*(y1-y0)
+    return anchors[-1][1]
+
+def v1007_effective_probability(p,market,phase):
+    p=clamp(num(p,.5),.5,.999)
+    phase=str(phase or "EARLY").upper()
+    if market=="ML":
+        q=v1007_interp(p,V1007_ML_EMPIRICAL_ANCHORS)
+        phase_factor={"EARLY":.78,"LATE":.88,"FINAL":1.0}.get(phase,.78)
+        q=.5+(q-.5)*phase_factor
+    else:
+        phase_factor={"EARLY":.66,"LATE":.74,"FINAL":.82}.get(phase,.66)
+        q=.5+(p-.5)*phase_factor
+        q=min(q,.68)
+    return clamp(q,.5,.72)
+
+def project_runs(ctx,state):
+    h=num(ctx.get("base_home"),4.45);a=num(ctx.get("base_away"),4.45);rh=ra=0.0;raw_h=raw_a=0.0
+    if state.get("active") and state.get("model"):
+        raw_h=linear_predict(state["model"],ctx["run_features_home"]);raw_a=linear_predict(state["model"],ctx["run_features_away"])
+        rh=clamp(raw_h,-V1007_RESIDUAL_CAP_RUNS,V1007_RESIDUAL_CAP_RUNS);ra=clamp(raw_a,-V1007_RESIDUAL_CAP_RUNS,V1007_RESIDUAL_CAP_RUNS)
+        h+=rh;a+=ra
+    ctx["residual_home_raw"]=round(raw_h,4);ctx["residual_away_raw"]=round(raw_a,4);ctx["residual_home_applied"]=round(rh,4);ctx["residual_away_applied"]=round(ra,4);ctx["residual_cap_runs"]=V1007_RESIDUAL_CAP_RUNS
+    return clamp(h,2,8),clamp(a,2,8)
+
+def v1007_recent_residual_guard(hist,state,phase):
+    state=dict(state)
+    state.update({"recent_guard_pass":None,"recent_guard_n":0,"recent_rmse_base":None,"recent_rmse_model":None,"recent_gain_prob":0.0})
+    if phase!="FINAL" or not state.get("active"):return state
+    games=v10_training_games_phase(hist,"FINAL");hold=min(V1007_RECENT_HOLDOUT,max(60,int(len(games)*.12)))
+    if len(games)<RUN_MODEL_MIN_GAMES+hold or hold<60:return state
+    train=games[:-hold];val=games[-hold:];rows=[]
+    for _,s,hs,as_ in train:rows += [(s["run_features_home"],hs-num(s["base_home"])),(s["run_features_away"],as_-num(s["base_away"]))]
+    if not rows:return state
+    m=fit_linear(rows);base_losses=[];new_losses=[]
+    for _,s,hs,as_ in val:
+        ph=num(s["base_home"])+clamp(linear_predict(m,s["run_features_home"]),-V1007_RESIDUAL_CAP_RUNS,V1007_RESIDUAL_CAP_RUNS)
+        pa=num(s["base_away"])+clamp(linear_predict(m,s["run_features_away"]),-V1007_RESIDUAL_CAP_RUNS,V1007_RESIDUAL_CAP_RUNS)
+        base_losses += [rmse_loss(num(s["base_home"]),hs),rmse_loss(num(s["base_away"]),as_)]
+        new_losses += [rmse_loss(ph,hs),rmse_loss(pa,as_)]
+    rb=math.sqrt(mean(base_losses));rn=math.sqrt(mean(new_losses));gp=bootstrap_gain_prob(base_losses,new_losses)
+    passed=rn+.01<rb and gp>=V1007_RECENT_GAIN_PROB
+    state.update({"recent_guard_pass":passed,"recent_guard_n":hold,"recent_rmse_base":rb,"recent_rmse_model":rn,"recent_gain_prob":gp})
+    if not passed:
+        state["active"]=False;state["model"]=None;state["training_source"]=(state.get("training_source") or "")+"+recent-guard-disabled"
+    logging.info("V10.0.7 RESIDUAL GUARD | phase=%s n=%d pass=%s RMSE %.3f/%.3f gainProb=%.2f",phase,hold,passed,rn,rb,gp)
+    return state
+
+def v10_run_state_phase(hist,phase):
+    return v1007_recent_residual_guard(hist,_V1006_RUN_STATE_PHASE(hist,phase),phase)
+
+def analyze_base(g,event,delta,states,hist):
+    r=_V1006_ANALYZE_BASE(g,event,delta,states,hist);ctx=r["ctx"];disp=states[1]
+    p_struct=ml_prob(num(ctx.get("base_home")),num(ctx.get("base_away")),disp["alpha_home"],disp["alpha_away"],r["extra_home"])
+    p_resid=num(r.get("p_model_raw"),p_struct);d=abs(p_resid-p_struct);flip=(p_resid-.5)*(p_struct-.5)<0
+    alert="FLIP" if flip else "HIGH" if d>=.06 else "WATCH" if d>=.04 else "OK"
+    r.update({"p_structural_raw":p_struct,"stability_delta":d,"stability_alert":alert})
+    logging.info("V10.0.7 STABILITY | %s @ %s | structural %.3f residual %.3f delta %.3f alert=%s",ctx["away"],ctx["home"],p_struct,p_resid,d,alert)
+    return r
+
+def v1007_apply_effective(rec,result):
+    if not rec:return None
+    phase=result.get("phase","EARLY");market=rec.get("market");pe=v1007_effective_probability(rec.get("p_model"),market,phase);pp=clamp(num(rec.get("p_push"),0),0,.95);mass=1-pp;pw=mass*pe;pl=mass*(1-pe)
+    rec["p_effective"]=pe;rec["p_effective_win"]=pw;rec["p_effective_loss"]=pl;rec["fair_effective"]=(1-pp)/pw if pw>0 else 99;rec["min_price_effective"]=min_acceptable_price(pw,pp,pl);rec["selection_version"]=SELECTION_VERSION;rec["stability_alert"]=result.get("stability_alert","OK");rec["stability_delta"]=result.get("stability_delta",0)
+    e=rec.get("winamax_eval")
+    if e:
+        price=num(e.get("price"),0);np=pw+pl;pcond=pw/np if np else .5
+        e.update({"p_win":pw,"p_push":pp,"p_loss":pl,"p_cond":pcond,"fair":rec["fair_effective"],"min_price":rec["min_price_effective"],"effective_probability":pe,"effective_probability_source":"2026-walkforward-shrinkage","effective_min_price":rec["min_price_effective"],"edge":pcond-1/price if price>1 else -1,"ev":pw*price+pp-1 if price>1 else -1,"official_v1007":True,"official_selected":False,"official_units":0,"official_reason":"non évalué"})
+    return rec
+
+def attach_model_recommendations(result):
+    recs=_V1006_ATTACH_MODEL_RECS(result)
+    for rec in recs.values():v1007_apply_effective(rec,result)
+    return recs
+
+def v1007_starters_ok(ctx):
+    return all(str(ctx.get(k,"Non annoncé")).strip().lower() not in ("","non annoncé","none") for k in ("home_sp","away_sp"))
+
+def v1007_profile(rec):
+    if rec["market"]=="TOTAL":return "TOTAL_OVER" if str(rec.get("name","")).lower()=="over" else "TOTAL_UNDER"
+    mp=rec.get("p_market");e=rec.get("winamax_eval") or {};fav=(mp is not None and num(mp)<.5)==False if mp is not None else num(e.get("price"),2.01)<2
+    return "SIDE_FAVORITE" if fav else "SIDE_UNDERDOG"
+
+def v1007_candidate(result,rec,require_phase=True):
+    reasons=[];phase=result.get("phase","EARLY");market=rec.get("market");pe=num(rec.get("p_effective"),.5);conf=num(rec.get("confidence"),0);q=num(result.get("quality"),0);refs=int(num(rec.get("refs"),0));e=rec.get("winamax_eval") or {};price=num(e.get("price"),0);minimum=num(rec.get("min_price_effective"),99);alert=result.get("stability_alert","OK")
+    if pe<V1007_MIN_EFFECTIVE.get(market,.60):reasons.append(f"proba effective {pe*100:.1f}% trop faible")
+    if conf<V1007_MIN_CONF:reasons.append(f"confiance {conf:.1f}< {V1007_MIN_CONF:.1f}")
+    if q<V1007_MIN_QUALITY:reasons.append(f"qualité {q*10:.1f}/10 insuffisante")
+    if refs<V1007_MIN_REFS:reasons.append(f"seulement {refs} book(s) référence")
+    if alert in ("HIGH","FLIP"):reasons.append(f"instabilité modèle {alert}")
+    if price<=1:reasons.append("cote Winamax absente")
+    elif price+1e-9<minimum:reasons.append(f"Winamax {price:.2f}<mini effective {minimum:.2f}")
+    if require_phase and phase=="EARLY":reasons.append("phase EARLY: pré-sélection uniquement")
+    surplus=(price/minimum-1) if price>1 and minimum>1 else 0
+    score=60+120*(pe-.58)+4*(conf-6.5)+15*(q-.70)+2*min(refs,4)+min(3,max(0,surplus)*30)
+    if alert=="WATCH":score-=6
+    score=clamp(score,0,100)
+    premium=(phase=="FINAL" and pe>=V1007_PREMIUM_EFFECTIVE and conf>=V1007_PREMIUM_CONF and q>=V1007_PREMIUM_QUALITY and refs>=V1007_PREMIUM_REFS and result.get("stability_alert")=="OK" and result["ctx"]["home_lineup"].get("count",0)>=8 and result["ctx"]["away_lineup"].get("count",0)>=8 and v1007_starters_ok(result["ctx"]) and price>=minimum*1.01)
+    units=2 if premium else 1
+    return {"eligible":not reasons,"reasons":reasons,"score":score,"units":units,"profile":v1007_profile(rec),"result":result,"rec":rec,"price":price,"minimum":minimum,"premium":premium}
+
+def v1007_build_slate(results,require_phase=True):
+    pool=[]
+    for r in results:
+        for rec in (r.get("model_recs") or {}).values():
+            if not rec:continue
+            c=v1007_candidate(r,rec,require_phase=require_phase)
+            if c["eligible"]:pool.append(c)
+    pool.sort(key=lambda c:(c["score"],num(c["rec"].get("p_effective")),num(c["rec"].get("confidence"))),reverse=True)
+    unique=[];seen=set()
+    for c in pool:
+        gid=str(c["result"]["game_pk"])
+        if gid in seen:continue
+        unique.append(c);seen.add(gid)
+    top=unique[:3];slate_score=mean([c["score"] for c in top]) if top else 0.0
+    max_bets=0
+    thresholds=(70,72,74)
+    for i,c in enumerate(top[:V1007_MAX_OFFICIAL_BETS]):
+        if c["score"]>=thresholds[i]:max_bets=i+1
+        else:break
+    grade="FORT" if slate_score>=82 else "BON" if slate_score>=76 else "MOYEN" if slate_score>=70 else "FAIBLE"
+    return {"pool":pool,"unique":unique,"score":round(slate_score,1),"grade":grade,"max_bets":max_bets}
+
+def allocate_portfolio(results):
+    global _V10_LAST_PORTFOLIO,_V1007_LAST_SLATE
+    if not results or not all("model_recs" in r for r in results):return _V1006_ALLOCATE_PORTFOLIO(results)
+    for r in results:
+        for e in r.get("evals",[]):e.update({"selected":False,"units":0.0,"stake_eur":0.0})
+        for rec in (r.get("model_recs") or {}).values():
+            if rec and rec.get("winamax_eval"):
+                rec["winamax_eval"].update({"official_v1007":True,"official_selected":False,"official_units":0,"official_reason":"hors plan officiel"})
+    slate=v1007_build_slate(results,True);preview=v1007_build_slate(results,False);chosen=[];used_games=set();profiles={};units_used=0
+    for c in slate["pool"]:
+        if len(chosen)>=slate["max_bets"] or len(chosen)>=V1007_MAX_OFFICIAL_BETS:break
+        gid=str(c["result"]["game_pk"]);profile=c["profile"]
+        if gid in used_games:continue
+        if profiles.get(profile,0)>=2:
+            c["rec"]["winamax_eval"]["official_reason"]="corrélation: déjà 2 paris du même profil";continue
+        units=c["units"]
+        if units_used+units>V1007_MAX_DAILY_UNITS:
+            if units==2 and units_used+1<=V1007_MAX_DAILY_UNITS:units=1
+            else:
+                c["rec"]["winamax_eval"]["official_reason"]="plafond quotidien 4u";continue
+        e=c["rec"]["winamax_eval"];e.update({"selected":True,"official_selected":True,"official_units":units,"units":float(units),"stake_eur":round(units*UNIT,2),"qualified":True,"reason":"OK V10.0.7","portfolio_reason":"PARI OFFICIEL V10.0.7","official_reason":"retenu dans le plan officiel","candidate_units":float(units),"candidate_stake_eur":round(units*UNIT,2)})
+        chosen.append(c);used_games.add(gid);profiles[profile]=profiles.get(profile,0)+1;units_used+=units
+    chosen_ids={id(c["rec"]) for c in chosen}
+    for c in slate["pool"]:
+        if id(c["rec"]) not in chosen_ids and c["rec"].get("winamax_eval") and c["rec"]["winamax_eval"].get("official_reason")=="hors plan officiel":c["rec"]["winamax_eval"]["official_reason"]="non retenu par le Slate Score / limite 0-3 paris"
+    early_preview=[];seen=set()
+    for c in preview["pool"]:
+        if c["result"].get("phase")!="EARLY":continue
+        gid=str(c["result"]["game_pk"])
+        if gid in seen:continue
+        c["rec"]["winamax_eval"]["official_preview_units"]=1;early_preview.append(c);seen.add(gid)
+        if len(early_preview)>=3:break
+    allocated=round(units_used*UNIT,2);cap=round(V1007_MAX_DAILY_UNITS*UNIT,2)
+    _V1007_LAST_SLATE={"score":slate["score"],"grade":slate["grade"],"max_bets":slate["max_bets"],"official_count":len(chosen),"units":units_used,"preview_count":len(early_preview)}
+    _V10_LAST_PORTFOLIO={"daily_cap":cap,"allocated":allocated,"remaining":round(cap-allocated,2),"game_cap":round(2*UNIT,2),"slate_score":slate["score"],"slate_grade":slate["grade"],"official_count":len(chosen),"official_units":units_used}
+    for r in results:r["slate_score"]=slate["score"];r["slate_grade"]=slate["grade"]
+    logging.info("V10.0.7 OFFICIAL SLATE | score=%.1f grade=%s max=%d selected=%d units=%du/%du",slate["score"],slate["grade"],slate["max_bets"],len(chosen),units_used,V1007_MAX_DAILY_UNITS)
+    return _V10_LAST_PORTFOLIO
+
+def execution_status(rec,phase):
+    if not rec:return "⚠️ Pas de recommandation modèle exploitable."
+    e=rec.get("winamax_eval")
+    if not e or "official_v1007" not in e:return _V1006_EXECUTION_STATUS(rec,phase)
+    raw=num(rec.get("p_model"),.5);eff=num(rec.get("p_effective"),raw);minimum=num(rec.get("min_price_effective"),rec.get("min_price",99));price=num(e.get("price"),0);force=displayed_stake_units(rec)
+    price_txt=(f"ℹ️ **Winamax : cote absente** • mini effective **{minimum:.2f}**" if price<=1 else f"✅ **Winamax {price:.2f}** ≥ mini effective **{minimum:.2f}**" if price+1e-9>=minimum else f"⚠️ **Winamax {price:.2f}** < mini effective **{minimum:.2f}**")
+    force_note=f"🔥 Force modèle **{force}u** • brut {pct(raw)} → effective **{pct(eff)}**"
+    if force>=3:force_note+=" • 3u désactivé en V10.0.7"
+    if e.get("official_selected"):
+        u=int(num(e.get("official_units"),1));return f"{price_txt}\n{force_note}\n✅ **PARI OFFICIEL V10.0.7 — {u}u = {u*UNIT:.2f} €**"
+    if phase=="EARLY" and e.get("official_preview_units"):
+        return f"{price_txt}\n{force_note}\n👀 **PRÉ-SÉLECTION EARLY — cible 1u si confirmée LATE/FINAL** • 0u officiel maintenant"
+    return f"{price_txt}\n{force_note}\n⛔ **0u OFFICIEL** • {e.get('official_reason','non retenu par le plan officiel')}"
+
+def model_rec_text(rec):
+    if not rec:return "Aucune recommandation modèle suffisamment définie."
+    pt="" if rec.get("point") is None else (f" {rec['point']:+g}" if rec["market"]=="RUNLINE" else f" {rec['point']:g}");mp=pct(rec.get("p_market")) if rec.get("p_market") is not None else "N/A";gap=f"{num(rec.get('market_gap'))*100:+.1f} pts" if rec.get("market_gap") is not None else "N/A";emoji,band,_=confidence_band(rec["confidence"]);eff=num(rec.get("p_effective"),rec.get("p_model",.5));fair=num(rec.get("fair_effective"),rec.get("fair",99));minimum=num(rec.get("min_price_effective"),rec.get("min_price",99));stab=rec.get("stability_alert","OK")
+    return f"**{rec['name']}{pt}** • modèle brut **{pct(rec['p_model'])}** → effective **{pct(eff)}** • marché réf. {mp} • écart {gap}\nFair effective **{fair:.2f}** • cote mini effective **{minimum:.2f}** • stabilité **{stab}** • {emoji} **{rec['confidence']:.1f}/10 — {band}**"
+
+def v1007_selected_items(results):
+    out=[]
+    for r in results:
+        for rec in (r.get("model_recs") or {}).values():
+            e=(rec or {}).get("winamax_eval") if rec else None
+            if e and e.get("official_selected"):out.append({"result":r,"rec":rec,"score":num(rec.get("p_effective"),.5)*100+num(rec.get("confidence"))})
+    return sorted(out,key=lambda x:x["score"],reverse=True)
+
+def plan_pick_text(item,index=None):
+    r=item["result"];rec=item["rec"];e=rec.get("winamax_eval") or {};pt="" if rec.get("point") is None else (f" {rec['point']:+g}" if rec["market"]=="RUNLINE" else f" {rec['point']:g}");label="ML" if rec["market"]=="ML" else "RL" if rec["market"]=="RUNLINE" else "TOTAL";u=int(num(e.get("official_units"),0));prefix=f"**#{index}** " if index is not None else "• "
+    return f"{prefix}✅ **{rec['name']}{pt} [{label}] — {u}u = {u*UNIT:.2f} €**\n{r['ctx']['away']} @ {r['ctx']['home']} • {r['phase']} • brut {pct(rec['p_model'])} → effective **{pct(rec['p_effective'])}**\nConfiance **{rec['confidence']:.1f}/10** • qualité {r['quality']*10:.1f}/10 • mini effective {rec['min_price_effective']:.2f} • Winamax {num(e.get('price')):.2f}"
+
+def build_daily_plan(results):return v1007_selected_items(results),[]
+
+def send_daily_plan(results):
+    official=v1007_selected_items(results);simples="\n\n".join(plan_pick_text(x,i+1) for i,x in enumerate(official)) if official else "**AUCUN PARI OFFICIEL.** Le bot préfère 0 pari à un pari marginal."
+    preview=v1007_build_slate(results,False);pre=[];seen=set()
+    for c in preview["pool"]:
+        if c["result"].get("phase")!="EARLY":continue
+        gid=str(c["result"]["game_pk"])
+        if gid in seen:continue
+        rec=c["rec"];e=rec.get("winamax_eval") or {};pt="" if rec.get("point") is None else (f" {rec['point']:+g}" if rec["market"]=="RUNLINE" else f" {rec['point']:g}")
+        pre.append(f"• 👀 **{rec['name']}{pt} [{rec['market']}]** • effective {pct(rec['p_effective'])} • conf {rec['confidence']:.1f}/10 • cible **1u max** si confirmée • Winamax {num(e.get('price')):.2f}");seen.add(gid)
+        if len(pre)>=3:break
+    pretxt="\n".join(pre) if pre else "Aucune pré-sélection EARLY suffisamment forte."
+    slate=f"**{_V1007_LAST_SLATE.get('score',0):.1f}/100 — {_V1007_LAST_SLATE.get('grade','FAIBLE')}** • {_V1007_LAST_SLATE.get('official_count',0)} pari(s) officiel(s) • {_V1007_LAST_SLATE.get('units',0)}u/{V1007_MAX_DAILY_UNITS}u"
+    return send_embed("🎟️ PLAN OFFICIEL V10.0.7 — 0 À 3 PARIS",[("📊 Slate Score",slate),("✅ PARIS OFFICIELS",simples),("👀 PRÉ-SÉLECTIONS EARLY",pretxt),("🚫 Combiné","**Désactivé temporairement** en V10.0.7 : priorité à la validation des simples et à la réduction de variance."),("🛡️ Discipline","Maximum **3 paris**, **4u/jour**, **1 pari/match**, **2u uniquement premium FINAL**, **aucun 3u**. Les Top 3 sont informatifs et ne sont pas des paris officiels.")],5763719)
+
+def send_top_messages(results,state):
+    ok=True
+    for market,title in (("ML","🔎 TOP 3 MONEYLINE — INFORMATIF"),("RUNLINE","🔎 TOP 3 RUN LINE — INFORMATIF"),("TOTAL","🔎 TOP 3 TOTAUX — INFORMATIF")):
+        xs=[]
+        for r in results:
+            rec=(r.get("model_recs") or {}).get(market)
+            if rec:xs.append((r,rec))
+        xs=sorted(xs,key=lambda x:(num(x[1].get("p_effective"),.5),num(x[1].get("confidence"))),reverse=True)[:3];blocks=[]
+        for i,(r,rec) in enumerate(xs):blocks.append(f"**#{i+1} {r['ctx']['away']} @ {r['ctx']['home']}**\n{model_rec_text(rec)}\n{execution_status(rec,r['phase'])}")
+        txt="\n\n".join(blocks) if blocks else "Aucun signal suffisamment défini."
+        ok=send_embed(title,[("⚠️ Classement de signaux — seul le PLAN OFFICIEL est jouable",txt)],16766720) and ok
+    return ok
+
+def build_snapshot(result,rec):
+    snap=_V1006_BUILD_SNAPSHOT(result,rec);snap["selection_version"]=SELECTION_VERSION;snap["slate_score"]=result.get("slate_score");snap["slate_grade"]=result.get("slate_grade");snap["stability_alert"]=result.get("stability_alert");snap["stability_delta"]=round(num(result.get("stability_delta"),0),6);snap["p_structural_raw"]=round(num(result.get("p_structural_raw"),.5),6);snap["residual_cap_runs"]=V1007_RESIDUAL_CAP_RUNS;return snap
+
+def v10_self_test():
+    _V1006_SELF_TEST()
+    assert VERSION=="10.0.7" and V1007_MAX_OFFICIAL_BETS<=3 and V1007_MAX_DAILY_UNITS==4 and V1007_MAX_BETS_PER_GAME==1
+    assert .545<v1007_effective_probability(.623,"ML","FINAL")<.565
+    assert v1007_effective_probability(.80,"ML","FINAL")<=.66+1e-9
+    assert v1007_effective_probability(.65,"ML","EARLY")<v1007_effective_probability(.65,"ML","FINAL")
+    m={"w":[0.0]*17,"b":2.0,"mean":[0.0]*17,"std":[1.0]*17};ctx={"base_home":4.5,"base_away":4.5,"run_features_home":[0.0]*17,"run_features_away":[0.0]*17};h,a=project_runs(ctx,{"active":True,"model":m});assert abs(h-4.5)<=V1007_RESIDUAL_CAP_RUNS+1e-9 and abs(a-4.5)<=V1007_RESIDUAL_CAP_RUNS+1e-9
+    e={"price":1.90};rec={"market":"ML","name":"H","point":None,"p_model":.72,"p_effective":.65,"p_push":0,"confidence":8.2,"refs":4,"min_price_effective":1.70,"winamax_eval":e,"p_market":.60};fake={"phase":"FINAL","quality":.85,"stability_alert":"OK","game_pk":1,"ctx":{"home":"H","away":"A","home_sp":"Starter H","away_sp":"Starter A","home_lineup":{"count":9},"away_lineup":{"count":9}}};c=v1007_candidate(fake,rec,True);assert c["eligible"] and c["units"]==2
+    fake_early=dict(fake);fake_early["phase"]="EARLY";c2=v1007_candidate(fake_early,rec,True);assert not c2["eligible"] and any("EARLY" in x for x in c2["reasons"])
+    print("SELF-TEST MLB BETTING BOT V10.0.7 OK")
+'''
+              src=src[:idx]+'\n'+block+'\n'+src[idx:]
+              p.write_text(src,encoding='utf-8')
+          PY
+      - name: Compile and self-test
+        run: |
+          python -m py_compile bot.py
+          python bot.py --self-test
+      - name: Verify live history and run seed preserved
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          hp=Path('data/mlb_history_v10.jsonl');sp=Path('data/mlb_run_seed_2026.jsonl')
+          assert hp.exists() and sp.exists()
+          hist=[json.loads(x) for x in hp.read_text(encoding='utf-8').splitlines() if x.strip()]
+          finals=[r for r in hist if r.get('status')=='FINAL']
+          seed=[json.loads(x) for x in sp.read_text(encoding='utf-8').splitlines() if x.strip()]
+          assert len({r.get('game_pk') for r in finals})>=15
+          assert len({str(r.get('game_pk')) for r in seed})>=1700
+          print('live finals:',len({r.get('game_pk') for r in finals}),'seed:',len({str(r.get('game_pk')) for r in seed}))
+          PY
+      - name: Commit validated bot.py to branch
+        shell: bash
+        run: |
+          if git diff --quiet -- bot.py; then
+            echo 'bot.py already patched'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add bot.py
+          git commit -m 'feat(v10.0.7): selective official betting layer'
+          git push origin HEAD:${{ github.head_ref }}
