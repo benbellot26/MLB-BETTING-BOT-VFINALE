@@ -1838,6 +1838,57 @@ def v10_self_test():
     fake_early=dict(fake);fake_early["phase"]="EARLY";c2=v1007_candidate(fake_early,rec,True);assert not c2["eligible"] and any("EARLY" in x for x in c2["reasons"])
     print("SELF-TEST MLB BETTING BOT V10.0.7 OK")
 
+
+
+# ==================== V10.0.8 DISCORD DELIVERY =====================
+# Presentation/delivery-only layer: no change to prediction, calibration or
+# official slate logic. Every analyzed game is published on every manual run.
+_V1007_SELF_TEST_008=v10_self_test
+
+VERSION="10.0.8"
+
+def lineup_discord_status(lineup):
+    lineup=lineup or {}
+    count=int(num(lineup.get("count"),0))
+    if bool(lineup.get("confirmed")) and count>=8:
+        return "✅ CONFIRMÉE",f"{count}/9 joueurs officiels"
+    return "🟠 PROJETÉE / NON CONFIRMÉE",(f"{count}/9 joueurs disponibles" if count else "lineup officielle pas encore publiée")
+
+def should_publish(rec,s):
+    # V10.0.8: every analyzed game is sent on every manual run.
+    return True
+
+def send_game(result,snap,portfolio):
+    ctx=result["ctx"];v=result["verdict"];emoji,label,color=confidence_band(v["confidence"]);disp=result["disp_state"];recs=result.get("model_recs",{})
+    probs=f"Modèle indépendant **{ctx['home']} {pct(result['p_model'])}** • {ctx['away']} {pct(1-result['p_model'])}\nMarché de référence **{pct(result['con']['p'])} {ctx['home']}** ({result['con']['n']} books)\nProjection: **{ctx['home']} {result['hmu']:.2f} – {result['amu']:.2f} {ctx['away']}** • total {result['hmu']+result['amu']:.2f}\nNB α H/A={disp['alpha_home']:.2f}/{disp['alpha_away']:.2f} • extras domicile {pct(result['extra_home'])} • phase **{result['phase']}** / {snap['role']}"
+    direction=v["text"]+f"\n{emoji} Confiance lecture marché: **{v['confidence']:.1f}/10 — {label}**"
+    starters=f"{ctx['away']}: **{ctx['away_sp']}** • {pitcher_line(ctx['away_sp_stats'],ctx['away_hand'])}\n{ctx['home']}: **{ctx['home_sp']}** • {pitcher_line(ctx['home_sp_stats'],ctx['home_hand'])}"
+    hs,hd=lineup_discord_status(ctx.get("home_lineup"));as_,ad=lineup_discord_status(ctx.get("away_lineup"))
+    hop=ctx['home_lineup'].get('weighted_ops');aop=ctx['away_lineup'].get('weighted_ops')
+    advanced=f"{ctx['away']}: **{as_}** • {ad}\n{ctx['home']}: **{hs}** • {hd}\nOPS pondéré H/A: {hop if hop else 'N/A'} / {aop if aop else 'N/A'}\nSplits vs main opposée PA: {int(num(ctx['home_split'].get('_pa')))} / {int(num(ctx['away_split'].get('_pa')))}\nStatcast {ctx['home']}: {fmt_statcast(ctx['home_statcast'])}\nStatcast {ctx['away']}: {fmt_statcast(ctx['away_statcast'])}\nBullpen ERA H/A: {ctx['home_bp']['era']:.2f}/{ctx['away_bp']['era']:.2f} • fatigue {ctx['home_bp']['load']:.2f}/{ctx['away_bp']['load']:.2f}"
+    context=f"Park {ctx['park']:.3f} • météo: {ctx['weather']['text']}\nForme 10: {ctx['home']} {ctx['home_recent']['win_pct']*100:.0f}% (RD {ctx['home_recent']['run_diff_pg']:+.2f}/g) • {ctx['away']} {ctx['away_recent']['win_pct']*100:.0f}% (RD {ctx['away_recent']['run_diff_pg']:+.2f}/g)\nQualité adaptée à la phase: **{result['quality']*10:.1f}/10**"
+    model_text="\n\n".join(f"**{'🏆 MONEYLINE' if m=='ML' else '⚾ RUN LINE' if m=='RUNLINE' else '📈 TOTAL'}**\n{model_rec_text(recs.get(m))}" for m in ("ML","RUNLINE","TOTAL"))
+    exec_text="\n\n".join(f"**{'ML' if m=='ML' else 'RUN LINE' if m=='RUNLINE' else 'TOTAL'}** — {execution_status(recs.get(m),result['phase'])}" for m in ("ML","RUNLINE","TOTAL"))
+    selected=[e for e in result["evals"] if e.get("selected")]
+    final="\n".join(f"• **{e['market']} {e['name']} {e['point'] if e['point'] is not None else ''} @ {e['price']:.2f}** • {int(num(e['units'],0))}u" for e in selected) if selected else ("👀 Aucune mise en phase EARLY — les recommandations du modèle restent valides comme watchlist." if result["phase"]=="EARLY" else "Aucune mise exécutée : les recommandations et le prix disponible sont deux décisions séparées.")
+    risk=f"Exposition journée: **{portfolio['allocated']:.2f} € / {portfolio['daily_cap']:.2f} €** • plafond/match {portfolio['game_cap']:.2f} €"
+    return send_embed(f"⚾ MLB V{VERSION} • {ctx['away']} @ {ctx['home']}",[("🕒 Match",local_time(result["game"]["gameDate"])+" (Paris)"),("🎯 Modèle indépendant",probs),("🧭 Benchmark marché",direction),("🧑 Starters",starters),("🧪 Lineups / splits / Statcast / bullpen",advanced),("🔬 Contexte",context),("🎯 Recommandations du modèle",model_text),("💰 Winamax — uniquement exécution",exec_text),("🛡️ Risque portefeuille",risk),("✅ Verdict de mise",final)],color)
+
+def v10_self_test():
+    global VERSION
+    current=VERSION
+    VERSION="10.0.7"
+    try:
+        _V1007_SELF_TEST_008()
+    finally:
+        VERSION=current
+    assert VERSION=="10.0.8"
+    assert lineup_discord_status({"confirmed":True,"count":9})[0]=="✅ CONFIRMÉE"
+    assert "PROJETÉE" in lineup_discord_status({"confirmed":False,"count":0})[0]
+    assert should_publish({},{}) is True
+    print("SELF-TEST MLB BETTING BOT V10.0.8 OK")
+
+
 if __name__=="__main__":
     try:
         if "--self-test" in sys.argv:v10_self_test()
