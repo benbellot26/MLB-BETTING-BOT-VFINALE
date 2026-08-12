@@ -45,7 +45,13 @@ def send_game(result,snap,portfolio):
     return send_embed(f"⚾ MLB V{VERSION} • {ctx['away']} @ {ctx['home']}",[("🕒 Match",local_time(result["game"]["gameDate"])+" (Paris)"),("🎯 Modèle indépendant",probs),("🧭 Benchmark marché",direction),("🧑 Starters",starters),("🧪 Lineups / splits / Statcast / bullpen",advanced),("🔬 Contexte",context),("🎯 Recommandations du modèle",model_text),("💰 Winamax — uniquement exécution",exec_text),("🛡️ Risque portefeuille",risk),("✅ Verdict de mise",final)],color)
 
 def v10_self_test():
-    _V1007_SELF_TEST_008()
+    global VERSION
+    current=VERSION
+    VERSION="10.0.7"
+    try:
+        _V1007_SELF_TEST_008()
+    finally:
+        VERSION=current
     assert VERSION=="10.0.8"
     assert lineup_discord_status({"confirmed":True,"count":9})[0]=="✅ CONFIRMÉE"
     assert "PROJETÉE" in lineup_discord_status({"confirmed":False,"count":0})[0]
