@@ -50,6 +50,7 @@ jobs:
           MIN_PLAN_CONF: "6.2"
           MIN_COMBO_CONF: "6.5"
           HISTORY_FILE: data/mlb_history_v10.jsonl
+          JOURNAL_FILE: data/mlb_bet_journal_v1.jsonl
           MATCH_MAX_DELTA_HOURS: "2.0"
           ARCHIVE_AFTER_DAYS: "45"
           RUN_MODEL_MIN_GAMES: "450"
@@ -65,7 +66,7 @@ jobs:
           import json
           from pathlib import Path
 
-          paths=[Path('data/mlb_history_v10.jsonl')]
+          paths=[Path('data/mlb_history_v10.jsonl'), Path('data/mlb_bet_journal_v1.jsonl')]
           paths += sorted(Path('data/archive_v10').glob('*.jsonl')) if Path('data/archive_v10').exists() else []
           for p in paths:
               if not p.exists():
@@ -81,16 +82,17 @@ jobs:
               print(f'{state}: valide')
           PY
 
-      - name: Sauvegarde historique V10
+      - name: Sauvegarde historique et journal V10
         if: success()
         run: |
           git config user.name "MLB Betting Bot"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Les fichiers state/archive sont optionnels. Les ajouter séparément évite
-          # qu'un path absent fasse échouer tout le `git add` et perde l'historique.
           if [ -f data/mlb_history_v10.jsonl ]; then
             git add data/mlb_history_v10.jsonl
+          fi
+          if [ -f data/mlb_bet_journal_v1.jsonl ]; then
+            git add data/mlb_bet_journal_v1.jsonl
           fi
           if [ -f data/v10_state.json ]; then
             git add data/v10_state.json
@@ -104,6 +106,6 @@ jobs:
             exit 0
           fi
 
-          git commit -m "data: update V10 history [skip ci]"
+          git commit -m "data: update V10 history and journal [skip ci]"
           git pull --rebase origin "$GITHUB_REF_NAME"
           git push origin "HEAD:$GITHUB_REF_NAME"
