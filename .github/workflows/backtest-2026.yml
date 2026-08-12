@@ -28,15 +28,17 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Validate backtest script
-        run: python -m py_compile backtest_2026.py
+      - name: Validate backtest scripts
+        run: |
+          python -m py_compile backtest_2026.py
+          python -m py_compile backtest_2026_run.py
 
       - name: Run leakage-safe 2026 replay
         env:
           BACKTEST_START: '2026-03-01'
           BACKTEST_END: '2026-08-11'
           BACKTEST_WORKERS: '12'
-        run: python backtest_2026.py
+        run: python backtest_2026_run.py
 
       - name: Validate generated files
         run: |
