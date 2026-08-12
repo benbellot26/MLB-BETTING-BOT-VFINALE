@@ -1,0 +1,139 @@
+{
+  "schema": "mlb-backtest-2026-v1",
+  "generated_at": "2026-08-12T07:26:05.560330+00:00",
+  "range": {
+    "start": "2026-03-01",
+    "end": "2026-08-11"
+  },
+  "methodology": {
+    "walk_forward": true,
+    "future_game_stats_used": false,
+    "historical_odds_used": false,
+    "statcast_used": false,
+    "weather_used": false,
+    "actual_final_lineup_used_with_prior_player_stats": true,
+    "structural_cap_runs": 0.75,
+    "residual_min_games": 450,
+    "calibration_min_games": 500,
+    "notes": [
+      "Every prediction is made before current-game boxscore stats are added to state.",
+      "Actual starting pitcher and final lineup identities are treated as FINAL-phase pregame information; only their prior stats are used.",
+      "No historical sportsbook line/price is fabricated; ROI/EV/CLV are intentionally omitted.",
+      "Statcast, historical forecast weather and historical market-reference confidence are neutralized because leakage-safe point-in-time archives are not available here."
+    ]
+  },
+  "games": 1801,
+  "warm_games": 1724,
+  "v9_ml": {
+    "n": 1801,
+    "accuracy": 0.5191560244308717,
+    "brier": 0.2528647843809156,
+    "logloss": 0.6995650182880984
+  },
+  "v10_ml": {
+    "n": 1801,
+    "accuracy": 0.5308162132148806,
+    "brier": 0.2511040924287901,
+    "logloss": 0.6956229275396945
+  },
+  "v9_runs": {
+    "team_run_mae": 2.5629221543586898,
+    "team_run_rmse": 3.2492217066955464,
+    "total_mae": 3.64572692948362,
+    "total_rmse": 4.556029349190252
+  },
+  "v10_runs": {
+    "team_run_mae": 2.541748667406996,
+    "team_run_rmse": 3.234951444185554,
+    "total_mae": 3.6350350360910606,
+    "total_rmse": 4.54737696268893
+  },
+  "warm_v9_ml": {
+    "n": 1724,
+    "accuracy": 0.521461716937355,
+    "brier": 0.25132907318381437,
+    "logloss": 0.6961383039965223
+  },
+  "warm_v10_ml": {
+    "n": 1724,
+    "accuracy": 0.5319025522041764,
+    "brier": 0.2502443295333712,
+    "logloss": 0.693852540357642
+  },
+  "warm_v9_runs": {
+    "team_run_mae": 2.5465486658932717,
+    "team_run_rmse": 3.233164314114729,
+    "total_mae": 3.6124402552204176,
+    "total_rmse": 4.508574771192798
+  },
+  "warm_v10_runs": {
+    "team_run_mae": 2.5320703016241297,
+    "team_run_rmse": 3.227711453750427,
+    "total_mae": 3.6120361948955915,
+    "total_rmse": 4.517696469166272
+  },
+  "v10_probability_bins": [
+    {
+      "bin": "50-55%",
+      "n": 758,
+      "avg_confidence": 0.5242762625329815,
+      "hit_rate": 0.5065963060686016
+    },
+    {
+      "bin": "55-60%",
+      "n": 529,
+      "avg_confidence": 0.5741320812854442,
+      "hit_rate": 0.5236294896030246
+    },
+    {
+      "bin": "60-65%",
+      "n": 258,
+      "avg_confidence": 0.6232841007751938,
+      "hit_rate": 0.5581395348837209
+    },
+    {
+      "bin": "65-70%",
+      "n": 117,
+      "avg_confidence": 0.669106452991453,
+      "hit_rate": 0.6068376068376068
+    },
+    {
+      "bin": "70-75%",
+      "n": 51,
+      "avg_confidence": 0.7183194117647059,
+      "hit_rate": 0.7058823529411765
+    },
+    {
+      "bin": "75-80%",
+      "n": 10,
+      "avg_confidence": 0.7653350999999999,
+      "hit_rate": 0.4
+    },
+    {
+      "bin": "80-100%",
+      "n": 1,
+      "avg_confidence": 0.809348,
+      "hit_rate": 1
+    }
+  ],
+  "runline_proxy": {
+    "n": 1801,
+    "wins": 1091,
+    "hit_rate": 0.6057745696835092,
+    "definition": "Model-favorite standard ±1.5 pair; choose higher model cover probability. No odds/value filter."
+  },
+  "activation": {
+    "residual_active_final": true,
+    "residual_validation": {
+      "rmse_base": 3.20981370235572,
+      "rmse_model": 3.149921660079808,
+      "gain_prob": 0.964
+    },
+    "calibration_active_final": false,
+    "calibration_validation": {
+      "brier_raw": 0.24163338853303093,
+      "brier_cal": 0.24369111662661952,
+      "gain_prob": 0.216
+    }
+  }
+}
