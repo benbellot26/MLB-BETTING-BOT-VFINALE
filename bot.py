@@ -3135,6 +3135,377 @@ def v10_self_test():
     print("SELF-TEST MLB BETTING BOT V10.0.14 OK")
 
 
+
+# ==================== V10.0.15 OFFICIAL SELECTOR LAB =====================
+# Selection-only layer. The baseball run engine is unchanged.
+# - market-specific calibration paths (ML / RUNLINE / TOTAL)
+# - live calibration only activates after chronological holdout validation
+# - Winamax remains informational only
+_V1014_SELF_TEST_015=v10_self_test
+_V1014_CANDIDATE_015=v1011_candidate
+_V1014_ALLOCATE_015=allocate_portfolio
+_V1014_APPLY_EFFECTIVE_015=v1011_apply_effective
+_V1014_EFFECTIVE_PROB_015=v1011_effective_probability
+_V1014_MAKE_RUN_ROWS_015=v1010_make_run_rows
+_V1014_LOG_JOURNAL_015=v1010_log_journal
+
+VERSION="10.0.15"
+SELECTION_VERSION="official-selector-lab-v6"
+V1015_OFFICIAL_WEIGHTS={"floor":.80,"other":.20}
+V1015_OTHER_WEIGHTS={"temporal":.30,"quality":.25,"calibration":.20,"refs":.15,"structural":.10}
+V1015_SCORE_THRESHOLDS=(70.0,72.0,74.0)
+V1015_CAL_MIN_N={"ML":80,"RUNLINE":80,"TOTAL":100}
+V1015_CAL_MIN_HOLDOUT=20
+V1015_CAL_MIN_BRIER_GAIN=.0015
+V1015_LIVE_FACTOR_GRID=(.60,.65,.70,.75,.80,.85,.90,.95,1.00,1.05,1.10,1.15)
+V1015_STATIC_RELIABILITY={"ML":.80,"RUNLINE":.78,"TOTAL":.64}
+V1015_PHASE_FACTORS={
+    "ML":{"EARLY":.78,"LATE":.88,"FINAL":1.00},
+    "RUNLINE":{"EARLY":.66,"LATE":.74,"FINAL":.82},
+    "TOTAL":{"EARLY":.66,"LATE":.74,"FINAL":.82},
+}
+V1015_STRATEGIES=("v1013_probability","v1014_robust","safe_floor","stability_first","quality_first","balanced","official_v2")
+_V1015_CAL_CACHE={}
+
+
+def v1015_static_effective_probability(p,market,phase):
+    p=clamp(num(p,.5),.001,.999);market=str(market or "ML").upper();phase=str(phase or "EARLY").upper()
+    if p<.5:return 1-v1015_static_effective_probability(1-p,market,phase)
+    if market=="ML":
+        q=v1007_interp(p,V1007_ML_EMPIRICAL_ANCHORS)
+        q=.5+(q-.5)*V1015_PHASE_FACTORS["ML"].get(phase,.78)
+    elif market=="RUNLINE":
+        q=.5+(p-.5)*V1015_PHASE_FACTORS["RUNLINE"].get(phase,.66);q=min(q,.68)
+    else:
+        q=.5+(p-.5)*V1015_PHASE_FACTORS["TOTAL"].get(phase,.66);q=min(q,.68)
+    return clamp(q,.5,.72)
+
+
+def v1015_brier(rows,factor=1.0):
+    if not rows:return None
+    return mean([(clamp(.5+(p-.5)*factor,.001,.999)-y)**2 for p,y in rows])
+
+
+def v1015_logloss(rows,factor=1.0):
+    if not rows:return None
+    vals=[]
+    for p,y in rows:
+        q=clamp(.5+(p-.5)*factor,.001,.999)
+        vals.append(-(y*math.log(q)+(1-y)*math.log(1-q)))
+    return mean(vals)
+
+
+def v1015_market_calibration_rows(market):
+    if not JOURNAL_FILE.exists():return []
+    market=str(market).upper();best={};phase_rank={"EARLY":1,"LATE":2,"FINAL":3}
+    try:
+        for line in JOURNAL_FILE.read_text(encoding="utf-8").splitlines():
+            if not line.strip():continue
+            row=json.loads(line)
+            if str(row.get("market") or "").upper()!=market or row.get("result") not in ("W","L"):continue
+            if row.get("game_pk") is None or row.get("bet_type")=="COMBO":continue
+            p=row.get("p_effective_static",row.get("p_effective"))
+            if p is None:continue
+            p=clamp(num(p,.5),.001,.999)
+            # Keep one model-favoured observation per game/market. This avoids
+            # complementary sides and repeated manual runs inflating the sample.
+            if p<.5:continue
+            key=str(row.get("game_pk"))
+            rank=(phase_rank.get(str(row.get("phase") or "EARLY").upper(),0),str(row.get("analyzed_at") or ""),p)
+            old=best.get(key)
+            if old is None or rank>old[0]:best[key]=(rank,row,p)
+    except Exception as exc:
+        logging.warning("V10.0.15 calibration journal illisible: %s",exc);return []
+    out=[]
+    for _,row,p in best.values():
+        out.append((str(row.get("game_date") or row.get("analyzed_at") or ""),p,1 if row.get("result")=="W" else 0))
+    out.sort(key=lambda x:x[0]);return out
+
+
+def v1015_market_calibration_state(market):
+    market=str(market or "ML").upper()
+    if market in _V1015_CAL_CACHE:return _V1015_CAL_CACHE[market]
+    data=v1015_market_calibration_rows(market);n=len(data);min_n=V1015_CAL_MIN_N.get(market,100)
+    state={"market":market,"active":False,"factor":1.0,"n":n,"holdout_n":0,"brier_base":None,"brier_model":None,"brier_gain":None,"source":"static-market-specific","reliability":V1015_STATIC_RELIABILITY.get(market,.60)}
+    if n>=min_n:
+        cut=max(1,int(n*.75));train=[(p,y) for _,p,y in data[:cut]];hold=[(p,y) for _,p,y in data[cut:]]
+        state["holdout_n"]=len(hold)
+        if len(hold)>=V1015_CAL_MIN_HOLDOUT:
+            ranked=[]
+            for f in V1015_LIVE_FACTOR_GRID:
+                ranked.append((v1015_brier(train,f),v1015_logloss(train,f),f))
+            ranked.sort();factor=ranked[0][2]
+            b0=v1015_brier(hold,1.0);b1=v1015_brier(hold,factor);l0=v1015_logloss(hold,1.0);l1=v1015_logloss(hold,factor);gain=(b0-b1) if b0 is not None and b1 is not None else 0
+            state.update({"factor":factor,"brier_base":b0,"brier_model":b1,"brier_gain":gain})
+            if gain>=V1015_CAL_MIN_BRIER_GAIN and l1<=l0+.001:
+                state["active"]=True;state["source"]="live-market-specific-validated"
+                state["reliability"]=clamp(V1015_STATIC_RELIABILITY.get(market,.60)+min(.12,n/1000)+min(.06,gain*20),.55,.96)
+            else:
+                state["factor"]=1.0;state["source"]="live-challenger-rejected"
+    _V1015_CAL_CACHE[market]=state
+    return state
+
+
+def v1011_effective_probability(p,market,phase):
+    static=v1015_static_effective_probability(p,market,phase);state=v1015_market_calibration_state(market)
+    if not state.get("active"):return static
+    f=num(state.get("factor"),1)
+    if static>=.5:return clamp(.5+(static-.5)*f,.5,.72)
+    return 1-clamp(.5+((1-static)-.5)*f,.5,.72)
+
+
+def v1011_apply_effective(rec,result):
+    if not rec:return None
+    phase=result.get("phase","EARLY");market=str(rec.get("market") or "ML").upper();pm=clamp(num(rec.get("p_model"),.5),.001,.999)
+    static=v1015_static_effective_probability(pm,market,phase);state=v1015_market_calibration_state(market);pe=static
+    if state.get("active"):
+        f=num(state.get("factor"),1)
+        if static>=.5:pe=clamp(.5+(static-.5)*f,.5,.72)
+        else:pe=1-clamp(.5+((1-static)-.5)*f,.5,.72)
+    pp=clamp(num(rec.get("p_push"),0),0,.95);mass=1-pp;pw=mass*pe;pl=mass*(1-pe)
+    rec.update({"p_effective_static":static,"p_effective":pe,"p_effective_win":pw,"p_effective_loss":pl,
+                "fair_effective":(1-pp)/pw if pw>0 else 99,"min_price_effective":min_acceptable_price(pw,pp,pl),
+                "selection_version":SELECTION_VERSION,"stability_alert":result.get("stability_alert","OK"),"stability_delta":result.get("stability_delta",0),
+                "market_calibration_source":state.get("source"),"market_calibration_active":bool(state.get("active")),"market_calibration_factor":num(state.get("factor"),1),"market_calibration_n":int(num(state.get("n"),0)),"market_calibration_reliability":num(state.get("reliability"),.6)})
+    e=rec.get("winamax_eval")
+    if e is not None:
+        price=num(e.get("price"),0);np=pw+pl;pcond=pw/np if np else .5
+        e.update({"p_win":pw,"p_push":pp,"p_loss":pl,"p_cond":pcond,"fair":rec["fair_effective"],"min_price":rec["min_price_effective"],
+                  "effective_probability":pe,"effective_probability_source":state.get("source"),"effective_min_price":rec["min_price_effective"],
+                  "edge":pcond-1/price if price>1 else None,"ev":pw*price+pp-1 if price>1 else None,"official_v1011":True,"official_selected":False,
+                  "official_units":0,"official_reason":"hors plan officiel","price_gate_enabled":False,"price_informational":True})
+    return rec
+
+
+
+def v1015_temporal_component(result,base):
+    live=base.get("live_stability") or {};n=int(num(live.get("n"),0));phases=set(live.get("phases") or []);phases.add(str(result.get("phase") or "EARLY").upper())
+    spread=num(live.get("spread"),0);trend=num(live.get("trend"),0);last=num(live.get("last_delta"),0)
+    if n==0:return {"score":.70,"label":"NEW","hard_block":False,"reason":"première observation"}
+    # A hard veto needs at least three observations in total and at least two
+    # phases. A single EARLY move can therefore never kill a pick by itself.
+    if n>=2 and len(phases)>=2 and (trend<=-.040 or last<=-.035 or spread>=.060):
+        return {"score":.20,"label":"DEGRADE","hard_block":True,"reason":f"dégradation temporelle ({trend*100:+.1f} pt, spread {spread*100:.1f})"}
+    if live.get("stable"):
+        return {"score":1.00,"label":"STABLE","hard_block":False,"reason":f"stable sur {n+1} observations"}
+    if trend>=.010 and spread<=.040:return {"score":.90,"label":"UP","hard_block":False,"reason":"signal en amélioration"}
+    if spread<=.030 and trend>=-.020:return {"score":.78,"label":"OK","hard_block":False,"reason":"variation contenue"}
+    if trend<-.020 or last<-.020:return {"score":.52,"label":"WATCH","hard_block":False,"reason":"signal en baisse"}
+    return {"score":.62,"label":"VOLATILE","hard_block":False,"reason":"signal variable"}
+
+
+def v1015_floor_score(prob,market):
+    threshold=V1007_MIN_EFFECTIVE.get(market,.60)
+    return clamp(70+300*(num(prob,.5)-threshold),0,100)
+
+
+def v1015_structural_component(result):
+    alert=str(result.get("stability_alert","OK")).upper();delta=abs(num(result.get("stability_delta"),0))
+    if alert in ("HIGH","FLIP"):return 0.0
+    if alert=="WATCH":return .55
+    return clamp(1-delta/.10,.55,1.0)
+
+
+def v1015_score_components(result,rec,base):
+    market=rec.get("market");safe=num(base.get("safe_probability",rec.get("p_effective")),.5);temporal=v1015_temporal_component(result,base)
+    quality=clamp(num(result.get("quality"),0),0,1);refs=int(num(rec.get("refs"),0));refs_score={0:.20,1:.35,2:.60,3:.82}.get(refs,1.0)
+    cal=clamp(num(rec.get("market_calibration_reliability",V1015_STATIC_RELIABILITY.get(market,.60)),.60),.45,1);struct=v1015_structural_component(result)
+    floor=v1015_floor_score(safe,market)
+    other=100*(V1015_OTHER_WEIGHTS["temporal"]*temporal["score"]+V1015_OTHER_WEIGHTS["quality"]*quality+V1015_OTHER_WEIGHTS["calibration"]*cal+V1015_OTHER_WEIGHTS["refs"]*refs_score+V1015_OTHER_WEIGHTS["structural"]*struct)
+    official=clamp(V1015_OFFICIAL_WEIGHTS["floor"]*floor+V1015_OFFICIAL_WEIGHTS["other"]*other,0,100)
+    v1013=num(base.get("legacy_score",base.get("score")),0);v1014=num(base.get("score"),0)
+    strategies={
+        "v1013_probability":v1013,
+        "v1014_robust":v1014,
+        "safe_floor":floor,
+        "stability_first":clamp(.45*floor+.40*(temporal["score"]*100)+.15*(quality*100),0,100),
+        "quality_first":clamp(.55*floor+.30*(quality*100)+.15*(cal*100),0,100),
+        "balanced":clamp(.60*floor+.15*(temporal["score"]*100)+.10*(quality*100)+.05*(cal*100)+.05*(refs_score*100)+.05*(struct*100),0,100),
+        "official_v2":official,
+    }
+    return {"floor_probability":safe,"floor_score":floor,"other_score":other,"official_score":official,"temporal":temporal,
+            "quality_score":quality*100,"refs_score":refs_score*100,"calibration_score":cal*100,"structural_score":struct*100,"strategy_scores":strategies}
+
+
+def v1011_candidate(result,rec,require_phase=True):
+    base=_V1014_CANDIDATE_015(result,rec,require_phase);comp=v1015_score_components(result,rec,base);reasons=list(base.get("reasons") or [])
+    if comp["temporal"].get("hard_block") and not any("dégradation temporelle" in str(x) for x in reasons):reasons.append(comp["temporal"]["reason"])
+    eligible=bool(base.get("eligible")) and not comp["temporal"].get("hard_block")
+    units=int(num(base.get("units"),1));official=comp["official_score"]
+    if units>=2 and official<82:units=1
+    base.update({"eligible":eligible,"reasons":reasons,"score":official,"official_score":official,"components":comp,
+                 "safe_probability":comp["floor_probability"],"temporal_state":comp["temporal"],"strategy_scores":comp["strategy_scores"],"units":units})
+    rec.update({"selection_version":SELECTION_VERSION,"selection_safe_probability":comp["floor_probability"],"selection_official_score":official,
+                "selection_score_components":{k:v for k,v in comp.items() if k not in ("strategy_scores","temporal")},
+                "selection_temporal_state":comp["temporal"],"selection_strategy_scores":comp["strategy_scores"]})
+    return base
+
+
+def v1015_shadow_rank(results):
+    by_strategy={s:[] for s in V1015_STRATEGIES}
+    for r in results or []:
+        for rec in v1011_iter_options(r):
+            c=v1011_candidate(r,rec,False);base=_V1014_CANDIDATE_015(r,rec,False);base_ok=bool(base.get("eligible"));rec["selection_shadow"]={}
+            for s in V1015_STRATEGIES:
+                score=num(c["strategy_scores"].get(s),0);eligible=c["eligible"] if s=="official_v2" else base_ok
+                rec["selection_shadow"][s]={"score":round(score,2),"eligible":eligible,"selected":False,"rank":None}
+                if eligible:by_strategy[s].append((score,num(rec.get("p_effective"),.5),r,rec))
+    for s,pool in by_strategy.items():
+        pool.sort(key=lambda x:(x[0],x[1]),reverse=True);used=set();profiles={};picked=0
+        for score,_,r,rec in pool:
+            if picked>=3:break
+            if score<V1015_SCORE_THRESHOLDS[picked]:break
+            gid=str(r.get("game_pk"));profile=v1011_profile(rec)
+            if gid in used or profiles.get(profile,0)>=2:continue
+            picked+=1;used.add(gid);profiles[profile]=profiles.get(profile,0)+1
+            rec["selection_shadow"][s].update({"selected":True,"rank":picked})
+    return by_strategy
+
+
+def allocate_portfolio(results):
+    # The V10.0.14 allocator delegates to the established portfolio engine.
+    # That engine resolves v1011_candidate dynamically, so the Official Score
+    # below is the score actually used for the 70/72/74 selection thresholds.
+    v1015_shadow_rank(results)
+    portfolio=_V1014_ALLOCATE_015(results)
+    v1015_shadow_rank(results)
+    for r in results or []:
+        for rec in v1011_iter_options(r):
+            c=v1011_candidate(r,rec,False);e=v1012_ensure_execution(rec)
+            e.update({"selection_version":SELECTION_VERSION,"official_score":round(num(c.get("official_score"),0),2),
+                      "safe_probability":round(num(c.get("safe_probability"),.5),6),"temporal_state":c.get("temporal_state")})
+            if e.get("official_selected"):
+                e["official_reason"]=f"retenu par Score Officiel V10.0.15 ({num(c.get('official_score')):.1f}/100, {str(r.get('phase','EARLY')).upper()})"
+                e["reason"]="OK V10.0.15";e["portfolio_reason"]="PARI OFFICIEL V10.0.15"
+    if isinstance(_V1007_LAST_SLATE,dict):
+        _V1007_LAST_SLATE["selector_version"]=SELECTION_VERSION;_V1007_LAST_SLATE["score_name"]="Score Officiel"
+    portfolio["selector_version"]=SELECTION_VERSION
+    for market in ("ML","RUNLINE","TOTAL"):
+        st=v1015_market_calibration_state(market)
+        logging.info("V10.0.15 CAL %s | active=%s n=%d holdout=%d factor=%.2f source=%s gain=%s",market,st.get("active"),int(num(st.get("n"),0)),int(num(st.get("holdout_n"),0)),num(st.get("factor"),1),st.get("source"),f"{num(st.get('brier_gain')):+.4f}" if st.get("brier_gain") is not None else "-")
+    logging.info("V10.0.15 OFFICIAL SELECTOR | selected=%d | score=%s | temporal veto=ON | shadow=%s",int(num((_V1007_LAST_SLATE or {}).get("official_count"),0)),f"{num((_V1007_LAST_SLATE or {}).get('score')):.1f}",",".join(V1015_STRATEGIES))
+    return portfolio
+
+
+def v1011_selected_items(results):
+    out=[]
+    for r in results or []:
+        for rec in v1011_iter_options(r):
+            e=rec.get("winamax_eval") or {}
+            if e.get("official_selected"):
+                c=v1011_candidate(r,rec,False);out.append({"result":r,"rec":rec,"score":num(c.get("official_score"),0)})
+    return sorted(out,key=lambda x:x["score"],reverse=True)
+
+
+def v1007_selected_items(results):return v1011_selected_items(results)
+
+
+def v1015_temporal_text(c):
+    t=c.get("temporal_state") or {};lab=t.get("label","NEW")
+    if lab=="STABLE":return "🟢 stable"
+    if lab=="UP":return "🟢 en amélioration"
+    if lab=="DEGRADE":return "🔴 dégradé"
+    if lab=="WATCH":return "🟠 à surveiller"
+    if lab=="VOLATILE":return "🟠 variable"
+    if lab=="OK":return "🟢 variation contenue"
+    return "⚪ 1re observation"
+
+
+def v1011_plan_pick_text(item,index=None):
+    r=item["result"];rec=item["rec"];e=v1012_ensure_execution(rec);c=v1011_candidate(r,rec,False);u=num(e.get("official_units"),0);price=num(e.get("price"),0);prefix=f"**#{index}** " if index is not None else "• ";price_txt=f"{price:.2f}" if price>1 else "non récupérée"
+    return f"{prefix}✅ **{v1011_market_label(rec)} — {u:g}u = {u*UNIT:.2f} €**\n{r['ctx']['away']} @ {r['ctx']['home']} • **{v1012_phase_badge(r.get('phase'))}**\nChance prudente **{pct(rec.get('p_effective'))}** • Score Officiel **{num(c.get('official_score')):.0f}/100** • conf. **{num(rec.get('confidence')):.1f}/10**\n{v1015_temporal_text(c)} • Winamax **{price_txt}** *(info)*"
+
+
+
+def v1010_make_run_rows(results,run_id=None,analyzed_at=None):
+    rows=_V1014_MAKE_RUN_ROWS_015(results,run_id,analyzed_at);lookup={}
+    for r in results or []:
+        for rec in v1011_iter_options(r):
+            lookup[v1014_option_key(r.get("game_pk"),rec.get("market"),rec.get("name"),rec.get("point"))]=(r,rec)
+    for row in rows:
+        row["selection_version"]=SELECTION_VERSION
+        if row.get("market")=="COMBO":continue
+        pair=lookup.get(v1014_option_key(row.get("game_pk"),row.get("market"),row.get("pick"),row.get("point")))
+        if not pair:continue
+        r,rec=pair;c=v1011_candidate(r,rec,False);comp=c.get("components") or {};shadow=rec.get("selection_shadow") or {};cal=v1015_market_calibration_state(rec.get("market"))
+        row.update({
+            "p_effective_static":round(num(rec.get("p_effective_static",rec.get("p_effective")),.5),6),
+            "market_calibration_source":rec.get("market_calibration_source"),"market_calibration_active":bool(rec.get("market_calibration_active")),
+            "market_calibration_factor":round(num(rec.get("market_calibration_factor"),1),4),"market_calibration_n":int(num(rec.get("market_calibration_n"),0)),
+            "calibration_reliability":round(num(cal.get("reliability"),.6),4),"official_score":round(num(c.get("official_score"),0),2),
+            "safe_probability":round(num(c.get("safe_probability"),.5),6),"score_floor":round(num(comp.get("floor_score"),0),2),
+            "score_other":round(num(comp.get("other_score"),0),2),"score_temporal":round(num((comp.get("temporal") or {}).get("score"),0)*100,2),
+            "temporal_label":(comp.get("temporal") or {}).get("label"),"temporal_hard_block":bool((comp.get("temporal") or {}).get("hard_block")),
+            "selector_strategy_scores":{k:round(num(v),2) for k,v in (c.get("strategy_scores") or {}).items()},
+            "selector_shadow_selected":{k:bool(v.get("selected")) for k,v in shadow.items()},
+            "selector_shadow_rank":{k:v.get("rank") for k,v in shadow.items()},"selector_lab_version":"v1015-ml-rl-historical-plus-live-shadow"
+        })
+    return rows
+
+
+def v1015_strategy_metrics(journal):
+    out={}
+    for strategy in V1015_STRATEGIES:
+        events={}
+        for row in sorted(journal,key=lambda x:str(x.get("analyzed_at") or "")):
+            if row.get("result") not in ("W","L","P") or row.get("market")=="COMBO":continue
+            if not (row.get("selector_shadow_selected") or {}).get(strategy):continue
+            key=v1014_official_event_key(row);events.setdefault(key,row)
+        graded=[x for x in events.values() if x.get("result") in ("W","L")];wins=sum(x.get("result")=="W" for x in graded)
+        br=mean([(num(x.get("p_effective"),.5)-(1 if x.get("result")=="W" else 0))**2 for x in graded]) if graded else None
+        out[strategy]={"n":len(graded),"wins":wins,"hit":wins/len(graded) if graded else None,"brier":br}
+    return out
+
+
+def v1010_log_journal(journal,added=0,settled_now=0):
+    _V1014_LOG_JOURNAL_015(journal,added,settled_now);metrics=v1015_strategy_metrics(journal)
+    for s in V1015_STRATEGIES:
+        m=metrics[s]
+        if m["n"]:
+            logging.info("V10.0.15 SELECTOR LAB | %s n=%d hit=%s brier=%.4f",s,m["n"],pct(m["hit"]),num(m["brier"]))
+
+
+def v10_self_test():
+    global VERSION,v1011_candidate,v1011_apply_effective,v1011_effective_probability,_V1015_CAL_CACHE,_V1014_PRIOR_INDEX
+    current=VERSION;cc=v1011_candidate;ca=v1011_apply_effective;cp=v1011_effective_probability
+    VERSION="10.0.14";v1011_candidate=_V1014_CANDIDATE_015;v1011_apply_effective=_V1014_APPLY_EFFECTIVE_015;v1011_effective_probability=_V1014_EFFECTIVE_PROB_015
+    try:_V1014_SELF_TEST_015()
+    finally:VERSION=current;v1011_candidate=cc;v1011_apply_effective=ca;v1011_effective_probability=cp
+    assert VERSION=="10.0.15"
+    _V1015_CAL_CACHE={
+        "ML":{"active":False,"factor":1.0,"n":0,"source":"test","reliability":.80},
+        "RUNLINE":{"active":False,"factor":1.0,"n":0,"source":"test","reliability":.78},
+        "TOTAL":{"active":False,"factor":1.0,"n":0,"source":"test","reliability":.64},
+    }
+    assert abs(v1015_static_effective_probability(.62,"RUNLINE","FINAL")-(.5+.12*.82))<1e-9
+    assert v1015_static_effective_probability(.38,"RUNLINE","FINAL")<.5
+    _V1014_PRIOR_INDEX={}
+    fake={"phase":"FINAL","quality":.88,"stability_alert":"OK","stability_delta":.01,"game_pk":1501,
+          "ctx":{"home":"H","away":"A","home_sp":"Starter H","away_sp":"Starter A","home_lineup":{"count":9},"away_lineup":{"count":9}}}
+    rec={"market":"ML","name":"H","point":None,"p_model":.75,"p_effective":.63,"p_push":0,"confidence":7.8,"refs":4,"p_market":.59,"min_price_effective":1.65,"winamax_eval":{}}
+    c=v1011_candidate(fake,rec,True)
+    assert c["eligible"] and 0<=c["official_score"]<=100 and c["components"]["floor_score"]>=0 and "official_v2" in c["strategy_scores"]
+    # Severe EARLY/LATE/FINAL deterioration is now a real veto even if the
+    # underlying statistical gates still pass.
+    _V1014_PRIOR_INDEX={v1014_option_key(1501,"ML","H",None):[
+        {"p_effective":.68,"phase":"EARLY","analyzed_at":"1"},
+        {"p_effective":.66,"phase":"LATE","analyzed_at":"2"},
+    ]}
+    rec2=dict(rec);rec2["p_effective"]=.62;rec2["winamax_eval"]={};c2=v1011_candidate(fake,rec2,True)
+    assert not c2["eligible"] and c2["temporal_state"]["hard_block"]
+    _V1014_PRIOR_INDEX={}
+    r1=dict(fake);r1["option_recs"]=[]
+    r2={"game_pk":1502,"phase":"FINAL","quality":.90,"stability_alert":"OK","stability_delta":.005,
+        "ctx":{"home":"H2","away":"A2","home_sp":"S","away_sp":"S2","home_lineup":{"count":9},"away_lineup":{"count":9}},"option_recs":[]}
+    for r in (r1,r2):
+        rr={"market":"ML","name":r["ctx"]["home"],"point":None,"p_model":.75,"p_effective":.63,"p_effective_static":.63,"p_push":0,
+            "confidence":8.0,"refs":4,"p_market":.59,"min_price_effective":1.65,"winamax_eval":{}}
+        r["option_recs"].append(rr)
+    v1015_shadow_rank([r1,r2])
+    assert all("official_v2" in x.get("selection_shadow",{}) and "v1013_probability" in x.get("selection_shadow",{}) for r in (r1,r2) for x in r.get("option_recs",[]))
+    _V1014_PRIOR_INDEX=None;_V1015_CAL_CACHE={}
+    print("SELF-TEST MLB BETTING BOT V10.0.15 OK")
+
 if __name__=="__main__":
     try:
         if "--self-test" in sys.argv:v10_self_test()
