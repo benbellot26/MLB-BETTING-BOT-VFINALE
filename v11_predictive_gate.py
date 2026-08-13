@@ -22,6 +22,7 @@ REPORT_FILE = Path(os.getenv("V11_BENCHMARK_REPORT", "data/v11_benchmark_report.
 ENABLED = os.getenv("V11_AUTO_BLEND_ENABLED", "1").strip().lower() not in ("0", "false", "no", "off")
 MIN_HOLDOUT = max(20, int(os.getenv("V11_AUTO_BLEND_MIN_HOLDOUT", "40") or 40))
 MIN_BRIER_GAIN = max(.0005, float(os.getenv("V11_AUTO_BLEND_MIN_BRIER_GAIN", "0.0015") or .0015))
+MIN_GAIN_PROB = core.clamp(float(os.getenv("V11_AUTO_BLEND_MIN_GAIN_PROB", "0.85") or .85), .70, .99)
 MIN_MULTIREF_PCT = core.clamp(float(os.getenv("V11_AUTO_BLEND_MIN_MULTIREF_PCT", "0.60") or .60), .40, .95)
 
 _ORIGINAL_APPLY_EFFECTIVE = core.v1011_apply_effective
@@ -33,7 +34,7 @@ def blend_state() -> dict:
     global _STATE
     if _STATE is not None:
         return _STATE
-    out = {"active": False, "weight": None, "reason": "disabled", "holdout_n": 0, "brier_gain": None, "multiref_pct": None}
+    out = {"active": False, "weight": None, "reason": "disabled", "holdout_n": 0, "brier_gain": None, "gain_probability": None, "multiref_pct": None}
     if not ENABLED:
         out["reason"] = "auto blend disabled"; _STATE = out; return out
     if not REPORT_FILE.exists():
@@ -46,6 +47,7 @@ def blend_state() -> dict:
         n = int(core.num(report.get("holdout_n", hold.get("n", 0)), 0)); weight = report.get("blend_model_weight_selected_on_train")
         model_brier = hold.get("brier_model"); blend_brier = hold.get("brier_blend")
         model_ll = hold.get("logloss_model"); blend_ll = hold.get("logloss_blend")
+        gain_prob = report.get("holdout_blend_gain_probability")
         multiref_pct = cov.get("holdout_multiref_pct")
         if multiref_pct is None:
             matched = max(1, int(core.num(cov.get("matched_model_and_sharp"), 0)))
@@ -55,6 +57,7 @@ def blend_state() -> dict:
             "weight": core.num(weight, 0) if weight is not None else None,
             "holdout_n": n,
             "brier_gain": gain,
+            "gain_probability": core.num(gain_prob, 0) if gain_prob is not None else None,
             "multiref_pct": core.num(multiref_pct, 0),
             "brier_model": model_brier,
             "brier_blend": blend_brier,
@@ -65,11 +68,12 @@ def blend_state() -> dict:
             n >= MIN_HOLDOUT,
             weight is not None and .25 <= core.num(weight) <= .80,
             gain is not None and gain >= MIN_BRIER_GAIN,
+            gain_prob is not None and core.num(gain_prob) >= MIN_GAIN_PROB,
             model_ll is not None and blend_ll is not None and core.num(blend_ll) <= core.num(model_ll),
             core.num(multiref_pct, 0) >= MIN_MULTIREF_PCT,
         ]
         if all(checks):
-            out["active"] = True; out["reason"] = "validated chronological holdout"
+            out["active"] = True; out["reason"] = "validated chronological holdout + bootstrap"
         else:
             out["reason"] = "holdout evidence insufficient"
     except Exception as exc:
@@ -143,10 +147,11 @@ def install() -> None:
 
     state = blend_state()
     logging.info(
-        "V11 PREDICTIVE GATE | active=%s weight=%s holdout=%d gain=%s multiRef=%s reason=%s",
+        "V11 PREDICTIVE GATE | active=%s weight=%s holdout=%d gain=%s gainProb=%s multiRef=%s reason=%s",
         state.get("active"), f"{core.num(state.get('weight')):.2f}" if state.get("weight") is not None else "-",
         int(core.num(state.get("holdout_n"), 0)),
         f"{core.num(state.get('brier_gain')):+.4f}" if state.get("brier_gain") is not None else "-",
+        f"{core.num(state.get('gain_probability')):.2f}" if state.get("gain_probability") is not None else "-",
         f"{100*core.num(state.get('multiref_pct')):.0f}%" if state.get("multiref_pct") is not None else "-",
         state.get("reason"),
     )
@@ -163,14 +168,14 @@ def self_test() -> None:
     try:
         baseline = _ORIGINAL_APPLY_EFFECTIVE(_test_rec(), {})
         independent = core.clamp(core.num(baseline.get("p_effective"), .5), .001, .999)
-        _STATE = {"active": True, "weight": .60, "reason": "test", "holdout_n": 100, "brier_gain": .002, "multiref_pct": .8}
+        _STATE = {"active": True, "weight": .60, "reason": "test", "holdout_n": 100, "brier_gain": .002, "gain_probability": .90, "multiref_pct": .8}
         out = apply_effective(_test_rec(), {})
         expected = .60 * independent + .40 * .58
         assert out["predictive_blend_active"]
         assert abs(out["p_effective"] - expected) < 1e-12
         assert abs(out["p_effective_independent"] - independent) < 1e-12
 
-        _STATE = {"active": False, "weight": .60, "reason": "test off", "holdout_n": 10, "brier_gain": 0, "multiref_pct": .8}
+        _STATE = {"active": False, "weight": .60, "reason": "test off", "holdout_n": 10, "brier_gain": 0, "gain_probability": .50, "multiref_pct": .8}
         baseline2 = _ORIGINAL_APPLY_EFFECTIVE(_test_rec(), {})
         out2 = apply_effective(_test_rec(), {})
         assert not out2["predictive_blend_active"]
