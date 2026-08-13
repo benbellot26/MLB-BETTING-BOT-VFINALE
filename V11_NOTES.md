@@ -55,6 +55,14 @@ The new baseball layer is deliberately a **relative correction layer** so it doe
 
 The planned future-candidate gate is conservative: at least 80 final point-in-time games, at least 30 chronological holdout games, Brier gain of at least 0.0015, paired bootstrap probability of improvement of at least 85%, no worse LogLoss, and sufficient full-feature coverage. Passing that gate would only make the feature set a candidate for production; it would not silently change official picks.
 
+## V11.1.5 historical walk-forward validation
+
+A separate `v11_walkforward_backtest.py` now replays the existing 2026 V10 baseline while rebuilding the V11.1 baseball corrections chronologically. It predicts every game on an Eastern calendar date before ingesting any boxscore from that date, so same-day finals cannot leak into another pregame prediction.
+
+The historical report separates `PROJECTED_HISTORY` lineups (prior batting orders only) from `POSTED_RETRO` lineups (actual historical batting order, never labelled EARLY because exact publication timestamps are not archived). It grades bullpen, starter recent form, projected lineup, projected matchup, full projected V11.1, optional posted-retro variants, Brier, LogLoss, accuracy, paired bootstrap gain probability, run MAE, coverage, chronological 75/25 holdout and monthly stability.
+
+Historical Open-Meteo archive wind is used only for run-mean validation at parks with an audited field orientation; weather never changes the ML probability. Historical bookmaker ROI remains intentionally excluded without archived point-in-time prices. Historical evidence may strengthen a candidate but cannot activate production without live point-in-time confirmation. Full methodology is documented in `V11_WALKFORWARD.md`.
+
 ## Existing V11 sharp benchmark
 
 - sharp books: Pinnacle, Betfair Exchange EU, Matchbook, BetOnline;
@@ -67,4 +75,4 @@ The planned future-candidate gate is conservative: at least 80 final point-in-ti
 
 ## GitHub safety
 
-`main` remains untouched. Development stays on `agent/v11-predictive-core` / PR #20. The workflow remains manual (`workflow_dispatch`) and data commits occur only after successful validation.
+`main` remains untouched. Development stays on `agent/v11-predictive-core` / PR #20. The live workflow and the historical walk-forward workflow are both manual (`workflow_dispatch`), and data commits occur only after successful validation.
