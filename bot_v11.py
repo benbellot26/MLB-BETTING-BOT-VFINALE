@@ -39,6 +39,7 @@ DEFAULT_SHARP_BOOKS = (
     "betonlineag",
 )
 DEFAULT_EXECUTION_BOOKS = ("winamax_fr",)
+DEFAULT_AUX_BOOKS = ("betclic_fr", "unibet_fr", "pmu_fr", "netbet_fr")
 
 # Equal priors avoid hard-coding an unproven bookmaker hierarchy. Freshness and
 # outlier robustness differentiate books immediately; empirical skill can only
@@ -83,11 +84,15 @@ def execution_books() -> tuple[str, ...]:
     return _csv_env("V11_EXECUTION_BOOKS", DEFAULT_EXECUTION_BOOKS)
 
 
+def auxiliary_books() -> tuple[str, ...]:
+    return _csv_env("V11_AUX_BOOKS", DEFAULT_AUX_BOOKS)
+
+
 def requested_books() -> tuple[str, ...]:
     explicit = os.getenv("ODDS_BOOKMAKERS", "").strip()
     if explicit:
         return tuple(dict.fromkeys(x.strip() for x in explicit.split(",") if x.strip()))
-    return tuple(dict.fromkeys((*execution_books(), *sharp_books())))
+    return tuple(dict.fromkeys((*execution_books(), *sharp_books(), *auxiliary_books())))
 
 
 def _base_weight(book: str) -> float:
@@ -387,8 +392,8 @@ def install_v11() -> None:
     core.v1010_make_run_rows = v11_make_run_rows
 
     logging.info(
-        "V11 SHARP BENCHMARK | books=%s | execution=%s | requested=%s",
-        ",".join(sharp_books()), ",".join(execution_books()), core.BOOKMAKERS,
+        "V11 SHARP BENCHMARK | sharp=%s | execution=%s | auxiliary=%s | requested=%s",
+        ",".join(sharp_books()), ",".join(execution_books()), ",".join(auxiliary_books()), core.BOOKMAKERS,
     )
     for market in ("ML", "RUNLINE", "TOTAL"):
         learned = learned_book_weights(market)
@@ -431,7 +436,9 @@ def v11_self_test() -> None:
         assert c["effective_n"] > 1.5
         assert all(x.get("weight", 0) > 0 for x in c["components"])
         assert "winamax_fr" in requested_books()
+        assert "betclic_fr" in requested_books()
         assert set(sharp_books()).issubset(set(requested_books()))
+        assert set(auxiliary_books()).isdisjoint(set(sharp_books()))
         synthetic = [
             {"game_pk": 1, "market": "ML", "pick": "H", "phase": "EARLY", "analyzed_at": "1", "p_effective": .62, "result": "W"},
             {"game_pk": 1, "market": "ML", "pick": "A", "phase": "EARLY", "analyzed_at": "1", "p_effective": .38, "result": "L"},
