@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stable router for the V11 benchmark and V11.1.4 baseball shadow."""
+"""Stable router for the V11 benchmark and V11.1.5 baseball shadow."""
 from __future__ import annotations
 
 import sys
@@ -14,10 +14,10 @@ benchmark_main = legacy.benchmark_main
 
 def main():
     if "--baseball-shadow" in sys.argv:
-        import v11_baseball_shadow_v114 as shadow
+        import v11_baseball_shadow_v115 as shadow
         shadow.main()
     elif "--shadow-self-test" in sys.argv:
-        import v11_baseball_shadow_v114 as shadow
+        import v11_baseball_shadow_v115 as shadow
         shadow.self_test()
     else:
         legacy.benchmark_main()
