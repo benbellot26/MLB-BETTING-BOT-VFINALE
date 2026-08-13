@@ -5,7 +5,6 @@ from __future__ import annotations
 import sys
 import v11_benchmark_report_legacy as legacy
 
-# Public helpers retained for the dedicated shadow modules.
 _latest_snapshot = legacy._latest_snapshot
 _snapshot_model_home = legacy._snapshot_model_home
 historical_sharp = legacy.historical_sharp
