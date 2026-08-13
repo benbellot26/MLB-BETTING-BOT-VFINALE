@@ -1,0 +1,20 @@
+name: V10.0.14 Selector Inspection
+
+on:
+  push:
+    branches:
+      - v10-0-14-selector-20260813
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Inspect backtest schema
+        run: python tools/tmp_v1014_inspect.py
