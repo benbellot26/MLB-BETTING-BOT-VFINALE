@@ -1,0 +1,20 @@
+name: V10.0.15 Selector Lab
+
+on:
+  push:
+    branches:
+      - v10-0-15-official-selector-lab-20260813
+
+permissions:
+  contents: read
+
+jobs:
+  lab:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run selector lab
+        run: python tools/tmp_v1015_lab.py
