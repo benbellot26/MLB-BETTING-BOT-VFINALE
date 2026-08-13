@@ -1,0 +1,58 @@
+{
+  "benchmark_version": "sharp-consensus-v1",
+  "blend_model_weight_selected_on_train": null,
+  "books": {
+    "betfair_ex_eu": {
+      "brier": 0.24267220157162425,
+      "logloss": 0.6775325518882561,
+      "n": 30
+    },
+    "pinnacle": {
+      "brier": 0.24209290202126926,
+      "logloss": 0.6763924172063884,
+      "n": 30
+    }
+  },
+  "coverage": {
+    "final_games_with_pregame_market_snapshot": 30,
+    "holdout_multiref_pct": 1.0,
+    "holdout_two_or_more_sharp_refs": 8,
+    "matched_model_and_sharp": 30,
+    "matched_pct": 1.0,
+    "one_sharp_ref": 0,
+    "two_or_more_sharp_refs": 30
+  },
+  "holdout": {
+    "brier_blend": null,
+    "brier_legacy_market": 0.21595640757425,
+    "brier_model": 0.2741360171266592,
+    "brier_sharp": 0.2145946539968723,
+    "logloss_blend": null,
+    "logloss_legacy_market": 0.6233361493418391,
+    "logloss_model": 0.7419352802652022,
+    "logloss_sharp": 0.6204024781029891,
+    "n": 8
+  },
+  "holdout_blend_gain_probability": null,
+  "holdout_n": 8,
+  "matched_all": {
+    "brier_blend": null,
+    "brier_legacy_market": 0.2428880699921,
+    "brier_model": 0.2668096071862973,
+    "brier_sharp": 0.24237829776256883,
+    "logloss_blend": null,
+    "logloss_legacy_market": 0.6780873084381116,
+    "logloss_model": 0.727476527911428,
+    "logloss_sharp": 0.6769535676055713,
+    "n": 30
+  },
+  "method": "point-in-time persisted snapshots; independent effective model; matched comparisons; chronological holdout; bootstrap paired-loss evidence; no reconstructed historical odds",
+  "sharp_books": [
+    "pinnacle",
+    "betfair_ex_eu",
+    "matchbook",
+    "betonlineag"
+  ],
+  "train_n": 22,
+  "version": "11.0.0"
+}
