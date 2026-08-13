@@ -33,8 +33,6 @@ def logloss(xs,fn):
 n=len(rows);c1=int(n*.60);c2=int(n*.80)
 parts={'train':rows[:c1],'tune':rows[c1:c2],'test':rows[c2:]}
 
-# 1) Market-specific calibration factor search. Keep ML anchor shape but allow a
-# conservative scale around 50%; RL gets its own shrink factor.
 def q_ml(p,f=1.0): return .5+(interp(p)-.5)*f
 def q_rl(p,f=.82): return .5+(p-.5)*f
 for market,grid,base in [('ML',[.70,.75,.80,.85,.90,.95,1.0,1.05],1.0),('RL',[.45,.50,.55,.60,.65,.70,.75,.80,.82,.85,.90,.95],.82)]:
@@ -48,9 +46,6 @@ for market,grid,base in [('ML',[.70,.75,.80,.85,.90,.95,1.0,1.05],1.0),('RL',[.4
     cand.sort();best=cand[0]
     f=best[2];fun=lambda p,f=f,m=market: q_ml(p,f) if m=='ML' else q_rl(p,f)
     print('CAL_BEST',market,'factor',f,'train',round(brier([obs(r,market) for r in parts['train']],fun),6),'tune',round(brier([obs(r,market) for r in parts['tune']],fun),6),'test',round(brier([obs(r,market) for r in parts['test']],fun),6),'test_logloss',round(logloss([obs(r,market) for r in parts['test']],fun),6))
-
-# Use only a factor if tune improves and holdout does not materially degrade.
-# These values will be read from output before production patching.
 
 def data_quality(r):
     warm=min(int(r.get('pregame_games_home',0)),int(r.get('pregame_games_away',0)))
@@ -82,6 +77,9 @@ def candidate_rows(rs):
 
 STRATEGIES={
  'probability_first': {'strength':.70,'stability':.10,'data':.05,'cal':.10,'depth':.05},
+ 'hybrid_55': {'strength':.55,'stability':.15,'data':.10,'cal':.10,'depth':.10},
+ 'hybrid_45': {'strength':.45,'stability':.20,'data':.10,'cal':.15,'depth':.10},
+ 'hybrid_40': {'strength':.40,'stability':.20,'data':.15,'cal':.15,'depth':.10},
  'quality_first': {'strength':.35,'stability':.20,'data':.30,'cal':.10,'depth':.05},
  'stability_first': {'strength':.25,'stability':.40,'data':.15,'cal':.15,'depth':.05},
  'balanced': {'strength':.30,'stability':.25,'data':.15,'cal':.15,'depth':.15},
@@ -103,7 +101,6 @@ def daily(rs,w):
     hit=sum(x['y'] for x in picks)/len(picks);br=sum((x['q']-x['y'])**2 for x in picks)/len(picks)
     return len(picks),sum(x['y'] for x in picks),hit,br
 
-# V10.0.13-style probability ranking proxy for comparison.
 basew={'strength':1.0,'stability':0,'data':0,'cal':0,'depth':0}
 print('SELECTOR baseline')
 for part in parts: print('SEL','baseline',part,daily(parts[part],basew))
