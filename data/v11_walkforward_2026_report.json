@@ -1,0 +1,944 @@
+{
+  "all": {
+    "coverage": {
+      "bullpen_both": 0.9694614103275958,
+      "full_posted_retro": 0.7357023875624653,
+      "full_projected": 0.7357023875624653,
+      "lineup_posted_retro_both": 0.991671293725708,
+      "lineup_projected_both": 0.991671293725708,
+      "matchup_posted_retro_both": 0.991671293725708,
+      "matchup_projected_both": 0.991671293725708,
+      "starter_both": 0.7357023875624653,
+      "weather_directional": 0.29539144919489174
+    },
+    "models": {
+      "base_p_home": {
+        "accuracy": 0.5308162132148806,
+        "brier": 0.2511040924287901,
+        "logloss": 0.6956229275396945,
+        "n": 1801
+      },
+      "p_bullpen": {
+        "accuracy": 0.5302609661299278,
+        "brier": 0.2511529329228384,
+        "brier_gain": -4.884049404829671e-05,
+        "logloss": 0.6957904744256863,
+        "n": 1801,
+        "paired_gain_probability": 0.387,
+        "paired_n": 1801
+      },
+      "p_full_posted_retro": {
+        "accuracy": 0.5358134369794558,
+        "brier": 0.25165812430071016,
+        "brier_gain": -0.0005540318719200465,
+        "logloss": 0.6969444364752801,
+        "n": 1801,
+        "paired_gain_probability": 0.121,
+        "paired_n": 1801
+      },
+      "p_full_projected": {
+        "accuracy": 0.535258189894503,
+        "brier": 0.2510427737578262,
+        "brier_gain": 6.131867096392796e-05,
+        "logloss": 0.6956090066856034,
+        "n": 1801,
+        "paired_gain_probability": 0.596,
+        "paired_n": 1801
+      },
+      "p_lineup_posted_retro": {
+        "accuracy": 0.529705719044975,
+        "brier": 0.25169098438247584,
+        "brier_gain": -0.0005868919536857198,
+        "logloss": 0.6969029836465195,
+        "n": 1801,
+        "paired_gain_probability": 0.002,
+        "paired_n": 1801
+      },
+      "p_lineup_projected": {
+        "accuracy": 0.532481954469739,
+        "brier": 0.25098104000298943,
+        "brier_gain": 0.00012305242580068487,
+        "logloss": 0.6953847812473519,
+        "n": 1801,
+        "paired_gain_probability": 0.921,
+        "paired_n": 1801
+      },
+      "p_matchup_posted_retro": {
+        "accuracy": 0.5308162132148806,
+        "brier": 0.2510511362254842,
+        "brier_gain": 5.2956203305920546e-05,
+        "logloss": 0.6955336630697563,
+        "n": 1801,
+        "paired_gain_probability": 0.678,
+        "paired_n": 1801
+      },
+      "p_matchup_projected": {
+        "accuracy": 0.5341476957245974,
+        "brier": 0.2511440905016791,
+        "brier_gain": -3.999807288895818e-05,
+        "logloss": 0.695712626563487,
+        "n": 1801,
+        "paired_gain_probability": 0.178,
+        "paired_n": 1801
+      },
+      "p_starter": {
+        "accuracy": 0.532481954469739,
+        "brier": 0.2510707998071127,
+        "brier_gain": 3.329262167739433e-05,
+        "logloss": 0.6955770456154818,
+        "n": 1801,
+        "paired_gain_probability": 0.588,
+        "paired_n": 1801
+      }
+    },
+    "n": 1801,
+    "runs": {
+      "base_mae_per_team": 2.541748667406996,
+      "mae_gain": -0.011972681843420485,
+      "shadow_projected_mae_per_team": 2.5537213492504165
+    }
+  },
+  "caveats": [
+    "The existing V10 replay is reused as the baseline; its original report documents frozen-input spot-check limitations.",
+    "V11.1 feature reconstruction itself is chronological and never ingests the current Eastern-date boxscore before predicting that date.",
+    "POSTED_RETRO is not an EARLY simulation because historical lineup publication timestamps are unavailable.",
+    "No historical sharp-price or profitability claim is made without archived point-in-time bookmaker prices."
+  ],
+  "created_at": "2026-08-13T15:00:48.660779+00:00",
+  "date_range": {
+    "end": "2026-08-11",
+    "start": "2026-03-25"
+  },
+  "fetch_failure_sample": [],
+  "holdout_25pct": {
+    "coverage": {
+      "bullpen_both": 1.0,
+      "full_posted_retro": 0.8403547671840355,
+      "full_projected": 0.8403547671840355,
+      "lineup_posted_retro_both": 1.0,
+      "lineup_projected_both": 1.0,
+      "matchup_posted_retro_both": 1.0,
+      "matchup_projected_both": 1.0,
+      "starter_both": 0.8403547671840355,
+      "weather_directional": 0.28159645232815966
+    },
+    "models": {
+      "base_p_home": {
+        "accuracy": 0.5898004434589801,
+        "brier": 0.24005788245422172,
+        "logloss": 0.6729839328399749,
+        "n": 451
+      },
+      "p_bullpen": {
+        "accuracy": 0.5942350332594235,
+        "brier": 0.2401925774827561,
+        "brier_gain": -0.0001346950285343873,
+        "logloss": 0.6733433364009812,
+        "n": 451,
+        "paired_gain_probability": 0.331,
+        "paired_n": 451
+      },
+      "p_full_posted_retro": {
+        "accuracy": 0.5809312638580931,
+        "brier": 0.24189154208529934,
+        "brier_gain": -0.001833659631077622,
+        "logloss": 0.6770103670646362,
+        "n": 451,
+        "paired_gain_probability": 0.029,
+        "paired_n": 451
+      },
+      "p_full_projected": {
+        "accuracy": 0.5809312638580931,
+        "brier": 0.2410913937996142,
+        "brier_gain": -0.0010335113453924794,
+        "logloss": 0.6752403637472137,
+        "n": 451,
+        "paired_gain_probability": 0.111,
+        "paired_n": 451
+      },
+      "p_lineup_posted_retro": {
+        "accuracy": 0.5809312638580931,
+        "brier": 0.24052164879473836,
+        "brier_gain": -0.000463766340516647,
+        "logloss": 0.6740930409706719,
+        "n": 451,
+        "paired_gain_probability": 0.152,
+        "paired_n": 451
+      },
+      "p_lineup_projected": {
+        "accuracy": 0.5875831485587583,
+        "brier": 0.23977889770384922,
+        "brier_gain": 0.00027898475037249626,
+        "logloss": 0.6724390698837504,
+        "n": 451,
+        "paired_gain_probability": 0.95,
+        "paired_n": 451
+      },
+      "p_matchup_posted_retro": {
+        "accuracy": 0.5831485587583148,
+        "brier": 0.2402209846192572,
+        "brier_gain": -0.00016310216503548358,
+        "logloss": 0.6733305177165262,
+        "n": 451,
+        "paired_gain_probability": 0.184,
+        "paired_n": 451
+      },
+      "p_matchup_projected": {
+        "accuracy": 0.5875831485587583,
+        "brier": 0.2401669191956408,
+        "brier_gain": -0.00010903674141907183,
+        "logloss": 0.673216350691344,
+        "n": 451,
+        "paired_gain_probability": 0.099,
+        "paired_n": 451
+      },
+      "p_starter": {
+        "accuracy": 0.5720620842572062,
+        "brier": 0.241124415484102,
+        "brier_gain": -0.0010665330298802733,
+        "logloss": 0.67518982234082,
+        "n": 451,
+        "paired_gain_probability": 0.076,
+        "paired_n": 451
+      }
+    },
+    "n": 451,
+    "runs": {
+      "base_mae_per_team": 2.4853808203991132,
+      "mae_gain": -0.014626940133037447,
+      "shadow_projected_mae_per_team": 2.5000077605321507
+    }
+  },
+  "methodology": {
+    "historical_sharp_prices": false,
+    "historical_weather": true,
+    "player_bat_side": "static biographical attribute only; outcomes/stats remain strictly prior-game",
+    "posted_retro": true,
+    "posted_retro_caveat": "actual historical batting order is an optional retrospective LATE scenario; exact publication timestamp is not archived",
+    "projected_lineup": "prior 7 batting orders + rolling prior-game hitter production",
+    "roi_claims": false,
+    "same_day_policy": "predict all games on an Eastern date before ingesting any result/boxscore from that date",
+    "weather_ml_effect": false
+  },
+  "monthly": {
+    "2026-03": {
+      "coverage": {
+        "bullpen_both": 0.27631578947368424,
+        "full_posted_retro": 0.0,
+        "full_projected": 0.0,
+        "lineup_posted_retro_both": 0.8026315789473685,
+        "lineup_projected_both": 0.8026315789473685,
+        "matchup_posted_retro_both": 0.8026315789473685,
+        "matchup_projected_both": 0.8026315789473685,
+        "starter_both": 0.0,
+        "weather_directional": 0.19736842105263158
+      },
+      "models": {
+        "base_p_home": {
+          "accuracy": 0.5131578947368421,
+          "brier": 0.27007535977755265,
+          "logloss": 0.7347203574092656,
+          "n": 76
+        },
+        "p_bullpen": {
+          "accuracy": 0.5131578947368421,
+          "brier": 0.27051371962725,
+          "brier_gain": -0.0004383598496973673,
+          "logloss": 0.7361342636020051,
+          "n": 76,
+          "paired_gain_probability": 0.396,
+          "paired_n": 76
+        },
+        "p_full_posted_retro": {
+          "accuracy": 0.5131578947368421,
+          "brier": 0.2699814243954079,
+          "brier_gain": 9.393538214474972e-05,
+          "logloss": 0.7352293030581898,
+          "n": 76,
+          "paired_gain_probability": 0.533,
+          "paired_n": 76
+        },
+        "p_full_projected": {
+          "accuracy": 0.5131578947368421,
+          "brier": 0.2702174997209079,
+          "brier_gain": -0.00014213994335526836,
+          "logloss": 0.7355707981353705,
+          "n": 76,
+          "paired_gain_probability": 0.472,
+          "paired_n": 76
+        },
+        "p_lineup_posted_retro": {
+          "accuracy": 0.5131578947368421,
+          "brier": 0.2696148725884079,
+          "brier_gain": 0.00046048718914476483,
+          "logloss": 0.7338398352123205,
+          "n": 76,
+          "paired_gain_probability": 0.921,
+          "paired_n": 76
+        },
+        "p_lineup_projected": {
+          "accuracy": 0.5131578947368421,
+          "brier": 0.2699640436419605,
+          "brier_gain": 0.00011131613559212106,
+          "logloss": 0.7344846119889141,
+          "n": 76,
+          "paired_gain_probability": 0.96,
+          "paired_n": 76
+        },
+        "p_matchup_posted_retro": {
+          "accuracy": 0.5131578947368421,
+          "brier": 0.2700062845949868,
+          "brier_gain": 6.907518256582534e-05,
+          "logloss": 0.7346926967046309,
+          "n": 76,
+          "paired_gain_probability": 0.554,
+          "paired_n": 76
+        },
+        "p_matchup_projected": {
+          "accuracy": 0.5131578947368421,
+          "brier": 0.2698928648817895,
+          "brier_gain": 0.00018249489576316336,
+          "logloss": 0.7343876291388967,
+          "n": 76,
+          "paired_gain_probability": 0.814,
+          "paired_n": 76
+        },
+        "p_starter": {
+          "accuracy": 0.5131578947368421,
+          "brier": 0.27007535977755265,
+          "brier_gain": 0.0,
+          "logloss": 0.7347203574092656,
+          "n": 76,
+          "paired_gain_probability": 0.0,
+          "paired_n": 76
+        }
+      },
+      "n": 76,
+      "runs": {
+        "base_mae_per_team": 2.6976684210526316,
+        "mae_gain": -0.01804539473684219,
+        "shadow_projected_mae_per_team": 2.715713815789474
+      }
+    },
+    "2026-04": {
+      "coverage": {
+        "bullpen_both": 1.0,
+        "full_posted_retro": 0.6096938775510204,
+        "full_projected": 0.6096938775510204,
+        "lineup_posted_retro_both": 1.0,
+        "lineup_projected_both": 1.0,
+        "matchup_posted_retro_both": 1.0,
+        "matchup_projected_both": 1.0,
+        "starter_both": 0.6096938775510204,
+        "weather_directional": 0.3010204081632653
+      },
+      "models": {
+        "base_p_home": {
+          "accuracy": 0.4897959183673469,
+          "brier": 0.260991458446875,
+          "logloss": 0.7161210160348737,
+          "n": 392
+        },
+        "p_bullpen": {
+          "accuracy": 0.4872448979591837,
+          "brier": 0.26110334463482143,
+          "brier_gain": -0.00011188618794644167,
+          "logloss": 0.7164011016743382,
+          "n": 392,
+          "paired_gain_probability": 0.389,
+          "paired_n": 392
+        },
+        "p_full_posted_retro": {
+          "accuracy": 0.48214285714285715,
+          "brier": 0.2618362516556684,
+          "brier_gain": -0.0008447932087933818,
+          "logloss": 0.7179558557305272,
+          "n": 392,
+          "paired_gain_probability": 0.05,
+          "paired_n": 392
+        },
+        "p_full_projected": {
+          "accuracy": 0.4846938775510204,
+          "brier": 0.2613151399204541,
+          "brier_gain": -0.00032368147357908494,
+          "logloss": 0.7168443014809752,
+          "n": 392,
+          "paired_gain_probability": 0.219,
+          "paired_n": 392
+        },
+        "p_lineup_posted_retro": {
+          "accuracy": 0.4897959183673469,
+          "brier": 0.2614714294313367,
+          "brier_gain": -0.0004799709844617306,
+          "logloss": 0.7171385135987328,
+          "n": 392,
+          "paired_gain_probability": 0.074,
+          "paired_n": 392
+        },
+        "p_lineup_projected": {
+          "accuracy": 0.49489795918367346,
+          "brier": 0.2609506099027372,
+          "brier_gain": 4.084854413777261e-05,
+          "logloss": 0.7160454398097814,
+          "n": 392,
+          "paired_gain_probability": 0.609,
+          "paired_n": 392
+        },
+        "p_matchup_posted_retro": {
+          "accuracy": 0.49489795918367346,
+          "brier": 0.26110167082158164,
+          "brier_gain": -0.00011021237470665302,
+          "logloss": 0.7163652598943401,
+          "n": 392,
+          "paired_gain_probability": 0.316,
+          "paired_n": 392
+        },
+        "p_matchup_projected": {
+          "accuracy": 0.49744897959183676,
+          "brier": 0.2610912277236556,
+          "brier_gain": -9.976927678062575e-05,
+          "logloss": 0.7163258909555702,
+          "n": 392,
+          "paired_gain_probability": 0.188,
+          "paired_n": 392
+        },
+        "p_starter": {
+          "accuracy": 0.4897959183673469,
+          "brier": 0.26114763859896173,
+          "brier_gain": -0.00015618015208673786,
+          "logloss": 0.7164382810524716,
+          "n": 392,
+          "paired_gain_probability": 0.106,
+          "paired_n": 392
+        }
+      },
+      "n": 392,
+      "runs": {
+        "base_mae_per_team": 2.5583923469387755,
+        "mae_gain": -0.01202219387755088,
+        "shadow_projected_mae_per_team": 2.5704145408163264
+      }
+    },
+    "2026-05": {
+      "coverage": {
+        "bullpen_both": 1.0,
+        "full_posted_retro": 0.7589498806682577,
+        "full_projected": 0.7589498806682577,
+        "lineup_posted_retro_both": 1.0,
+        "lineup_projected_both": 1.0,
+        "matchup_posted_retro_both": 1.0,
+        "matchup_projected_both": 1.0,
+        "starter_both": 0.7589498806682577,
+        "weather_directional": 0.31742243436754175
+      },
+      "models": {
+        "base_p_home": {
+          "accuracy": 0.5155131264916468,
+          "brier": 0.2485257796452697,
+          "logloss": 0.6900305930131534,
+          "n": 419
+        },
+        "p_bullpen": {
+          "accuracy": 0.5155131264916468,
+          "brier": 0.2484169341728902,
+          "brier_gain": 0.00010884547237949294,
+          "logloss": 0.6898433951741682,
+          "n": 419,
+          "paired_gain_probability": 0.617,
+          "paired_n": 419
+        },
+        "p_full_posted_retro": {
+          "accuracy": 0.5513126491646778,
+          "brier": 0.24839040530917422,
+          "brier_gain": 0.00013537433609547844,
+          "logloss": 0.6899109599869702,
+          "n": 419,
+          "paired_gain_probability": 0.55,
+          "paired_n": 419
+        },
+        "p_full_projected": {
+          "accuracy": 0.5536992840095465,
+          "brier": 0.24737061305688782,
+          "brier_gain": 0.001155166588381884,
+          "logloss": 0.687746039133429,
+          "n": 419,
+          "paired_gain_probability": 0.941,
+          "paired_n": 419
+        },
+        "p_lineup_posted_retro": {
+          "accuracy": 0.5250596658711217,
+          "brier": 0.24960714553986874,
+          "brier_gain": -0.0010813658945990345,
+          "logloss": 0.6923106133354624,
+          "n": 419,
+          "paired_gain_probability": 0.006,
+          "paired_n": 419
+        },
+        "p_lineup_projected": {
+          "accuracy": 0.522673031026253,
+          "brier": 0.24838060843562051,
+          "brier_gain": 0.0001451712096491864,
+          "logloss": 0.6897435038842725,
+          "n": 419,
+          "paired_gain_probability": 0.768,
+          "paired_n": 419
+        },
+        "p_matchup_posted_retro": {
+          "accuracy": 0.513126491646778,
+          "brier": 0.2483079111797327,
+          "brier_gain": 0.00021786846553700778,
+          "logloss": 0.6896087861315952,
+          "n": 419,
+          "paired_gain_probability": 0.872,
+          "paired_n": 419
+        },
+        "p_matchup_projected": {
+          "accuracy": 0.5250596658711217,
+          "brier": 0.2485128948610358,
+          "brier_gain": 1.2884784233890834e-05,
+          "logloss": 0.6900157796399751,
+          "n": 419,
+          "paired_gain_probability": 0.563,
+          "paired_n": 419
+        },
+        "p_starter": {
+          "accuracy": 0.5393794749403341,
+          "brier": 0.24762945012047255,
+          "brier_gain": 0.0008963295247971514,
+          "logloss": 0.6882201392137789,
+          "n": 419,
+          "paired_gain_probability": 0.947,
+          "paired_n": 419
+        }
+      },
+      "n": 419,
+      "runs": {
+        "base_mae_per_team": 2.5351535799522673,
+        "mae_gain": -0.01246050119331743,
+        "shadow_projected_mae_per_team": 2.5476140811455847
+      }
+    },
+    "2026-06": {
+      "coverage": {
+        "bullpen_both": 1.0,
+        "full_posted_retro": 0.8375634517766497,
+        "full_projected": 0.8375634517766497,
+        "lineup_posted_retro_both": 1.0,
+        "lineup_projected_both": 1.0,
+        "matchup_posted_retro_both": 1.0,
+        "matchup_projected_both": 1.0,
+        "starter_both": 0.8375634517766497,
+        "weather_directional": 0.3197969543147208
+      },
+      "models": {
+        "base_p_home": {
+          "accuracy": 0.5329949238578681,
+          "brier": 0.25192714302091374,
+          "logloss": 0.6974325331375196,
+          "n": 394
+        },
+        "p_bullpen": {
+          "accuracy": 0.5304568527918782,
+          "brier": 0.25192389683908123,
+          "brier_gain": 3.246181832505801e-06,
+          "logloss": 0.6974449930154775,
+          "n": 394,
+          "paired_gain_probability": 0.489,
+          "paired_n": 394
+        },
+        "p_full_posted_retro": {
+          "accuracy": 0.5355329949238579,
+          "brier": 0.25244180856051013,
+          "brier_gain": -0.0005146655395963928,
+          "logloss": 0.6986452858674503,
+          "n": 394,
+          "paired_gain_probability": 0.281,
+          "paired_n": 394
+        },
+        "p_full_projected": {
+          "accuracy": 0.5279187817258884,
+          "brier": 0.25208966387855075,
+          "brier_gain": -0.0001625208576370163,
+          "logloss": 0.6979048742390768,
+          "n": 394,
+          "paired_gain_probability": 0.411,
+          "paired_n": 394
+        },
+        "p_lineup_posted_retro": {
+          "accuracy": 0.5279187817258884,
+          "brier": 0.2524338762200787,
+          "brier_gain": -0.0005067331991649437,
+          "logloss": 0.6985078803065594,
+          "n": 394,
+          "paired_gain_probability": 0.121,
+          "paired_n": 394
+        },
+        "p_lineup_projected": {
+          "accuracy": 0.5329949238578681,
+          "brier": 0.2518763376569721,
+          "brier_gain": 5.08053639416417e-05,
+          "logloss": 0.697347129465434,
+          "n": 394,
+          "paired_gain_probability": 0.59,
+          "paired_n": 394
+        },
+        "p_matchup_posted_retro": {
+          "accuracy": 0.5355329949238579,
+          "brier": 0.25174975506966496,
+          "brier_gain": 0.00017738795124877527,
+          "logloss": 0.6970806360287732,
+          "n": 394,
+          "paired_gain_probability": 0.764,
+          "paired_n": 394
+        },
+        "p_matchup_projected": {
+          "accuracy": 0.5329949238578681,
+          "brier": 0.25196308085213454,
+          "brier_gain": -3.59378312208003e-05,
+          "logloss": 0.6975119906696264,
+          "n": 394,
+          "paired_gain_probability": 0.38,
+          "paired_n": 394
+        },
+        "p_starter": {
+          "accuracy": 0.5355329949238579,
+          "brier": 0.2521016774964289,
+          "brier_gain": -0.00017453447551518675,
+          "logloss": 0.6978813246839204,
+          "n": 394,
+          "paired_gain_probability": 0.381,
+          "paired_n": 394
+        }
+      },
+      "n": 394,
+      "runs": {
+        "base_mae_per_team": 2.499376269035533,
+        "mae_gain": -0.008099873096446775,
+        "shadow_projected_mae_per_team": 2.5074761421319796
+      }
+    },
+    "2026-07": {
+      "coverage": {
+        "bullpen_both": 1.0,
+        "full_posted_retro": 0.8679245283018868,
+        "full_projected": 0.8679245283018868,
+        "lineup_posted_retro_both": 1.0,
+        "lineup_projected_both": 1.0,
+        "matchup_posted_retro_both": 1.0,
+        "matchup_projected_both": 1.0,
+        "starter_both": 0.8679245283018868,
+        "weather_directional": 0.30997304582210244
+      },
+      "models": {
+        "base_p_home": {
+          "accuracy": 0.5849056603773585,
+          "brier": 0.23805572819648246,
+          "logloss": 0.6685824716496613,
+          "n": 371
+        },
+        "p_bullpen": {
+          "accuracy": 0.5849056603773585,
+          "brier": 0.23818499336666307,
+          "brier_gain": -0.00012926517018060912,
+          "logloss": 0.6689176487857202,
+          "n": 371,
+          "paired_gain_probability": 0.392,
+          "paired_n": 371
+        },
+        "p_full_posted_retro": {
+          "accuracy": 0.5822102425876011,
+          "brier": 0.23876997832987062,
+          "brier_gain": -0.0007142501333881612,
+          "logloss": 0.6702122469766678,
+          "n": 371,
+          "paired_gain_probability": 0.246,
+          "paired_n": 371
+        },
+        "p_full_projected": {
+          "accuracy": 0.5768194070080862,
+          "brier": 0.23842964174573586,
+          "brier_gain": -0.00037391354925339626,
+          "logloss": 0.669435052111294,
+          "n": 371,
+          "paired_gain_probability": 0.352,
+          "paired_n": 371
+        },
+        "p_lineup_posted_retro": {
+          "accuracy": 0.5795148247978437,
+          "brier": 0.23825689463163344,
+          "brier_gain": -0.00020116643515097343,
+          "logloss": 0.6691074186114425,
+          "n": 371,
+          "paired_gain_probability": 0.322,
+          "paired_n": 371
+        },
+        "p_lineup_projected": {
+          "accuracy": 0.5768194070080862,
+          "brier": 0.23788413565265767,
+          "brier_gain": 0.00017159254382478895,
+          "logloss": 0.6682439972517343,
+          "n": 371,
+          "paired_gain_probability": 0.819,
+          "paired_n": 371
+        },
+        "p_matchup_posted_retro": {
+          "accuracy": 0.5768194070080862,
+          "brier": 0.2380565650868248,
+          "brier_gain": -8.368903423316976e-07,
+          "logloss": 0.6685895344812851,
+          "n": 371,
+          "paired_gain_probability": 0.479,
+          "paired_n": 371
+        },
+        "p_matchup_projected": {
+          "accuracy": 0.5822102425876011,
+          "brier": 0.2380820165919434,
+          "brier_gain": -2.6288395460927205e-05,
+          "logloss": 0.6686455551955464,
+          "n": 371,
+          "paired_gain_probability": 0.392,
+          "paired_n": 371
+        },
+        "p_starter": {
+          "accuracy": 0.5714285714285714,
+          "brier": 0.23842769402762265,
+          "brier_gain": -0.00037196583114018633,
+          "logloss": 0.6693493381738703,
+          "n": 371,
+          "paired_gain_probability": 0.33,
+          "paired_n": 371
+        }
+      },
+      "n": 371,
+      "runs": {
+        "base_mae_per_team": 2.5974101078167116,
+        "mae_gain": -0.012856469002695547,
+        "shadow_projected_mae_per_team": 2.610266576819407
+      }
+    },
+    "2026-08": {
+      "coverage": {
+        "bullpen_both": 1.0,
+        "full_posted_retro": 0.7785234899328859,
+        "full_projected": 0.7785234899328859,
+        "lineup_posted_retro_both": 1.0,
+        "lineup_projected_both": 1.0,
+        "matchup_posted_retro_both": 1.0,
+        "matchup_projected_both": 1.0,
+        "starter_both": 0.7785234899328859,
+        "weather_directional": 0.16778523489932887
+      },
+      "models": {
+        "base_p_home": {
+          "accuracy": 0.5503355704697986,
+          "brier": 0.2529786592448255,
+          "logloss": 0.700022641204676,
+          "n": 149
+        },
+        "p_bullpen": {
+          "accuracy": 0.5570469798657718,
+          "brier": 0.2530438596875168,
+          "brier_gain": -6.520044269131553e-05,
+          "logloss": 0.7002486645972569,
+          "n": 149,
+          "paired_gain_probability": 0.457,
+          "paired_n": 149
+        },
+        "p_full_posted_retro": {
+          "accuracy": 0.5302013422818792,
+          "brier": 0.25474207117274494,
+          "brier_gain": -0.001763411927919456,
+          "logloss": 0.7039807323391325,
+          "n": 149,
+          "paired_gain_probability": 0.172,
+          "paired_n": 149
+        },
+        "p_full_projected": {
+          "accuracy": 0.5436241610738255,
+          "brier": 0.25320106834620804,
+          "brier_gain": -0.000222409101382548,
+          "logloss": 0.700570194775492,
+          "n": 149,
+          "paired_gain_probability": 0.447,
+          "paired_n": 149
+        },
+        "p_lineup_posted_retro": {
+          "accuracy": 0.5369127516778524,
+          "brier": 0.25416297381734226,
+          "brier_gain": -0.0011843145725167759,
+          "logloss": 0.7027049973647899,
+          "n": 149,
+          "paired_gain_probability": 0.082,
+          "paired_n": 149
+        },
+        "p_lineup_projected": {
+          "accuracy": 0.5570469798657718,
+          "brier": 0.25262537146452346,
+          "brier_gain": 0.0003532877803020251,
+          "logloss": 0.6993391140443251,
+          "n": 149,
+          "paired_gain_probability": 0.828,
+          "paired_n": 149
+        },
+        "p_matchup_posted_retro": {
+          "accuracy": 0.5570469798657718,
+          "brier": 0.2531634887372483,
+          "brier_gain": -0.0001848294924228222,
+          "logloss": 0.7004143025735974,
+          "n": 149,
+          "paired_gain_probability": 0.282,
+          "paired_n": 149
+        },
+        "p_matchup_projected": {
+          "accuracy": 0.5503355704697986,
+          "brier": 0.2531684767564362,
+          "brier_gain": -0.0001898175116107348,
+          "logloss": 0.7004120429608751,
+          "n": 149,
+          "paired_gain_probability": 0.096,
+          "paired_n": 149
+        },
+        "p_starter": {
+          "accuracy": 0.5302013422818792,
+          "brier": 0.25329821315707385,
+          "brier_gain": -0.0003195539122483604,
+          "logloss": 0.7006283295252747,
+          "n": 149,
+          "paired_gain_probability": 0.411,
+          "paired_n": 149
+        }
+      },
+      "n": 149,
+      "runs": {
+        "base_mae_per_team": 2.410429530201342,
+        "mae_gain": -0.0154134228187921,
+        "shadow_projected_mae_per_team": 2.425842953020134
+      }
+    }
+  },
+  "official_effect": false,
+  "promotion_policy": {
+    "history_alone_can_activate_production": false,
+    "history_can_support_candidate": true,
+    "live_point_in_time_confirmation_still_required": true
+  },
+  "samples": {
+    "fetch_failures": 0,
+    "holdout_n": 451,
+    "requested_replay_rows": 1801,
+    "train_n": 1350,
+    "usable_predictions": 1801
+  },
+  "source": {
+    "baseline": "data/mlb_backtest_2026.jsonl",
+    "baseline_probability": "row.v10.p_home",
+    "baseline_run_means": "row.v10.home_mu/away_mu",
+    "v11_features": "strict rolling reconstruction from prior Eastern calendar dates only"
+  },
+  "train_75pct": {
+    "coverage": {
+      "bullpen_both": 0.9592592592592593,
+      "full_posted_retro": 0.7007407407407408,
+      "full_projected": 0.7007407407407408,
+      "lineup_posted_retro_both": 0.9888888888888889,
+      "lineup_projected_both": 0.9888888888888889,
+      "matchup_posted_retro_both": 0.9888888888888889,
+      "matchup_projected_both": 0.9888888888888889,
+      "starter_both": 0.7007407407407408,
+      "weather_directional": 0.3
+    },
+    "models": {
+      "base_p_home": {
+        "accuracy": 0.5111111111111111,
+        "brier": 0.25479434479807184,
+        "logloss": 0.7031860287319711,
+        "n": 1350
+      },
+      "p_bullpen": {
+        "accuracy": 0.5088888888888888,
+        "brier": 0.25481450351800666,
+        "brier_gain": -2.015871993482632e-05,
+        "logloss": 0.7032894812769026,
+        "n": 1350,
+        "paired_gain_probability": 0.463,
+        "paired_n": 1350
+      },
+      "p_full_posted_retro": {
+        "accuracy": 0.5207407407407407,
+        "brier": 0.25492088621119185,
+        "brier_gain": -0.0001265414131200182,
+        "logloss": 0.7036038922561693,
+        "n": 1350,
+        "paired_gain_probability": 0.413,
+        "paired_n": 1350
+      },
+      "p_full_projected": {
+        "accuracy": 0.52,
+        "brier": 0.2543672718031252,
+        "brier_gain": 0.0004270729949466534,
+        "logloss": 0.7024136422153914,
+        "n": 1350,
+        "paired_gain_probability": 0.876,
+        "paired_n": 1350
+      },
+      "p_lineup_posted_retro": {
+        "accuracy": 0.5125925925925926,
+        "brier": 0.25542236982697186,
+        "brier_gain": -0.0006280250289000255,
+        "logloss": 0.704523194125636,
+        "n": 1350,
+        "paired_gain_probability": 0.006,
+        "paired_n": 1350
+      },
+      "p_lineup_projected": {
+        "accuracy": 0.5140740740740741,
+        "brier": 0.25472338531922073,
+        "brier_gain": 7.095947885110698e-05,
+        "logloss": 0.703050348525118,
+        "n": 1350,
+        "paired_gain_probability": 0.774,
+        "paired_n": 1350
+      },
+      "p_matchup_posted_retro": {
+        "accuracy": 0.5133333333333333,
+        "brier": 0.2546692090954163,
+        "brier_gain": 0.0001251357026555433,
+        "logloss": 0.7029511582951687,
+        "n": 1350,
+        "paired_gain_probability": 0.836,
+        "paired_n": 1350
+      },
+      "p_matchup_projected": {
+        "accuracy": 0.5162962962962963,
+        "brier": 0.2548112788416963,
+        "brier_gain": -1.693404362446138e-05,
+        "logloss": 0.7032280490955881,
+        "n": 1350,
+        "paired_gain_probability": 0.357,
+        "paired_n": 1350
+      },
+      "p_starter": {
+        "accuracy": 0.5192592592592593,
+        "brier": 0.2543936289402074,
+        "brier_gain": 0.0004007158578644421,
+        "logloss": 0.702387888353906,
+        "n": 1350,
+        "paired_gain_probability": 0.934,
+        "paired_n": 1350
+      }
+    },
+    "n": 1350,
+    "runs": {
+      "base_mae_per_team": 2.560579703703704,
+      "mae_gain": -0.011085962962962714,
+      "shadow_projected_mae_per_team": 2.5716656666666666
+    }
+  },
+  "version": "11.1.5-walkforward-2026-v1",
+  "weights": {
+    "bullpen": 0.16,
+    "lineup": 0.12,
+    "matchup": 0.1,
+    "starter_recent": 0.14
+  }
+}
