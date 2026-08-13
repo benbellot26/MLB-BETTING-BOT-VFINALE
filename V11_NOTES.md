@@ -17,8 +17,12 @@ Improve prediction quality without rewriting the validated V10.0.15 baseball eng
 - Every bookmaker probability is de-vigged before aggregation.
 - Market freshness is included in the weight.
 - A robust disagreement penalty prevents a single outlier feed from dominating the consensus.
-- Bookmaker weights are allowed to learn only after at least 80 settled V11 observations for the bookmaker.
-- Learned weight adjustments are capped to ±15% around conservative priors.
+- All sharp books start with equal prior weight: V11 does not hard-code an unproven bookmaker hierarchy.
+- Bookmaker skill is learned separately for ML, Run Line and Totals.
+- Learning uses only one independent model-favoured observation per game/market: complementary sides and repeated manual runs cannot inflate the sample.
+- FINAL observations replace LATE/EARLY observations for the same game/market when available.
+- Bookmaker weights can change only after at least 80 settled independent V11 observations for that market.
+- Learned weight adjustments are capped to ±15%.
 - The journal records bookmaker-level benchmark components so the weights can be evaluated and learned from real outcomes.
 - A model + sharp-market ensemble is recorded in shadow only. It does not affect official picks in V11.0.0.
 
