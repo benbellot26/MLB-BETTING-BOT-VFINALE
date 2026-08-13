@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""V11.3 live winner head for MLB.
+"""V11.3 live winner engine with the exact V10 Discord delivery layer.
 
-Production intent (ML only):
-- V10.0.15 remains the live baseball/base-probability engine.
-- V11.2 remains the calibrated probability head (fair probability / EV context).
-- V11.3 is a directional head trained on the most recent 400 historical games,
-  with a same-Eastern-day-freeze rolling validation of 271/451 (60.09%).
+Prediction:
+- V10.0.15 remains the baseball/base engine.
+- V11.2 remains the calibrated ML probability head.
+- V11.3 remains the directional winner head.
+- Run Line and Total remain V10.0.15.
 
-Run Line and Total are inherited from the frozen V10.0.15 engine; V11.3 does not
-pretend to have validated directional improvements on those markets.
+Delivery:
+- Discord is sent only through bot.py's V10 functions.
+- No V11-specific Discord formatter or extra V11 fields are shown.
 """
 from __future__ import annotations
 
@@ -21,7 +22,7 @@ from pathlib import Path
 
 import bot as core
 
-VERSION = "11.3-live-direction-v1"
+VERSION = "11.3-live-v10-discord-v2"
 MODEL_FILE = Path(os.getenv("V11_3_MODEL_FILE", "data/v11_3_direction_model.json"))
 LIVE_FILE = Path(os.getenv("V11_3_LIVE_FILE", "data/v11_3_live.jsonl"))
 REPORT_FILE = Path(os.getenv("V11_3_LIVE_REPORT", "data/v11_3_live_report.json"))
@@ -102,9 +103,9 @@ def load_model():
 
 
 def _lineup_ops(ctx, side, regular_ops):
-    lu = ctx.get(f"{side}_lineup") or {}
-    value = lu.get("weighted_ops")
-    count = int(core.num(lu.get("count"), 0))
+    lineup = ctx.get(f"{side}_lineup") or {}
+    value = lineup.get("weighted_ops")
+    count = int(core.num(lineup.get("count"), 0))
     if value is None or core.num(value, 0) <= .2 or count < 5:
         return float(regular_ops), False, count
     return float(value), True, count
@@ -224,7 +225,7 @@ def apply_heads(result, model):
         "lineup_both_available": f["lineup_both_available"],
         "home_lineup_count": f["home_lineup_count"],
         "away_lineup_count": f["away_lineup_count"],
-        "features": {k: round(core.num(v), 6) if isinstance(v, (int,float)) else v for k,v in f.items()},
+        "features": {k: round(core.num(v), 6) if isinstance(v, (int, float)) else v for k, v in f.items()},
         "starter_home": ctx.get("home_sp"),
         "starter_away": ctx.get("away_sp"),
         "runline_inherited_from": "V10.0.15",
@@ -237,176 +238,184 @@ def apply_heads(result, model):
     return out
 
 
-def _market_label(rec):
-    if not rec:
-        return "—"
-    market = rec.get("market")
-    if market == "RUNLINE":
-        return f"{rec.get('name')} {core.num(rec.get('point')):+g}"
-    if market == "TOTAL":
-        return f"{rec.get('name')} {core.num(rec.get('point')):g}"
-    return str(rec.get("name") or "—")
+def _orient_v112_for_v113(result):
+    """Expose V11.3 winner through V10's existing ML presentation contract.
+
+    The magnitude comes from V11.2 when both heads agree. On a disagreement,
+    V11.3 still owns the direction but the displayed ML probability is kept
+    deliberately near 50%, so disagreement cannot masquerade as strong confidence.
+    """
+    x = result["v11_3"]
+    home_pick = x["v11_3_pick"] == result["ctx"]["home"]
+    p112_home = clamp(x["v11_2_p_home"])
+    if x["heads_agree"]:
+        p_home = p112_home
+    else:
+        p_home = .5001 if home_pick else .4999
+    result["p_model"] = p_home
+    return p_home
 
 
-def _best_inherited(result, market):
-    candidates=[]
-    try:
-        for rec in core.v1011_iter_options(result):
-            if rec and rec.get("market") == market:
-                candidates.append(rec)
-    except Exception:
-        rec=(result.get("model_recs") or {}).get(market)
-        if rec:
-            candidates=[rec]
-    if not candidates:
-        return None
-    return max(candidates, key=lambda r:(core.num(r.get("p_effective",r.get("p_model")),.5), core.num(r.get("confidence"),0)))
+def _patch_ml_options(result):
+    """Replace only ML probabilities/direction; RL and Total remain V10.0.15."""
+    x = result["v11_3"]
+    ctx = result["ctx"]
+    pick = x["v11_3_pick"]
+    p_pick = clamp(x["v11_2_probability_for_pick"])
+    if not x["heads_agree"]:
+        p_pick = .5001
 
+    options = core.v1011_iter_options(result)
+    for rec in options:
+        if str(rec.get("market") or "").upper() != "ML":
+            continue
+        is_pick = str(rec.get("name") or "") == str(pick)
+        rec["p_model"] = p_pick if is_pick else 1-p_pick
+        core.v1011_apply_effective(rec, result)
 
-def send_embed(title, fields, color=5763719):
-    if not core.DISCORD_URL:
-        return False
-    fs=[{"name":n[:256],"value":v[:1024],"inline":False} for n,v in fields if v]
-    payload={
-        "username":"MLB Betting Bot V11.3",
-        "allowed_mentions":{"parse":[]},
-        "embeds":[{
-            "title":title[:256],"color":color,"fields":fs,
-            "footer":{"text":"MLB V11.3 • winner head V11.3 + probability head V11.2 • aucune garantie de gain"},
-        }],
-    }
-    status,_=core.discord_request("POST", payload)
-    return status in (200,204)
-
-
-def send_game(result):
-    x=result["v11_3"];ctx=result["ctx"]
-    agree="✅ CONVERGENCE" if x["heads_agree"] else "⚠️ DÉSACCORD"
-    lineup="✅ lineups utilisables" if x["lineup_both_available"] else "🟠 lineup partielle / indisponible"
-    main=(
-        f"**PRONOSTIC V11.3 : {x['v11_3_pick']}**\n"
-        f"Tête directionnelle : **{100*x['v11_3_direction_score']:.1f}%** *(score de classification, pas une proba de pari)*\n"
-        f"Tête probabilité V11.2 sur ce côté : **{100*x['v11_2_probability_for_pick']:.1f}%**\n"
-        f"{agree} • grade **{x['grade']}** • ranking **{x['rank_score']:.0f}/100**"
-    )
-    data=(
-        f"Phase **{x['phase']}** • qualité données **{10*x['quality']:.1f}/10** • {lineup}\n"
-        f"Lineups H/A : **{x['home_lineup_count']}/9 – {x['away_lineup_count']}/9**\n"
-        f"Starters : **{ctx.get('away_sp','—')} / {ctx.get('home_sp','—')}**\n"
-        f"V10 base domicile {100*x['base_v10_p_home']:.1f}% → V11.2 {100*x['v11_2_p_home']:.1f}%"
-    )
-    rl=_best_inherited(result,"RUNLINE");tot=_best_inherited(result,"TOTAL")
-    inherited=(
-        f"RL : **{_market_label(rl)}** • chance prudente {100*core.num((rl or {}).get('p_effective',(rl or {}).get('p_model',.5)),.5):.1f}%\n"
-        f"Total : **{_market_label(tot)}** • chance prudente {100*core.num((tot or {}).get('p_effective',(tot or {}).get('p_model',.5)),.5):.1f}%\n"
-        f"*RL/Total restent issus de V10.0.15 ; la V11.3 est validée ici uniquement pour le vainqueur ML.*"
-    )
-    return send_embed(f"⚾ V11.3 • {ctx['away']} @ {ctx['home']}",[("🏆 Vainqueur",main),("🧪 Données",data),("⚾ Marchés secondaires",inherited)])
-
-
-def send_top(results):
-    ranked=sorted((r for r in results if r.get("v11_3")), key=lambda r:r["v11_3"]["rank_score"], reverse=True)
-    blocks=[]
-    for i,r in enumerate(ranked[:5],1):
-        x=r["v11_3"]
-        flag="✅" if x["heads_agree"] else "⚠️"
-        blocks.append(
-            f"**#{i} {x['v11_3_pick']}** — {x['away']} @ {x['home']}\n"
-            f"{flag} {x['grade']} • V11.2 **{100*x['v11_2_probability_for_pick']:.1f}%** • direction **{100*x['v11_3_direction_score']:.1f}%** • rank {x['rank_score']:.0f}/100"
-        )
-    text="\n\n".join(blocks) if blocks else "Aucun match restant à analyser."
-    return send_embed("🏆 V11.3 — PRONOSTICS VAINQUEUR À UTILISER",[("Classement de ce run",text),("Règle","Priorité aux lignes avec **convergence V11.3/V11.2** et lineup disponible. Un désaccord entre les deux têtes est un signal de prudence, pas un pari à forcer.")],16766720)
+    # Keep the legacy representative ML pointer consistent when present.
+    ml = (result.get("model_recs") or {}).get("ML")
+    if ml:
+        is_pick = str(ml.get("name") or "") == str(pick)
+        if not is_pick:
+            # If model_recs contains only one side, point it to the actual V11.3
+            # side when that side exists in the open option list.
+            replacement = next((r for r in options if r.get("market")=="ML" and str(r.get("name"))==str(pick)), None)
+            if replacement is not None:
+                result["model_recs"]["ML"] = replacement
 
 
 def write_rows(new_rows):
-    old=[]
+    old = []
     if LIVE_FILE.exists():
         for line in LIVE_FILE.read_text(encoding="utf-8").splitlines():
             if not line.strip():
                 continue
-            try: old.append(json.loads(line))
-            except Exception: pass
+            try:
+                old.append(json.loads(line))
+            except Exception:
+                pass
     old.extend(new_rows)
     LIVE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    LIVE_FILE.write_text("\n".join(json.dumps(r,ensure_ascii=False,separators=(",",":")) for r in old)+("\n" if old else ""), encoding="utf-8")
+    LIVE_FILE.write_text(
+        "\n".join(json.dumps(r, ensure_ascii=False, separators=(",", ":")) for r in old) + ("\n" if old else ""),
+        encoding="utf-8",
+    )
 
 
 def self_test():
-    model=load_model()
-    f={"lineup_relative":.5,"regular_overlap":.2,"lineup_abs":.7,"lineup_cov_diff":0.0,"lineup_x_uncertainty":.4,"lineup_available":1.0}
-    p112=v11_2_probability(.55,f,model);p113=v11_3_direction_probability(.55,f,model)
-    assert 0<p112<1 and 0<p113<1
-    assert model["validation"]["wins"]==271 and model["validation"]["holdout_n"]==451
-    print("SELF-TEST V11.3 LIVE OK")
+    model = load_model()
+    f = {
+        "lineup_relative": .5, "regular_overlap": .2, "lineup_abs": .7,
+        "lineup_cov_diff": 0.0, "lineup_x_uncertainty": .4, "lineup_available": 1.0,
+    }
+    p112 = v11_2_probability(.55, f, model)
+    p113 = v11_3_direction_probability(.55, f, model)
+    assert 0 < p112 < 1 and 0 < p113 < 1
+    assert model["validation"]["wins"] == 271 and model["validation"]["holdout_n"] == 451
+    assert callable(core.send_game) and callable(core.send_top_messages) and callable(core.send_daily_plan)
+    print("SELF-TEST V11.3 LIVE + V10 DISCORD OK")
 
 
 def main():
-    model=load_model()
+    model = load_model()
     if not core.ODDS_KEY:
         raise SystemExit("ODDS_API_KEY absente")
-    discord_ok=core.discord_test()
-    hist=core.load_history()
+
+    discord_ok = core.discord_test()
+    hist = core.load_history()
     core.settle_history(hist)
-    run_state=core.run_model_state(hist)
-    disp_state=core.dispersion_state(hist)
-    engine="learned-runs" if run_state.get("active") else "base-runs"
-    cal_state=core.calibration_state(hist,engine)
-    skill=core.skill_state(hist,engine)
-    states=(run_state,disp_state,cal_state,skill)
+    run_state = core.run_model_state(hist)
+    disp_state = core.dispersion_state(hist)
+    engine = "learned-runs" if run_state.get("active") else "base-runs"
+    cal_state = core.calibration_state(hist, engine)
+    skill = core.skill_state(hist, engine)
+    states = (run_state, disp_state, cal_state, skill)
+
     core.savant_league()
-    games=core.mlb_schedule(core.TARGET_DATE)
-    events=core.odds_api()
-    matches=core.match_odds_events(games,events)
-    results=[]
-    now=core.NOW
-    for g in games:
-        if core.parse_dt(g["gameDate"]) <= now:
+    games = core.mlb_schedule(core.TARGET_DATE)
+    events = core.odds_api()
+    matches = core.match_odds_events(games, events)
+    results = []
+
+    now = core.NOW
+    for game in games:
+        if core.parse_dt(game["gameDate"]) <= now:
             continue
-        pair=matches.get(str(g["gamePk"]))
+        pair = matches.get(str(game["gamePk"]))
         if not pair:
             continue
         try:
-            r=core.analyze_base(g,pair[0],pair[1],states,hist)
-            r["disp_state"]=disp_state
-            core.attach_model_recommendations(r)
-            apply_heads(r,model)
-            results.append(r)
-        except Exception:
-            core.logging.exception("V11.3 analyse impossible pour gamePk=%s",g.get("gamePk"))
+            result = core.analyze_base(game, pair[0], pair[1], states, hist)
+            result["disp_state"] = disp_state
 
-    analyzed_at=datetime.now(timezone.utc).isoformat()
-    run_id=hashlib.sha1(f"{analyzed_at}|{core.TARGET_DATE}|{VERSION}".encode()).hexdigest()[:16]
-    rows=[]
-    for r in results:
-        row=dict(r["v11_3"])
-        row.update({"run_id":run_id,"analyzed_at":analyzed_at})
+            # Build V10 markets first so RL/Total stay untouched.
+            core.attach_model_recommendations(result)
+
+            # V11.3/V11.2 replace the ML direction/probability only.
+            apply_heads(result, model)
+            _orient_v112_for_v113(result)
+            _patch_ml_options(result)
+            results.append(result)
+        except Exception:
+            core.logging.exception("V11.3 analyse impossible pour gamePk=%s", game.get("gamePk"))
+
+    # Use the exact V10 portfolio/selector before any Discord delivery.
+    portfolio = core.allocate_portfolio(results) if results else {
+        "daily_cap": 0.0, "allocated": 0.0, "remaining": 0.0, "game_cap": 0.0
+    }
+
+    analyzed_at = datetime.now(timezone.utc).isoformat()
+    run_id = hashlib.sha1(f"{analyzed_at}|{core.TARGET_DATE}|{VERSION}".encode()).hexdigest()[:16]
+    rows = []
+    for result in results:
+        row = dict(result["v11_3"])
+        row.update({"run_id": run_id, "analyzed_at": analyzed_at})
         rows.append(row)
     write_rows(rows)
 
-    if discord_ok:
-        for r in results:
-            send_game(r)
-        send_top(results)
+    # IMPORTANT: no V11-specific Discord formatting here.
+    # The exact currently deployed V10 Discord functions are reused.
+    if discord_ok and results:
+        for result in results:
+            core.send_game(result, {}, portfolio)
+        core.send_top_messages(results, skill)
+        core.send_daily_plan(results)
 
-    ranked=sorted(rows,key=lambda r:r["rank_score"],reverse=True)
-    report={
-        "version":VERSION,"run_id":run_id,"analyzed_at":analyzed_at,"target_date":core.TARGET_DATE,
-        "model":model,"remaining_games_analyzed":len(rows),
-        "top_picks":[{k:r.get(k) for k in ("game_pk","away","home","v11_3_pick","v11_3_direction_score","v11_2_probability_for_pick","heads_agree","grade","rank_score","phase")} for r in ranked[:5]],
-        "methodology":{
-            "winner_direction":"V11.3 recent-400 residual head",
-            "probability_head":"V11.2 lineup-calibrated head",
-            "runline_total":"V10.0.15 inherited",
-            "tonight_model_trained_through":"2026-08-12",
-            "important_note":"The 60.09% evidence comes from rolling day-frozen evaluation. Live confirmation remains required.",
+    ranked = sorted(rows, key=lambda r: r["rank_score"], reverse=True)
+    report = {
+        "version": VERSION,
+        "run_id": run_id,
+        "analyzed_at": analyzed_at,
+        "target_date": core.TARGET_DATE,
+        "model": model,
+        "remaining_games_analyzed": len(rows),
+        "discord_delivery": "exact-current-V10-functions",
+        "top_picks": [
+            {k: r.get(k) for k in (
+                "game_pk", "away", "home", "v11_3_pick", "v11_3_direction_score",
+                "v11_2_probability_for_pick", "heads_agree", "grade", "rank_score", "phase"
+            )}
+            for r in ranked[:5]
+        ],
+        "methodology": {
+            "winner_direction": "V11.3 recent-400 residual head",
+            "probability_head": "V11.2 lineup-calibrated head",
+            "runline_total": "V10.0.15 inherited",
+            "discord": "V10 exact delivery layer",
+            "tonight_model_trained_through": "2026-08-12",
+            "important_note": "The 60.09% evidence comes from rolling day-frozen evaluation. Live confirmation remains required.",
         },
     }
-    REPORT_FILE.parent.mkdir(parents=True,exist_ok=True)
-    REPORT_FILE.write_text(json.dumps(report,ensure_ascii=False,indent=2,sort_keys=True),encoding="utf-8")
-    core.logging.info("V11.3 LIVE terminé | matchs restants=%d | top=%s",len(rows),", ".join(r["v11_3_pick"] for r in ranked[:3]) or "-")
+    REPORT_FILE.parent.mkdir(parents=True, exist_ok=True)
+    REPORT_FILE.write_text(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
+    core.logging.info(
+        "V11.3 LIVE terminé | Discord=V10 exact | matchs restants=%d | top=%s",
+        len(rows), ", ".join(r["v11_3_pick"] for r in ranked[:3]) or "-"
+    )
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     import sys
     if "--self-test" in sys.argv:
         self_test()
