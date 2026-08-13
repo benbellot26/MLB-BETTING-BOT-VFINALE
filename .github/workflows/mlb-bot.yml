@@ -28,12 +28,13 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Validation Python V10
+      - name: Validation Python V11.3
         run: |
           python --version
-          python -m py_compile bot.py
+          python -m py_compile bot.py v11_3_live.py
           python bot.py --self-test
-
+          python v11_3_live.py --self-test
+          
       - name: Exécution du Bot V10
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
@@ -57,7 +58,7 @@ jobs:
           CAL_MIN_GAMES: "500"
         run: |
           mkdir -p data
-          python bot.py
+          python v11_3_live.py
 
       - name: Validation données V10
         if: success()
@@ -100,7 +101,13 @@ jobs:
           if [ -d data/archive_v10 ]; then
             git add data/archive_v10
           fi
-
+          if [ -f data/v11_3_live.jsonl ]; then
+            git add data/v11_3_live.jsonl
+          fi
+          if [ -f data/v11_3_live_report.json ]; then
+            git add data/v11_3_live_report.json
+          fi
+          
           if git diff --cached --quiet; then
             echo "Données V10 inchangées."
             exit 0
