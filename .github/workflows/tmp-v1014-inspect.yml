@@ -1,4 +1,4 @@
-name: V10.0.14 Selector Inspection
+name: V10.0.14 Selector Validation
 
 on:
   push:
@@ -6,15 +6,46 @@ on:
       - v10-0-14-selector-20260813
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  inspect:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Inspect backtest schema
+      - name: Backtest selector robustness
         run: python tools/tmp_v1014_inspect.py
+      - name: Apply V10.0.14 layer
+        run: python tools/patch_v1014.py
+      - name: Compile
+        run: python -m py_compile bot.py
+      - name: Full self-test
+        run: python bot.py --self-test
+      - name: Structural checks
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('bot.py').read_text(encoding='utf-8')
+          assert 'VERSION="10.0.14"' in s
+          assert 'robust-selector-v5' in s
+          assert 'V1014_SCORE_PENALTY_FACTOR' in s
+          assert 'canonical_official_key' in s
+          wf=Path('.github/workflows/mlb-bot.yml').read_text(encoding='utf-8')
+          assert 'workflow_dispatch:' in wf
+          assert 'schedule:' not in wf and 'cron:' not in wf
+          print('V10.0.14 structural checks OK')
+          PY
+      - name: Commit patched bot
+        run: |
+          if git diff --quiet -- bot.py; then
+            echo "No bot.py changes to commit"
+            exit 0
+          fi
+          git config user.name "benbellot26"
+          git config user.email "benjamin.bellot.bb@gmail.com"
+          git add bot.py
+          git commit -m "V10.0.14 — robust selector and canonical official journal"
+          git push
