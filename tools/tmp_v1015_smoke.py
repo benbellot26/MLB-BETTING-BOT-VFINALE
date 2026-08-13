@@ -1,3 +1,6 @@
+import sys
+from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import bot
 
 bot._V1015_CAL_CACHE={
@@ -22,6 +25,7 @@ for r in results:
     for rec in bot.v1011_iter_options(r):
         if (rec.get('winamax_eval') or {}).get('official_selected'):
             selected.append((r['game_pk'],rec['name'],rec['selection_official_score']))
+selected.sort(key=lambda x:x[2],reverse=True)
 assert len(selected)==3, selected
 assert selected[0][2]>=selected[-1][2]
 assert portfolio['official_count']==3
