@@ -9,16 +9,76 @@ permissions:
   contents: write
 
 jobs:
-  inspect:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Inspect /10 occurrences
+      - name: Apply confidence /20 display
         run: |
-          echo '--- /10 occurrences ---'
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('bot.py')
+          s=p.read_text(encoding='utf-8')
+          replacements={
+              "{rec['confidence']:.1f}/10":"{rec['confidence']*2:.1f}/20",
+              "{v['confidence']:.1f}/10":"{v['confidence']*2:.1f}/20",
+              "{num(rec.get('confidence')):.1f}/10":"{2*num(rec.get('confidence')):.1f}/20",
+              "{num(c['rec'].get('confidence')):.1f}/10":"{2*num(c['rec'].get('confidence')):.1f}/20",
+              "{conf:.1f}/10":"{conf*2:.1f}/20",
+              "{MIN_PLAN_CONF:.1f}/10":"{MIN_PLAN_CONF*2:.1f}/20",
+              "{MIN_COMBO_CONF:.1f}/10":"{MIN_COMBO_CONF*2:.1f}/20",
+              ' | %s %s %.1f/10 | qualified=':' | %s %s %.1f/20 | qualified=',
+              'r["verdict"]["confidence"],sum(e["qualified"]':'2*r["verdict"]["confidence"],sum(e["qualified"]',
+          }
+          before=s
+          for old,new in replacements.items():
+              s=s.replace(old,new)
+          if s==before:
+              raise SystemExit('no confidence display replacement applied')
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Validate display-only change
+        run: |
+          python -m py_compile bot.py
+          python bot.py --self-test
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('bot.py').read_text(encoding='utf-8')
+          forbidden=[
+              "{rec['confidence']:.1f}/10",
+              "{v['confidence']:.1f}/10",
+              "{num(rec.get('confidence')):.1f}/10",
+              "{num(c['rec'].get('confidence')):.1f}/10",
+              "{conf:.1f}/10",
+              "{MIN_PLAN_CONF:.1f}/10",
+              "{MIN_COMBO_CONF:.1f}/10",
+              ' | %s %s %.1f/10 | qualified=',
+          ]
+          assert not any(x in s for x in forbidden)
+          assert "conf. **{2*num(rec.get('confidence')):.1f}/20**" in s
+          assert "Score Officiel" in s
+          # Internal confidence scale stays /10: thresholds/model logic are untouched.
+          assert 'V1007_MIN_CONF=max(6.0' in s
+          assert 'V1007_PREMIUM_CONF=7.8' in s
+          # Quality remains displayed on /10.
+          assert 'qualité {q*10:.1f}/10' in s
+          print('confidence /20 display checks OK')
+          PY
+          echo '--- remaining /10 occurrences (quality/internal expected) ---'
           grep -n '/10' bot.py || true
-          echo '--- confidence occurrences ---'
-          grep -ni 'conf' bot.py | tail -n 120 || true
+          echo '--- /20 confidence displays ---'
+          grep -n '/20' bot.py || true
+      - name: Commit bot display change
+        run: |
+          if git diff --quiet -- bot.py; then
+            echo 'No bot.py changes to commit'
+            exit 0
+          fi
+          git config user.name 'benbellot26'
+          git config user.email 'benjamin.bellot.bb@gmail.com'
+          git add bot.py
+          git commit -m 'Discord: afficher la confiance sur 20'
+          git push
