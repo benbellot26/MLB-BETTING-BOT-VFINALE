@@ -31,8 +31,18 @@ jobs:
       - name: Validation Python V10 + V11
         run: |
           python --version
-          python -m py_compile bot.py bot_v11.py
+          python -m py_compile bot.py bot_v11.py v11_benchmark_report.py
           python bot_v11.py --self-test
+
+      - name: Backtest point-in-time du benchmark V11
+        env:
+          HISTORY_FILE: data/mlb_history_v10.jsonl
+          JOURNAL_FILE: data/mlb_bet_journal_v1.jsonl
+          V11_SHARP_BOOKS: "pinnacle,betfair_ex_eu,matchbook,betonlineag"
+          V11_MAX_MARKET_AGE_MIN: "90"
+          V11_CONSENSUS_ROBUST_SCALE: "0.035"
+        run: |
+          python v11_benchmark_report.py
 
       - name: Exécution du Bot V11
         env:
@@ -82,13 +92,13 @@ jobs:
                       json.loads(line)
               print(f'{p}: valide')
 
-          state=Path('data/v10_state.json')
-          if state.exists():
-              json.loads(state.read_text(encoding='utf-8'))
-              print(f'{state}: valide')
+          for p in [Path('data/v10_state.json'), Path('data/v11_benchmark_report.json')]:
+              if p.exists():
+                  json.loads(p.read_text(encoding='utf-8'))
+                  print(f'{p}: valide')
           PY
 
-      - name: Sauvegarde historique et journal V11
+      - name: Sauvegarde historique, journal et benchmark V11
         if: success()
         run: |
           git config user.name "MLB Betting Bot"
@@ -103,6 +113,9 @@ jobs:
           if [ -f data/v10_state.json ]; then
             git add data/v10_state.json
           fi
+          if [ -f data/v11_benchmark_report.json ]; then
+            git add data/v11_benchmark_report.json
+          fi
           if [ -d data/archive_v10 ]; then
             git add data/archive_v10
           fi
@@ -112,6 +125,6 @@ jobs:
             exit 0
           fi
 
-          git commit -m "data: update V11 history and journal [skip ci]"
+          git commit -m "data: update V11 history journal and benchmark [skip ci]"
           git pull --rebase origin "$GITHUB_REF_NAME"
           git push origin "HEAD:$GITHUB_REF_NAME"
