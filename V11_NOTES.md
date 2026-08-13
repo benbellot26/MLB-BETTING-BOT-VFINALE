@@ -1,105 +1,70 @@
-# MLB Betting Bot V11.0.0 — Predictive Benchmark Upgrade
+# MLB Betting Bot V11 — Predictive development branch
 
-## Objective
+## V11.0.0 validated foundation
 
-Improve prediction quality without rewriting the validated V10.0.15 baseball engine before new features are proven.
+The validated V10.0.15 baseball engine remains the independent prediction core. V11 adds the sharp-market benchmark, point-in-time validation, bookmaker-level learning and the evidence-gated ML blend. Winamax remains execution/information only; Pinnacle, Betfair Exchange EU, Matchbook and BetOnline are the default sharp references.
 
-## What changes
+The model+sharp blend remains OFF unless its chronological holdout passes the minimum sample, Brier, LogLoss, paired-bootstrap and multi-reference gates. The first complete V11 GitHub Actions run passed successfully; the branch remains intentionally separate from `main` while predictive development continues.
 
-- `bot.py` remains frozen as the V10.0.15 reference engine.
-- `bot_v11.py` imports the V10.0.15 engine and patches only the market benchmark / journal layer.
-- The predictive reference market is based on a sharp-book set by default:
-  - Pinnacle
-  - Betfair Exchange EU
-  - Matchbook
-  - BetOnline.ag
-- Winamax remains requested for display/execution information but is excluded from the predictive benchmark.
-- Betclic, Unibet, PMU and NetBet remain collected as auxiliary sources for market/line coverage but are also excluded from the sharp benchmark.
-- Every sharp-book probability is de-vigged before aggregation.
-- Market freshness is included in the weight.
-- A robust disagreement penalty prevents a single outlier feed from dominating the consensus.
-- All sharp books start with equal prior weight: V11 does not hard-code an unproven bookmaker hierarchy.
-- Bookmaker skill is learned separately for ML, Run Line and Totals.
-- Learning uses only one independent model-favoured observation per game/market: complementary sides and repeated manual runs cannot inflate the sample.
-- FINAL observations replace LATE/EARLY observations for the same game/market when available.
-- Each book is evaluated against the other sharp books on the same observations, avoiding sample-difficulty bias.
-- Bookmaker weights can change only after at least 80 settled independent V11 observations for that market.
-- Learned weight adjustments are capped to ±15%.
-- The journal records bookmaker-level benchmark components so the weights can be evaluated and learned from real outcomes.
+## V11.1.0 — six baseball upgrades
 
-## Point-in-time validation
+The next modification adds all six requested predictive blocks in shadow first. None may alter official picks merely because the feature exists.
 
-The broad 2026 baseball replay did not contain historical bookmaker prices, so it could not validate a market blend. However, the production V10 history already contains real pregame market snapshots captured on live runs.
+1. **Reliever-level bullpen availability**
+   - individual reliever workloads for D-1 / D-2 / D-3;
+   - pitch counts and consecutive-day use;
+   - probable availability rather than a team-level bullpen average;
+   - extra penalty when a high-quality/high-leverage reliever is likely unavailable.
 
-`v11_benchmark_report.py` uses only those persisted point-in-time snapshots. It makes no historical odds API calls and does not reconstruct missing prices. Comparisons are performed on the same matched sample where both the independent effective model and V11 sharp probability exist. It compares:
+2. **Starting-pitcher recent form with shrinkage**
+   - recent starts are compared with season skill rather than replacing it;
+   - FIP-like strikeout/walk/home-run information is preferred to raw recent ERA;
+   - recent innings/depth is included;
+   - small recent samples are shrunk back toward season performance.
 
-- independent effective model Brier / LogLoss;
-- legacy market benchmark Brier / LogLoss where available;
-- V11 sharp benchmark Brier / LogLoss;
-- individual sharp-book Brier / LogLoss;
-- a model + sharp ML blend whose model weight is chosen on the chronological first 75% and evaluated on the latest 25% holdout.
+3. **Directional wind**
+   - Open-Meteo wind direction is converted from meteorological `from` direction to travel direction;
+   - wind is projected onto the ballpark home-plate-to-center-field azimuth when that venue field is available;
+   - out-to-center wind raises the shadow run expectation, in-from-center wind lowers it, crosswind has limited effect;
+   - fixed-roof/dome games receive no outdoor wind correction.
 
-## Evidence-gated predictive blend
+4. **Lineup provenance and quality**
+   - lineup state becomes `PROJECTED`, `PARTIAL` or `OFFICIAL_FEED`;
+   - the posted lineup is evaluated against the club's normal high-usage hitters;
+   - batter OPS is shrunk toward league average when plate-appearance samples are small;
+   - important regulars missing from the posted lineup are explicitly journaled.
 
-`v11_predictive_gate.py` is the production V11 entrypoint. The ML blend stays OFF unless all gates pass:
+5. **Lineup x opposing starter interaction**
+   - batting handedness is evaluated against the opposing starter's throwing hand;
+   - switch hitters and opposite-handed hitters receive platoon-advantage treatment;
+   - matchup strength is weighted by batting-order position and hitter quality;
+   - the matchup correction is separated from the lineup-strength correction to avoid hiding which feature adds value.
 
-- at least 40 chronological holdout games;
-- the blend improves Brier by at least 0.0015 versus the independent effective model;
-- blend LogLoss is no worse than the independent model;
-- at least 60% of holdout observations have 2+ sharp references;
-- the blend weight was selected only on the earlier training sample and remains between 25% and 80% model weight.
+6. **Shadow validation / ablation before activation**
+   - persist the independent base probability and separate shadow variants for bullpen, starter, lineup, platoon matchup and the combined model;
+   - persist base and shadow run expectations when the underlying run means are available;
+   - grade one closest-to-first-pitch observation per final game;
+   - compare Brier, LogLoss and paired bootstrap evidence for ML;
+   - compare per-team run MAE for run projections;
+   - report feature coverage and individual ablations;
+   - no automatic official activation: a future production change still requires explicit evidence-gate integration.
 
-If any gate fails, ML uses the independent V10 effective probability unchanged. Run Line and Totals remain independent-model only in V11.0.0 regardless of the report. When active, the pre-blend probability is still journaled as `p_effective_independent`, so future validation cannot accidentally grade the blend against itself.
+## V11.1 activation philosophy
 
-## What does not change
+The new baseball layer is deliberately a **relative correction layer** so it does not simply duplicate information already present in V10. For example, starter recent form is measured relative to season skill, lineup strength is measured relative to the club's normal lineup, and bullpen impact focuses on current availability/fatigue.
 
-- Structural run model
-- Residual run model
-- Walk-forward / holdout guards
-- Negative-binomial score distribution
-- Existing phase logic
-- Existing V10.0.15 calibration and selector lab
-- Bankroll and exposure limits
-- Discord structure
-- Live journal settlement
-- Historical V10 files and seed data
+The planned future-candidate gate is conservative: at least 80 final point-in-time games, at least 30 chronological holdout games, Brier gain of at least 0.0015, paired bootstrap probability of improvement of at least 85%, no worse LogLoss, and sufficient full-feature coverage. Passing that gate would only make the feature set a candidate for production; it would not silently change official picks.
 
-## GitHub Actions
+## Existing V11 sharp benchmark
 
-The workflow remains manual (`workflow_dispatch`). It now runs:
+- sharp books: Pinnacle, Betfair Exchange EU, Matchbook, BetOnline;
+- Winamax: execution/information only;
+- Betclic, Unibet, PMU and NetBet: auxiliary line sources;
+- probabilities are de-vigged book by book;
+- stale feeds and outliers receive lower weight;
+- empirical book weights require at least 80 independent settled observations and are capped to +/-15%;
+- the production ML sharp blend itself still requires at least 40 chronological holdout games, Brier gain >= 0.0015, paired-bootstrap gain probability >= 85%, LogLoss no worse, and >= 60% multi-sharp-reference coverage.
 
-1. `python -m py_compile bot.py bot_v11.py v11_benchmark_report.py v11_predictive_gate.py`
-2. the complete V10.0.15 regression self-test chain
-3. V11 sharp-consensus and predictive-gate self-tests
-4. point-in-time V11 benchmark report
-5. `python v11_predictive_gate.py`
-6. JSON / JSONL validation
-7. history, journal and benchmark-report persistence only after success
+## GitHub safety
 
-## Default V11 configuration
-
-```text
-V11_SHARP_BOOKS=pinnacle,betfair_ex_eu,matchbook,betonlineag
-V11_EXECUTION_BOOKS=winamax_fr
-V11_AUX_BOOKS=betclic_fr,unibet_fr,pmu_fr,netbet_fr
-V11_BOOK_WEIGHT_MIN_N=80
-V11_MAX_MARKET_AGE_MIN=90
-V11_CONSENSUS_ROBUST_SCALE=0.035
-V11_SHADOW_MODEL_WEIGHT=0.55
-V11_AUTO_BLEND_ENABLED=1
-V11_AUTO_BLEND_MIN_HOLDOUT=40
-V11_AUTO_BLEND_MIN_BRIER_GAIN=0.0015
-V11_AUTO_BLEND_MIN_MULTIREF_PCT=0.60
-```
-
-## Next predictive work
-
-The next baseball-feature changes should be tested in shadow/backtest before activation, especially:
-
-- directional wind relative to ballpark orientation rather than treating all strong wind as run-positive;
-- reliever-level bullpen availability / consecutive-day workload;
-- starter recent-form features with shrinkage;
-- stricter lineup-confirmation provenance;
-- expansion of point-in-time market coverage as more V11 snapshots accumulate.
-
-V11.0.0 intentionally avoids activating unvalidated baseball-feature changes until they demonstrate better out-of-sample prediction metrics.
+`main` remains untouched. Development stays on `agent/v11-predictive-core` / PR #20. The workflow remains manual (`workflow_dispatch`) and data commits occur only after successful validation.
