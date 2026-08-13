@@ -112,8 +112,9 @@ def v1015_market_calibration_state(market):
 def v1011_effective_probability(p,market,phase):
     static=v1015_static_effective_probability(p,market,phase);state=v1015_market_calibration_state(market)
     if not state.get("active"):return static
-    if static<.5:return 1-v1011_effective_probability(1-static,market,phase)
-    return clamp(.5+(static-.5)*num(state.get("factor"),1),.5,.72)
+    f=num(state.get("factor"),1)
+    if static>=.5:return clamp(.5+(static-.5)*f,.5,.72)
+    return 1-clamp(.5+((1-static)-.5)*f,.5,.72)
 
 
 def v1011_apply_effective(rec,result):
@@ -121,8 +122,9 @@ def v1011_apply_effective(rec,result):
     phase=result.get("phase","EARLY");market=str(rec.get("market") or "ML").upper();pm=clamp(num(rec.get("p_model"),.5),.001,.999)
     static=v1015_static_effective_probability(pm,market,phase);state=v1015_market_calibration_state(market);pe=static
     if state.get("active"):
-        if static>=.5:pe=clamp(.5+(static-.5)*num(state.get("factor"),1),.5,.72)
-        else:pe=1-clamp(.5+((1-static)-.5)*num(state.get("factor"),1),.5,.72)
+        f=num(state.get("factor"),1)
+        if static>=.5:pe=clamp(.5+(static-.5)*f,.5,.72)
+        else:pe=1-clamp(.5+((1-static)-.5)*f,.5,.72)
     pp=clamp(num(rec.get("p_push"),0),0,.95);mass=1-pp;pw=mass*pe;pl=mass*(1-pe)
     rec.update({"p_effective_static":static,"p_effective":pe,"p_effective_win":pw,"p_effective_loss":pl,
                 "fair_effective":(1-pp)/pw if pw>0 else 99,"min_price_effective":min_acceptable_price(pw,pp,pl),
