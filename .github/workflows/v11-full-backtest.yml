@@ -1,4 +1,4 @@
-name: V11 Full 2026 Walk-Forward Backtest
+name: V11.2 Full 2026 Walk-Forward Backtest
 
 on:
   push:
@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   full-backtest:
-    name: V11.1.5 full 2026 walk-forward
+    name: V11.2 train-only full 2026 evaluation
     runs-on: ubuntu-latest
     timeout-minutes: 180
 
@@ -33,11 +33,12 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Validate walk-forward engine
+      - name: Validate V11.2 engines
         run: |
           python --version
-          python -m py_compile bot.py v11_walkforward_backtest.py
+          python -m py_compile bot.py v11_walkforward_backtest.py v11_2_optimizer.py
           python v11_walkforward_backtest.py --self-test
+          python v11_2_optimizer.py --self-test
 
       - name: Run all available 2026 games
         run: |
@@ -49,6 +50,13 @@ jobs:
             --include-posted \
             --include-weather
 
+      - name: Train V11.2 on first 75 percent and grade final 25 percent
+        run: |
+          python v11_2_optimizer.py \
+            --input data/v11_walkforward_2026.jsonl \
+            --report data/v11_2_report.json \
+            --predictions data/v11_2_predictions.jsonl
+
       - name: Validate full-season outputs
         run: |
           python - <<'PY'
@@ -56,39 +64,48 @@ jobs:
           from pathlib import Path
 
           rows_path = Path('data/v11_walkforward_2026.jsonl')
-          report_path = Path('data/v11_walkforward_2026_report.json')
-          assert rows_path.exists() and rows_path.stat().st_size > 0
-          assert report_path.exists() and report_path.stat().st_size > 0
+          v11_report_path = Path('data/v11_walkforward_2026_report.json')
+          v12_report_path = Path('data/v11_2_report.json')
+          v12_preds_path = Path('data/v11_2_predictions.jsonl')
+          for p in (rows_path, v11_report_path, v12_report_path, v12_preds_path):
+              assert p.exists() and p.stat().st_size > 0, p
 
           rows = [json.loads(x) for x in rows_path.read_text(encoding='utf-8').splitlines() if x.strip()]
-          report = json.loads(report_path.read_text(encoding='utf-8'))
+          preds = [json.loads(x) for x in v12_preds_path.read_text(encoding='utf-8').splitlines() if x.strip()]
+          rep = json.loads(v12_report_path.read_text(encoding='utf-8'))
 
           assert len(rows) >= 1700, f'full backtest unexpectedly small: {len(rows)}'
-          assert len({int(r['game_pk']) for r in rows}) == len(rows), 'duplicate game_pk in V11 walk-forward output'
-          assert all(r.get('no_lookahead') is True for r in rows)
-          assert all(r.get('official_effect') is False for r in rows)
-          assert int(report['samples']['usable_predictions']) == len(rows)
-          assert report.get('official_effect') is False
-          assert report['methodology']['same_day_policy'].startswith('predict all games')
+          assert len(preds) == len(rows)
+          assert len({int(r['game_pk']) for r in rows}) == len(rows)
+          assert all(r.get('no_lookahead') is True for r in preds)
+          assert all(r.get('official_effect') is False for r in preds)
+          assert rep.get('official_effect') is False
+          assert rep['methodology']['holdout_used_for_selection'] is False
+          assert rep['holdout']['n'] >= 300
 
-          print(f'validated full V11 walk-forward: {len(rows)} games')
+          print(f'validated V11.2 on {len(rows)} games')
           print(json.dumps({
-              'all_base_brier': report['all']['models']['base_p_home']['brier'],
-              'all_full_projected_brier': report['all']['models']['p_full_projected']['brier'],
-              'holdout_gain': report['holdout_25pct']['models']['p_full_projected']['brier_gain'],
-              'holdout_gain_probability': report['holdout_25pct']['models']['p_full_projected']['paired_gain_probability'],
-              'full_projected_coverage': report['all']['coverage'].get('full_projected'),
+              'selected_params': rep['selected_params'],
+              'holdout_base_brier': rep['holdout']['base_brier'],
+              'holdout_v11_2_brier': rep['holdout']['v11_2_brier'],
+              'holdout_brier_gain': rep['holdout']['brier_gain'],
+              'holdout_logloss_gain': rep['holdout']['logloss_gain'],
+              'holdout_gain_probability': rep['holdout']['paired_gain_probability'],
+              'candidate_better_than_v10': rep['gate']['candidate_better_than_v10'],
+              'passes_full_gate': rep['gate']['passes_full_production_evidence_gate'],
           }, indent=2))
           PY
 
-      - name: Upload full backtest artifacts
+      - name: Upload V11.2 artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v11-full-2026-walkforward
+          name: v11-2-full-2026-walkforward
           path: |
             data/v11_walkforward_2026.jsonl
             data/v11_walkforward_2026_report.json
+            data/v11_2_predictions.jsonl
+            data/v11_2_report.json
           if-no-files-found: warn
           retention-days: 30
 
@@ -98,11 +115,11 @@ jobs:
         run: |
           git config user.name 'MLB Betting Bot'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add data/v11_walkforward_2026.jsonl data/v11_walkforward_2026_report.json
+          git add data/v11_walkforward_2026.jsonl data/v11_walkforward_2026_report.json data/v11_2_predictions.jsonl data/v11_2_report.json
           if git diff --cached --quiet; then
             echo 'Backtest outputs unchanged.'
             exit 0
           fi
-          git commit -m 'data: persist full V11.1.5 2026 walk-forward [skip ci]'
+          git commit -m 'data: persist V11.2 full-season evaluation [skip ci]'
           git pull --rebase origin agent/v11-predictive-core
           git push origin HEAD:agent/v11-predictive-core
