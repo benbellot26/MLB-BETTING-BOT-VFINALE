@@ -53,7 +53,8 @@ def _snapshot_model_home(snapshot, home):
         value = None
         for key in ("p_effective_independent", "p_effective", "p_model"):
             if rec.get(key) is not None:
-                value = core.clamp(core.num(rec.get(key), .5), .001, .999); break
+                value = core.clamp(core.num(rec.get(key), .5), .001, .999)
+                break
         if value is not None:
             return value if core.norm_name(rec.get("name")) == core.norm_name(home) else 1-value
 
@@ -166,6 +167,14 @@ def metric_block(rows):
     }
 
 
+def blend_gain_probability(rows):
+    if not rows or any(r.get("blend") is None for r in rows):
+        return None
+    base_losses = [(core.num(r["model"], .5)-r["y"])**2 for r in rows]
+    blend_losses = [(core.num(r["blend"], .5)-r["y"])**2 for r in rows]
+    return core.bootstrap_gain_prob(base_losses, blend_losses, reps=1000)
+
+
 def main():
     hist = core.load_history()
     all_rows, books = collect(hist)
@@ -177,11 +186,12 @@ def main():
     matched_blend = add_blend(usable, weight)
     holdout_blend = add_blend(holdout, weight)
     holdout_multi = sum(core.num(r.get("sharp_refs"), 0) >= 2 for r in holdout)
+    gain_prob = blend_gain_probability(holdout_blend)
 
     report = {
         "version": v11.V11_VERSION,
         "benchmark_version": v11.BENCHMARK_VERSION,
-        "method": "point-in-time persisted snapshots; independent effective model; matched comparisons; no reconstructed historical odds",
+        "method": "point-in-time persisted snapshots; independent effective model; matched comparisons; chronological holdout; bootstrap paired-loss evidence; no reconstructed historical odds",
         "sharp_books": list(v11.sharp_books()),
         "coverage": {
             "final_games_with_pregame_market_snapshot": len(all_rows),
@@ -194,6 +204,7 @@ def main():
         },
         "matched_all": metric_block(matched_blend),
         "holdout": metric_block(holdout_blend),
+        "holdout_blend_gain_probability": gain_prob,
         "blend_model_weight_selected_on_train": weight,
         "train_n": len(train),
         "holdout_n": len(holdout),
