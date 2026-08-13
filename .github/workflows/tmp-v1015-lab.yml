@@ -1,4 +1,4 @@
-name: V10.0.15 Selector Lab
+name: V10.0.15 Selector Validation
 
 on:
   push:
@@ -6,15 +6,49 @@ on:
       - v10-0-15-official-selector-lab-20260813
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  lab:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Run selector lab
+      - name: Selector lab
         run: python tools/tmp_v1015_lab.py
+      - name: Apply V10.0.15 layer
+        run: python tools/patch_v1015.py
+      - name: Compile
+        run: python -m py_compile bot.py
+      - name: Full self-test
+        run: python bot.py --self-test
+      - name: Structural checks
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('bot.py').read_text(encoding='utf-8')
+          assert 'VERSION="10.0.15"' in s
+          assert 'official-selector-lab-v6' in s
+          assert 'V1015_OFFICIAL_WEIGHTS={"floor":.80,"other":.20}' in s
+          assert 'v1015_market_calibration_state' in s
+          assert 'temporal_hard_block' in s
+          assert 'selector_shadow_selected' in s
+          assert 'v1013_probability' in s and 'official_v2' in s
+          wf=Path('.github/workflows/mlb-bot.yml').read_text(encoding='utf-8')
+          assert 'workflow_dispatch:' in wf
+          assert 'schedule:' not in wf and 'cron:' not in wf
+          print('V10.0.15 structural checks OK')
+          PY
+      - name: Commit patched bot
+        run: |
+          if git diff --quiet -- bot.py; then
+            echo "No bot.py changes to commit"
+            exit 0
+          fi
+          git config user.name "benbellot26"
+          git config user.email "benjamin.bellot.bb@gmail.com"
+          git add bot.py
+          git commit -m "V10.0.15 — official score, market calibration and selector lab"
+          git push
