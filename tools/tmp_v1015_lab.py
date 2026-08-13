@@ -78,15 +78,18 @@ def candidate_rows(rs):
             p,y=obs(r,m);q=current_q(p,m);thr=.60 if m=='ML' else .59
             if q<thr: continue
             safe=max(.5,q-uncertainty(r));dq=data_quality(r);ss=structural_stability(r);cal=market_rel(m);depth=.70
-            out.append({'date':r['game_date'][:10],'game':r['game_pk'],'m':m,'q':q,'safe':safe,'y':y,'strength':strength(q,m),'safe_strength':strength(safe,m),'data':dq,'stability':ss,'cal':cal,'depth':depth})
+            other=.30*ss+.25*dq+.25*cal+.20*depth
+            out.append({'date':r['game_date'][:10],'game':r['game_pk'],'m':m,'q':q,'safe':safe,'y':y,'strength':strength(q,m),'safe_strength':strength(safe,m),'data':dq,'stability':ss,'cal':cal,'depth':depth,'other':other})
     return out
 
 STRATEGIES={
  'probability_first': {'strength':.70,'stability':.10,'data':.05,'cal':.10,'depth':.05},
  'safe_only': {'safe_strength':1.0},
+ 'official_90_10': {'safe_strength':.90,'other':.10},
+ 'official_85_15': {'safe_strength':.85,'other':.15},
+ 'official_80_20': {'safe_strength':.80,'other':.20},
+ 'official_75_25': {'safe_strength':.75,'other':.25},
  'safe_hybrid_60': {'safe_strength':.60,'stability':.15,'data':.10,'cal':.10,'depth':.05},
- 'safe_hybrid_50': {'safe_strength':.50,'stability':.20,'data':.10,'cal':.10,'depth':.10},
- 'safe_hybrid_45': {'safe_strength':.45,'stability':.20,'data':.10,'cal':.15,'depth':.10},
  'quality_first': {'strength':.35,'stability':.20,'data':.30,'cal':.10,'depth':.05},
  'stability_first': {'strength':.25,'stability':.40,'data':.15,'cal':.15,'depth':.05},
  'balanced': {'strength':.30,'stability':.25,'data':.15,'cal':.15,'depth':.15},
