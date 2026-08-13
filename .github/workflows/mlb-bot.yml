@@ -33,6 +33,7 @@ jobs:
           python --version
           python -m py_compile bot.py bot_v11.py v11_benchmark_report.py v11_predictive_gate.py
           python v11_predictive_gate.py --self-test
+          python v11_benchmark_report.py --shadow-self-test
 
       - name: Backtest point-in-time du benchmark V11
         env:
@@ -76,10 +77,30 @@ jobs:
           V11_AUTO_BLEND_ENABLED: "1"
           V11_AUTO_BLEND_MIN_HOLDOUT: "40"
           V11_AUTO_BLEND_MIN_BRIER_GAIN: "0.0015"
+          V11_AUTO_BLEND_MIN_GAIN_PROB: "0.85"
           V11_AUTO_BLEND_MIN_MULTIREF_PCT: "0.60"
         run: |
           mkdir -p data
           python v11_predictive_gate.py
+
+      - name: V11.1 shadow features baseball
+        if: success()
+        env:
+          HISTORY_FILE: data/mlb_history_v10.jsonl
+          V11_BASEBALL_SHADOW_FILE: data/v11_baseball_shadow.jsonl
+          V11_BASEBALL_SHADOW_REPORT: data/v11_baseball_shadow_report.json
+          V11_BASEBALL_MIN_FINAL: "80"
+          V11_BASEBALL_MIN_HOLDOUT: "30"
+          V11_BASEBALL_MIN_BRIER_GAIN: "0.0015"
+          V11_BASEBALL_MIN_GAIN_PROB: "0.85"
+          V11_BASEBALL_MIN_FULL_COVERAGE: "0.55"
+          V11_BASEBALL_W_BULLPEN: "0.16"
+          V11_BASEBALL_W_STARTER: "0.14"
+          V11_BASEBALL_W_LINEUP: "0.12"
+          V11_BASEBALL_W_MATCHUP: "0.10"
+          V11_SHADOW_HTTP_TIMEOUT: "10"
+        run: |
+          python v11_benchmark_report.py --baseball-shadow
 
       - name: Validation données V11
         if: success()
@@ -88,7 +109,11 @@ jobs:
           import json
           from pathlib import Path
 
-          paths=[Path('data/mlb_history_v10.jsonl'), Path('data/mlb_bet_journal_v1.jsonl')]
+          paths=[
+              Path('data/mlb_history_v10.jsonl'),
+              Path('data/mlb_bet_journal_v1.jsonl'),
+              Path('data/v11_baseball_shadow.jsonl'),
+          ]
           paths += sorted(Path('data/archive_v10').glob('*.jsonl')) if Path('data/archive_v10').exists() else []
           for p in paths:
               if not p.exists():
@@ -98,7 +123,11 @@ jobs:
                       json.loads(line)
               print(f'{p}: valide')
 
-          for p in [Path('data/v10_state.json'), Path('data/v11_benchmark_report.json')]:
+          for p in [
+              Path('data/v10_state.json'),
+              Path('data/v11_benchmark_report.json'),
+              Path('data/v11_baseball_shadow_report.json'),
+          ]:
               if p.exists():
                   json.loads(p.read_text(encoding='utf-8'))
                   print(f'{p}: valide')
@@ -122,6 +151,12 @@ jobs:
           if [ -f data/v11_benchmark_report.json ]; then
             git add data/v11_benchmark_report.json
           fi
+          if [ -f data/v11_baseball_shadow.jsonl ]; then
+            git add data/v11_baseball_shadow.jsonl
+          fi
+          if [ -f data/v11_baseball_shadow_report.json ]; then
+            git add data/v11_baseball_shadow_report.json
+          fi
           if [ -d data/archive_v10 ]; then
             git add data/archive_v10
           fi
@@ -131,6 +166,6 @@ jobs:
             exit 0
           fi
 
-          git commit -m "data: update V11 history journal and benchmark [skip ci]"
+          git commit -m "data: update V11 history journal benchmark and baseball shadow [skip ci]"
           git pull --rebase origin "$GITHUB_REF_NAME"
           git push origin "HEAD:$GITHUB_REF_NAME"
