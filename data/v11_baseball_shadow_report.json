@@ -1,0 +1,83 @@
+{
+  "coverage": {
+    "bullpen_both": null,
+    "full": null,
+    "lineup_both": null,
+    "matchup_both": null,
+    "starter_both": null,
+    "weather_directional": null
+  },
+  "current_run": {
+    "base_probability_coverage": 1.0,
+    "date": "2026-08-13",
+    "full_feature_coverage": 0.0,
+    "preview_games": 9,
+    "rows_written": 9
+  },
+  "future_activation_gate": {
+    "auto_activation": false,
+    "candidate_only": false,
+    "min_brier_gain": 0.0015,
+    "min_final": 80,
+    "min_full_coverage": 0.55,
+    "min_gain_probability": 0.85,
+    "min_holdout": 30
+  },
+  "holdout": {
+    "brier_base_p_home": null,
+    "brier_gain_full": null,
+    "brier_shadow_p_bullpen": null,
+    "brier_shadow_p_full": null,
+    "brier_shadow_p_lineup": null,
+    "brier_shadow_p_matchup": null,
+    "brier_shadow_p_starter": null,
+    "logloss_base_p_home": null,
+    "logloss_shadow_p_bullpen": null,
+    "logloss_shadow_p_full": null,
+    "logloss_shadow_p_lineup": null,
+    "logloss_shadow_p_matchup": null,
+    "logloss_shadow_p_starter": null,
+    "n": 0,
+    "paired_gain_probability": null,
+    "run_mae_base_per_team": null,
+    "run_mae_gain": null,
+    "run_mae_shadow_per_team": null,
+    "run_n_games": 0
+  },
+  "holdout_full_coverage": null,
+  "matched_all": {
+    "brier_base_p_home": null,
+    "brier_gain_full": null,
+    "brier_shadow_p_bullpen": null,
+    "brier_shadow_p_full": null,
+    "brier_shadow_p_lineup": null,
+    "brier_shadow_p_matchup": null,
+    "brier_shadow_p_starter": null,
+    "logloss_base_p_home": null,
+    "logloss_shadow_p_bullpen": null,
+    "logloss_shadow_p_full": null,
+    "logloss_shadow_p_lineup": null,
+    "logloss_shadow_p_matchup": null,
+    "logloss_shadow_p_starter": null,
+    "n": 0,
+    "paired_gain_probability": null,
+    "run_mae_base_per_team": null,
+    "run_mae_gain": null,
+    "run_mae_shadow_per_team": null,
+    "run_n_games": 0
+  },
+  "method": "point-in-time baseball feature shadow; closest pregame observation; fixed conservative weights; ablation metrics",
+  "official_effect": false,
+  "samples": {
+    "final_games": 0,
+    "holdout_n": 0,
+    "train_n": 0
+  },
+  "shadow_version": "11.1.0-baseball-shadow-v1",
+  "weights": {
+    "bullpen": 0.16,
+    "lineup": 0.12,
+    "matchup": 0.1,
+    "starter_recent": 0.14
+  }
+}
