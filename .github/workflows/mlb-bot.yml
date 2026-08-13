@@ -1,4 +1,4 @@
-name: MLB Betting Bot V10
+name: MLB Betting Bot V11
 
 on:
   workflow_dispatch:
@@ -7,12 +7,12 @@ permissions:
   contents: write
 
 concurrency:
-  group: mlb-betting-bot-v10
+  group: mlb-betting-bot-v11
   cancel-in-progress: false
 
 jobs:
   run-bot:
-    name: Exécution du Bot V10
+    name: Exécution du Bot V11
     runs-on: ubuntu-latest
     timeout-minutes: 40
 
@@ -28,13 +28,13 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Validation Python V10
+      - name: Validation Python V10 + V11
         run: |
           python --version
-          python -m py_compile bot.py
-          python bot.py --self-test
+          python -m py_compile bot.py bot_v11.py
+          python bot_v11.py --self-test
 
-      - name: Exécution du Bot V10
+      - name: Exécution du Bot V11
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
@@ -55,11 +55,17 @@ jobs:
           ARCHIVE_AFTER_DAYS: "45"
           RUN_MODEL_MIN_GAMES: "450"
           CAL_MIN_GAMES: "500"
+          V11_SHARP_BOOKS: "pinnacle,betfair_ex_eu,matchbook,betonlineag"
+          V11_EXECUTION_BOOKS: "winamax_fr"
+          V11_BOOK_WEIGHT_MIN_N: "80"
+          V11_MAX_MARKET_AGE_MIN: "90"
+          V11_CONSENSUS_ROBUST_SCALE: "0.035"
+          V11_SHADOW_MODEL_WEIGHT: "0.55"
         run: |
           mkdir -p data
-          python bot.py
+          python bot_v11.py
 
-      - name: Validation données V10
+      - name: Validation données V11
         if: success()
         run: |
           python - <<'PY'
@@ -82,7 +88,7 @@ jobs:
               print(f'{state}: valide')
           PY
 
-      - name: Sauvegarde historique et journal V10
+      - name: Sauvegarde historique et journal V11
         if: success()
         run: |
           git config user.name "MLB Betting Bot"
@@ -102,10 +108,10 @@ jobs:
           fi
 
           if git diff --cached --quiet; then
-            echo "Données V10 inchangées."
+            echo "Données V11 inchangées."
             exit 0
           fi
 
-          git commit -m "data: update V10 history and journal [skip ci]"
+          git commit -m "data: update V11 history and journal [skip ci]"
           git pull --rebase origin "$GITHUB_REF_NAME"
           git push origin "HEAD:$GITHUB_REF_NAME"
