@@ -31,8 +31,8 @@ jobs:
       - name: Validation Python V10 + V11
         run: |
           python --version
-          python -m py_compile bot.py bot_v11.py v11_benchmark_report.py
-          python bot_v11.py --self-test
+          python -m py_compile bot.py bot_v11.py v11_benchmark_report.py v11_predictive_gate.py
+          python v11_predictive_gate.py --self-test
 
       - name: Backtest point-in-time du benchmark V11
         env:
@@ -67,13 +67,19 @@ jobs:
           CAL_MIN_GAMES: "500"
           V11_SHARP_BOOKS: "pinnacle,betfair_ex_eu,matchbook,betonlineag"
           V11_EXECUTION_BOOKS: "winamax_fr"
+          V11_AUX_BOOKS: "betclic_fr,unibet_fr,pmu_fr,netbet_fr"
           V11_BOOK_WEIGHT_MIN_N: "80"
           V11_MAX_MARKET_AGE_MIN: "90"
           V11_CONSENSUS_ROBUST_SCALE: "0.035"
           V11_SHADOW_MODEL_WEIGHT: "0.55"
+          V11_BENCHMARK_REPORT: data/v11_benchmark_report.json
+          V11_AUTO_BLEND_ENABLED: "1"
+          V11_AUTO_BLEND_MIN_HOLDOUT: "40"
+          V11_AUTO_BLEND_MIN_BRIER_GAIN: "0.0015"
+          V11_AUTO_BLEND_MIN_MULTIREF_PCT: "0.60"
         run: |
           mkdir -p data
-          python bot_v11.py
+          python v11_predictive_gate.py
 
       - name: Validation données V11
         if: success()
