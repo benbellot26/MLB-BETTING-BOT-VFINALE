@@ -116,8 +116,6 @@ def select_blend_weight(train):
     for w in WEIGHT_GRID:
         vals = []
         for r in train:
-            if r.get("model") is None or r.get("sharp") is None:
-                continue
             p = core.clamp(w * r["model"] + (1-w) * r["sharp"], .001, .999)
             vals.append((p-r["y"]) ** 2)
         if vals:
@@ -129,10 +127,7 @@ def add_blend(rows, weight):
     out = []
     for r in rows:
         z = dict(r)
-        if weight is not None and r.get("model") is not None and r.get("sharp") is not None:
-            z["blend"] = core.clamp(weight * r["model"] + (1-weight) * r["sharp"], .001, .999)
-        else:
-            z["blend"] = None
+        z["blend"] = core.clamp(weight * r["model"] + (1-weight) * r["sharp"], .001, .999) if weight is not None else None
         out.append(z)
     return out
 
@@ -140,7 +135,6 @@ def add_blend(rows, weight):
 def metric_block(rows):
     return {
         "n": len(rows),
-        "n_sharp": sum(r.get("sharp") is not None for r in rows),
         "brier_model": _brier(rows, "model"),
         "brier_legacy_market": _brier(rows, "legacy_market"),
         "brier_sharp": _brier(rows, "sharp"),
@@ -154,21 +148,29 @@ def metric_block(rows):
 
 def main():
     hist = core.load_history()
-    rows, books = collect(hist)
-    usable = [r for r in rows if r.get("model") is not None and r.get("sharp") is not None]
+    all_rows, books = collect(hist)
+    # Main comparisons are strictly matched: model and V11 sharp must both exist.
+    usable = [r for r in all_rows if r.get("model") is not None and r.get("sharp") is not None]
     cut = int(len(usable) * .75)
     train = usable[:cut]
     holdout = usable[cut:]
     weight = select_blend_weight(train) if len(train) >= 40 and len(holdout) >= 20 else None
-    rows_blend = add_blend(rows, weight)
+    matched_blend = add_blend(usable, weight)
     holdout_blend = add_blend(holdout, weight)
 
     report = {
         "version": v11.V11_VERSION,
         "benchmark_version": v11.BENCHMARK_VERSION,
-        "method": "point-in-time persisted snapshots; no reconstructed historical odds",
+        "method": "point-in-time persisted snapshots; matched comparisons; no reconstructed historical odds",
         "sharp_books": list(v11.sharp_books()),
-        "all": metric_block(rows_blend),
+        "coverage": {
+            "final_games_with_pregame_market_snapshot": len(all_rows),
+            "matched_model_and_sharp": len(usable),
+            "matched_pct": (len(usable) / len(all_rows)) if all_rows else None,
+            "one_sharp_ref": sum(r.get("sharp_refs") == 1 for r in usable),
+            "two_or_more_sharp_refs": sum(core.num(r.get("sharp_refs"), 0) >= 2 for r in usable),
+        },
+        "matched_all": metric_block(matched_blend),
         "holdout": metric_block(holdout_blend),
         "blend_model_weight_selected_on_train": weight,
         "train_n": len(train),
