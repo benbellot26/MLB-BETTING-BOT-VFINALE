@@ -153,20 +153,28 @@ def install() -> None:
     _INSTALLED = True
 
 
+def _test_rec():
+    return {"market": "ML", "name": "H", "p_model": .70, "p_push": 0, "p_market": .58, "refs": 3, "winamax_eval": {"price": 1.80}}
+
+
 def self_test() -> None:
     global _STATE
     old = _STATE
     try:
+        baseline = _ORIGINAL_APPLY_EFFECTIVE(_test_rec(), {})
+        independent = core.clamp(core.num(baseline.get("p_effective"), .5), .001, .999)
         _STATE = {"active": True, "weight": .60, "reason": "test", "holdout_n": 100, "brier_gain": .002, "multiref_pct": .8}
-        rec = {"market": "ML", "p_effective": .62, "p_market": .58, "p_push": 0, "winamax_eval": {"price": 1.80}}
-        out = apply_effective(rec, {})
+        out = apply_effective(_test_rec(), {})
+        expected = .60 * independent + .40 * .58
         assert out["predictive_blend_active"]
-        assert abs(out["p_effective"] - .604) < 1e-12
-        assert abs(out["p_effective_independent"] - .62) < 1e-12
+        assert abs(out["p_effective"] - expected) < 1e-12
+        assert abs(out["p_effective_independent"] - independent) < 1e-12
+
         _STATE = {"active": False, "weight": .60, "reason": "test off", "holdout_n": 10, "brier_gain": 0, "multiref_pct": .8}
-        rec2 = {"market": "ML", "p_effective": .62, "p_market": .58, "p_push": 0, "winamax_eval": {}}
-        out2 = apply_effective(rec2, {})
-        assert not out2["predictive_blend_active"] and abs(out2["p_effective"]-.62) < 1e-12
+        baseline2 = _ORIGINAL_APPLY_EFFECTIVE(_test_rec(), {})
+        out2 = apply_effective(_test_rec(), {})
+        assert not out2["predictive_blend_active"]
+        assert abs(out2["p_effective"] - baseline2["p_effective"]) < 1e-12
     finally:
         _STATE = old
     print("SELF-TEST V11 PREDICTIVE GATE OK")
