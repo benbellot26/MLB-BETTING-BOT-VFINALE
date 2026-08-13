@@ -26,9 +26,11 @@ for r in results:
         if (rec.get('winamax_eval') or {}).get('official_selected'):
             selected.append((r['game_pk'],rec['name'],rec['selection_official_score']))
 selected.sort(key=lambda x:x[2],reverse=True)
-assert len(selected)==3, selected
+# All four synthetic picks share SIDE_FAVORITE, so the existing correlation cap
+# must deliberately stop the official singles at two even though score #3 passes.
+assert len(selected)==2, selected
 assert selected[0][2]>=selected[-1][2]
-assert portfolio['official_count']==3
+assert portfolio['official_count']==2
 assert portfolio.get('combo_official') is True
 assert abs(portfolio.get('combo_units',0)-.5)<1e-9
 assert portfolio['allocated']<=portfolio['daily_cap']+1e-9
