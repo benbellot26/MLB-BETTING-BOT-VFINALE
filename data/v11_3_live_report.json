@@ -1,0 +1,128 @@
+{
+  "analyzed_at": "2026-08-13T17:26:27.040024+00:00",
+  "methodology": {
+    "important_note": "The 60.09% evidence comes from rolling day-frozen evaluation. Live confirmation remains required.",
+    "probability_head": "V11.2 lineup-calibrated head",
+    "runline_total": "V10.0.15 inherited",
+    "tonight_model_trained_through": "2026-08-12",
+    "winner_direction": "V11.3 recent-400 residual head"
+  },
+  "model": {
+    "beta": [
+      0.08480752116865005,
+      -0.1289723019635723,
+      -0.023497525218618854,
+      -0.1084445530804969,
+      0.0,
+      0.35530824359040025,
+      0.0
+    ],
+    "decision_threshold": 0.5,
+    "features": [
+      "lineup_relative",
+      "regular_overlap",
+      "lineup_abs",
+      "lineup_cov_diff",
+      "lineup_x_uncertainty",
+      "lineup_available"
+    ],
+    "l2": 3.333,
+    "means": {
+      "lineup_abs": -0.017934375,
+      "lineup_available": 1.0,
+      "lineup_cov_diff": 0.0,
+      "lineup_relative": -0.00223125,
+      "lineup_x_uncertainty": -0.0028245662561229784,
+      "regular_overlap": -0.015703125
+    },
+    "stds": {
+      "lineup_abs": 0.447148145095235,
+      "lineup_available": 1.0,
+      "lineup_cov_diff": 1.0,
+      "lineup_relative": 0.31243396496049763,
+      "lineup_x_uncertainty": 0.2717101855670158,
+      "regular_overlap": 0.34877941429216314
+    },
+    "trained_through": "2026-08-12",
+    "v11_2_params": {
+      "intercept": 0.045,
+      "regular_overlap_coef": -0.25,
+      "relative_lineup_coef": 0.05
+    },
+    "validation": {
+      "accuracy": 0.6008869179600886,
+      "holdout_n": 451,
+      "method": "rolling recent-400; predict all games on an Eastern date before adding that date",
+      "note": "historical validation only; live confirmation still required",
+      "wins": 271
+    },
+    "version": "11.3-directional-recent400-v1",
+    "window_games": 400
+  },
+  "remaining_games_analyzed": 6,
+  "run_id": "091bc0a852c3e578",
+  "target_date": "2026-08-13",
+  "top_picks": [
+    {
+      "away": "Seattle Mariners",
+      "game_pk": 823508,
+      "grade": "BON",
+      "heads_agree": true,
+      "home": "New York Yankees",
+      "phase": "FINAL",
+      "rank_score": 40.72,
+      "v11_2_probability_for_pick": 0.675484,
+      "v11_3_direction_score": 0.683579,
+      "v11_3_pick": "New York Yankees"
+    },
+    {
+      "away": "Boston Red Sox",
+      "game_pk": 822776,
+      "grade": "BON",
+      "heads_agree": true,
+      "home": "Toronto Blue Jays",
+      "phase": "FINAL",
+      "rank_score": 37.02,
+      "v11_2_probability_for_pick": 0.664315,
+      "v11_3_direction_score": 0.655976,
+      "v11_3_pick": "Boston Red Sox"
+    },
+    {
+      "away": "Philadelphia Phillies",
+      "game_pk": 823669,
+      "grade": "BON",
+      "heads_agree": true,
+      "home": "Minnesota Twins",
+      "phase": "EARLY",
+      "rank_score": 27.53,
+      "v11_2_probability_for_pick": 0.597329,
+      "v11_3_direction_score": 0.606237,
+      "v11_3_pick": "Minnesota Twins"
+    },
+    {
+      "away": "Milwaukee Brewers",
+      "game_pk": 823915,
+      "grade": "PRUDENCE",
+      "heads_agree": true,
+      "home": "Los Angeles Dodgers",
+      "phase": "EARLY",
+      "rank_score": 14.46,
+      "v11_2_probability_for_pick": 0.520245,
+      "v11_3_direction_score": 0.529515,
+      "v11_3_pick": "Los Angeles Dodgers"
+    },
+    {
+      "away": "Chicago Cubs",
+      "game_pk": 822696,
+      "grade": "PRUDENCE",
+      "heads_agree": true,
+      "home": "Washington Nationals",
+      "phase": "LATE",
+      "rank_score": 13.59,
+      "v11_2_probability_for_pick": 0.523922,
+      "v11_3_direction_score": 0.533185,
+      "v11_3_pick": "Washington Nationals"
+    }
+  ],
+  "version": "11.3-live-direction-v1"
+}
