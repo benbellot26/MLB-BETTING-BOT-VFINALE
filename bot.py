@@ -696,7 +696,7 @@ def execution_status(rec,phase):
     if not rec:return "⚠️ Pas de recommandation modèle exploitable."
     e=rec.get("winamax_eval");minimum=rec.get("min_price");du=displayed_stake_units(rec);ds=round(du*UNIT,2)
     phase_txt=f" • phase {phase}" if phase else ""
-    stake_txt=(f"💰 **Mise recommandée : {du}u = {ds:.2f} €**" if du>0 else f"💰 **Mise recommandée : 0u** • confiance sous le seuil {MIN_PLAN_CONF:.1f}/10")
+    stake_txt=(f"💰 **Mise recommandée : {du}u = {ds:.2f} €**" if du>0 else f"💰 **Mise recommandée : 0u** • confiance sous le seuil {MIN_PLAN_CONF*2:.1f}/20")
     if not e:
         return f"ℹ️ **Winamax : cote absente du flux** • cote mini indicative **{minimum:.2f}**{phase_txt}\n{stake_txt} • unité basée uniquement sur la confiance modèle"
     price=num(e.get("price"),0)
@@ -709,7 +709,7 @@ def model_rec_text(rec):
     market_txt=pct(rec.get("p_market")) if rec.get("p_market") is not None else "N/A"
     gap=f"{rec['market_gap']*100:+.1f} pts" if rec.get("market_gap") is not None else "N/A"
     emoji,band,_=confidence_band(rec["confidence"])
-    return f"**{rec['name']}{pt}** • modèle **{pct(rec['p_model'])}** • marché réf. {market_txt} • écart {gap}\nFair **{rec['fair']:.2f}** • cote mini **{rec['min_price']:.2f}** • {emoji} **{rec['confidence']:.1f}/10 — {band}**"
+    return f"**{rec['name']}{pt}** • modèle **{pct(rec['p_model'])}** • marché réf. {market_txt} • écart {gap}\nFair **{rec['fair']:.2f}** • cote mini **{rec['min_price']:.2f}** • {emoji} **{rec['confidence']*2:.1f}/20 — {band}**"
 
 def allocate_portfolio(results):
     daily_cap=BANKROLL*MAX_DAILY_EXPOSURE_PCT;game_cap=BANKROLL*MAX_GAME_EXPOSURE_PCT;remaining=daily_cap;chosen={};candidates=[]
@@ -907,7 +907,7 @@ def representative(evals,market):
 def send_game(result,snap,portfolio):
     ctx=result["ctx"];v=result["verdict"];emoji,label,color=confidence_band(v["confidence"]);disp=result["disp_state"];recs=result.get("model_recs",{})
     probs=f"Modèle indépendant **{ctx['home']} {pct(result['p_model'])}** • {ctx['away']} {pct(1-result['p_model'])}\nMarché de référence **{pct(result['con']['p'])} {ctx['home']}** ({result['con']['n']} books)\nProjection: **{ctx['home']} {result['hmu']:.2f} – {result['amu']:.2f} {ctx['away']}** • total {result['hmu']+result['amu']:.2f}\nNB α H/A={disp['alpha_home']:.2f}/{disp['alpha_away']:.2f} • extras domicile {pct(result['extra_home'])} • phase **{result['phase']}** / {snap['role']}"
-    direction=v["text"]+f"\n{emoji} Confiance lecture marché: **{v['confidence']:.1f}/10 — {label}**"
+    direction=v["text"]+f"\n{emoji} Confiance lecture marché: **{v['confidence']*2:.1f}/20 — {label}**"
     starters=f"{ctx['away']}: **{ctx['away_sp']}** • {pitcher_line(ctx['away_sp_stats'],ctx['away_hand'])}\n{ctx['home']}: **{ctx['home_sp']}** • {pitcher_line(ctx['home_sp_stats'],ctx['home_hand'])}"
     advanced=f"Lineups H/A: **{ctx['home_lineup']['count']}/9 – {ctx['away_lineup']['count']}/9** • OPS pondéré {ctx['home_lineup']['weighted_ops'] if ctx['home_lineup']['weighted_ops'] else 'N/A'} / {ctx['away_lineup']['weighted_ops'] if ctx['away_lineup']['weighted_ops'] else 'N/A'}\nSplits vs main opposée PA: {int(num(ctx['home_split'].get('_pa')))} / {int(num(ctx['away_split'].get('_pa')))}\nStatcast {ctx['home']}: {fmt_statcast(ctx['home_statcast'])}\nStatcast {ctx['away']}: {fmt_statcast(ctx['away_statcast'])}\nBullpen ERA H/A: {ctx['home_bp']['era']:.2f}/{ctx['away_bp']['era']:.2f} • fatigue {ctx['home_bp']['load']:.2f}/{ctx['away_bp']['load']:.2f}"
     context=f"Park {ctx['park']:.3f} • météo: {ctx['weather']['text']}\nForme 10: {ctx['home']} {ctx['home_recent']['win_pct']*100:.0f}% (RD {ctx['home_recent']['run_diff_pg']:+.2f}/g) • {ctx['away']} {ctx['away_recent']['win_pct']*100:.0f}% (RD {ctx['away_recent']['run_diff_pg']:+.2f}/g)\nQualité adaptée à la phase: **{result['quality']*10:.1f}/10**"
@@ -930,7 +930,7 @@ def send_top_messages(results,state):
         for i,(r,rec) in enumerate(xs):
             pt="" if rec.get("point") is None else (f" {rec['point']:+g}" if market=="RUNLINE" else f" {rec['point']:g}")
             emoji,band,_=confidence_band(rec["confidence"]);mp=pct(rec.get("p_market")) if rec.get("p_market") is not None else "N/A";gap=f"{rec['market_gap']*100:+.1f} pts" if rec.get("market_gap") is not None else "N/A"
-            blocks.append(f"**#{i+1} {r['ctx']['away']} @ {r['ctx']['home']}**\n{emoji} **{rec['name']}{pt}** • modèle **{pct(rec['p_model'])}** • marché {mp} • écart {gap}\nFair **{rec['fair']:.2f}** • **cote mini {rec['min_price']:.2f}** • confiance **{rec['confidence']:.1f}/10 — {band}**\n{execution_status(rec,r['phase'])}")
+            blocks.append(f"**#{i+1} {r['ctx']['away']} @ {r['ctx']['home']}**\n{emoji} **{rec['name']}{pt}** • modèle **{pct(rec['p_model'])}** • marché {mp} • écart {gap}\nFair **{rec['fair']:.2f}** • **cote mini {rec['min_price']:.2f}** • confiance **{rec['confidence']*2:.1f}/20 — {band}**\n{execution_status(rec,r['phase'])}")
         txt="\n\n".join(blocks) if blocks else "Aucune recommandation modèle suffisamment définie."
         ok=send_embed(title,[("Classement prédictif V9.1.1",txt)],16766720) and ok
     logging.info("Top 3 modèle envoyés pour ce run");return ok
@@ -953,7 +953,7 @@ def choose_distinct_games(pool,n,banned_games=None,min_conf=None):
         if len(out)>=n:break
     return out
 def plan_pick_text(item,index=None):
-    r=item["result"];rec=item["rec"];market=rec["market"];pt="" if rec.get("point") is None else (f" {rec['point']:+g}" if market=="RUNLINE" else f" {rec['point']:g}");label="ML" if market=="ML" else "RL" if market=="RUNLINE" else "TOTAL";emoji,band,_=confidence_band(rec["confidence"]);prefix=f"**#{index}** " if index is not None else "• ";return f"{prefix}{emoji} **{rec['name']}{pt} [{label}]**\n{r['ctx']['away']} @ {r['ctx']['home']} • phase {r['phase']}\nModèle **{pct(rec['p_model'])}** • confiance **{rec['confidence']:.1f}/10 — {band}** • fair {rec['fair']:.2f} • **cote mini {rec['min_price']:.2f}**\n{execution_status(rec,r['phase'])}"
+    r=item["result"];rec=item["rec"];market=rec["market"];pt="" if rec.get("point") is None else (f" {rec['point']:+g}" if market=="RUNLINE" else f" {rec['point']:g}");label="ML" if market=="ML" else "RL" if market=="RUNLINE" else "TOTAL";emoji,band,_=confidence_band(rec["confidence"]);prefix=f"**#{index}** " if index is not None else "• ";return f"{prefix}{emoji} **{rec['name']}{pt} [{label}]**\n{r['ctx']['away']} @ {r['ctx']['home']} • phase {r['phase']}\nModèle **{pct(rec['p_model'])}** • confiance **{rec['confidence']*2:.1f}/20 — {band}** • fair {rec['fair']:.2f} • **cote mini {rec['min_price']:.2f}**\n{execution_status(rec,r['phase'])}"
 def build_daily_plan(results):
     pool=daily_plan_pool(results);singles=choose_distinct_games(pool,3);single_games={str(x["result"]["game_pk"]) for x in singles};combo=choose_distinct_games(pool,3,banned_games=single_games,min_conf=5.8)
     if len(combo)<2:combo=choose_distinct_games(pool,2,banned_games=single_games)
@@ -968,7 +968,7 @@ def send_daily_plan(results):
             else:
                 current_combo*=price
                 if price+1e-9<num(rec.get("min_price"),99):all_prices_ok=False
-            legs.append(f"• **{rec['name']}{pt} [{label}]** — {r['ctx']['away']} @ {r['ctx']['home']} • conf {rec['confidence']:.1f}/10 • mini {rec['min_price']:.2f}"+(f" • Winamax {price:.2f}" if price>1 else " • cote Winamax à vérifier"))
+            legs.append(f"• **{rec['name']}{pt} [{label}]** — {r['ctx']['away']} @ {r['ctx']['home']} • conf {rec['confidence']*2:.1f}/20 • mini {rec['min_price']:.2f}"+(f" • Winamax {price:.2f}" if price>1 else " • cote Winamax à vérifier"))
         price_status=(f"✅ Toutes les jambes passent leur cote mini • cote combinée actuelle ≈ **{current_combo:.2f}**" if all_prices_ok else f"❌ Au moins une jambe est sous sa cote mini • cote combinée actuelle ≈ **{current_combo:.2f}**") if all_prices else "⚠️ Une ou plusieurs cotes Winamax sont absentes du flux : vérifier chaque cote avant de jouer."
         combo_text="\n".join(legs)+f"\n\nCote mini combinée théorique : **{min_combo:.2f}**\n{price_status}"
     else:combo_text="Pas assez de sélections indépendantes pour recommander un combiné sans forcer des choix faibles."
@@ -1014,7 +1014,7 @@ def main():
         sync_recommendations(rec,r["evals"],snap);sent=False
         if discord_ok and publish:sent=send_game(r,snap,portfolio)
         if sent:mark_published(rec,[e for e in r["evals"] if e["selected"]],snap);published+=1
-        logging.info("%s @ %s | %s %s | lineups=%d/%d statcast=%s/%s | %s %s %.1f/10 | qualified=%d bets=%d%s",r["ctx"]["away"],r["ctx"]["home"],r["phase"],snap["role"],r["ctx"]["home_lineup"]["count"],r["ctx"]["away_lineup"]["count"],r["ctx"]["home_statcast"]["available"],r["ctx"]["away_statcast"]["available"],r["verdict"]["type"],r["verdict"]["side"],r["verdict"]["confidence"],sum(e["qualified"] for e in r["evals"]),sum(e["selected"] for e in r["evals"])," | Discord update" if sent else "")
+        logging.info("%s @ %s | %s %s | lineups=%d/%d statcast=%s/%s | %s %s %.1f/20 | qualified=%d bets=%d%s",r["ctx"]["away"],r["ctx"]["home"],r["phase"],snap["role"],r["ctx"]["home_lineup"]["count"],r["ctx"]["away_lineup"]["count"],r["ctx"]["home_statcast"]["available"],r["ctx"]["away_statcast"]["available"],r["verdict"]["type"],r["verdict"]["side"],2*r["verdict"]["confidence"],sum(e["qualified"] for e in r["evals"]),sum(e["selected"] for e in r["evals"])," | Discord update" if sent else "")
     write_history(hist)
     if discord_ok and results:
         send_top_messages(results,state);send_daily_plan(results)
@@ -1320,15 +1320,15 @@ def v10_combo_stake(combo):
     if not m.get("valid") or not m.get("all_prices") or not m.get("all_legs_above_min") or m.get("ev") is None or m["ev"]<MIN_EV or any(x["result"].get("phase")=="EARLY" for x in combo):return 0.0
     room=max(0,num(_V10_LAST_PORTFOLIO.get("daily_cap"),BANKROLL*MAX_DAILY_EXPOSURE_PCT)-num(_V10_LAST_PORTFOLIO.get("allocated"),0));cap=min(BANKROLL*MAX_COMBO_EXPOSURE_PCT,UNIT,room);q=max(.01,UNIT/4);return round(math.floor((cap/q)+1e-9)*q,2) if cap>=q else 0.0
 def send_daily_plan(results):
-    singles,combo=build_daily_plan(results);phase_note=" • ".join(sorted({x["result"]["phase"] for x in singles+combo})) if singles or combo else "N/A";simples="\n\n".join(plan_pick_text(x,i+1) for i,x in enumerate(singles)) if singles else f"**Aucun simple forcé.** Aucune sélection n'atteint le seuil V10 de {MIN_PLAN_CONF:.1f}/10."
+    singles,combo=build_daily_plan(results);phase_note=" • ".join(sorted({x["result"]["phase"] for x in singles+combo})) if singles or combo else "N/A";simples="\n\n".join(plan_pick_text(x,i+1) for i,x in enumerate(singles)) if singles else f"**Aucun simple forcé.** Aucune sélection n'atteint le seuil V10 de {MIN_PLAN_CONF*2:.1f}/20."
     if combo:
         m=v10_combo_metrics(combo);legs=[]
         for x in combo:
-            r=x["result"];rec=x["rec"];pt="" if rec.get("point") is None else (f" {rec['point']:+g}" if rec["market"]=="RUNLINE" else f" {rec['point']:g}");price=num((rec.get("winamax_eval") or {}).get("price"),0);legs.append(f"• **{rec['name']}{pt}** — {r['ctx']['away']} @ {r['ctx']['home']} • conf {rec['confidence']:.1f}/10 • mini {rec['min_price']:.2f}"+(f" • Winamax {price:.2f}" if price>1 else " • cote Winamax à vérifier"))
+            r=x["result"];rec=x["rec"];pt="" if rec.get("point") is None else (f" {rec['point']:+g}" if rec["market"]=="RUNLINE" else f" {rec['point']:g}");price=num((rec.get("winamax_eval") or {}).get("price"),0);legs.append(f"• **{rec['name']}{pt}** — {r['ctx']['away']} @ {r['ctx']['home']} • conf {rec['confidence']*2:.1f}/20 • mini {rec['min_price']:.2f}"+(f" • Winamax {price:.2f}" if price>1 else " • cote Winamax à vérifier"))
         stake=v10_combo_stake(combo);combo_text="\n".join(legs)+f"\n\nP(toutes gagnantes) **{pct(m['p_all_win'])}** • P(aucune perdante) **{pct(m['p_no_loss'])}**\nFair conditionnelle ≈ **{m['fair_conditional']:.2f}** • produit cotes mini **{m['min_product']:.2f}**"
         if m.get("quoted_price") is not None:combo_text+=f"\nCote actuelle ≈ **{m['quoted_price']:.2f}** • EV avec pushes **{m['ev']*100:+.1f}%**"
         combo_text+=(f"\n✅ **COMBINÉ JOUABLE** • mise prudente **{stake:.2f} €**" if stake>0 else "\n⚠️ **SURVEILLANCE / NON JOUABLE aux prix actuels**")
-    else:combo_text=f"**Aucun combiné forcé.** Il faut au moins 2 matchs hors simples à ≥ {MIN_COMBO_CONF:.1f}/10."
+    else:combo_text=f"**Aucun combiné forcé.** Il faut au moins 2 matchs hors simples à ≥ {MIN_COMBO_CONF*2:.1f}/20."
     return send_embed("🎟️ PLAN V10 — JUSQU'À 3 SIMPLES + COMBINÉ",[("🕒 État du run",f"{NOW.astimezone(PARIS).strftime('%d/%m/%Y %H:%M')} (Paris) • phases : {phase_note}"),("🎯 SIMPLES QUALIFIÉS",simples),("🧩 COMBINÉ HORS SIMPLES",combo_text),("🛡️ Règle V10","Jusqu'à 3 simples, jamais forcés. Combiné hors matchs des simples, pushes et exposition bankroll pris en compte.")],5763719)
 
 def v10_self_test():
@@ -1781,7 +1781,7 @@ def execution_status(rec,phase):
 def model_rec_text(rec):
     if not rec:return "Aucune recommandation modèle suffisamment définie."
     pt="" if rec.get("point") is None else (f" {rec['point']:+g}" if rec["market"]=="RUNLINE" else f" {rec['point']:g}");mp=pct(rec.get("p_market")) if rec.get("p_market") is not None else "N/A";gap=f"{num(rec.get('market_gap'))*100:+.1f} pts" if rec.get("market_gap") is not None else "N/A";emoji,band,_=confidence_band(rec["confidence"]);eff=num(rec.get("p_effective"),rec.get("p_model",.5));fair=num(rec.get("fair_effective"),rec.get("fair",99));minimum=num(rec.get("min_price_effective"),rec.get("min_price",99));stab=rec.get("stability_alert","OK")
-    return f"**{rec['name']}{pt}** • modèle brut **{pct(rec['p_model'])}** → effective **{pct(eff)}** • marché réf. {mp} • écart {gap}\nFair effective **{fair:.2f}** • cote mini effective **{minimum:.2f}** • stabilité **{stab}** • {emoji} **{rec['confidence']:.1f}/10 — {band}**"
+    return f"**{rec['name']}{pt}** • modèle brut **{pct(rec['p_model'])}** → effective **{pct(eff)}** • marché réf. {mp} • écart {gap}\nFair effective **{fair:.2f}** • cote mini effective **{minimum:.2f}** • stabilité **{stab}** • {emoji} **{rec['confidence']*2:.1f}/20 — {band}**"
 
 def v1007_selected_items(results):
     out=[]
@@ -1793,7 +1793,7 @@ def v1007_selected_items(results):
 
 def plan_pick_text(item,index=None):
     r=item["result"];rec=item["rec"];e=rec.get("winamax_eval") or {};pt="" if rec.get("point") is None else (f" {rec['point']:+g}" if rec["market"]=="RUNLINE" else f" {rec['point']:g}");label="ML" if rec["market"]=="ML" else "RL" if rec["market"]=="RUNLINE" else "TOTAL";u=int(num(e.get("official_units"),0));prefix=f"**#{index}** " if index is not None else "• "
-    return f"{prefix}✅ **{rec['name']}{pt} [{label}] — {u}u = {u*UNIT:.2f} €**\n{r['ctx']['away']} @ {r['ctx']['home']} • {r['phase']} • brut {pct(rec['p_model'])} → effective **{pct(rec['p_effective'])}**\nConfiance **{rec['confidence']:.1f}/10** • qualité {r['quality']*10:.1f}/10 • mini effective {rec['min_price_effective']:.2f} • Winamax {num(e.get('price')):.2f}"
+    return f"{prefix}✅ **{rec['name']}{pt} [{label}] — {u}u = {u*UNIT:.2f} €**\n{r['ctx']['away']} @ {r['ctx']['home']} • {r['phase']} • brut {pct(rec['p_model'])} → effective **{pct(rec['p_effective'])}**\nConfiance **{rec['confidence']*2:.1f}/20** • qualité {r['quality']*10:.1f}/10 • mini effective {rec['min_price_effective']:.2f} • Winamax {num(e.get('price')):.2f}"
 
 def build_daily_plan(results):return v1007_selected_items(results),[]
 
@@ -1805,7 +1805,7 @@ def send_daily_plan(results):
         gid=str(c["result"]["game_pk"])
         if gid in seen:continue
         rec=c["rec"];e=rec.get("winamax_eval") or {};pt="" if rec.get("point") is None else (f" {rec['point']:+g}" if rec["market"]=="RUNLINE" else f" {rec['point']:g}")
-        pre.append(f"• 👀 **{rec['name']}{pt} [{rec['market']}]** • effective {pct(rec['p_effective'])} • conf {rec['confidence']:.1f}/10 • cible **1u max** si confirmée • Winamax {num(e.get('price')):.2f}");seen.add(gid)
+        pre.append(f"• 👀 **{rec['name']}{pt} [{rec['market']}]** • effective {pct(rec['p_effective'])} • conf {rec['confidence']*2:.1f}/20 • cible **1u max** si confirmée • Winamax {num(e.get('price')):.2f}");seen.add(gid)
         if len(pre)>=3:break
     pretxt="\n".join(pre) if pre else "Aucune pré-sélection EARLY suffisamment forte."
     slate=f"**{_V1007_LAST_SLATE.get('score',0):.1f}/100 — {_V1007_LAST_SLATE.get('grade','FAIBLE')}** • {_V1007_LAST_SLATE.get('official_count',0)} pari(s) officiel(s) • {_V1007_LAST_SLATE.get('units',0)}u/{V1007_MAX_DAILY_UNITS}u"
@@ -1861,7 +1861,7 @@ def should_publish(rec,s):
 def send_game(result,snap,portfolio):
     ctx=result["ctx"];v=result["verdict"];emoji,label,color=confidence_band(v["confidence"]);disp=result["disp_state"];recs=result.get("model_recs",{})
     probs=f"Modèle indépendant **{ctx['home']} {pct(result['p_model'])}** • {ctx['away']} {pct(1-result['p_model'])}\nMarché de référence **{pct(result['con']['p'])} {ctx['home']}** ({result['con']['n']} books)\nProjection: **{ctx['home']} {result['hmu']:.2f} – {result['amu']:.2f} {ctx['away']}** • total {result['hmu']+result['amu']:.2f}\nNB α H/A={disp['alpha_home']:.2f}/{disp['alpha_away']:.2f} • extras domicile {pct(result['extra_home'])} • phase **{result['phase']}** / {snap['role']}"
-    direction=v["text"]+f"\n{emoji} Confiance lecture marché: **{v['confidence']:.1f}/10 — {label}**"
+    direction=v["text"]+f"\n{emoji} Confiance lecture marché: **{v['confidence']*2:.1f}/20 — {label}**"
     starters=f"{ctx['away']}: **{ctx['away_sp']}** • {pitcher_line(ctx['away_sp_stats'],ctx['away_hand'])}\n{ctx['home']}: **{ctx['home_sp']}** • {pitcher_line(ctx['home_sp_stats'],ctx['home_hand'])}"
     hs,hd=lineup_discord_status(ctx.get("home_lineup"));as_,ad=lineup_discord_status(ctx.get("away_lineup"))
     hop=ctx['home_lineup'].get('weighted_ops');aop=ctx['away_lineup'].get('weighted_ops')
@@ -1935,7 +1935,7 @@ def v1009_pick_text(rec,phase):
     if not rec:return "⚪ Aucune recommandation claire."
     pe=num(rec.get("p_effective",rec.get("p_model")),.5);conf=num(rec.get("confidence"),0);minimum=num(rec.get("min_price_effective",rec.get("min_price")),0);e=rec.get("winamax_eval") or {};price=num(e.get("price"),0)
     price_txt=f"{price:.2f}" if price>1 else "—"
-    return f"**{v1009_market_label(rec)}**\nChance estimée **{pct(pe)}** • confiance **{conf:.1f}/10**\nCote mini **{minimum:.2f}** • Winamax **{price_txt}** • {v1009_pick_status(rec,phase)}"
+    return f"**{v1009_market_label(rec)}**\nChance estimée **{pct(pe)}** • confiance **{conf*2:.1f}/20**\nCote mini **{minimum:.2f}** • Winamax **{price_txt}** • {v1009_pick_status(rec,phase)}"
 
 def v1009_market_summary(result):
     ctx=result["ctx"];p=num(result.get("con",{}).get("p"),.5);n=int(num(result.get("con",{}).get("n"),0))
@@ -1971,7 +1971,7 @@ def send_game(result,snap,portfolio):
 
 def v1009_top_line(result,rec,index):
     phase=result.get("phase","EARLY");e=rec.get("winamax_eval") or {};price=num(e.get("price"),0);price_txt=f"{price:.2f}" if price>1 else "—";pe=num(rec.get("p_effective",rec.get("p_model")),.5);minimum=num(rec.get("min_price_effective",rec.get("min_price")),0)
-    return f"**#{index} {v1009_market_label(rec)}**\n{result['ctx']['away']} @ {result['ctx']['home']} • {phase}\nChance **{pct(pe)}** • conf. **{num(rec.get('confidence')):.1f}/10** • mini **{minimum:.2f}** • Winamax **{price_txt}**"
+    return f"**#{index} {v1009_market_label(rec)}**\n{result['ctx']['away']} @ {result['ctx']['home']} • {phase}\nChance **{pct(pe)}** • conf. **{2*num(rec.get('confidence')):.1f}/20** • mini **{minimum:.2f}** • Winamax **{price_txt}**"
 
 def send_top_messages(results,state):
     ok=True
@@ -1994,7 +1994,7 @@ def send_daily_plan(results):
     if official:
         lines=[]
         for i,(r,rec,e) in enumerate(official,1):
-            lines.append(f"**#{i} {v1009_market_label(rec)}** — **{int(num(e.get('official_units',1),1))}u** @ **{num(e.get('price')):.2f}**\n{r['ctx']['away']} @ {r['ctx']['home']} • chance {pct(num(rec.get('p_effective',rec.get('p_model')),.5))} • conf. {num(rec.get('confidence')):.1f}/10")
+            lines.append(f"**#{i} {v1009_market_label(rec)}** — **{int(num(e.get('official_units',1),1))}u** @ **{num(e.get('price')):.2f}**\n{r['ctx']['away']} @ {r['ctx']['home']} • chance {pct(num(rec.get('p_effective',rec.get('p_model')),.5))} • conf. {2*num(rec.get('confidence')):.1f}/20")
         plan="\n\n".join(lines)
     else:
         phases=sorted({r.get("phase","EARLY") for r in results});plan="**AUCUN PARI OFFICIEL SUR CE RUN.**\n"+("Les matchs sont encore en EARLY : relancer plus près du début des rencontres." if phases==["EARLY"] else "Aucune sélection ne passe tous les filtres du bot.")
@@ -2165,7 +2165,7 @@ def main():
         sync_recommendations(rec,r["evals"],snap);sent=False
         if discord_ok and publish:sent=send_game(r,snap,portfolio)
         if sent:mark_published(rec,[e for e in r["evals"] if e["selected"]],snap);published+=1
-        logging.info("%s @ %s | %s %s | lineups=%d/%d statcast=%s/%s | %s %s %.1f/10 | qualified=%d bets=%d%s",r["ctx"]["away"],r["ctx"]["home"],r["phase"],snap["role"],r["ctx"]["home_lineup"]["count"],r["ctx"]["away_lineup"]["count"],r["ctx"]["home_statcast"]["available"],r["ctx"]["away_statcast"]["available"],r["verdict"]["type"],r["verdict"]["side"],r["verdict"]["confidence"],sum(e["qualified"] for e in r["evals"]),sum(e["selected"] for e in r["evals"])," | Discord update" if sent else "")
+        logging.info("%s @ %s | %s %s | lineups=%d/%d statcast=%s/%s | %s %s %.1f/20 | qualified=%d bets=%d%s",r["ctx"]["away"],r["ctx"]["home"],r["phase"],snap["role"],r["ctx"]["home_lineup"]["count"],r["ctx"]["away_lineup"]["count"],r["ctx"]["home_statcast"]["available"],r["ctx"]["away_statcast"]["available"],r["verdict"]["type"],r["verdict"]["side"],2*r["verdict"]["confidence"],sum(e["qualified"] for e in r["evals"]),sum(e["selected"] for e in r["evals"])," | Discord update" if sent else "")
     write_history(hist);v1010_write_journal(journal)
     if discord_ok and results:
         send_top_messages(results,state);send_daily_plan(results)
@@ -2513,7 +2513,7 @@ def v1011_option_status(result,rec):
 def v1011_option_line(result,rec):
     if not rec:return "—"
     e=rec.get("winamax_eval") or {};price=num(e.get("price"),0);price_txt=f"{price:.2f}" if price>1 else "—"
-    return f"{v1011_option_status(result,rec)} • **{v1011_market_label(rec)}**\nChance prudente **{pct(rec.get('p_effective'))}** • conf. **{num(rec.get('confidence')):.1f}/10** • Winamax **{price_txt}** *(info)*"
+    return f"{v1011_option_status(result,rec)} • **{v1011_market_label(rec)}**\nChance prudente **{pct(rec.get('p_effective'))}** • conf. **{2*num(rec.get('confidence')):.1f}/20** • Winamax **{price_txt}** *(info)*"
 
 
 def send_game(result,snap,portfolio):
@@ -2537,7 +2537,7 @@ def send_game(result,snap,portfolio):
 
 def v1011_plan_pick_text(item,index=None):
     r=item["result"];rec=item["rec"];e=rec.get("winamax_eval") or {};u=int(num(e.get("official_units"),0));price=num(e.get("price"),0);prefix=f"**#{index}** " if index is not None else "• "
-    return f"{prefix}✅ **{v1011_market_label(rec)} — {u}u = {u*UNIT:.2f} €**\n{r['ctx']['away']} @ {r['ctx']['home']} • {r['phase']} • chance prudente **{pct(rec.get('p_effective'))}** • conf. **{num(rec.get('confidence')):.1f}/10** • Winamax **{price:.2f}** *(info)*"
+    return f"{prefix}✅ **{v1011_market_label(rec)} — {u}u = {u*UNIT:.2f} €**\n{r['ctx']['away']} @ {r['ctx']['home']} • {r['phase']} • chance prudente **{pct(rec.get('p_effective'))}** • conf. **{2*num(rec.get('confidence')):.1f}/20** • Winamax **{price:.2f}** *(info)*"
 
 
 def plan_pick_text(item,index=None):return v1011_plan_pick_text(item,index)
@@ -2550,7 +2550,7 @@ def send_daily_plan(results):
     for c in v1011_build_slate(results,False)["pool"]:
         if id(c["rec"]) in official_ids:continue
         e=c["rec"].get("winamax_eval") or {};price=num(e.get("price"),0)
-        others.append(f"• **{v1011_market_label(c['rec'])}** • {c['result']['ctx']['away']} @ {c['result']['ctx']['home']} • {pct(c['rec'].get('p_effective'))} • conf {num(c['rec'].get('confidence')):.1f}/10 • Winamax {price:.2f} *(info)*")
+        others.append(f"• **{v1011_market_label(c['rec'])}** • {c['result']['ctx']['away']} @ {c['result']['ctx']['home']} • {pct(c['rec'].get('p_effective'))} • conf {2*num(c['rec'].get('confidence')):.1f}/20 • Winamax {price:.2f} *(info)*")
         if len(others)>=5:break
     other_txt="\n".join(others) if others else "Aucune autre option ne passe actuellement les filtres statistiques."
     slate=_V1007_LAST_SLATE or {};status=f"Qualité de la journée : **{slate.get('grade','FAIBLE')} ({num(slate.get('score')):.0f}/100)**\nParis officiels : **{int(num(slate.get('official_count'),len(official)))}/3** • exposition : **{int(num(slate.get('units'),0))}/4u**"
@@ -2733,7 +2733,7 @@ def allocate_portfolio(results):
 def v1011_plan_pick_text(item,index=None):
     r=item["result"];rec=item["rec"];e=v1012_ensure_execution(rec);u=int(num(e.get("official_units"),0));price=num(e.get("price"),0);prefix=f"**#{index}** " if index is not None else "• "
     price_txt=f"{price:.2f}" if price>1 else "non récupérée"
-    return f"{prefix}✅ **{v1011_market_label(rec)} — {u}u = {u*UNIT:.2f} €**\n{r['ctx']['away']} @ {r['ctx']['home']} • **{v1012_phase_badge(r.get('phase'))}**\nChance prudente **{pct(rec.get('p_effective'))}** • conf. **{num(rec.get('confidence')):.1f}/10** • Winamax **{price_txt}** *(info)*"
+    return f"{prefix}✅ **{v1011_market_label(rec)} — {u}u = {u*UNIT:.2f} €**\n{r['ctx']['away']} @ {r['ctx']['home']} • **{v1012_phase_badge(r.get('phase'))}**\nChance prudente **{pct(rec.get('p_effective'))}** • conf. **{2*num(rec.get('confidence')):.1f}/20** • Winamax **{price_txt}** *(info)*"
 
 
 def plan_pick_text(item,index=None):return v1011_plan_pick_text(item,index)
@@ -2746,7 +2746,7 @@ def send_daily_plan(results):
     for c in v1011_build_slate(results,False)["pool"]:
         if id(c["rec"]) in official_ids:continue
         e=v1012_ensure_execution(c["rec"]);price=num(e.get("price"),0);price_txt=f"{price:.2f}" if price>1 else "—"
-        others.append(f"• **{v1011_market_label(c['rec'])}** • {c['result']['ctx']['away']} @ {c['result']['ctx']['home']} • **{v1012_phase_badge(c['result'].get('phase'))}** • {pct(c['rec'].get('p_effective'))} • conf {num(c['rec'].get('confidence')):.1f}/10 • Winamax {price_txt} *(info)*")
+        others.append(f"• **{v1011_market_label(c['rec'])}** • {c['result']['ctx']['away']} @ {c['result']['ctx']['home']} • **{v1012_phase_badge(c['result'].get('phase'))}** • {pct(c['rec'].get('p_effective'))} • conf {2*num(c['rec'].get('confidence')):.1f}/20 • Winamax {price_txt} *(info)*")
         if len(others)>=5:break
     other_txt="\n".join(others) if others else "Aucune autre option ne passe actuellement les filtres statistiques."
     slate=_V1007_LAST_SLATE or {};status=f"Qualité de la journée : **{slate.get('grade','FAIBLE')} ({num(slate.get('score')):.0f}/100)**\nParis officiels : **{int(num(slate.get('official_count'),len(official)))}/3** • exposition : **{int(num(slate.get('units'),0))}/4u**"
@@ -2877,7 +2877,7 @@ def v1013_combo_text(combo):
     lines=[]
     for i,c in enumerate(combo.get("legs") or [],1):
         r=c["result"];rec=c["rec"];e=v1012_ensure_execution(rec);price=num(e.get("price"),0);price_txt=f"{price:.2f}" if price>1 else "non récupérée"
-        lines.append(f"**{i}. {v1011_market_label(rec)}** — {r['ctx']['away']} @ {r['ctx']['home']}\n{v1012_phase_badge(r.get('phase'))} • chance **{pct(rec.get('p_effective'))}** • conf. **{num(rec.get('confidence')):.1f}/10** • Winamax **{price_txt}** *(info)*")
+        lines.append(f"**{i}. {v1011_market_label(rec)}** — {r['ctx']['away']} @ {r['ctx']['home']}\n{v1012_phase_badge(r.get('phase'))} • chance **{pct(rec.get('p_effective'))}** • conf. **{2*num(rec.get('confidence')):.1f}/20** • Winamax **{price_txt}** *(info)*")
     ptxt=pct(combo.get("probability"));price_txt=f"{combo.get('winamax_price'):.2f}" if combo.get("winamax_price") else "à vérifier"
     if combo.get("official"):
         u=num(combo.get("units"),0);tail=f"\n\n✅ **COMBINÉ OFFICIEL — {u:g}u = {u*UNIT:.2f} €**\nChance combinée estimée ≈ **{ptxt}** • cote Winamax combinée **{price_txt}** *(info)*"
@@ -2894,7 +2894,7 @@ def send_daily_plan(results):
     for c in v1011_build_slate(results,False)["pool"]:
         if id(c["rec"]) in official_ids or id(c["rec"]) in combo_ids:continue
         e=v1012_ensure_execution(c["rec"]);price=num(e.get("price"),0);price_txt=f"{price:.2f}" if price>1 else "—"
-        others.append(f"• **{v1011_market_label(c['rec'])}** • {c['result']['ctx']['away']} @ {c['result']['ctx']['home']} • **{v1012_phase_badge(c['result'].get('phase'))}** • {pct(c['rec'].get('p_effective'))} • conf {num(c['rec'].get('confidence')):.1f}/10 • Winamax {price_txt} *(info)*")
+        others.append(f"• **{v1011_market_label(c['rec'])}** • {c['result']['ctx']['away']} @ {c['result']['ctx']['home']} • **{v1012_phase_badge(c['result'].get('phase'))}** • {pct(c['rec'].get('p_effective'))} • conf {2*num(c['rec'].get('confidence')):.1f}/20 • Winamax {price_txt} *(info)*")
         if len(others)>=5:break
     other_txt="\n".join(others) if others else "Aucune autre option ne passe actuellement les filtres statistiques."
     slate=_V1007_LAST_SLATE or {};simple_units=num(slate.get("units"),0);combo_units=num(combo.get("units"),0) if combo.get("official") else 0;total_units=simple_units+combo_units
@@ -3078,7 +3078,7 @@ def v1014_stability_text(c):
 
 def v1011_plan_pick_text(item,index=None):
     r=item["result"];rec=item["rec"];e=v1012_ensure_execution(rec);c=v1011_candidate(r,rec,False);u=num(e.get("official_units"),0);price=num(e.get("price"),0);prefix=f"**#{index}** " if index is not None else "• ";price_txt=f"{price:.2f}" if price>1 else "non récupérée"
-    return f"{prefix}✅ **{v1011_market_label(rec)} — {u:g}u = {u*UNIT:.2f} €**\n{r['ctx']['away']} @ {r['ctx']['home']} • **{v1012_phase_badge(r.get('phase'))}**\nChance prudente **{pct(rec.get('p_effective'))}** • conf. **{num(rec.get('confidence')):.1f}/10** • robustesse **{num(c.get('score')):.0f}/100**\n{v1014_stability_text(c)} • Winamax **{price_txt}** *(info)*"
+    return f"{prefix}✅ **{v1011_market_label(rec)} — {u:g}u = {u*UNIT:.2f} €**\n{r['ctx']['away']} @ {r['ctx']['home']} • **{v1012_phase_badge(r.get('phase'))}**\nChance prudente **{pct(rec.get('p_effective'))}** • conf. **{2*num(rec.get('confidence')):.1f}/20** • robustesse **{num(c.get('score')):.0f}/100**\n{v1014_stability_text(c)} • Winamax **{price_txt}** *(info)*"
 
 
 def v1010_make_run_rows(results,run_id=None,analyzed_at=None):
@@ -3413,7 +3413,7 @@ def v1015_temporal_text(c):
 
 def v1011_plan_pick_text(item,index=None):
     r=item["result"];rec=item["rec"];e=v1012_ensure_execution(rec);c=v1011_candidate(r,rec,False);u=num(e.get("official_units"),0);price=num(e.get("price"),0);prefix=f"**#{index}** " if index is not None else "• ";price_txt=f"{price:.2f}" if price>1 else "non récupérée"
-    return f"{prefix}✅ **{v1011_market_label(rec)} — {u:g}u = {u*UNIT:.2f} €**\n{r['ctx']['away']} @ {r['ctx']['home']} • **{v1012_phase_badge(r.get('phase'))}**\nChance prudente **{pct(rec.get('p_effective'))}** • Score Officiel **{num(c.get('official_score')):.0f}/100** • conf. **{num(rec.get('confidence')):.1f}/10**\n{v1015_temporal_text(c)} • Winamax **{price_txt}** *(info)*"
+    return f"{prefix}✅ **{v1011_market_label(rec)} — {u:g}u = {u*UNIT:.2f} €**\n{r['ctx']['away']} @ {r['ctx']['home']} • **{v1012_phase_badge(r.get('phase'))}**\nChance prudente **{pct(rec.get('p_effective'))}** • Score Officiel **{num(c.get('official_score')):.0f}/100** • conf. **{2*num(rec.get('confidence')):.1f}/20**\n{v1015_temporal_text(c)} • Winamax **{price_txt}** *(info)*"
 
 
 
