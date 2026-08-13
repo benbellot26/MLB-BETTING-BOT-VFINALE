@@ -39,6 +39,27 @@ def _snapshot_rows(snapshot, key):
     return out
 
 
+def _snapshot_model_home(snapshot, home):
+    """Return the independent effective ML probability for the home team."""
+    for rec in snapshot.get("open_market_options") or []:
+        if rec.get("market") != "ML" or core.norm_name(rec.get("name")) != core.norm_name(home):
+            continue
+        for key in ("p_effective_independent", "p_effective", "p_model"):
+            if rec.get(key) is not None:
+                return core.clamp(core.num(rec.get(key), .5), .001, .999)
+
+    rec = (snapshot.get("model_recommendations") or {}).get("ML") or {}
+    if rec:
+        value = None
+        for key in ("p_effective_independent", "p_effective", "p_model"):
+            if rec.get(key) is not None:
+                value = core.clamp(core.num(rec.get(key), .5), .001, .999); break
+        if value is not None:
+            return value if core.norm_name(rec.get("name")) == core.norm_name(home) else 1-value
+
+    return core.clamp(core.num(snapshot.get("p_model"), .5), .001, .999) if snapshot.get("p_model") is not None else None
+
+
 def historical_sharp(snapshot, name, market="h2h", point=None):
     """V11 consensus evaluated at the historical snapshot timestamp."""
     try:
@@ -79,7 +100,6 @@ def _latest_snapshot(record):
     xs = [s for s in record.get("snapshots") or [] if core.num(s.get("seconds_to_game"), -1) >= 0 and s.get("market_snapshot")]
     if not xs:
         return None
-    # Prefer the closest available pregame snapshot; tie-break by analyzed_at.
     return min(xs, key=lambda s: (core.num(s.get("seconds_to_game"), 10**12), -core.parse_dt(s.get("analyzed_at")).timestamp()))
 
 
@@ -98,8 +118,8 @@ def collect(hist):
             "date": rec.get("game_date") or snap.get("analyzed_at") or "",
             "game_pk": rec.get("game_pk"),
             "y": int(rec.get("home_win")),
-            "model": core.num(snap.get("p_model"), .5) if snap.get("p_model") is not None else None,
-            "legacy_market": core.num(snap.get("market_home"), .5) if snap.get("market_home") is not None else None,
+            "model": _snapshot_model_home(snap, home),
+            "legacy_market": core.num(snap.get("market_home"), .5) if snap.get("market_home") is not None and snap.get("benchmark_version") != v11.BENCHMARK_VERSION else None,
             "sharp": sharp,
             "sharp_refs": len(comps),
         }
@@ -149,7 +169,6 @@ def metric_block(rows):
 def main():
     hist = core.load_history()
     all_rows, books = collect(hist)
-    # Main comparisons are strictly matched: model and V11 sharp must both exist.
     usable = [r for r in all_rows if r.get("model") is not None and r.get("sharp") is not None]
     cut = int(len(usable) * .75)
     train = usable[:cut]
@@ -157,11 +176,12 @@ def main():
     weight = select_blend_weight(train) if len(train) >= 40 and len(holdout) >= 20 else None
     matched_blend = add_blend(usable, weight)
     holdout_blend = add_blend(holdout, weight)
+    holdout_multi = sum(core.num(r.get("sharp_refs"), 0) >= 2 for r in holdout)
 
     report = {
         "version": v11.V11_VERSION,
         "benchmark_version": v11.BENCHMARK_VERSION,
-        "method": "point-in-time persisted snapshots; matched comparisons; no reconstructed historical odds",
+        "method": "point-in-time persisted snapshots; independent effective model; matched comparisons; no reconstructed historical odds",
         "sharp_books": list(v11.sharp_books()),
         "coverage": {
             "final_games_with_pregame_market_snapshot": len(all_rows),
@@ -169,6 +189,8 @@ def main():
             "matched_pct": (len(usable) / len(all_rows)) if all_rows else None,
             "one_sharp_ref": sum(r.get("sharp_refs") == 1 for r in usable),
             "two_or_more_sharp_refs": sum(core.num(r.get("sharp_refs"), 0) >= 2 for r in usable),
+            "holdout_two_or_more_sharp_refs": holdout_multi,
+            "holdout_multiref_pct": (holdout_multi / len(holdout)) if holdout else None,
         },
         "matched_all": metric_block(matched_blend),
         "holdout": metric_block(holdout_blend),
