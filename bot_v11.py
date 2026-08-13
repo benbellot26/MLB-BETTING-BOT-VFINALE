@@ -149,8 +149,10 @@ def canonical_learning_rows(rows: list[dict], market: str | None = None) -> list
 def learned_book_weights(market: str = "ML") -> dict[str, dict]:
     """Learn small market-specific bookmaker weight adjustments.
 
-    No empirical adjustment activates before MIN_BOOK_SAMPLES independent
-    game/market observations. Adjustments remain capped at +/-15%.
+    Skill is measured on matched observations: each book is compared with the
+    mean probability of the *other* sharp books present for the same pick.
+    This avoids rewarding a book merely because it happened to cover easier
+    games. No adjustment activates before MIN_BOOK_SAMPLES independent rows.
     """
     global _BOOK_WEIGHT_CACHE
     canonical = _canonical_market(market)
@@ -160,27 +162,35 @@ def learned_book_weights(market: str = "ML") -> dict[str, dict]:
         return _BOOK_WEIGHT_CACHE[canonical]
 
     losses: dict[str, list[float]] = {}
+    gains: dict[str, list[float]] = {}
+    allowed = set(sharp_books())
     for row in canonical_learning_rows(_journal_rows(), canonical):
         y = 1.0 if row.get("result") == "W" else 0.0
-        for comp in row.get("benchmark_components") or []:
-            book = str(comp.get("book") or "")
-            if book not in sharp_books() or comp.get("p") is None:
+        comps = [(str(c.get("book") or ""), core.clamp(core.num(c.get("p"), .5), .001, .999))
+                 for c in (row.get("benchmark_components") or [])
+                 if str(c.get("book") or "") in allowed and c.get("p") is not None]
+        if len(comps) < 2:
+            continue
+        for book, p_book in comps:
+            peers = [p for b, p in comps if b != book]
+            if not peers:
                 continue
-            p = core.clamp(core.num(comp.get("p"), .5), .001, .999)
-            losses.setdefault(book, []).append((p - y) ** 2)
+            p_peer = sum(peers) / len(peers)
+            book_loss = (p_book - y) ** 2
+            peer_loss = (p_peer - y) ** 2
+            losses.setdefault(book, []).append(book_loss)
+            gains.setdefault(book, []).append(peer_loss - book_loss)
 
-    qualified = {b: sum(v) / len(v) for b, v in losses.items() if len(v) >= MIN_BOOK_SAMPLES}
-    center = median(qualified.values()) if qualified else None
     out = {}
     for book in sharp_books():
         n = len(losses.get(book, []))
         brier = sum(losses[book]) / n if n else None
-        multiplier = 1.0
-        if center is not None and book in qualified:
-            multiplier = core.clamp(1.0 + (center - qualified[book]) * 8.0, .85, 1.15)
+        gain = sum(gains[book]) / n if n and book in gains else None
+        learned = n >= MIN_BOOK_SAMPLES and gain is not None
+        multiplier = core.clamp(1.0 + gain * 8.0, .85, 1.15) if learned else 1.0
         out[book] = {
-            "market": canonical, "n": n, "brier": brier, "multiplier": multiplier,
-            "weight": _base_weight(book) * multiplier, "learned": book in qualified,
+            "market": canonical, "n": n, "brier": brier, "relative_brier_gain": gain,
+            "multiplier": multiplier, "weight": _base_weight(book) * multiplier, "learned": learned,
         }
     _BOOK_WEIGHT_CACHE[canonical] = out
     return out
@@ -241,6 +251,7 @@ def sharp_consensus_from_rows(rows, name, point=None, market="h2h") -> dict:
             "learned_n": int(core.num(skill.get("n"), 0)),
             "learned_market": canonical_market,
             "learned_brier": round(core.num(skill.get("brier"), 0), 6) if skill.get("brier") is not None else None,
+            "relative_brier_gain": round(core.num(skill.get("relative_brier_gain"), 0), 6) if skill.get("relative_brier_gain") is not None else None,
         })
 
     if not comps:
@@ -384,10 +395,11 @@ def install_v11() -> None:
         for book in sharp_books():
             st = learned.get(book, {})
             logging.info(
-                "V11 BOOK WEIGHT | %s %s weight=%.3f learned=%s n=%d brier=%s",
+                "V11 BOOK WEIGHT | %s %s weight=%.3f learned=%s n=%d brier=%s relGain=%s",
                 market, book, core.num(st.get("weight"), _base_weight(book)), bool(st.get("learned")),
                 int(core.num(st.get("n"), 0)),
                 f"{core.num(st.get('brier')):.4f}" if st.get("brier") is not None else "-",
+                f"{core.num(st.get('relative_brier_gain')):+.4f}" if st.get("relative_brier_gain") is not None else "-",
             )
     shadow = _shadow_metrics_from_journal()
     if shadow.get("n", 0):
@@ -400,7 +412,7 @@ def install_v11() -> None:
 def v11_self_test() -> None:
     old_cache = globals().get("_BOOK_WEIGHT_CACHE")
     globals()["_BOOK_WEIGHT_CACHE"] = {
-        m: {b: {"market": m, "n": 0, "brier": None, "multiplier": 1.0, "weight": _base_weight(b), "learned": False} for b in sharp_books()}
+        m: {b: {"market": m, "n": 0, "brier": None, "relative_brier_gain": None, "multiplier": 1.0, "weight": _base_weight(b), "learned": False} for b in sharp_books()}
         for m in ("ML", "RUNLINE", "TOTAL")
     }
     try:
