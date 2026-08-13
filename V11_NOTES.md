@@ -26,9 +26,19 @@ Improve prediction quality without rewriting the validated V10.0.15 baseball eng
 - The journal records bookmaker-level benchmark components so the weights can be evaluated and learned from real outcomes.
 - A model + sharp-market ensemble is recorded in shadow only. It does not affect official picks in V11.0.0.
 
-## Why the ensemble stays shadow-only
+## Point-in-time validation
 
-The existing 2026 baseball backtest does not contain point-in-time historical bookmaker prices. Activating a model/market blend without historical evidence could improve apparent agreement while silently degrading the independent model. V11 therefore records the blend and compares its Brier score to both the baseball model and the sharp benchmark after enough settled live observations.
+The broad 2026 baseball replay did not contain historical bookmaker prices, so it could not validate a market blend. However, the production V10 history already contains real pregame market snapshots captured on live runs.
+
+`v11_benchmark_report.py` uses only those persisted point-in-time snapshots. It makes no historical odds API calls and does not reconstruct missing prices. It compares:
+
+- independent model Brier / LogLoss;
+- legacy market benchmark Brier / LogLoss;
+- V11 sharp benchmark Brier / LogLoss;
+- individual sharp-book Brier / LogLoss;
+- a model + sharp blend chosen on the chronological first 75% and evaluated on the latest 25% holdout.
+
+The blend remains shadow-only even if it looks promising. Activation should require a stable holdout improvement and additional live V11 confirmation.
 
 ## What does not change
 
@@ -47,12 +57,13 @@ The existing 2026 baseball backtest does not contain point-in-time historical bo
 
 The workflow remains manual (`workflow_dispatch`). It now runs:
 
-1. `python -m py_compile bot.py bot_v11.py`
+1. `python -m py_compile bot.py bot_v11.py v11_benchmark_report.py`
 2. the complete V10.0.15 regression self-test chain
 3. V11 sharp-consensus self-tests
-4. `python bot_v11.py`
-5. JSONL validation
-6. history/journal persistence only after success
+4. point-in-time V11 benchmark report
+5. `python bot_v11.py`
+6. JSON / JSONL validation
+7. history, journal and benchmark-report persistence only after success
 
 ## Default V11 configuration
 
@@ -73,6 +84,6 @@ The next baseball-feature changes should be tested in shadow/backtest before act
 - reliever-level bullpen availability / consecutive-day workload;
 - starter recent-form features with shrinkage;
 - stricter lineup-confirmation provenance;
-- point-in-time sharp-market historical backtest if a historical odds plan is available.
+- expansion of point-in-time market coverage as more V11 snapshots accumulate.
 
-V11.0.0 intentionally avoids activating those changes until they demonstrate better out-of-sample prediction metrics.
+V11.0.0 intentionally avoids activating unvalidated baseball-feature changes until they demonstrate better out-of-sample prediction metrics.
