@@ -1,0 +1,24 @@
+name: V10.0.16 Confidence Display
+
+on:
+  push:
+    branches:
+      - v10-0-16-confidence-20-20260813
+
+permissions:
+  contents: write
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Inspect /10 occurrences
+        run: |
+          echo '--- /10 occurrences ---'
+          grep -n '/10' bot.py || true
+          echo '--- confidence occurrences ---'
+          grep -ni 'conf' bot.py | tail -n 120 || true
