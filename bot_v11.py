@@ -2,7 +2,7 @@
 """MLB Betting Bot V11 predictive wrapper.
 
 V11 deliberately keeps the validated V10.0.15 baseball engine intact and
-changes only the market-benchmark / observability layer. The goal is to make
+changes only the market-benchmark / observability layer.  The goal is to make
 market comparison more predictive without contaminating the independent
 baseball model with French execution prices.
 
@@ -40,13 +40,14 @@ DEFAULT_SHARP_BOOKS = (
 )
 DEFAULT_EXECUTION_BOOKS = ("winamax_fr",)
 
-# Priors stay deliberately close to 1.0. They only break ties until enough
-# settled V11 observations exist to learn small empirical adjustments.
+# Equal priors avoid hard-coding an unproven bookmaker hierarchy. Freshness and
+# outlier robustness differentiate books immediately; empirical skill can only
+# change weights after enough settled V11 observations.
 DEFAULT_BASE_WEIGHTS = {
-    "pinnacle": 1.15,
-    "betfair_ex_eu": 1.10,
-    "matchbook": 1.05,
-    "betonlineag": 0.95,
+    "pinnacle": 1.0,
+    "betfair_ex_eu": 1.0,
+    "matchbook": 1.0,
+    "betonlineag": 1.0,
 }
 
 MIN_BOOK_SAMPLES = max(40, int(os.getenv("V11_BOOK_WEIGHT_MIN_N", "80") or 80))
@@ -57,6 +58,14 @@ SHADOW_MODEL_WEIGHT = core.clamp(float(os.getenv("V11_SHADOW_MODEL_WEIGHT", "0.5
 _BOOK_WEIGHT_CACHE = None
 _ORIGINAL_BUILD_SNAPSHOT = core.build_snapshot
 _ORIGINAL_MAKE_RUN_ROWS = core.v1010_make_run_rows
+
+_PHASE_RANK = {"EARLY": 1, "LATE": 2, "FINAL": 3}
+_MARKET_CANON = {"h2h": "ML", "spreads": "RUNLINE", "totals": "TOTAL", "alternate_totals": "TOTAL"}
+
+
+def _canonical_market(market: str) -> str:
+    m = str(market or "").strip()
+    return _MARKET_CANON.get(m, m.upper())
 
 
 def _csv_env(name: str, default: tuple[str, ...]) -> tuple[str, ...]:
@@ -103,9 +112,7 @@ def _journal_rows() -> list[dict]:
             row = json.loads(line)
             if row.get("result") not in ("W", "L") or row.get("market") == "COMBO":
                 continue
-            if row.get("benchmark_version") != BENCHMARK_VERSION:
-                continue
-            if not row.get("benchmark_components"):
+            if row.get("benchmark_version") != BENCHMARK_VERSION or not row.get("benchmark_components"):
                 continue
             rows.append(row)
     except Exception as exc:
@@ -114,26 +121,46 @@ def _journal_rows() -> list[dict]:
     return rows
 
 
-def learned_book_weights() -> dict[str, dict]:
-    """Learn small bookmaker-weight adjustments from settled V11 samples."""
-    global _BOOK_WEIGHT_CACHE
-    if _BOOK_WEIGHT_CACHE is not None:
-        return _BOOK_WEIGHT_CACHE
+def canonical_learning_rows(rows: list[dict], market: str | None = None) -> list[dict]:
+    """One independent, model-favoured observation per game/market.
 
-    latest = {}
-    for row in _journal_rows():
-        key = (
-            str(row.get("game_pk")),
-            str(row.get("market")),
-            core.norm_name(row.get("pick")),
-            None if row.get("point") is None else round(core.num(row.get("point")), 3),
-        )
-        old = latest.get(key)
-        if old is None or str(row.get("analyzed_at", "")) > str(old.get("analyzed_at", "")):
-            latest[key] = row
+    Complementary sides and repeated manual runs must not inflate sample size.
+    The closest-to-game phase wins (FINAL > LATE > EARLY), then latest timestamp.
+    """
+    target = _canonical_market(market) if market else None
+    best = {}
+    for row in rows:
+        m = _canonical_market(row.get("market"))
+        if target and m != target:
+            continue
+        if row.get("game_pk") is None or row.get("result") not in ("W", "L"):
+            continue
+        p = row.get("p_effective")
+        if p is None or core.num(p, .5) < .5:
+            continue
+        key = (str(row.get("game_pk")), m)
+        rank = (_PHASE_RANK.get(str(row.get("phase") or "EARLY").upper(), 0), str(row.get("analyzed_at") or ""))
+        old = best.get(key)
+        if old is None or rank > old[0]:
+            best[key] = (rank, row)
+    return [x[1] for x in sorted(best.values(), key=lambda z: z[0])]
+
+
+def learned_book_weights(market: str = "ML") -> dict[str, dict]:
+    """Learn small market-specific bookmaker weight adjustments.
+
+    No empirical adjustment activates before MIN_BOOK_SAMPLES independent
+    game/market observations. Adjustments remain capped at +/-15%.
+    """
+    global _BOOK_WEIGHT_CACHE
+    canonical = _canonical_market(market)
+    if _BOOK_WEIGHT_CACHE is None:
+        _BOOK_WEIGHT_CACHE = {}
+    if canonical in _BOOK_WEIGHT_CACHE:
+        return _BOOK_WEIGHT_CACHE[canonical]
 
     losses: dict[str, list[float]] = {}
-    for row in latest.values():
+    for row in canonical_learning_rows(_journal_rows(), canonical):
         y = 1.0 if row.get("result") == "W" else 0.0
         for comp in row.get("benchmark_components") or []:
             book = str(comp.get("book") or "")
@@ -150,16 +177,12 @@ def learned_book_weights() -> dict[str, dict]:
         brier = sum(losses[book]) / n if n else None
         multiplier = 1.0
         if center is not None and book in qualified:
-            # 0.01 Brier better/worse than the peer median -> about 8% adjustment.
             multiplier = core.clamp(1.0 + (center - qualified[book]) * 8.0, .85, 1.15)
         out[book] = {
-            "n": n,
-            "brier": brier,
-            "multiplier": multiplier,
-            "weight": _base_weight(book) * multiplier,
-            "learned": book in qualified,
+            "market": canonical, "n": n, "brier": brier, "multiplier": multiplier,
+            "weight": _base_weight(book) * multiplier, "learned": book in qualified,
         }
-    _BOOK_WEIGHT_CACHE = out
+    _BOOK_WEIGHT_CACHE[canonical] = out
     return out
 
 
@@ -190,7 +213,8 @@ def _weighted_std(items: list[dict], center: float) -> float:
 
 
 def sharp_consensus_from_rows(rows, name, point=None, market="h2h") -> dict:
-    learned = learned_book_weights()
+    canonical_market = _canonical_market(market)
+    learned = learned_book_weights(canonical_market)
     comps = []
     allowed = set(sharp_books())
     for book, mk in rows:
@@ -215,6 +239,7 @@ def sharp_consensus_from_rows(rows, name, point=None, market="h2h") -> dict:
             "empirical_multiplier": round(empirical, 4),
             "freshness_weight": round(freshness, 4),
             "learned_n": int(core.num(skill.get("n"), 0)),
+            "learned_market": canonical_market,
             "learned_brier": round(core.num(skill.get("brier"), 0), 6) if skill.get("brier") is not None else None,
         })
 
@@ -232,7 +257,6 @@ def sharp_consensus_from_rows(rows, name, point=None, market="h2h") -> dict:
 
     med = median([x["p"] for x in comps])
     for c in comps:
-        # One outlier/stale feed cannot dominate the benchmark.
         distance = abs(c["p"] - med)
         robust = 1.0 / (1.0 + (distance / ROBUST_SCALE) ** 2)
         c["robust_weight"] = round(robust, 4)
@@ -329,25 +353,7 @@ def v11_make_run_rows(results, run_id=None, analyzed_at=None):
 
 
 def _shadow_metrics_from_journal() -> dict:
-    path = Path(getattr(core, "JOURNAL_FILE", "data/mlb_bet_journal_v1.jsonl"))
-    if not path.exists():
-        return {"n": 0}
-    latest = {}
-    try:
-        for line in path.read_text(encoding="utf-8").splitlines():
-            if not line.strip():
-                continue
-            r = json.loads(line)
-            if r.get("benchmark_version") != BENCHMARK_VERSION or r.get("result") not in ("W", "L"):
-                continue
-            if r.get("market") != "ML" or r.get("shadow_model_sharp_ensemble") is None:
-                continue
-            key = str(r.get("game_pk"))
-            if key not in latest or str(r.get("analyzed_at", "")) > str(latest[key].get("analyzed_at", "")):
-                latest[key] = r
-    except Exception:
-        return {"n": 0}
-    rows = list(latest.values())
+    rows = [r for r in canonical_learning_rows(_journal_rows(), "ML") if r.get("shadow_model_sharp_ensemble") is not None and r.get("benchmark_probability") is not None]
     if not rows:
         return {"n": 0}
     ys = [1.0 if r.get("result") == "W" else 0.0 for r in rows]
@@ -360,8 +366,6 @@ def _shadow_metrics_from_journal() -> dict:
 
 
 def install_v11() -> None:
-    # Baseball feature/model versions stay unchanged in V11.0.0. This is a
-    # benchmark improvement, not an unvalidated rewrite of the run engine.
     core.VERSION = V11_VERSION
     core.SELECTION_VERSION = SELECTION_VERSION
     core.BOOKMAKERS = ",".join(requested_books())
@@ -371,19 +375,20 @@ def install_v11() -> None:
     core.build_snapshot = v11_build_snapshot
     core.v1010_make_run_rows = v11_make_run_rows
 
-    learned = learned_book_weights()
     logging.info(
         "V11 SHARP BENCHMARK | books=%s | execution=%s | requested=%s",
         ",".join(sharp_books()), ",".join(execution_books()), core.BOOKMAKERS,
     )
-    for book in sharp_books():
-        s = learned.get(book, {})
-        logging.info(
-            "V11 BOOK WEIGHT | %s weight=%.3f learned=%s n=%d brier=%s",
-            book, core.num(s.get("weight"), _base_weight(book)), bool(s.get("learned")),
-            int(core.num(s.get("n"), 0)),
-            f"{core.num(s.get('brier')):.4f}" if s.get("brier") is not None else "-",
-        )
+    for market in ("ML", "RUNLINE", "TOTAL"):
+        learned = learned_book_weights(market)
+        for book in sharp_books():
+            st = learned.get(book, {})
+            logging.info(
+                "V11 BOOK WEIGHT | %s %s weight=%.3f learned=%s n=%d brier=%s",
+                market, book, core.num(st.get("weight"), _base_weight(book)), bool(st.get("learned")),
+                int(core.num(st.get("n"), 0)),
+                f"{core.num(st.get('brier')):.4f}" if st.get("brier") is not None else "-",
+            )
     shadow = _shadow_metrics_from_journal()
     if shadow.get("n", 0):
         logging.info(
@@ -395,8 +400,8 @@ def install_v11() -> None:
 def v11_self_test() -> None:
     old_cache = globals().get("_BOOK_WEIGHT_CACHE")
     globals()["_BOOK_WEIGHT_CACHE"] = {
-        b: {"n": 0, "brier": None, "multiplier": 1.0, "weight": _base_weight(b), "learned": False}
-        for b in sharp_books()
+        m: {b: {"market": m, "n": 0, "brier": None, "multiplier": 1.0, "weight": _base_weight(b), "learned": False} for b in sharp_books()}
+        for m in ("ML", "RUNLINE", "TOTAL")
     }
     try:
         event = {
@@ -415,6 +420,13 @@ def v11_self_test() -> None:
         assert all(x.get("weight", 0) > 0 for x in c["components"])
         assert "winamax_fr" in requested_books()
         assert set(sharp_books()).issubset(set(requested_books()))
+        synthetic = [
+            {"game_pk": 1, "market": "ML", "pick": "H", "phase": "EARLY", "analyzed_at": "1", "p_effective": .62, "result": "W"},
+            {"game_pk": 1, "market": "ML", "pick": "A", "phase": "EARLY", "analyzed_at": "1", "p_effective": .38, "result": "L"},
+            {"game_pk": 1, "market": "ML", "pick": "H", "phase": "FINAL", "analyzed_at": "2", "p_effective": .64, "result": "W"},
+        ]
+        canon = canonical_learning_rows(synthetic, "ML")
+        assert len(canon) == 1 and canon[0]["phase"] == "FINAL" and canon[0]["pick"] == "H"
     finally:
         globals()["_BOOK_WEIGHT_CACHE"] = old_cache
     print("SELF-TEST MLB BETTING BOT V11.0.0 OK")
@@ -428,7 +440,6 @@ def main() -> None:
 if __name__ == "__main__":
     try:
         if "--self-test" in sys.argv:
-            # First prove the frozen V10.0.15 regression chain still passes.
             core.v10_self_test()
             install_v11()
             v11_self_test()
