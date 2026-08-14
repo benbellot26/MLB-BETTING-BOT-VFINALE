@@ -32,8 +32,8 @@
     "walk_forward_gate": null
   },
   "compatible_games": 0,
-  "engine": "12.2-professional-validation-v3",
-  "generated_at": "2026-08-14T12:05:30.566564+00:00",
+  "engine": "12.3-methodology-audit-v1",
+  "generated_at": "2026-08-14T15:44:12.724606+00:00",
   "methodology": {
     "claim_limit": "Only V12.2 rows with matching feature schema train/calibrate the challenger.",
     "end_to_end_stack_gate": true,
@@ -181,12 +181,24 @@
     }
   },
   "production_evidence": {
+    "claim": "live evidence gate; not a guarantee of future profitability",
     "clv_observations": 0,
+    "clv_safe": false,
+    "mean_close_candidate_clv_pct": null,
     "passes": false,
+    "positive_close_candidate_clv_rate": null,
+    "predictive_quality": {
+      "qualified_markets": [],
+      "ready": false,
+      "safe": false
+    },
     "required_clv_observations": 50,
     "required_settled_bets": 100,
+    "roi": null,
+    "roi_guard": false,
     "settled_bets": 0,
-    "status": "COLLECTING"
+    "status": "COLLECTING",
+    "volume_ready": false
   },
   "settled_cohorts": [
     {
