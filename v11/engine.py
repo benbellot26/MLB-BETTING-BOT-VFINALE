@@ -119,7 +119,7 @@ def _project_runs(game):
     home_mu=rpg*h_off*h_opp*park*1.025;away_mu=rpg*a_off*a_opp*park*.975
     ctx={"home":hn,"away":an,"home_id":hid,"away_id":aid,"home_sp":hs.get("name"),"away_sp":ass.get("name"),"home_lineup":lineups["home"],"away_lineup":lineups["away"],"home_starter":hs,"away_starter":ass};oper=_operational(game,ctx)
     def fatigue(side):
-        x=oper.get(side) or {};adj=0.0;dist=core.num(x.get("travel_km"),0);tz=abs(core.num(x.get("timezone_shift_hours_approx"),0));
+        x=oper.get(side) or {};adj=0.0;dist=core.num(x.get("travel_km"),0);tz=abs(core.num(x.get("timezone_shift_hours_approx"),0))
         if dist>=1500:adj-=.012
         if dist>=3000:adj-=.008
         if tz>=2:adj-=.008
@@ -128,7 +128,7 @@ def _project_runs(game):
         if x.get("rest_days") is not None and x.get("rest_days")>=1:adj+=.006
         return adj
     def bullpen_attack(opponent_side):
-        b=((oper.get(opponent_side) or {}).get("bullpen_previous_game") or {});adj=min(.035,.00022*core.num(b.get("relief_pitches"),0)+.006*core.num(b.get("heavy_relievers"),0));return adj
+        b=((oper.get(opponent_side) or {}).get("bullpen_previous_game") or {});return min(.035,.00022*core.num(b.get("relief_pitches"),0)+.006*core.num(b.get("heavy_relievers"),0))
     hadj=max(-config.MAX_OPERATIONAL_RUN_ADJ,min(config.MAX_OPERATIONAL_RUN_ADJ,fatigue("home")+bullpen_attack("away")));aadj=max(-config.MAX_OPERATIONAL_RUN_ADJ,min(config.MAX_OPERATIONAL_RUN_ADJ,fatigue("away")+bullpen_attack("home")))
     if oper.get("current_doubleheader"):hadj-=.004;aadj-=.004
     home_mu=max(1.8,min(7.5,home_mu*(1+hadj)));away_mu=max(1.8,min(7.5,away_mu*(1+aadj)))
@@ -138,7 +138,7 @@ def _project_runs(game):
 def _blend(structural,sharp):
     n=int(sharp.get("n") or 0);sp=sharp.get("p")
     if sp is None or n<=0:return structural,0.0
-    w=config.SHARP_WEIGHT_1 if n==1 else config.SHARP_WEIGHT_2 if n==2 else config.SHARP_WEIGHT_3PLUS
+    base=config.SHARP_WEIGHT_1 if n==1 else config.SHARP_WEIGHT_2 if n==2 else config.SHARP_WEIGHT_3PLUS;w=base*max(.35,min(1.0,core.num(sharp.get("robustness"),1.0)))
     return core.clamp((1-w)*structural+w*core.clamp(sp)),w
 def _quality(phase,refs,lineup_count,starter_ok):
     q=.50+min(refs,4)*.06+(.11 if phase=="FINAL" else .055 if phase=="LATE" else 0)
@@ -167,12 +167,12 @@ def _most_common_total(event):
     return Counter(vals).most_common(1)[0][0] if vals else None
 
 def analyze(game,event):
-    hmu,amu,ctx,features=_project_runs(game);phase=core.phase_for_game(game);structural_home=prob_home_win(hmu,amu);sharp_home=market.sharp_consensus(event,"ML",ctx["home"]);lineup_count=int(core.num(ctx["home_lineup"].get("count"))+core.num(ctx["away_lineup"].get("count")));quality=_quality(phase,sharp_home.get("n",0),lineup_count,bool(ctx.get("home_sp") and ctx.get("away_sp")));options=[]
+    hmu,amu,ctx,features=_project_runs(game);phase=core.phase_for_game(game);structural_home=prob_home_win(hmu,amu);sharp_home=market.sharp_consensus(event,"ML",ctx["home"]);lineup_count=int(core.num(ctx["home_lineup"].get("count"))+core.num(ctx["away_lineup"].get("count")));starter_ok=bool(ctx.get("home_sp") and ctx.get("away_sp"));quality=_quality(phase,sharp_home.get("n",0),lineup_count,starter_ok);options=[]
     def add(market_name,name,point,p_win,p_push=0.0):
-        nonpush=max(1e-9,1-p_push);struct_cond=core.clamp(p_win/nonpush);sharp=market.sharp_consensus(event,market_name,name,point);p,sw=_blend(struct_cond,sharp);pe=_effective(p,phase,quality);effective_win=pe*nonpush;price=core.winamax_price(event,market_name,name,point)
-        options.append({"market":market_name,"name":name,"point":point,"p_structural":round(struct_cond,6),"p_model":round(p,6),"p_effective":round(pe,6),"p_win":round(effective_win,6),"p_push":round(p_push,6),"p_market":round(sharp["p"],6) if sharp.get("p") is not None else None,"refs":sharp.get("n",0),"sharp_books":sharp.get("books",[]),"sharp_weight":sw,"confidence":round(_confidence(pe,quality,sharp.get("n",0)),3),"winamax_eval":{"price":price,"official_selected":False,"official_units":0}})
+        nonpush=max(1e-9,1-p_push);struct_cond=core.clamp(p_win/nonpush);sharp=market.sharp_consensus(event,market_name,name,point);oq=_quality(phase,sharp.get("n",0),lineup_count,starter_ok);p,sw=_blend(struct_cond,sharp);pe=_effective(p,phase,oq);effective_win=pe*nonpush;price=core.winamax_price(event,market_name,name,point)
+        options.append({"market":market_name,"name":name,"point":point,"p_structural":round(struct_cond,6),"p_model":round(p,6),"p_effective":round(pe,6),"p_win":round(effective_win,6),"p_push":round(p_push,6),"p_market":round(sharp["p"],6) if sharp.get("p") is not None else None,"refs":sharp.get("n",0),"sharp_books":sharp.get("books",[]),"sharp_weight":round(sw,6),"sharp_dispersion":round(core.num(sharp.get("dispersion")),6) if sharp.get("dispersion") is not None else None,"sharp_robustness":round(core.num(sharp.get("robustness")),6),"sharp_max_age_min":round(core.num(sharp.get("max_age_min")),2) if sharp.get("max_age_min") is not None else None,"quality":round(oq,4),"confidence":round(_confidence(pe,oq,sharp.get("n",0)),3),"winamax_eval":{"price":price,"official_selected":False,"official_units":0}})
     add("ML",ctx["home"],None,structural_home,0);add("ML",ctx["away"],None,1-structural_home,0);hp=_most_common_spread(event,ctx["home"]);ap=-hp;hw,hpush=prob_cover_parts(hmu,amu,"home",hp);aw,apush=prob_cover_parts(hmu,amu,"away",ap);add("RUNLINE",ctx["home"],hp,hw,hpush);add("RUNLINE",ctx["away"],ap,aw,apush);total=_most_common_total(event)
     if total is not None:
         ow,opush=prob_total_parts(hmu,amu,"over",total);uw,upush=prob_total_parts(hmu,amu,"under",total);add("TOTAL","Over",total,ow,opush);add("TOTAL","Under",total,uw,upush)
     home_ml=next(o for o in options if o["market"]=="ML" and core.norm_name(o["name"])==core.norm_name(ctx["home"]))
-    return {"game_pk":game.get("gamePk"),"game":game,"event":event,"ctx":ctx,"phase":phase,"hmu":hmu,"amu":amu,"p_home":home_ml["p_effective"],"con":{"p":sharp_home.get("p"),"n":sharp_home.get("n",0),"books":sharp_home.get("books",[])},"quality":quality,"features":features,"options":options,"engine_version":"V11-standalone-all-markets-v2"}
+    return {"game_pk":game.get("gamePk"),"game":game,"event":event,"ctx":ctx,"phase":phase,"hmu":hmu,"amu":amu,"p_home":home_ml["p_effective"],"con":{"p":sharp_home.get("p"),"n":sharp_home.get("n",0),"books":sharp_home.get("books",[]),"dispersion":sharp_home.get("dispersion"),"robustness":sharp_home.get("robustness"),"max_age_min":sharp_home.get("max_age_min")},"quality":quality,"features":features,"options":options,"engine_version":"V11-standalone-all-markets-v3"}
