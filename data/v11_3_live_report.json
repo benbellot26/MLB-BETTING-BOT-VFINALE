@@ -1,18 +1,18 @@
 {
-  "analyzed_at": "2026-08-14T20:05:18.983028+00:00",
+  "analyzed_at": "2026-08-14T21:12:15.026417+00:00",
   "data_health": {
     "analyzed_games": 13,
-    "confirmed_lineups": 5,
+    "confirmed_lineups": 9,
     "confirmed_starters": 12,
-    "matched_events": 14,
-    "mean_data_quality": 0.8772,
+    "matched_events": 13,
+    "mean_data_quality": 0.917,
     "scheduled_games": 14,
     "sharp_coverage": {
       "ML": 13,
       "RUNLINE": 13,
       "TOTAL": 13
     },
-    "usable_lineups": 5,
+    "usable_lineups": 9,
     "usable_starters": 12,
     "winamax_coverage": {
       "ML": 13,
@@ -62,7 +62,7 @@
     "source": "frozen 2026 baseball bootstrap; FINAL-only; not betting-profitability evidence"
   },
   "ledger_settled_this_run": 0,
-  "matched_events": 14,
+  "matched_events": 13,
   "methodology": {
     "alternate_runlines": "event-level alternate_spreads; evaluates both +/-1.5 pairs when actually available",
     "calibration": "phase-specific side + push calibration; end-to-end promotion gate",
@@ -74,9 +74,9 @@
     "generation": "V12.3.1 alternate-runlines-v1",
     "historical_evidence": "legacy V10 1,801-game data are diagnostic only until a V12.3 structural baseline exists",
     "ledger": "PROPOSED -> PUBLISHED -> CONFIRMED_PLACED -> SETTLED",
-    "raw_archive": "runtime/v11/snapshots/2026-08-14_52f72f67cd51acaa.json.gz",
+    "raw_archive": "runtime/v11/snapshots/2026-08-14_64a4cd2b761af5fb.json.gz",
     "runs_model": "immutable structural baseline + validated FINAL historical prior fallback + phase-specific live residual",
-    "source_replay": "runtime/v11/source_replays/2026-08-14_52f72f67cd51acaa_sources.json.gz",
+    "source_replay": "runtime/v11/source_replays/2026-08-14_64a4cd2b761af5fb_sources.json.gz",
     "staking": "bankroll-aware fractional Kelly; official combos disabled",
     "starter_model": "current season + N-1/N-2 prior affects structural run means",
     "uncertainty": "empirical phase/market reliability bins + market disagreement + DQ penalty",
@@ -99,8 +99,19 @@
     "version": "structural-only"
   },
   "performance": {
-    "by_market": {},
-    "settled_games": 0
+    "by_market": {
+      "ML": {
+        "accuracy": 1.0,
+        "brier": 0.14504596,
+        "logloss": 0.47940609,
+        "n": 1,
+        "selection": "canonical main line",
+        "sharp_brier": 0.13611746,
+        "sharp_logloss": 0.46035592,
+        "wins": 1
+      }
+    },
+    "settled_games": 1
   },
   "production": {
     "claim": "COLLECTING",
@@ -127,7 +138,7 @@
     "volume_ready": false
   },
   "remaining_games_analyzed": 13,
-  "run_id": "52f72f67cd51acaa",
+  "run_id": "64a4cd2b761af5fb",
   "scheduled_games": 14,
   "schema": "v12-3-professional-v1",
   "target_date": "2026-08-14",
