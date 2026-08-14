@@ -1,7 +1,7 @@
 from __future__ import annotations
 import math
 from .models import logit, sigmoid, clamp
-from .validation import evaluate_probability_challenger, production_gate
+from .validation import evaluate_probability_challenger, production_gate, brier, logloss
 
 def _num(x,d=0.0):
     try:
@@ -27,7 +27,7 @@ def _market_target(row,item):
 def _canonical_rows(rows):
     best={}
     for r in rows:
-        if r.get("result_status")!="FINAL" or not r.get("game_pk"):continue
+        if r.get("record_type")=="COMBO" or r.get("result_status")!="FINAL" or not r.get("game_pk"):continue
         k=str(r.get("game_pk")); rank=str(r.get("analyzed_at") or "")
         if k not in best or rank>best[k][0]:best[k]=(rank,r)
     return [x[1] for x in sorted(best.values(),key=lambda z:z[0])]
@@ -56,13 +56,23 @@ def _fit_offset(rows,l2=3.333,steps=400,lr=.03):
 
 def evaluate_market(rows,market):
     ex=_examples(rows,market); n=len(ex)
-    if n<40:return {"market":market,"n":n,"status":"COLLECTING","passes_historical":False,"candidate_params":None}
+    if n<40:return {"market":market,"n":n,"status":"COLLECTING","passes_historical":False,"candidate_params":None,"production_ready":False}
     cut=max(30,int(n*.75)); train=ex[:cut]; hold=ex[cut:]; a,b=_fit_offset(train)
     base=[x["base"] for x in hold]; chal=[sigmoid(logit(x["base"])+a+b*x["feature"]) for x in hold]; ys=[x["y"] for x in hold]
-    rep=evaluate_probability_challenger(base,chal,ys); rep.update({"market":market,"train_n":len(train),"holdout_n":len(hold),"candidate_params":{"intercept":a,"oriented_feature_coef":b},"status":"PASS_HISTORICAL" if rep.get("passes") else "FAIL_HISTORICAL","passes_historical":bool(rep.get("passes"))})
+    rep=evaluate_probability_challenger(base,chal,ys); rep.update({"market":market,"train_n":len(train),"holdout_n":len(hold),"candidate_params":{"intercept":a,"oriented_feature_coef":b},"status":"PASS_HISTORICAL" if rep.get("passes") else "FAIL_HISTORICAL","passes_historical":bool(rep.get("passes")),"production_ready":production_gate(rep,0)})
     return rep
 
+def evaluate_sharp(rows):
+    xs=[]
+    for r in _canonical_rows(rows):
+        fs=r.get("v11_feature_snapshot") or {}; p=fs.get("market_home_probability")
+        if p is None:continue
+        y=1 if str(r.get("winner"))==str(r.get("home")) else 0
+        xs.append((clamp(r.get("base_v10_p_home",.5)),clamp(r.get("v11_2_p_home",.5)),clamp(p),y))
+    if not xs:return {"n":0,"status":"COLLECTING"}
+    p10=[x[0] for x in xs]; p112=[x[1] for x in xs]; sharp=[x[2] for x in xs]; ys=[x[3] for x in xs]
+    def acc(ps):return sum((p>=.5)==bool(y) for p,y in zip(ps,ys))/len(ys)
+    return {"n":len(xs),"status":"BENCHMARK_ONLY","v10":{"accuracy":acc(p10),"brier":brier(p10,ys),"logloss":logloss(p10,ys)},"v11_2":{"accuracy":acc(p112),"brier":brier(p112,ys),"logloss":logloss(p112,ys)},"sharp":{"accuracy":acc(sharp),"brier":brier(sharp,ys),"logloss":logloss(sharp,ys)},"note":"Sharp remains benchmark-only; no automatic blend or predictive-truth promotion."}
+
 def evaluate_all(rows):
-    reports={m:evaluate_market(rows,m) for m in ("RUNLINE","TOTAL")}
-    for rep in reports.values():rep["production_ready"]=production_gate(rep,0)
-    return reports
+    return {"RUNLINE":evaluate_market(rows,"RUNLINE"),"TOTAL":evaluate_market(rows,"TOTAL"),"SHARP_ML_BENCHMARK":evaluate_sharp(rows)}
