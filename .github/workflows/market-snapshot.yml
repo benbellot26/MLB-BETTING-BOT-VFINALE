@@ -1,0 +1,50 @@
+name: MLB V12.2 Market Snapshotter
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mlb-betting-bot-state
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Snapshot published recommendations only
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: python -m v11.runner --snapshot-only
+      - name: Persist CLV and settlements
+        run: |
+          git config user.name 'MLB Betting Bot V12.2'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          [ -f data/v11_3_live.jsonl ] && git add data/v11_3_live.jsonl
+          [ -f data/v11_bet_ledger.jsonl ] && git add -f data/v11_bet_ledger.jsonl
+          if ! git diff --cached --quiet; then
+            git commit -m 'data: capture V12.2 market trajectory [skip ci]'
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
+      - name: Archive source replay
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v12-2-market-snapshot-${{ github.run_id }}
+          path: |
+            runtime/v11/snapshots/
+            runtime/v11/source_replays/
+          if-no-files-found: ignore
+          retention-days: 90
