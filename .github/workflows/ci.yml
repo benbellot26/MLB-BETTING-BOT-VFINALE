@@ -33,8 +33,8 @@ jobs:
       - name: Unit tests
         run: python -m unittest tests.test_v11 tests.test_historical_bootstrap
 
-      - name: Historical bootstrap smoke test
-        run: python -m v11.historical_bootstrap --dry-run >/tmp/v12_historical_bootstrap.json
+      - name: Historical bootstrap validation
+        run: python -m v11.historical_bootstrap --dry-run
 
       - name: Engine self-test
         run: python -m v11.runner --self-test
