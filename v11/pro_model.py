@@ -202,7 +202,7 @@ def canonical_settled_rows(rows):
         rank = str(r.get("analyzed_at") or "")
         if gid not in best or rank > best[gid][0]:
             best[gid] = (rank, r)
-    return [x[1] for x in sorted(best.values(), key=lambda z: z[0])]
+    return sorted((x[1] for x in best.values()), key=lambda r: (str(r.get("game_date") or ""), str(r.get("analyzed_at") or "")))
 
 
 def _p(opt):
