@@ -21,7 +21,7 @@ def value_gate(rec):
     return {"ok":price>1 and price+1e-12>=minimum,"price":price if price>1 else None,"required_price":round(minimum,4),"ev_at_price":round(ev,6) if ev is not None else None,"p_win":round(_num(pwin),6),"p_push":round(push,6)}
 
 def _score(result,rec):
-    p=_num(rec.get("p_effective"),.5);conf=_num(rec.get("confidence"),0);q=_num(result.get("quality"),0);refs=int(_num(rec.get("refs"),0));phase=str(result.get("phase","EARLY")).upper();gate=value_gate(rec);ev=max(0.0,_num(gate.get("ev_at_price"),0))
+    p=_num(rec.get("p_effective"),.5);conf=_num(rec.get("confidence"),0);q=_num(rec.get("quality"),_num(result.get("quality"),0));refs=int(_num(rec.get("refs"),0));phase=str(result.get("phase","EARLY")).upper();gate=value_gate(rec);ev=max(0.0,_num(gate.get("ev_at_price"),0))
     s=50+155*max(0,p-.5)+2.0*(conf-5)+12*(q-.6)+2*min(refs,4)+(5 if phase=="FINAL" else 2 if phase=="LATE" else 0)+min(8,70*ev)
     return max(0.0,min(100.0,s))
 
@@ -58,5 +58,5 @@ def allocate(results,unit_eur=.5):
         cp=math.prod(_num(c["rec"].get("p_effective"),.5) for c in legs);price=math.prod(_num(c["gate"].get("price"),0) for c in legs);ev=cp*price-1;room=config.MAX_DAILY_UNITS-used_units;official=ev>=config.MIN_COMBO_EV and room+1e-9>=config.COMBO_UNITS
         combo={"available":True,"official":official,"legs":legs,"units":config.COMBO_UNITS if official else 0.0,"probability":cp,"winamax_price":price,"ev":ev,"reason":"retenu V11" if official else ("EV combiné insuffisante" if ev<config.MIN_COMBO_EV else "plafond exposition")}
     total_units=used_units+(combo["units"] if combo.get("official") else 0)
-    portfolio={"daily_cap":round(config.MAX_DAILY_UNITS*unit_eur,2),"allocated":round(total_units*unit_eur,2),"remaining":round(max(0,(config.MAX_DAILY_UNITS-total_units)*unit_eur),2),"official_count":len(chosen),"official_units":used_units,"combo_official":bool(combo.get("official")),"combo_units":_num(combo.get("units"),0),"selector_version":"V11-all-markets-value-v2"}
+    portfolio={"daily_cap":round(config.MAX_DAILY_UNITS*unit_eur,2),"allocated":round(total_units*unit_eur,2),"remaining":round(max(0,(config.MAX_DAILY_UNITS-total_units)*unit_eur),2),"official_count":len(chosen),"official_units":used_units,"combo_official":bool(combo.get("official")),"combo_units":_num(combo.get("units"),0),"selector_version":"V11-all-markets-value-v3"}
     return portfolio,chosen,combo,pool
