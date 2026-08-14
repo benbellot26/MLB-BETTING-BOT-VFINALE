@@ -1,4 +1,4 @@
-name: MLB Betting Bot V12.3 CI
+name: MLB Betting Bot V12.3.1 CI
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: v12-3-ci-${{ github.ref }}
+  group: v12-3-1-ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -28,7 +28,7 @@ jobs:
           python-version: '3.12'
 
       - name: Compile
-        run: python -m py_compile v11/*.py tests/test_v11.py tests/test_historical_bootstrap.py tests/test_v123.py
+        run: python -m py_compile v11/*.py tests/test_v11.py tests/test_historical_bootstrap.py tests/test_v123.py tests/test_v1231_runlines.py
 
       - name: V12.2 regression tests
         run: python -m unittest tests.test_v11 tests.test_historical_bootstrap
@@ -36,14 +36,17 @@ jobs:
       - name: V12.3 methodology tests
         run: python -m unittest tests.test_v123
 
+      - name: V12.3.1 alternate runline tests
+        run: python -m unittest tests.test_v1231_runlines
+
       - name: V12.3 baseline-safe bootstrap validation
         run: python -m v11.v123_bootstrap --dry-run >/tmp/v12_3_bootstrap.json
 
-      - name: V12.3 engine self-test
+      - name: V12.3.1 engine self-test
         run: python -m v11.v123_entry --self-test
 
-      - name: V12.3 Champion Challenger dry-run
+      - name: V12.3.1 Champion Challenger dry-run
         run: python -m v11.v123_train --dry-run >/tmp/v12_3_candidate.json
 
-      - name: V12.3 point-in-time evaluation smoke test
+      - name: V12.3.1 point-in-time evaluation smoke test
         run: python -m v11.v123_backtest >/tmp/v12_3_backtest.json
