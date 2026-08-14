@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import json
 
-from .methodology_v123 import install
+from .v123_runtime import activate
 
-install()
+activate()
 
 from . import backtest
 
