@@ -198,6 +198,29 @@ class V122Tests(unittest.TestCase):
         self.assertAlmostEqual(sum(o["p_effective"] for o in ml), 1, places=6)
         self.assertTrue(any(o["is_canonical_line"] for o in r["options"] if o["market"] == "TOTAL"))
 
+    def test_sharp_fallback_analyzes_runline_total_without_winamax(self):
+        at = now()
+        ctx = {"home": "H", "away": "A", "home_id": 1, "away_id": 2, "home_sp": "HS", "away_sp": "AS",
+               "home_lineup": {"count": 0}, "away_lineup": {"count": 0}, "home_starter": {}, "away_starter": {}}
+        event = {"bookmakers": [{"key": "pinnacle", "last_update": iso(at-timedelta(minutes=1)), "markets": [
+            {"key": "h2h", "outcomes": [{"name": "H", "price": 1.9}, {"name": "A", "price": 2.0}]},
+            {"key": "spreads", "outcomes": [{"name": "H", "point": -1.5, "price": 2.2}, {"name": "A", "point": 1.5, "price": 1.72}]},
+            {"key": "totals", "outcomes": [{"name": "Over", "point": 8.5, "price": 1.91}, {"name": "Under", "point": 8.5, "price": 1.91}]}]}]}
+        projected = (4.5, 4.1, 4.5, 4.1, ctx, {"weather": {}, "bullpen": {"coverage": 1}}, {"active": False}, 7.5, .08)
+        with patch.object(engine, "_project", return_value=projected), patch.object(core, "phase_for_game", return_value="EARLY"):
+            r = engine.analyze({"gamePk": 1}, event, as_of=iso(at))
+        rl = [o for o in r["options"] if o["market"] == "RUNLINE"]
+        totals = [o for o in r["options"] if o["market"] == "TOTAL"]
+        self.assertEqual(r["analysis_lines"]["RUNLINE"]["source"], "sharp")
+        self.assertEqual(r["analysis_lines"]["TOTAL"]["source"], "sharp")
+        self.assertEqual({o["point"] for o in rl}, {-1.5, 1.5})
+        self.assertEqual({o["point"] for o in totals}, {8.5})
+        self.assertTrue(all(o["winamax_eval"]["price"] is None for o in rl+totals))
+        self.assertTrue(all(not o["execution_available"] for o in rl+totals))
+        self.assertTrue(all(not selector.value_gate(o)["ok"] for o in rl+totals))
+        self.assertIsNone(r["canonical_lines"]["RUNLINE"])
+        self.assertIsNone(r["canonical_lines"]["TOTAL"])
+
     def test_production_evidence_gate_collects_before_claim(self):
         g = pro_model.production_evidence_gate({"settled_singles": 0, "settled_combos": 0, "close_candidate_clv_n": 0})
         self.assertFalse(g["passes"]); self.assertEqual(g["status"], "COLLECTING")
