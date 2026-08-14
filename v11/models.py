@@ -16,8 +16,8 @@ DEFAULT_MODEL = {
     "v11_2_params": {"intercept": 0.045, "relative_lineup_coef": 0.05, "regular_overlap_coef": -0.25},
     "validation": {"method": "rolling recent-400; Eastern-day frozen", "holdout_n": 451, "wins": 271, "accuracy": 271 / 451, "note": "historical rolling evidence; live confirmation required"},
     "challengers": {
-        "RUNLINE": {"active": False, "intercept": 0.0, "run_diff_coef": 0.0},
-        "TOTAL": {"active": False, "intercept": 0.0, "total_residual_coef": 0.0},
+        "RUNLINE": {"active": False, "intercept": 0.0, "oriented_run_diff_coef": 0.0},
+        "TOTAL": {"active": False, "intercept": 0.0, "oriented_total_residual_coef": 0.0},
     },
 }
 
@@ -78,15 +78,23 @@ def patch_ml_options(core, result):
         replacement = next((r for r in options if r.get("market") == "ML" and str(r.get("name")) == pick), None)
         if replacement is not None: result["model_recs"]["ML"] = replacement
 
+def _oriented_feature(result, rec, market, feature_snapshot):
+    ctx = result.get("ctx") or {}; pick = str(rec.get("name") or "")
+    if market == "RUNLINE":
+        x = float(feature_snapshot.get("projected_run_diff_home",0) or 0)
+        return x if pick == str(ctx.get("home")) else -x if pick == str(ctx.get("away")) else 0.0
+    x = float(feature_snapshot.get("projected_total_residual",0) or 0)
+    return x if pick.lower() == "over" else -x if pick.lower() == "under" else 0.0
+
 def attach_market_challengers(core, result, feature_snapshot, model):
     challengers = model.get("challengers") or {}; out = {}
     for rec in core.v1011_iter_options(result):
         market = str(rec.get("market") or "").upper()
         if market not in {"RUNLINE", "TOTAL"}: continue
-        base = clamp(rec.get("p_effective", rec.get("p_model", .5))); cfg = challengers.get(market) or {}
-        if market == "RUNLINE": residual = float(feature_snapshot.get("projected_run_diff_home",0) or 0); z = logit(base)+float(cfg.get("intercept",0) or 0)+float(cfg.get("run_diff_coef",0) or 0)*residual
-        else: residual = float(feature_snapshot.get("projected_total_residual",0) or 0); z = logit(base)+float(cfg.get("intercept",0) or 0)+float(cfg.get("total_residual_coef",0) or 0)*residual
+        base = clamp(rec.get("p_effective", rec.get("p_model", .5))); cfg = challengers.get(market) or {}; oriented = _oriented_feature(result, rec, market, feature_snapshot)
+        coef_key = "oriented_run_diff_coef" if market == "RUNLINE" else "oriented_total_residual_coef"
+        z = logit(base) + float(cfg.get("intercept",0) or 0) + float(cfg.get(coef_key,0) or 0) * oriented
         p = clamp(sigmoid(z)); key = f"{market}:{rec.get('name')}:{rec.get('point')}"; active = bool(cfg.get("active",False))
-        out[key] = {"market":market,"pick":rec.get("name"),"point":rec.get("point"),"base_v10_probability":round(base,6),"challenger_probability":round(p,6),"official_effect":active,"status":"ACTIVE" if active else "SHADOW_UNVALIDATED"}
+        out[key] = {"market":market,"pick":rec.get("name"),"point":rec.get("point"),"base_v10_probability":round(base,6),"challenger_probability":round(p,6),"oriented_feature":round(oriented,6),"official_effect":active,"status":"ACTIVE" if active else "SHADOW_UNVALIDATED"}
         if active: rec["p_model"] = p; core.v1011_apply_effective(rec,result)
     result["v11_market_challengers"] = out; return out
