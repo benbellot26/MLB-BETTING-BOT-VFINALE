@@ -177,6 +177,47 @@ def _winamax_points(event, key, home=None):
     return sorted({round(_n(o.get("point")), 2) for o in m.get("outcomes") or [] if o.get("point") is not None})
 
 
+def _sharp_candidate_points(event, key, home=None):
+    points = set()
+    for b in event.get("bookmakers") or []:
+        if b.get("key") not in core.SHARP_BOOKS:
+            continue
+        m = next((x for x in b.get("markets") or [] if x.get("key") == key), None)
+        if not m:
+            continue
+        for o in m.get("outcomes") or []:
+            if o.get("point") is None or _n(o.get("price")) <= 1:
+                continue
+            if key == "spreads" and core.norm_name(o.get("name")) != core.norm_name(home):
+                continue
+            points.add(round(_n(o.get("point")), 2))
+    return sorted(points)
+
+
+def _analysis_points(event, key, home=None, as_of=None):
+    """Use executable Winamax lines when present, otherwise one fresh principal sharp line for analysis only."""
+    winamax = _winamax_points(event, key, home)
+    if winamax:
+        return winamax, "winamax"
+    candidates = _sharp_candidate_points(event, key, home)
+    scored = []
+    if key == "spreads":
+        for p in candidates:
+            sh = market.sharp_consensus(event, "RUNLINE", home, p, as_of=as_of)
+            if sh.get("n", 0) > 0:
+                scored.append((sh.get("effective_n", 0.0), sh.get("n", 0), -abs(abs(p)-1.5), p))
+    else:
+        for p in candidates:
+            over = market.sharp_consensus(event, "TOTAL", "Over", p, as_of=as_of)
+            under = market.sharp_consensus(event, "TOTAL", "Under", p, as_of=as_of)
+            if over.get("n", 0) > 0 and under.get("n", 0) > 0:
+                scored.append((min(over.get("effective_n", 0.0), under.get("effective_n", 0.0)),
+                               min(over.get("n", 0), under.get("n", 0)), -p, p))
+    if not scored:
+        return [], "none"
+    return [max(scored)[-1]], "sharp"
+
+
 def _canonical_spread_point(event, home):
     points = _winamax_points(event, "spreads", home)
     return min(points, key=lambda p: abs(abs(p)-1.5)) if points else None
@@ -277,6 +318,8 @@ def analyze(game, event, as_of=None):
     options = []
     canonical_spread = _canonical_spread_point(event, ctx["home"])
     canonical_total = _canonical_total_point(event)
+    spread_points, spread_source = _analysis_points(event, "spreads", ctx["home"], as_of)
+    total_points, total_source = _analysis_points(event, "totals", as_of=as_of)
     lineup_count = int(_n(ctx.get("home_lineup", {}).get("count")))+int(_n(ctx.get("away_lineup", {}).get("count")))
     starter_ok = bool(ctx.get("home_sp") and ctx.get("away_sp"))
     quality = max(.2, min(.95, .45+min(sharp_home.get("n", 0), 4)*.05+
@@ -284,7 +327,8 @@ def analyze(game, event, as_of=None):
                             (.12 if lineup_count >= 16 else 0)+(.08 if starter_ok else 0)))
 
     def pair(mkt, a_name, a_point, a_struct_win, a_struct_push, a_model_win, a_model_push,
-             b_name, b_point, b_struct_win, b_struct_push, b_model_win, b_model_push, canonical=False):
+             b_name, b_point, b_struct_win, b_struct_push, b_model_win, b_model_push, canonical=False,
+             line_source="winamax"):
         model_push = (a_model_push+b_model_push)/2
         a_ps = core.clamp(a_model_win/max(1e-9, 1-a_model_push))
         b_ps = core.clamp(b_model_win/max(1e-9, 1-b_model_push))
@@ -303,6 +347,7 @@ def analyze(game, event, as_of=None):
             price = core.winamax_price(event, mkt, name, point)
             base_unc = pro_model.model_uncertainty(mkt, pe, phase, sh.get("dispersion"), 1.0, champ)
             options.append({"market": mkt, "name": name, "point": point, "is_canonical_line": bool(canonical),
+                            "line_source": line_source, "execution_available": bool(price and price > 1),
                             "p_structural": round(s_cond, 6),
                             "p_learned": round(core.clamp(m_win/max(1e-9, 1-m_push)), 6),
                             "p_model": round(pb, 6), "p_effective": round(pe, 6),
@@ -320,28 +365,31 @@ def analyze(game, event, as_of=None):
         append(b_name, b_point, b_struct_win, b_struct_push, b_model_win, b_model_push, b_pb, b_pe, shb, b_sw)
 
     pair("ML", ctx["home"], None, structural_home, 0.0, learned_home, 0.0,
-         ctx["away"], None, 1-structural_home, 0.0, 1-learned_home, 0.0, canonical=True)
-    for hp in _winamax_points(event, "spreads", ctx["home"]):
+         ctx["away"], None, 1-structural_home, 0.0, 1-learned_home, 0.0, canonical=True, line_source="winamax")
+    for hp in spread_points:
         ap = -hp
         shw, shp = prob_cover_parts(shmu, samu, "home", hp, config.RUN_DISPERSION, config.RUN_ENV_SIGMA)
         saw, sap = prob_cover_parts(shmu, samu, "away", ap, config.RUN_DISPERSION, config.RUN_ENV_SIGMA)
         mhw, mhp = prob_cover_parts(hmu, amu, "home", hp, dispersion, env_sigma)
         maw, mapush = prob_cover_parts(hmu, amu, "away", ap, dispersion, env_sigma)
         pair("RUNLINE", ctx["home"], hp, shw, shp, mhw, mhp, ctx["away"], ap, saw, sap, maw, mapush,
-             canonical=canonical_spread is not None and abs(hp-canonical_spread) <= 1e-6)
-    for t in _winamax_points(event, "totals"):
+             canonical=canonical_spread is not None and abs(hp-canonical_spread) <= 1e-6, line_source=spread_source)
+    for t in total_points:
         sow, sop = prob_total_parts(shmu, samu, "over", t, config.RUN_DISPERSION, config.RUN_ENV_SIGMA)
         suw, sup = prob_total_parts(shmu, samu, "under", t, config.RUN_DISPERSION, config.RUN_ENV_SIGMA)
         mow, mop = prob_total_parts(hmu, amu, "over", t, dispersion, env_sigma)
         muw, mup = prob_total_parts(hmu, amu, "under", t, dispersion, env_sigma)
         pair("TOTAL", "Over", t, sow, sop, mow, mop, "Under", t, suw, sup, muw, mup,
-             canonical=canonical_total is not None and abs(t-canonical_total) <= 1e-6)
+             canonical=canonical_total is not None and abs(t-canonical_total) <= 1e-6, line_source=total_source)
     hm = next(o for o in options if o["market"] == "ML" and core.norm_name(o["name"]) == core.norm_name(ctx["home"]))
     bootstrap_info = features.get("historical_bootstrap") or {}
     return {"game_pk": game.get("gamePk"), "game": game, "event": event, "ctx": ctx, "phase": phase,
             "as_of": as_of, "structural_hmu": shmu, "structural_amu": samu, "hmu": hmu, "amu": amu,
             "p_home": hm["p_effective"], "con": sharp_home, "quality": quality, "features": features,
-            "canonical_lines": {"RUNLINE": canonical_spread, "TOTAL": canonical_total}, "options": options,
+            "canonical_lines": {"RUNLINE": canonical_spread, "TOTAL": canonical_total},
+            "analysis_lines": {"RUNLINE": {"points": spread_points, "source": spread_source},
+                               "TOTAL": {"points": total_points, "source": total_source}},
+            "options": options,
             "model": {"version": champ.get("version", "structural-only"), "active": bool(champ.get("active")),
                       "artifact_status": champ.get("artifact_status"), "artifact_error": champ.get("artifact_error"),
                       "phase": phase, "dispersion": dispersion, "environment_sigma": env_sigma,
