@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import json
+from .v123_runtime import activate
 
-from .methodology_v123 import install
-
-install()
+activate()
 
 from . import config, core, journal, runner
 from . import discord_v123, v123_bootstrap
