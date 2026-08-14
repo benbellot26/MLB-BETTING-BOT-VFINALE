@@ -3,7 +3,10 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
+from v11 import config
+from v11 import engine_v12 as engine
 from v11 import historical_bootstrap as hb
 
 
@@ -28,6 +31,22 @@ def _rows(n=180, home_bias=.35, away_bias=-.20):
     return rows
 
 
+def _active_bootstrap():
+    return {
+        "schema": hb.SCHEMA,
+        "version": "historical-bootstrap-test",
+        "active": True,
+        "status": "PASS",
+        "run_correction": {
+            "active": True,
+            "home": {"mean_mu": 4.5, "intercept": .15, "slope": -.10},
+            "away": {"mean_mu": 4.5, "intercept": -.10, "slope": -.08},
+        },
+        "dispersion": {"active": True, "value": 2.9},
+        "environment": {"active": True, "sigma": .04},
+    }
+
+
 class HistoricalBootstrapTests(unittest.TestCase):
     def test_chronological_split_is_disjoint(self):
         rows = _rows(180)
@@ -49,6 +68,42 @@ class HistoricalBootstrapTests(unittest.TestCase):
         h2, a2, info2 = hb.apply_final_run_prior(4.2, 4.1, model, "EARLY")
         self.assertFalse(info2["active"])
         self.assertEqual((h2, a2), (4.2, 4.1))
+
+    def test_engine_uses_bootstrap_only_in_final(self):
+        model = _active_bootstrap()
+        champ = {"active": False, "version": "structural-only"}
+        with patch("v11.engine_v12.historical_bootstrap.load_model", return_value=model):
+            fh, fa, info, _, fd, fds, fe, fes = engine._bootstrap_prior(4.8, 4.2, champ, "FINAL")
+            eh, ea, einfo, _, ed, eds, ee, ees = engine._bootstrap_prior(4.8, 4.2, champ, "EARLY")
+            lh, la, linfo, _, ld, lds, le, les = engine._bootstrap_prior(4.8, 4.2, champ, "LATE")
+        self.assertTrue(info["active"])
+        self.assertNotEqual((fh, fa), (4.8, 4.2))
+        self.assertAlmostEqual(fd, 2.9)
+        self.assertAlmostEqual(fe, .04)
+        self.assertEqual((fds, fes), ("historical-bootstrap", "historical-bootstrap"))
+        for h, a, prior, d, ds, e, es in ((eh, ea, einfo, ed, eds, ee, ees), (lh, la, linfo, ld, lds, le, les)):
+            self.assertEqual((h, a), (4.8, 4.2))
+            self.assertFalse(prior["active"])
+            self.assertEqual(d, config.RUN_DISPERSION)
+            self.assertEqual(e, config.RUN_ENV_SIGMA)
+            self.assertEqual((ds, es), ("fixed", "fixed"))
+
+    def test_validated_champion_components_override_bootstrap(self):
+        model = _active_bootstrap()
+        champ = {
+            "active": True,
+            "version": "champion-test",
+            "phase_models": {"FINAL": {"residual": {"active": True}}},
+            "dispersion": {"active": True, "value": 5.2},
+            "environment": {"active": True, "sigma": .07},
+        }
+        with patch("v11.engine_v12.historical_bootstrap.load_model", return_value=model):
+            h, a, info, _, d, ds, e, es = engine._bootstrap_prior(4.8, 4.2, champ, "FINAL")
+        self.assertEqual((h, a), (4.8, 4.2))
+        self.assertFalse(info["active"])
+        self.assertAlmostEqual(d, 5.2)
+        self.assertAlmostEqual(e, .07)
+        self.assertEqual((ds, es), ("champion", "champion"))
 
     def test_model_keeps_frozen_test_and_evidence_boundary(self):
         model = hb.build_model(_rows(180), min_games=120, fingerprint="unit-test")
