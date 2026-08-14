@@ -25,6 +25,20 @@ def _score(result,rec):
     s=50+155*max(0,p-.5)+2.0*(conf-5)+12*(q-.6)+2*min(refs,4)+(5 if phase=="FINAL" else 2 if phase=="LATE" else 0)+min(8,70*ev)
     return max(0.0,min(100.0,s))
 
+def _combo_math(legs):
+    if len(legs)!=2:return {"ev":None}
+    parts=[]
+    for c in legs:
+        g=c["gate"];pw=max(0.0,min(1.0,_num(g.get("p_win"),0)));pp=max(0.0,min(1-pw,_num(g.get("p_push"),0)));price=_num(g.get("price"),0)
+        if price<=1:return {"ev":None}
+        parts.append((pw,pp,price))
+    w1,p1,q1=parts[0];w2,p2,q2=parts[1]
+    expected_return=w1*w2*q1*q2+w1*p2*q1+p1*w2*q2+p1*p2
+    full_win=w1*w2
+    positive_return=w1*w2+w1*p2+p1*w2
+    no_loss=(w1+p1)*(w2+p2)
+    return {"ev":expected_return-1,"full_win_probability":full_win,"positive_profit_probability":positive_return,"no_loss_probability":no_loss,"display_price":q1*q2}
+
 def allocate(results,unit_eur=.5):
     pool=[]
     for r in results:
@@ -55,8 +69,8 @@ def allocate(results,unit_eur=.5):
         if len(legs)==2:break
     combo={"available":False,"official":False,"legs":[],"units":0.0,"reason":"moins de 2 legs V11 qualifiés"}
     if len(legs)==2:
-        cp=math.prod(_num(c["rec"].get("p_effective"),.5) for c in legs);price=math.prod(_num(c["gate"].get("price"),0) for c in legs);ev=cp*price-1;room=config.MAX_DAILY_UNITS-used_units;official=ev>=config.MIN_COMBO_EV and room+1e-9>=config.COMBO_UNITS
-        combo={"available":True,"official":official,"legs":legs,"units":config.COMBO_UNITS if official else 0.0,"probability":cp,"winamax_price":price,"ev":ev,"reason":"retenu V11" if official else ("EV combiné insuffisante" if ev<config.MIN_COMBO_EV else "plafond exposition")}
+        cm=_combo_math(legs);ev=_num(cm.get("ev"),-9);room=config.MAX_DAILY_UNITS-used_units;official=ev>=config.MIN_COMBO_EV and room+1e-9>=config.COMBO_UNITS
+        combo={"available":True,"official":official,"legs":legs,"units":config.COMBO_UNITS if official else 0.0,"probability":cm.get("full_win_probability"),"positive_profit_probability":cm.get("positive_profit_probability"),"no_loss_probability":cm.get("no_loss_probability"),"winamax_price":cm.get("display_price"),"ev":ev,"push_aware":True,"reason":"retenu V11" if official else ("EV combiné insuffisante" if ev<config.MIN_COMBO_EV else "plafond exposition")}
     total_units=used_units+(combo["units"] if combo.get("official") else 0)
-    portfolio={"daily_cap":round(config.MAX_DAILY_UNITS*unit_eur,2),"allocated":round(total_units*unit_eur,2),"remaining":round(max(0,(config.MAX_DAILY_UNITS-total_units)*unit_eur),2),"official_count":len(chosen),"official_units":used_units,"combo_official":bool(combo.get("official")),"combo_units":_num(combo.get("units"),0),"selector_version":"V11-all-markets-value-v3"}
+    portfolio={"daily_cap":round(config.MAX_DAILY_UNITS*unit_eur,2),"allocated":round(total_units*unit_eur,2),"remaining":round(max(0,(config.MAX_DAILY_UNITS-total_units)*unit_eur),2),"official_count":len(chosen),"official_units":used_units,"combo_official":bool(combo.get("official")),"combo_units":_num(combo.get("units"),0),"selector_version":"V11-all-markets-value-v4"}
     return portfolio,chosen,combo,pool
