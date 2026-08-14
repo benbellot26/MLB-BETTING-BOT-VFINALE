@@ -1,0 +1,212 @@
+{
+  "active": true,
+  "dispersion": {
+    "active": true,
+    "baseline_value": 7.5,
+    "candidate_value": 2.8849829753783602,
+    "evaluation": {
+      "test": {
+        "base_nll": 2.454614870060461,
+        "candidate_nll": 2.425072325071387,
+        "nll_gain": 0.02954254498907405
+      },
+      "validation": {
+        "base_nll": 2.56624984391242,
+        "candidate_nll": 2.5152271159618356,
+        "nll_gain": 0.05102272795058438
+      }
+    },
+    "value": 2.8849829753783602
+  },
+  "eligible_for_final_prior": true,
+  "environment": {
+    "active": true,
+    "baseline_sigma": 0.08,
+    "candidate_sigma": 0.03838843542045774,
+    "evaluation": {
+      "test": {
+        "base_nll": 4.851211195714719,
+        "candidate_nll": 4.850373423084439,
+        "nll_gain": 0.0008377726302803978
+      },
+      "validation": {
+        "base_nll": 5.031790436795959,
+        "candidate_nll": 5.030737915536148,
+        "nll_gain": 0.0010525212598118117
+      }
+    },
+    "sigma": 0.03838843542045774
+  },
+  "evidence_boundary": "Historical baseball bootstrap only. It may seed FINAL-phase run/distribution priors when its component gates pass; it is not evidence of betting profitability, market edge or CLV.",
+  "generated_at": "2026-08-14T11:45:25.844589+00:00",
+  "metadata": {
+    "betting_profitability_claim": false,
+    "date_end": "2026-08-12T02:10:00Z",
+    "date_start": "2026-03-26T00:05:00Z",
+    "games": 1801,
+    "historical_clv_used": false,
+    "historical_odds_used": false,
+    "historical_statcast_used": false,
+    "historical_weather_used": false,
+    "lineups": "actual FINAL lineup identities with prior-only player stats",
+    "source": "mlb-backtest-2026-final-phase",
+    "source_fingerprint": "46f49239a7900ad4b05031e91f0664916cf73fb19331e97b7f563ccefe38455b",
+    "source_path": "data/mlb_backtest_2026.jsonl",
+    "split": {
+      "test": 301,
+      "train": 1200,
+      "validation": 300
+    },
+    "test_is_frozen": true
+  },
+  "phase_scope": [
+    "FINAL"
+  ],
+  "run_correction": {
+    "active": true,
+    "away": {
+      "intercept": -0.04133258333333334,
+      "mean_mu": 4.5329992500000005,
+      "n": 1200,
+      "slope": -0.5372561848920626
+    },
+    "home": {
+      "intercept": -0.10211225,
+      "mean_mu": 4.586278916666667,
+      "n": 1200,
+      "slope": -0.8162524085208026
+    },
+    "max_abs_run_adjustment": 0.5,
+    "passes": true,
+    "test": {
+      "base": {
+        "games": 301,
+        "team_mae": 2.4592925249169433,
+        "team_rmse": 3.0820983404302753,
+        "total_mae": 3.6446940199335547,
+        "total_rmse": 4.4067704973196085
+      },
+      "candidate": {
+        "games": 301,
+        "team_mae": 2.435618074452237,
+        "team_rmse": 3.045462362991243,
+        "total_mae": 3.582738348438768,
+        "total_rmse": 4.343314941333652
+      },
+      "team_rmse_gain": 0.03663597743903235,
+      "total_rmse_gain": 0.0634555559859562
+    },
+    "validation": {
+      "base": {
+        "games": 300,
+        "team_mae": 2.6790065,
+        "team_rmse": 3.514782667958765,
+        "total_mae": 3.755937,
+        "total_rmse": 4.721677820460999
+      },
+      "candidate": {
+        "games": 300,
+        "team_mae": 2.650973906427714,
+        "team_rmse": 3.503823775199309,
+        "total_mae": 3.6931052571140275,
+        "total_rmse": 4.693638938568625
+      },
+      "team_rmse_gain": 0.010958892759456162,
+      "total_rmse_gain": 0.02803888189237469
+    },
+    "walk_forward": {
+      "pass_rate": 1.0,
+      "passes": true,
+      "status": "PASS",
+      "windows": [
+        {
+          "base": {
+            "games": 150,
+            "team_mae": 2.5526093333333333,
+            "team_rmse": 3.169195130786364,
+            "total_mae": 3.5077546666666666,
+            "total_rmse": 4.314916033775551
+          },
+          "candidate": {
+            "games": 150,
+            "team_mae": 2.5543043101723657,
+            "team_rmse": 3.1319251703834126,
+            "total_mae": 3.5053525731351267,
+            "total_rmse": 4.260337454789437
+          },
+          "future_games": 150,
+          "passes": true,
+          "team_rmse_gain": 0.03726996040295161,
+          "total_rmse_gain": 0.0545785789861144,
+          "train_games": 550
+        },
+        {
+          "base": {
+            "games": 150,
+            "team_mae": 2.540116333333333,
+            "team_rmse": 3.1752609955666116,
+            "total_mae": 3.6157166666666662,
+            "total_rmse": 4.402262828659825
+          },
+          "candidate": {
+            "games": 150,
+            "team_mae": 2.541437882536704,
+            "team_rmse": 3.1597020425047706,
+            "total_mae": 3.5912340056197367,
+            "total_rmse": 4.3846954192282315
+          },
+          "future_games": 150,
+          "passes": true,
+          "team_rmse_gain": 0.015558953061840963,
+          "total_rmse_gain": 0.017567409431593184,
+          "train_games": 700
+        },
+        {
+          "base": {
+            "games": 150,
+            "team_mae": 2.5960063333333334,
+            "team_rmse": 3.387321003334838,
+            "total_mae": 3.4849166666666664,
+            "total_rmse": 4.675420127781745
+          },
+          "candidate": {
+            "games": 150,
+            "team_mae": 2.594903632594533,
+            "team_rmse": 3.3786343916436974,
+            "total_mae": 3.476350355090114,
+            "total_rmse": 4.688200394195285
+          },
+          "future_games": 150,
+          "passes": true,
+          "team_rmse_gain": 0.008686611691140822,
+          "total_rmse_gain": -0.012780266413539465,
+          "train_games": 850
+        },
+        {
+          "base": {
+            "games": 150,
+            "team_mae": 2.5695926666666664,
+            "team_rmse": 3.3489862401926946,
+            "total_mae": 3.612438666666667,
+            "total_rmse": 4.777664271461527
+          },
+          "candidate": {
+            "games": 150,
+            "team_mae": 2.5647323952776047,
+            "team_rmse": 3.3480814493357993,
+            "total_mae": 3.573397520110677,
+            "total_rmse": 4.777441783500524
+          },
+          "future_games": 150,
+          "passes": true,
+          "team_rmse_gain": 0.0009047908568953211,
+          "total_rmse_gain": 0.00022248796100310386,
+          "train_games": 1000
+        }
+      ]
+    }
+  },
+  "schema": "v12-historical-bootstrap-v1",
+  "status": "PASS",
+  "version": "historical-bootstrap-v1"
+}

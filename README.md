@@ -1,75 +1,112 @@
-# MLB Betting Bot — V11 Standalone
+# MLB Betting Bot — V12.2 Professional Validation Foundation
+
+V12.2 keeps the interpretable structural baseball baseline while hardening the full decision chain around reproducible point-in-time data, phase-specific learning, end-to-end Champion/Challenger validation, empirical uncertainty, bankroll-aware selection, explicit recommendation lifecycle and CLV evidence.
 
 ## Production architecture
-- `v11/core.py`: MLB Stats API, The Odds API, Winamax execution prices and Discord transport.
-- `v11/engine.py`: V11 run projection + overdispersed Negative Binomial score distribution + ML / Run Line / Total probabilities.
-- `v11/market.py`: stale-aware, freshness-weighted sharp de-vig for ML, spreads ± and totals.
-- `v11/selector.py`: V11 value gate, portfolio limits and 2-leg combo.
-- `v11/journal.py`: point-in-time journal, settlement, Brier/LogLoss, ROI, drawdown and losing streak.
-- `v11/discord.py`: game cards, Top 3 ML/RL/Total and Plan Officiel V11.
-- `v11/runner.py`: sole production orchestration and CLI entrypoint.
-- `v11/backtest.py`: point-in-time EARLY/LATE/FINAL evaluation.
-- `v11/train.py`: inactive Champion/Challenger calibration candidates.
-- `tests/test_v11.py`: V11 regression tests.
 
-## Production status
-**V11 is the only production engine.**
+- `v11/core.py` — MLB/The Odds API transport, explicit `as_of`, complete HTTP source recording/replay, Winamax prices and Discord transport.
+- `v11/engine.py` — retained structural compatibility layer.
+- `v11/engine_v12.py` — production engine with raw/current + multi-season starter priors, three-day bullpen context, phase-specific residual model, correlated run-environment score matrix, dynamic tail truncation and fixed canonical evaluation lines.
+- `v11/context.py` — weather and three-day bullpen availability context.
+- `v11/market.py` — point-in-time de-vig consensus, strict timestamp freshness, exchange commission adjustment, book weighting and disagreement-aware blending.
+- `v11/pro_model.py` — coherent missing-value handling, phase-specific residual/calibration models, push calibration, empirical uncertainty, end-to-end holdout validation, walk-forward promotion gate and model provenance metadata.
+- `v11/data_quality.py` — independent data quality based on actually usable lineup/starter/team data, not merely identities/counts.
+- `v11/selector.py` — uncertainty-adjusted price gate, fractional Kelly, persistent recommendation exposure and duplicate prevention. Official combos are disabled until a dependence model is validated.
+- `v11/storage.py` — run snapshots, source replays, market snapshots, recommendation/wager lifecycle ledger and CLV observations.
+- `v11/journal.py` — prediction journal and settlement compatibility layer.
+- `v11/backtest.py` — strict V12.2 cohort evaluation with WIN/PUSH/LOSS multiclass scoring.
+- `v11/train.py` — explicit Champion/Challenger generation and promotion.
+- `v11/discord_v12.py` — recommendation cards and data-health reporting.
+- `tests/test_v11.py` — regression, statistical and production-safety invariants.
 
-- Moneyline: V11.
-- Run Line: V11.
-- Totals Over/Under: V11.
-- Top 3: V11.
-- Official selector: V11.
-- 2-leg combo: V11.
-- Winamax price/value gate: V11.
-- Legacy code dependency: **none**.
+## Probability stack
 
-Historical pre-V11 datasets may remain in `data/` strictly as frozen research/benchmark inputs. They are never imported to generate a live pick.
+1. immutable structural run baseline;
+2. phase-specific learned residual only after chronological improvement;
+3. Negative Binomial scoring with a shared run-environment factor, so home and away scores are not conditionally independent;
+4. dynamic score-tail truncation rather than a fixed hard matrix cut;
+5. fresh sharp-market de-vig blend at an explicit historical `as_of`;
+6. phase/market side calibration plus push calibration;
+7. empirical uncertainty from reliability bins, sharp disagreement and data quality;
+8. conservative execution probability used for EV, minimum price and Kelly sizing.
 
-## V11 probability model
-The standalone engine estimates expected home/away runs from current-season offense, batting-order-weighted lineup OPS, opponent pitching, sample-shrunk probable starter ERA/WHIP, park factor, home advantage and bounded operational context (rest, travel, recent extra innings/doubleheader and previous-game bullpen workload).
+EARLY, LATE and FINAL snapshots are trained separately while train/holdout splits remain grouped by `game_pk`, preventing the same game from leaking across validation boundaries.
 
-Expected runs are converted into a full **Negative Binomial** score matrix. The same distribution produces Moneyline, Run Line and Total probabilities.
+## Champion / Challenger policy
 
-For integer Run Line / Total markets, V11 models `p_win` and `p_push` separately. Refunded outcomes are therefore priced explicitly.
+A Challenger is **not** promotable merely because one component improves. Promotion requires:
 
-## Sharp market ensemble
-Reference books are de-vigged one book at a time. Books older than **90 minutes** are excluded. Remaining references are freshness-weighted, and disagreement between sharp books automatically reduces their blend weight.
+- V12.2-compatible rows only (`engine_version`, schema and feature schema must match);
+- an external end-to-end holdout where the deployed stack improves Brier and LogLoss;
+- multiple positive future walk-forward windows;
+- compatible model provenance metadata and feature-schema hash;
+- sufficient live evidence at promotion time.
 
-The base blend weight is bounded at approximately **12–25%** depending on the number of fresh references. Winamax remains execution-only and is never used as predictive truth.
+The model artifact stores dataset fingerprint, training cutoff, engine/schema versions, feature-schema hash and producing Git commit when available.
 
-## Official bet rule
-A prediction and a bet are separate decisions. A V11 option is official only if:
-- model probability/confidence/quality are sufficient;
-- at least one fresh reference market is available;
-- the exact Winamax market/line exists;
-- the Winamax price clears fair price + EV floor + edge floor + safety margin;
-- portfolio exposure and correlation limits are respected.
+If a Champion file exists but is corrupt or schema-incompatible, the betting data-quality gate fails closed. Absence of a Champion is different: structural-only operation is allowed while evidence is collected.
 
-The portfolio is limited to 3 official singles, one single per match, no more than two selections from the same market profile, and 4 units total including the optional 2-leg combo.
+## Recommendation and wager lifecycle
 
-## Live evidence
-Every production run stores V11 probabilities for **ML / Run Line / Total**, `p_win`, `p_push`, sharp references, lineup/starter context, operational adjustments, Winamax price and official decision in `data/v11_3_live.jsonl`.
+The bot does not claim that publishing a Discord recommendation means a bookmaker wager was placed.
 
-The filename is historical only; its current rows are generated by the V11 standalone engine. Settled V11-native games are graded automatically and feed the live performance report.
+Lifecycle:
 
-## Financial evidence
-The journal settles official singles and official combos and reports P/L, ROI, market split, maximum drawdown and longest losing streak from recorded Winamax prices. A PUSH leg in a combo is removed from the effective combo price rather than incorrectly grading the entire combo as a push.
+`PROPOSED → PUBLISHED → CONFIRMED_PLACED → WIN / LOSS / PUSH`
 
-Historical ROI or CLV is never fabricated where point-in-time prices do not exist.
+- `PROPOSED`: selected and durably persisted before Discord.
+- `PUBLISHED`: Discord publication succeeded.
+- `CONFIRMED_PLACED`: explicit external/user confirmation that the wager was actually placed.
+- settlement and ROI use only confirmed wagers.
 
-## Commands
+Manual confirmation is available with:
+
 ```bash
-python -m py_compile v11/*.py tests/test_v11.py
-python -m v11.runner --self-test
-python -m unittest tests.test_v11
-python -m v11.runner
-python -m v11.backtest
-python -m v11.train
+python -m v11.runner --confirm-placed '<bet_key>' --price 1.91
 ```
 
-## GitHub Actions
-There is a single production workflow: **MLB Betting Bot V11** (`.github/workflows/mlb-bot.yml`). It validates V11, runs the standalone engine and persists only the V11 live journal/report.
+## Betting policy
 
-## Superiority policy
-V11 is the sole production code path, but statistical superiority is an evidence claim, not a version-name claim. Frozen historical results remain only as comparison baselines. V11 is considered superior market by market only after out-of-sample/live Accuracy, Brier, LogLoss and betting results support that conclusion.
+A single recommendation requires:
+
+- usable team/starter/lineup data above the DQ threshold;
+- fresh sharp references;
+- an exact executable Winamax line;
+- uncertainty-adjusted positive value and minimum edge;
+- no already-published recommendation on the same game;
+- fractional Kelly above the minimum unit size;
+- room under persistent daily exposure limits.
+
+Official combinés are disabled in V12.2 because multiplying leg probabilities assumes independence that has not yet been validated. Research combo calculations can exist, but they cannot enter the official portfolio.
+
+## Point-in-time source replay and CLV
+
+Every production/snapshot run can record **all HTTP responses actually consumed**: schedule, Odds API, team/player stats, boxscores, starter priors, bullpen lookups and weather. API secrets are scrubbed from archived request URLs.
+
+Source bundles under `runtime/v11/source_replays/` can be replayed without using the current clock:
+
+```bash
+python -m v11.runner --replay-dry-run runtime/v11/source_replays/<file>.json.gz
+```
+
+Market freshness and game phase use the recorded historical `as_of`, not `datetime.now()`.
+
+`.github/workflows/market-snapshot.yml` checks for published recommendations every 15 minutes. It only calls the APIs when something is open, then captures T-60, T-15 and close-candidate trajectories without generating or republishing picks.
+
+## Evidence boundary
+
+The system reports `COLLECTING` until it has at least the configured number of confirmed settled wagers and close-candidate CLV observations. A green CI validates software invariants; it is **not** treated as evidence of predictive profitability.
+
+Historical information that was never captured is never reconstructed from future data.
+
+## Validation
+
+```bash
+python -m py_compile v11/*.py tests/test_v11.py
+python -m unittest tests.test_v11
+python -m v11.runner --self-test
+python -m v11.train --dry-run
+python -m v11.backtest
+```
+
+`.github/workflows/ci.yml` runs on pushes and pull requests. `.github/workflows/mlb-bot.yml` is the explicit production workflow; `.github/workflows/market-snapshot.yml` is the CLV/source snapshotter.

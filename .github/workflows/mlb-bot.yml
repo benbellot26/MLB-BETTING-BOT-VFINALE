@@ -1,4 +1,4 @@
-name: MLB Betting Bot V11
+name: MLB Betting Bot V12.2 Production
 
 on:
   workflow_dispatch:
@@ -7,35 +7,65 @@ permissions:
   contents: write
 
 concurrency:
-  group: mlb-betting-bot-v11
+  group: mlb-betting-bot-state
   cancel-in-progress: false
 
 jobs:
   run-bot:
-    name: Exécution du Bot V11
+    name: Exécution du Bot V12.2
     runs-on: ubuntu-latest
-    timeout-minutes: 40
-
+    timeout-minutes: 55
     steps:
-      - name: Récupération du repository
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Installation de Python
+      - name: Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: '3.12'
 
-      - name: Validation V11
+      - name: Validation V12.2
         run: |
-          python --version
-          python -m py_compile v11/*.py tests/test_v11.py
+          python -m py_compile v11/*.py tests/test_v11.py tests/test_historical_bootstrap.py
           python -m v11.runner --self-test
-          python -m unittest tests.test_v11
+          python -m unittest tests.test_v11 tests.test_historical_bootstrap
+          python -m v11.historical_bootstrap --dry-run >/tmp/v12_historical_bootstrap.json
+          python -m v11.train --dry-run
 
-      - name: Exécution du Bot V11
+      - name: Ensure validated historical FINAL prior
+        run: |
+          python - <<'PY'
+          import json
+          from v11 import historical_bootstrap as hb
+          model = hb.ensure_artifact()
+          if not model.get('active') or model.get('phase_scope') != ['FINAL']:
+              raise SystemExit('Historical bootstrap did not pass FINAL-only validation gates')
+          print(json.dumps({
+              'version': model.get('version'),
+              'status': model.get('status'),
+              'games': (model.get('metadata') or {}).get('games'),
+              'split': (model.get('metadata') or {}).get('split'),
+              'run_prior_active': bool((model.get('run_correction') or {}).get('active')),
+              'dispersion_active': bool((model.get('dispersion') or {}).get('active')),
+              'environment_active': bool((model.get('environment') or {}).get('active')),
+          }, indent=2, sort_keys=True))
+          PY
+
+      - name: Persist historical FINAL prior before predictions
+        run: |
+          git config user.name 'MLB Betting Bot V12.2'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add data/v12_historical_bootstrap_model.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'data: persist validated historical FINAL prior [skip ci]'
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
+
+      - name: Run V12.2 without Discord
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
@@ -43,44 +73,108 @@ jobs:
           UNIT: ${{ vars.UNIT }}
           MIN_EV: ${{ vars.MIN_EV }}
           MIN_EDGE: ${{ vars.MIN_EDGE }}
+          V12_DEFER_DISCORD: '1'
         run: |
-          mkdir -p data
+          mkdir -p data runtime/v11
           python -m v11.runner
 
-      - name: Validation des données V11
-        if: success()
+      - name: Validate proposed state
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
-
-          journal = Path('data/v11_3_live.jsonl')
-          if journal.exists():
-              for line in journal.read_text(encoding='utf-8').splitlines():
-                  if line.strip():
-                      json.loads(line)
-              print(f'{journal}: valide')
-
-          report = Path('data/v11_3_live_report.json')
-          if report.exists():
-              json.loads(report.read_text(encoding='utf-8'))
-              print(f'{report}: valide')
+          for name in ('data/v11_3_live.jsonl','data/v11_bet_ledger.jsonl'):
+              p=Path(name)
+              if p.exists():
+                  for line in p.read_text(encoding='utf-8').splitlines():
+                      if line.strip(): json.loads(line)
+          json.loads(Path('runtime/v11/discord_payload.json').read_text(encoding='utf-8'))
           PY
 
-      - name: Sauvegarde du journal V11
-        if: success()
+      - name: Persist PROPOSED recommendations
         run: |
-          git config user.name "MLB Betting Bot V11"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
+          git config user.name 'MLB Betting Bot V12.2'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
           [ -f data/v11_3_live.jsonl ] && git add data/v11_3_live.jsonl
           [ -f data/v11_3_live_report.json ] && git add data/v11_3_live_report.json
-
-          if git diff --cached --quiet; then
-            echo "Données V11 inchangées."
-            exit 0
+          [ -f data/v11_bet_ledger.jsonl ] && git add -f data/v11_bet_ledger.jsonl
+          if ! git diff --cached --quiet; then
+            git commit -m 'data: persist V12.2 proposed recommendations [skip ci]'
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
           fi
 
-          git commit -m "data: update V11 live journal [skip ci]"
-          git pull --rebase origin "$GITHUB_REF_NAME"
-          git push origin "HEAD:$GITHUB_REF_NAME"
+      - name: Publish Discord recommendations
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python -m v11.runner --send-persisted
+
+      - name: Persist PUBLISHED lifecycle state
+        run: |
+          git config user.name 'MLB Betting Bot V12.2'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          [ -f data/v11_bet_ledger.jsonl ] && git add -f data/v11_bet_ledger.jsonl
+          if ! git diff --cached --quiet; then
+            git commit -m 'data: mark V12.2 recommendations published [skip ci]'
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
+
+      - name: Challenger and evaluation
+        run: |
+          python -m v11.train
+          python -m v11.backtest
+
+      - name: Validate research artifacts
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for name in ('data/v12_historical_bootstrap_model.json','data/v11_candidate_model.json','data/v11_point_in_time_backtest.json'):
+              p=Path(name)
+              if p.exists(): json.loads(p.read_text(encoding='utf-8'))
+          PY
+
+      - name: Prepare market archive
+        if: always()
+        run: |
+          mkdir -p runtime/v11/snapshots
+          if [ -f data/v11_market_snapshots.jsonl ]; then
+            gzip -9 -c data/v11_market_snapshots.jsonl > "runtime/v11/snapshots/market_${GITHUB_RUN_ID}.jsonl.gz"
+          fi
+
+      - name: Archive point-in-time sources 90 days
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v12-2-point-in-time-${{ github.run_id }}
+          path: |
+            runtime/v11/snapshots/
+            runtime/v11/source_replays/
+          if-no-files-found: ignore
+          retention-days: 90
+
+      - name: Durable source replay archive
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view v12-data-archive >/dev/null 2>&1 || \
+            gh release create v12-data-archive --title 'V12 durable point-in-time data archive' --notes 'Compressed source replays and market snapshots used for reproducible model research.'
+          shopt -s nullglob
+          files=(runtime/v11/snapshots/*.gz runtime/v11/source_replays/*.gz)
+          if [ ${#files[@]} -gt 0 ]; then gh release upload v12-data-archive "${files[@]}" --clobber; fi
+
+      - name: Persist research evidence
+        if: success()
+        run: |
+          git config user.name 'MLB Betting Bot V12.2'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          [ -f data/v12_historical_bootstrap_model.json ] && git add data/v12_historical_bootstrap_model.json
+          [ -f data/v11_candidate_model.json ] && git add data/v11_candidate_model.json
+          [ -f data/v11_point_in_time_backtest.json ] && git add data/v11_point_in_time_backtest.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'data: update V12.2 research evidence [skip ci]'
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
