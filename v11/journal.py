@@ -71,7 +71,7 @@ def settle_rows(rows):
         r.update({"result_status":"FINAL","home_score":hs,"away_score":aps,"winner":r.get("home") if hs>aps else r.get("away"),"settled_at":now})
         for o in r.get("options") or []:settle_option(o,r)
         for b in r.get("official_bets") or []:settle_bet(b,r)
-        changed+=1
+        if r.get("options") and str(r.get("schema") or "").startswith("v11-live-"):changed+=1
     finals={}
     for r in rows:
         if r.get("result_status")=="FINAL" and r.get("game_pk"):
