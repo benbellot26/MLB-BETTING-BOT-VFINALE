@@ -1,4 +1,4 @@
-name: MLB Betting Bot V10
+name: MLB Betting Bot V11
 
 on:
   workflow_dispatch:
@@ -7,12 +7,12 @@ permissions:
   contents: write
 
 concurrency:
-  group: mlb-betting-bot-v10
+  group: mlb-betting-bot-v11
   cancel-in-progress: false
 
 jobs:
   run-bot:
-    name: Exécution du Bot V10
+    name: Exécution du Bot V11
     runs-on: ubuntu-latest
     timeout-minutes: 40
 
@@ -28,91 +28,59 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Validation Python V11.3
+      - name: Validation V11
         run: |
           python --version
-          python -m py_compile bot.py v11_3_live.py
-          python bot.py --self-test
-          python v11_3_live.py --self-test
-          
-      - name: Exécution du Bot V10
+          python -m py_compile v11/*.py tests/test_v11.py
+          python -m v11.runner --self-test
+          python -m unittest tests.test_v11
+
+      - name: Exécution du Bot V11
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           BANKROLL: ${{ vars.BANKROLL }}
           UNIT: ${{ vars.UNIT }}
-          MAX_STAKE_UNITS: ${{ vars.MAX_STAKE_UNITS }}
           MIN_EV: ${{ vars.MIN_EV }}
           MIN_EDGE: ${{ vars.MIN_EDGE }}
-          MAX_DAILY_EXPOSURE_PCT: "0.30"
-          MAX_GAME_EXPOSURE_PCT: "0.15"
-          MAX_BETS_PER_GAME: "2"
-          MAX_COMBO_EXPOSURE_PCT: "0.05"
-          MIN_PLAN_CONF: "6.2"
-          MIN_COMBO_CONF: "6.5"
-          HISTORY_FILE: data/mlb_history_v10.jsonl
-          JOURNAL_FILE: data/mlb_bet_journal_v1.jsonl
-          MATCH_MAX_DELTA_HOURS: "2.0"
-          ARCHIVE_AFTER_DAYS: "45"
-          RUN_MODEL_MIN_GAMES: "450"
-          CAL_MIN_GAMES: "500"
         run: |
           mkdir -p data
-          python v11_3_live.py
+          python -m v11.runner
 
-      - name: Validation données V10
+      - name: Validation des données V11
         if: success()
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
 
-          paths=[Path('data/mlb_history_v10.jsonl'), Path('data/mlb_bet_journal_v1.jsonl')]
-          paths += sorted(Path('data/archive_v10').glob('*.jsonl')) if Path('data/archive_v10').exists() else []
-          for p in paths:
-              if not p.exists():
-                  continue
-              for line in p.read_text(encoding='utf-8').splitlines():
+          journal = Path('data/v11_3_live.jsonl')
+          if journal.exists():
+              for line in journal.read_text(encoding='utf-8').splitlines():
                   if line.strip():
                       json.loads(line)
-              print(f'{p}: valide')
+              print(f'{journal}: valide')
 
-          state=Path('data/v10_state.json')
-          if state.exists():
-              json.loads(state.read_text(encoding='utf-8'))
-              print(f'{state}: valide')
+          report = Path('data/v11_3_live_report.json')
+          if report.exists():
+              json.loads(report.read_text(encoding='utf-8'))
+              print(f'{report}: valide')
           PY
 
-      - name: Sauvegarde historique et journal V10
+      - name: Sauvegarde du journal V11
         if: success()
         run: |
-          git config user.name "MLB Betting Bot"
+          git config user.name "MLB Betting Bot V11"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          if [ -f data/mlb_history_v10.jsonl ]; then
-            git add data/mlb_history_v10.jsonl
-          fi
-          if [ -f data/mlb_bet_journal_v1.jsonl ]; then
-            git add data/mlb_bet_journal_v1.jsonl
-          fi
-          if [ -f data/v10_state.json ]; then
-            git add data/v10_state.json
-          fi
-          if [ -d data/archive_v10 ]; then
-            git add data/archive_v10
-          fi
-          if [ -f data/v11_3_live.jsonl ]; then
-            git add data/v11_3_live.jsonl
-          fi
-          if [ -f data/v11_3_live_report.json ]; then
-            git add data/v11_3_live_report.json
-          fi
-          
+          [ -f data/v11_3_live.jsonl ] && git add data/v11_3_live.jsonl
+          [ -f data/v11_3_live_report.json ] && git add data/v11_3_live_report.json
+
           if git diff --cached --quiet; then
-            echo "Données V10 inchangées."
+            echo "Données V11 inchangées."
             exit 0
           fi
 
-          git commit -m "data: update V10 history and journal [skip ci]"
+          git commit -m "data: update V11 live journal [skip ci]"
           git pull --rebase origin "$GITHUB_REF_NAME"
           git push origin "HEAD:$GITHUB_REF_NAME"
