@@ -36,7 +36,7 @@ jobs:
           python -m unittest tests.test_v11
           python -m v11.train --dry-run
 
-      - name: Exécution du Bot V12
+      - name: Exécution du Bot V12 sans Discord
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
@@ -44,14 +44,12 @@ jobs:
           UNIT: ${{ vars.UNIT }}
           MIN_EV: ${{ vars.MIN_EV }}
           MIN_EDGE: ${{ vars.MIN_EDGE }}
+          V12_DEFER_DISCORD: '1'
         run: |
           mkdir -p data runtime/v11
           python -m v11.runner
-          python -m v11.train
-          python -m v11.backtest
 
-      - name: Validation des données compactes
-        if: success()
+      - name: Validation de l'état officiel
         run: |
           python - <<'PY'
           import json
@@ -60,28 +58,20 @@ jobs:
               p = Path(name)
               if p.exists():
                   for line in p.read_text(encoding='utf-8').splitlines():
-                      if line.strip(): json.loads(line)
+                      if line.strip():
+                          json.loads(line)
                   print(f'{name}: valide')
-          for name in ('data/v11_3_live_report.json', 'data/v11_candidate_model.json', 'data/v11_point_in_time_backtest.json'):
-              p = Path(name)
-              if p.exists():
-                  json.loads(p.read_text(encoding='utf-8'))
-                  print(f'{name}: valide')
+          p = Path('data/v11_3_live_report.json')
+          if p.exists():
+              json.loads(p.read_text(encoding='utf-8'))
+              print(f'{p}: valide')
+          payload = Path('runtime/v11/discord_payload.json')
+          if not payload.exists():
+              raise SystemExit('payload Discord absent')
+          json.loads(payload.read_text(encoding='utf-8'))
           PY
 
-      - name: Archive RAW et snapshots marché
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: v12-point-in-time-${{ github.run_id }}
-          path: |
-            runtime/v11/snapshots/
-            data/v11_market_snapshots.jsonl
-          if-no-files-found: ignore
-          retention-days: 90
-
-      - name: Sauvegarde du journal et du ledger
-        if: success()
+      - name: Persist official execution state
         run: |
           git config user.name 'MLB Betting Bot V12'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
@@ -89,14 +79,80 @@ jobs:
           [ -f data/v11_3_live.jsonl ] && git add data/v11_3_live.jsonl
           [ -f data/v11_3_live_report.json ] && git add data/v11_3_live_report.json
           [ -f data/v11_bet_ledger.jsonl ] && git add -f data/v11_bet_ledger.jsonl
+
+          if git diff --cached --quiet; then
+            echo 'État officiel inchangé.'
+          else
+            git commit -m 'data: persist V12 official execution state [skip ci]'
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
+
+      - name: Send Discord after persistence
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python -m v11.runner --send-persisted
+
+      - name: Champion challenger et backtest
+        run: |
+          python -m v11.train
+          python -m v11.backtest
+
+      - name: Validation recherche
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for name in ('data/v11_candidate_model.json', 'data/v11_point_in_time_backtest.json'):
+              p = Path(name)
+              if p.exists():
+                  json.loads(p.read_text(encoding='utf-8'))
+                  print(f'{name}: valide')
+          PY
+
+      - name: Préparer archive RAW durable
+        if: always()
+        run: |
+          if [ -f data/v11_market_snapshots.jsonl ]; then
+            gzip -9 -c data/v11_market_snapshots.jsonl > "runtime/v11/snapshots/market_${GITHUB_RUN_ID}.jsonl.gz"
+          fi
+
+      - name: Archive RAW 90 jours
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v12-point-in-time-${{ github.run_id }}
+          path: runtime/v11/snapshots/
+          if-no-files-found: ignore
+          retention-days: 90
+
+      - name: Archive RAW durable via GitHub Release
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view v12-data-archive >/dev/null 2>&1 || \
+            gh release create v12-data-archive --title 'V12 durable point-in-time data archive' --notes 'Machine-generated compressed point-in-time snapshots. Do not delete while these seasons remain part of model training.'
+          shopt -s nullglob
+          files=(runtime/v11/snapshots/*.gz)
+          if [ ${#files[@]} -gt 0 ]; then
+            gh release upload v12-data-archive "${files[@]}" --clobber
+          fi
+
+      - name: Sauvegarde des preuves de recherche
+        if: success()
+        run: |
+          git config user.name 'MLB Betting Bot V12'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+
           [ -f data/v11_candidate_model.json ] && git add data/v11_candidate_model.json
           [ -f data/v11_point_in_time_backtest.json ] && git add data/v11_point_in_time_backtest.json
 
           if git diff --cached --quiet; then
-            echo 'Données V12 inchangées.'
+            echo 'Preuves de recherche inchangées.'
             exit 0
           fi
 
-          git commit -m 'data: update V12 live evidence [skip ci]'
+          git commit -m 'data: update V12 research evidence [skip ci]'
           git pull --rebase origin "$GITHUB_REF_NAME"
           git push origin "HEAD:$GITHUB_REF_NAME"
