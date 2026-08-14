@@ -1,11 +1,11 @@
 {
-  "analyzed_at": "2026-08-14T15:42:19.890215+00:00",
+  "analyzed_at": "2026-08-14T16:16:10.923036+00:00",
   "data_health": {
     "analyzed_games": 14,
     "confirmed_lineups": 0,
-    "confirmed_starters": 11,
+    "confirmed_starters": 12,
     "matched_events": 14,
-    "mean_data_quality": 0.7238,
+    "mean_data_quality": 0.7493,
     "scheduled_games": 14,
     "sharp_coverage": {
       "ML": 14,
@@ -13,7 +13,7 @@
       "TOTAL": 14
     },
     "usable_lineups": 0,
-    "usable_starters": 11,
+    "usable_starters": 12,
     "winamax_coverage": {
       "ML": 14,
       "RUNLINE": 0,
@@ -64,18 +64,19 @@
   "ledger_settled_this_run": 0,
   "matched_events": 14,
   "methodology": {
+    "alternate_runlines": "event-level alternate_spreads; evaluates both +/-1.5 pairs when actually available",
     "calibration": "phase-specific side + push calibration; end-to-end promotion gate",
-    "canonical_research_boundary": "sharp-only RL/Total are analysis-only and excluded from canonical training",
+    "canonical_research_boundary": "standard Winamax RL remains canonical; alternate run lines are execution/research options only",
     "distribution": "correlated NB mixture; validated historical FINAL fallback; dynamic tail truncation",
     "event_matching": "team identity + closest commence_time within strict tolerance",
     "execution": "fixed Winamax canonical lines for evaluation; all executable lines for selection",
     "execution_freshness": "Winamax quote timestamp required; max age 15 min",
-    "generation": "V12.3 methodology-audit-v1",
+    "generation": "V12.3.1 alternate-runlines-v1",
     "historical_evidence": "legacy V10 1,801-game data are diagnostic only until a V12.3 structural baseline exists",
     "ledger": "PROPOSED -> PUBLISHED -> CONFIRMED_PLACED -> SETTLED",
-    "raw_archive": "runtime/v11/snapshots/2026-08-14_8da5bb64c1c2826b.json.gz",
+    "raw_archive": "runtime/v11/snapshots/2026-08-14_b5127858c1ec9bc0.json.gz",
     "runs_model": "immutable structural baseline + validated FINAL historical prior fallback + phase-specific live residual",
-    "source_replay": "runtime/v11/source_replays/2026-08-14_8da5bb64c1c2826b_sources.json.gz",
+    "source_replay": "runtime/v11/source_replays/2026-08-14_b5127858c1ec9bc0_sources.json.gz",
     "staking": "bankroll-aware fractional Kelly; official combos disabled",
     "starter_model": "current season + N-1/N-2 prior affects structural run means",
     "uncertainty": "empirical phase/market reliability bins + market disagreement + DQ penalty",
@@ -103,7 +104,7 @@
   },
   "production": {
     "claim": "COLLECTING",
-    "engine": "V12.3"
+    "engine": "V12.3.1"
   },
   "production_evidence": {
     "claim": "live evidence gate; not a guarantee of future profitability",
@@ -126,9 +127,9 @@
     "volume_ready": false
   },
   "remaining_games_analyzed": 14,
-  "run_id": "8da5bb64c1c2826b",
+  "run_id": "b5127858c1ec9bc0",
   "scheduled_games": 14,
   "schema": "v12-3-professional-v1",
   "target_date": "2026-08-14",
-  "version": "12.3-methodology-audit-v1"
+  "version": "12.3.1-alternate-runlines-v1"
 }
