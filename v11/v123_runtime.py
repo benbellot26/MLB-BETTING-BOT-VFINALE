@@ -27,4 +27,6 @@ def activate():
     install()
     from . import selector
     selector._score = selection_score_price_symmetric
+    from .alternate_runlines_v1231 import install as install_alternate_runlines
+    install_alternate_runlines()
     return True

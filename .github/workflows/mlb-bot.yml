@@ -1,4 +1,4 @@
-name: MLB Betting Bot V12.3 Production
+name: MLB Betting Bot V12.3.1 Production
 
 on:
   workflow_dispatch:
@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   run-bot:
-    name: Exécution du Bot V12.3
+    name: Exécution du Bot V12.3.1
     runs-on: ubuntu-latest
     timeout-minutes: 55
     steps:
@@ -27,11 +27,12 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Validation V12.3
+      - name: Validation V12.3.1
         run: |
-          python -m py_compile v11/*.py tests/test_v11.py tests/test_historical_bootstrap.py tests/test_v123.py
+          python -m py_compile v11/*.py tests/test_v11.py tests/test_historical_bootstrap.py tests/test_v123.py tests/test_v1231_runlines.py
           python -m unittest tests.test_v11 tests.test_historical_bootstrap
           python -m unittest tests.test_v123
+          python -m unittest tests.test_v1231_runlines
           python -m v11.v123_entry --self-test
           python -m v11.v123_bootstrap --dry-run >/tmp/v12_3_historical_bootstrap.json
           python -m v11.v123_train --dry-run >/tmp/v12_3_candidate.json
@@ -66,7 +67,7 @@ jobs:
 
       - name: Persist V12.3 historical reference before predictions
         run: |
-          git config user.name 'MLB Betting Bot V12.3'
+          git config user.name 'MLB Betting Bot V12.3.1'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           [ -f data/v12_3_historical_bootstrap_model.json ] && git add data/v12_3_historical_bootstrap_model.json
           if ! git diff --cached --quiet; then
@@ -75,7 +76,7 @@ jobs:
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
 
-      - name: Run V12.3 without Discord
+      - name: Run V12.3.1 without Discord
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
@@ -84,6 +85,7 @@ jobs:
           MIN_EV: ${{ vars.MIN_EV }}
           MIN_EDGE: ${{ vars.MIN_EDGE }}
           V12_DEFER_DISCORD: '1'
+          V1231_ENABLE_ALT_RUNLINES: '1'
         run: |
           mkdir -p data runtime/v11
           python -m v11.v123_entry
@@ -103,13 +105,13 @@ jobs:
 
       - name: Persist PROPOSED recommendations
         run: |
-          git config user.name 'MLB Betting Bot V12.3'
+          git config user.name 'MLB Betting Bot V12.3.1'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           [ -f data/v11_3_live.jsonl ] && git add data/v11_3_live.jsonl
           [ -f data/v11_3_live_report.json ] && git add data/v11_3_live_report.json
           [ -f data/v11_bet_ledger.jsonl ] && git add -f data/v11_bet_ledger.jsonl
           if ! git diff --cached --quiet; then
-            git commit -m 'data: persist V12.3 proposed recommendations [skip ci]'
+            git commit -m 'data: persist V12.3.1 proposed recommendations [skip ci]'
             git pull --rebase origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
@@ -121,11 +123,11 @@ jobs:
 
       - name: Persist PUBLISHED lifecycle state
         run: |
-          git config user.name 'MLB Betting Bot V12.3'
+          git config user.name 'MLB Betting Bot V12.3.1'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           [ -f data/v11_bet_ledger.jsonl ] && git add -f data/v11_bet_ledger.jsonl
           if ! git diff --cached --quiet; then
-            git commit -m 'data: mark V12.3 recommendations published [skip ci]'
+            git commit -m 'data: mark V12.3.1 recommendations published [skip ci]'
             git pull --rebase origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
@@ -157,7 +159,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v12-3-point-in-time-${{ github.run_id }}
+          name: v12-3-1-point-in-time-${{ github.run_id }}
           path: |
             runtime/v11/snapshots/
             runtime/v11/source_replays/
@@ -178,13 +180,13 @@ jobs:
       - name: Persist research evidence
         if: success()
         run: |
-          git config user.name 'MLB Betting Bot V12.3'
+          git config user.name 'MLB Betting Bot V12.3.1'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           [ -f data/v12_3_historical_bootstrap_model.json ] && git add data/v12_3_historical_bootstrap_model.json
           [ -f data/v11_candidate_model.json ] && git add data/v11_candidate_model.json
           [ -f data/v11_point_in_time_backtest.json ] && git add data/v11_point_in_time_backtest.json
           if ! git diff --cached --quiet; then
-            git commit -m 'data: update V12.3 research evidence [skip ci]'
+            git commit -m 'data: update V12.3.1 research evidence [skip ci]'
             git pull --rebase origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
