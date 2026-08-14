@@ -1,75 +1,77 @@
-# MLB Betting Bot — V11 Standalone
+# MLB Betting Bot — V12 Professional Foundation
+
+V12 keeps the interpretable V11 score-distribution primitives while replacing the most fragile production heuristics with auditable point-in-time data, model uncertainty, Champion/Challenger validation, bankroll-aware portfolio construction, an immutable bet ledger and CLV tracking.
 
 ## Production architecture
-- `v11/core.py`: MLB Stats API, The Odds API, Winamax execution prices and Discord transport.
-- `v11/engine.py`: V11 run projection + overdispersed Negative Binomial score distribution + ML / Run Line / Total probabilities.
-- `v11/market.py`: stale-aware, freshness-weighted sharp de-vig for ML, spreads ± and totals.
-- `v11/selector.py`: V11 value gate, portfolio limits and 2-leg combo.
-- `v11/journal.py`: point-in-time journal, settlement, Brier/LogLoss, ROI, drawdown and losing streak.
-- `v11/discord.py`: game cards, Top 3 ML/RL/Total and Plan Officiel V11.
-- `v11/runner.py`: sole production orchestration and CLI entrypoint.
-- `v11/backtest.py`: point-in-time EARLY/LATE/FINAL evaluation.
-- `v11/train.py`: inactive Champion/Challenger calibration candidates.
-- `tests/test_v11.py`: V11 regression tests.
 
-## Production status
-**V11 is the only production engine.**
+- `v11/core.py` — MLB/The Odds API transport, Winamax execution prices and Discord transport.
+- `v11/engine.py` — retained compatibility/math layer for the established V11 score primitives.
+- `v11/engine_v12.py` — production V12 engine: multi-season starter priors, three-day bullpen context, learned residual hook, calibrated probabilities and all executable Winamax lines.
+- `v11/context.py` — weather and three-day bullpen availability context.
+- `v11/market.py` — book-by-book de-vig, strict timestamp freshness, exchange commission adjustment, configurable book quality and disagreement-aware blending.
+- `v11/pro_model.py` — pure-Python residual run model, trainable run dispersion and market-specific probability calibration with chronological holdout gates.
+- `v11/data_quality.py` — independent data-completeness score and hard NO-BET blockers.
+- `v11/selector.py` — uncertainty-adjusted price gate, fractional Kelly, bankroll/day/bet/correlation caps and duplicate-position prevention.
+- `v11/storage.py` — point-in-time raw snapshots, market snapshots, event-sourced bet ledger and CLV observations.
+- `v11/journal.py` — prediction journal and settlement compatibility layer.
+- `v11/backtest.py` — strictly pregame point-in-time evaluation, structural/model/sharp comparison and walk-forward challenger checks.
+- `v11/train.py` — Champion/Challenger candidate generation; promotion is explicit and holdout-gated.
+- `v11/discord_v12.py` — V12 game cards, official plan and data-health reporting.
+- `tests/test_v11.py` — V12 regression and production-safety tests.
 
-- Moneyline: V11.
-- Run Line: V11.
-- Totals Over/Under: V11.
-- Top 3: V11.
-- Official selector: V11.
-- 2-leg combo: V11.
-- Winamax price/value gate: V11.
-- Legacy code dependency: **none**.
+## Model policy
 
-Historical pre-V11 datasets may remain in `data/` strictly as frozen research/benchmark inputs. They are never imported to generate a live pick.
+The live probability stack is:
 
-## V11 probability model
-The standalone engine estimates expected home/away runs from current-season offense, batting-order-weighted lineup OPS, opponent pitching, sample-shrunk probable starter ERA/WHIP, park factor, home advantage and bounded operational context (rest, travel, recent extra innings/doubleheader and previous-game bullpen workload).
+1. interpretable baseball structural baseline;
+2. multi-season starter-prior and richer bullpen/context correction;
+3. optional learned run-residual correction only after chronological holdout improvement;
+4. Negative Binomial score matrix, with dispersion learned when enough settled point-in-time data exist;
+5. fresh sharp-market de-vig blend;
+6. market-specific probability calibration only when a candidate beats the uncalibrated model on holdout;
+7. explicit model uncertainty passed to the execution gate.
 
-Expected runs are converted into a full **Negative Binomial** score matrix. The same distribution produces Moneyline, Run Line and Total probabilities.
+A missing Champion artifact does **not** silently activate an unvalidated model. The system runs structural-first and exposes the fallback uncertainty.
 
-For integer Run Line / Total markets, V11 models `p_win` and `p_push` separately. Refunded outcomes are therefore priced explicitly.
+## Betting policy
 
-## Sharp market ensemble
-Reference books are de-vigged one book at a time. Books older than **90 minutes** are excluded. Remaining references are freshness-weighted, and disagreement between sharp books automatically reduces their blend weight.
+A bet is official only when:
 
-The base blend weight is bounded at approximately **12–25%** depending on the number of fresh references. Winamax remains execution-only and is never used as predictive truth.
+- required data quality is present;
+- a fresh sharp reference exists;
+- the exact Winamax market/line is executable;
+- the Winamax price clears fair value, minimum EV and edge after an uncertainty haircut;
+- the same game is not already an open position;
+- bankroll-aware fractional Kelly and portfolio exposure limits permit the stake.
 
-## Official bet rule
-A prediction and a bet are separate decisions. A V11 option is official only if:
-- model probability/confidence/quality are sufficient;
-- at least one fresh reference market is available;
-- the exact Winamax market/line exists;
-- the Winamax price clears fair price + EV floor + edge floor + safety margin;
-- portfolio exposure and correlation limits are respected.
+The optional two-leg combo cannot reuse a game already selected as a single.
 
-The portfolio is limited to 3 official singles, one single per match, no more than two selections from the same market profile, and 4 units total including the optional 2-leg combo.
+## Point-in-time evidence and CLV
 
-## Live evidence
-Every production run stores V11 probabilities for **ML / Run Line / Total**, `p_win`, `p_push`, sharp references, lineup/starter context, operational adjustments, Winamax price and official decision in `data/v11_3_live.jsonl`.
+Every production run captures raw MLB/Odds payloads under `runtime/v11/snapshots/` and flattened market snapshots. GitHub Actions uploads these as artifacts instead of committing large raw snapshots into Git history. Compact prediction evidence, model candidates and the event-sourced bet ledger remain in `data/`.
 
-The filename is historical only; its current rows are generated by the V11 standalone engine. Settled V11-native games are graded automatically and feed the live performance report.
+The ledger records the official plan price, later price observations, FINAL-phase closing price when observed, CLV, settlement, ROI and chronologically ordered drawdown. It is an internal recommendation ledger; it does not place a wager at the bookmaker.
 
-## Financial evidence
-The journal settles official singles and official combos and reports P/L, ROI, market split, maximum drawdown and longest losing streak from recorded Winamax prices. A PUSH leg in a combo is removed from the effective combo price rather than incorrectly grading the entire combo as a push.
+Historical information that was never archived is never fabricated. Full historical engine replay becomes stronger as the point-in-time archive grows.
 
-Historical ROI or CLV is never fabricated where point-in-time prices do not exist.
+## Champion / Challenger
 
-## Commands
 ```bash
-python -m py_compile v11/*.py tests/test_v11.py
-python -m v11.runner --self-test
-python -m unittest tests.test_v11
-python -m v11.runner
-python -m v11.backtest
+python -m v11.train --dry-run
 python -m v11.train
+python -m v11.train --promote
 ```
 
-## GitHub Actions
-There is a single production workflow: **MLB Betting Bot V11** (`.github/workflows/mlb-bot.yml`). It validates V11, runs the standalone engine and persists only the V11 live journal/report.
+`--promote` refuses promotion unless the candidate passes the configured chronological holdout gates.
 
-## Superiority policy
-V11 is the sole production code path, but statistical superiority is an evidence claim, not a version-name claim. Frozen historical results remain only as comparison baselines. V11 is considered superior market by market only after out-of-sample/live Accuracy, Brier, LogLoss and betting results support that conclusion.
+## Validation
+
+```bash
+python -m py_compile v11/*.py tests/test_v11.py
+python -m unittest tests.test_v11
+python -m v11.runner --self-test
+python -m v11.train --dry-run
+python -m v11.backtest
+```
+
+`.github/workflows/ci.yml` runs automatically on pushes and pull requests. `.github/workflows/mlb-bot.yml` remains the explicit production workflow and archives raw snapshots as workflow artifacts.
