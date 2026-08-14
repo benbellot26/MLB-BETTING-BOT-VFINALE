@@ -1,4 +1,4 @@
-name: MLB Betting Bot V11
+name: MLB Betting Bot V12 Production
 
 on:
   workflow_dispatch:
@@ -7,14 +7,14 @@ permissions:
   contents: write
 
 concurrency:
-  group: mlb-betting-bot-v11
+  group: mlb-betting-bot-v12
   cancel-in-progress: false
 
 jobs:
   run-bot:
-    name: Exécution du Bot V11
+    name: Exécution du Bot V12
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 50
 
     steps:
       - name: Récupération du repository
@@ -26,16 +26,17 @@ jobs:
       - name: Installation de Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: '3.12'
 
-      - name: Validation V11
+      - name: Validation V12
         run: |
           python --version
           python -m py_compile v11/*.py tests/test_v11.py
           python -m v11.runner --self-test
           python -m unittest tests.test_v11
+          python -m v11.train --dry-run
 
-      - name: Exécution du Bot V11
+      - name: Exécution du Bot V12
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
@@ -44,43 +45,58 @@ jobs:
           MIN_EV: ${{ vars.MIN_EV }}
           MIN_EDGE: ${{ vars.MIN_EDGE }}
         run: |
-          mkdir -p data
+          mkdir -p data runtime/v11
           python -m v11.runner
+          python -m v11.train
+          python -m v11.backtest
 
-      - name: Validation des données V11
+      - name: Validation des données compactes
         if: success()
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
-
-          journal = Path('data/v11_3_live.jsonl')
-          if journal.exists():
-              for line in journal.read_text(encoding='utf-8').splitlines():
-                  if line.strip():
-                      json.loads(line)
-              print(f'{journal}: valide')
-
-          report = Path('data/v11_3_live_report.json')
-          if report.exists():
-              json.loads(report.read_text(encoding='utf-8'))
-              print(f'{report}: valide')
+          for name in ('data/v11_3_live.jsonl', 'data/v11_bet_ledger.jsonl'):
+              p = Path(name)
+              if p.exists():
+                  for line in p.read_text(encoding='utf-8').splitlines():
+                      if line.strip(): json.loads(line)
+                  print(f'{name}: valide')
+          for name in ('data/v11_3_live_report.json', 'data/v11_candidate_model.json', 'data/v11_point_in_time_backtest.json'):
+              p = Path(name)
+              if p.exists():
+                  json.loads(p.read_text(encoding='utf-8'))
+                  print(f'{name}: valide')
           PY
 
-      - name: Sauvegarde du journal V11
+      - name: Archive RAW et snapshots marché
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v12-point-in-time-${{ github.run_id }}
+          path: |
+            runtime/v11/snapshots/
+            data/v11_market_snapshots.jsonl
+          if-no-files-found: ignore
+          retention-days: 90
+
+      - name: Sauvegarde du journal et du ledger
         if: success()
         run: |
-          git config user.name "MLB Betting Bot V11"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name 'MLB Betting Bot V12'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
 
           [ -f data/v11_3_live.jsonl ] && git add data/v11_3_live.jsonl
           [ -f data/v11_3_live_report.json ] && git add data/v11_3_live_report.json
+          [ -f data/v11_bet_ledger.jsonl ] && git add -f data/v11_bet_ledger.jsonl
+          [ -f data/v11_candidate_model.json ] && git add data/v11_candidate_model.json
+          [ -f data/v11_point_in_time_backtest.json ] && git add data/v11_point_in_time_backtest.json
 
           if git diff --cached --quiet; then
-            echo "Données V11 inchangées."
+            echo 'Données V12 inchangées.'
             exit 0
           fi
 
-          git commit -m "data: update V11 live journal [skip ci]"
+          git commit -m 'data: update V12 live evidence [skip ci]'
           git pull --rebase origin "$GITHUB_REF_NAME"
           git push origin "HEAD:$GITHUB_REF_NAME"
