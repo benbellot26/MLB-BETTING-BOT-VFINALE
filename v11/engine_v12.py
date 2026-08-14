@@ -1,6 +1,6 @@
 from __future__ import annotations
 import math
-from . import core, config, market, context, pro_model
+from . import core, config, market, context, pro_model, historical_bootstrap
 from . import engine as legacy
 
 _PRIOR = {}
@@ -195,6 +195,27 @@ def _canonical_total_point(event):
     return min(complete, key=lambda x: abs(1/x[1]["over"]-1/x[1]["under"]))[0] if complete else None
 
 
+def _bootstrap_prior(structural_hmu, structural_amu, champ, phase):
+    bootstrap = historical_bootstrap.load_model()
+    phase_model = ((champ.get("phase_models") or {}).get(str(phase or "EARLY").upper()) or {})
+    champion_residual_active = bool(champ.get("active") and (phase_model.get("residual") or {}).get("active"))
+    prior_hmu, prior_amu = structural_hmu, structural_amu
+    bootstrap_run = {"active": False, "source": "none", "home_delta": 0.0, "away_delta": 0.0}
+    if not champion_residual_active:
+        prior_hmu, prior_amu, bootstrap_run = historical_bootstrap.apply_final_run_prior(
+            structural_hmu, structural_amu, bootstrap, phase
+        )
+
+    dispersion, dispersion_source = pro_model.model_dispersion(champ)
+    env_sigma, env_source = pro_model.model_environment_sigma(champ)
+    bootstrap_dispersion, bootstrap_env = historical_bootstrap.distribution_defaults(bootstrap)
+    if dispersion_source == "fixed" and bootstrap.get("active") and (bootstrap.get("dispersion") or {}).get("active"):
+        dispersion, dispersion_source = bootstrap_dispersion, "historical-bootstrap"
+    if env_source == "fixed" and bootstrap.get("active") and (bootstrap.get("environment") or {}).get("active"):
+        env_sigma, env_source = bootstrap_env, "historical-bootstrap"
+    return prior_hmu, prior_amu, bootstrap_run, bootstrap, dispersion, dispersion_source, env_sigma, env_source
+
+
 def _project(game, phase):
     structural_hmu, structural_amu, ctx, features = legacy._project_runs(game)
     hs = _enhance_starter(ctx.get("home_starter") or {})
@@ -221,10 +242,17 @@ def _project(game, phase):
                                         "away_starter_prior": bool(aws.get("prior_available"))}})
     result_like = {"features": features, "ctx": ctx, "phase": phase}
     champ = pro_model.load_model()
-    home_mu, away_mu, learned = pro_model.apply_run_correction(structural_hmu, structural_amu, result_like, champ, phase)
-    dispersion, dispersion_source = pro_model.model_dispersion(champ)
-    env_sigma, env_source = pro_model.model_environment_sigma(champ)
-    features.update({"home_mu": home_mu, "away_mu": away_mu, "learned_run_adjustment": learned,
+    prior_hmu, prior_amu, bootstrap_run, bootstrap, dispersion, dispersion_source, env_sigma, env_source = _bootstrap_prior(
+        structural_hmu, structural_amu, champ, phase
+    )
+    home_mu, away_mu, learned = pro_model.apply_run_correction(prior_hmu, prior_amu, result_like, champ, phase)
+    features.update({"historical_bootstrap": {"active": bool(bootstrap.get("active")),
+                                              "status": bootstrap.get("status"),
+                                              "version": bootstrap.get("version"),
+                                              "run_prior": bootstrap_run,
+                                              "prior_home_mu": prior_hmu,
+                                              "prior_away_mu": prior_amu},
+                     "home_mu": home_mu, "away_mu": away_mu, "learned_run_adjustment": learned,
                      "run_dispersion": dispersion, "dispersion_source": dispersion_source,
                      "run_environment_sigma": env_sigma, "run_environment_source": env_source,
                      "distribution": "correlated-negative-binomial-mixture"})
@@ -307,11 +335,15 @@ def analyze(game, event, as_of=None):
         pair("TOTAL", "Over", t, sow, sop, mow, mop, "Under", t, suw, sup, muw, mup,
              canonical=canonical_total is not None and abs(t-canonical_total) <= 1e-6)
     hm = next(o for o in options if o["market"] == "ML" and core.norm_name(o["name"]) == core.norm_name(ctx["home"]))
+    bootstrap_info = features.get("historical_bootstrap") or {}
     return {"game_pk": game.get("gamePk"), "game": game, "event": event, "ctx": ctx, "phase": phase,
             "as_of": as_of, "structural_hmu": shmu, "structural_amu": samu, "hmu": hmu, "amu": amu,
             "p_home": hm["p_effective"], "con": sharp_home, "quality": quality, "features": features,
             "canonical_lines": {"RUNLINE": canonical_spread, "TOTAL": canonical_total}, "options": options,
             "model": {"version": champ.get("version", "structural-only"), "active": bool(champ.get("active")),
                       "artifact_status": champ.get("artifact_status"), "artifact_error": champ.get("artifact_error"),
-                      "phase": phase, "dispersion": dispersion, "environment_sigma": env_sigma},
+                      "phase": phase, "dispersion": dispersion, "environment_sigma": env_sigma,
+                      "historical_bootstrap": {"active": bool(bootstrap_info.get("active")),
+                                               "status": bootstrap_info.get("status"),
+                                               "run_prior_active": bool((bootstrap_info.get("run_prior") or {}).get("active"))}},
             "engine_version": config.VERSION}
