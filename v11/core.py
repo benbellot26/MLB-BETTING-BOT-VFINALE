@@ -15,6 +15,7 @@ DISCORD_URL = os.getenv("DISCORD_WEBHOOK_URL","").strip()
 UNIT = float(os.getenv("UNIT","0.5") or 0.5)
 BANKROLL = float(os.getenv("BANKROLL","10") or 10)
 TIMEOUT = int(os.getenv("HTTP_TIMEOUT","25") or 25)
+DISCORD_MIN_INTERVAL = float(os.getenv("DISCORD_MIN_INTERVAL","0.75") or .75)
 BOOKMAKERS = [x.strip() for x in os.getenv(
     "ODDS_BOOKMAKERS",
     "winamax_fr,pinnacle,betfair_ex_eu,matchbook,betonlineag,betclic_fr,unibet_fr,pmu_fr,netbet_fr"
@@ -26,6 +27,7 @@ logging.basicConfig(level=os.getenv("LOG_LEVEL","INFO").upper(), format="%(ascti
 PARK = {"Arizona Diamondbacks":1.04,"Athletics":1.05,"Atlanta Braves":1.01,"Baltimore Orioles":1.01,"Boston Red Sox":1.03,"Chicago White Sox":1.00,"Chicago Cubs":1.02,"Cincinnati Reds":1.05,"Cleveland Guardians":0.98,"Colorado Rockies":1.14,"Detroit Tigers":0.98,"Houston Astros":1.00,"Kansas City Royals":0.99,"Los Angeles Angels":1.01,"Los Angeles Dodgers":0.98,"Miami Marlins":0.96,"Milwaukee Brewers":1.00,"Minnesota Twins":0.99,"New York Mets":0.98,"New York Yankees":1.03,"Philadelphia Phillies":1.02,"Pittsburgh Pirates":0.97,"San Diego Padres":0.97,"San Francisco Giants":0.94,"Seattle Mariners":0.96,"St. Louis Cardinals":1.00,"Tampa Bay Rays":0.98,"Texas Rangers":1.02,"Toronto Blue Jays":1.01,"Washington Nationals":1.00}
 COORD={"Arizona Diamondbacks":(33.4453,-112.0667),"Athletics":(38.5806,-121.5130),"Atlanta Braves":(33.8907,-84.4677),"Baltimore Orioles":(39.2839,-76.6217),"Boston Red Sox":(42.3467,-71.0972),"Chicago White Sox":(41.8301,-87.6338),"Chicago Cubs":(41.9484,-87.6553),"Cincinnati Reds":(39.0975,-84.5069),"Cleveland Guardians":(41.4962,-81.6852),"Colorado Rockies":(39.7559,-104.9942),"Detroit Tigers":(42.3390,-83.0485),"Houston Astros":(29.7573,-95.3555),"Kansas City Royals":(39.0517,-94.4803),"Los Angeles Angels":(33.8003,-117.8827),"Los Angeles Dodgers":(34.0739,-118.2400),"Miami Marlins":(25.7781,-80.2197),"Milwaukee Brewers":(43.0280,-87.9712),"Minnesota Twins":(44.9817,-93.2776),"New York Mets":(40.7571,-73.8458),"New York Yankees":(40.8296,-73.9262),"Philadelphia Phillies":(39.9061,-75.1665),"Pittsburgh Pirates":(40.4469,-80.0057),"San Diego Padres":(32.7076,-117.1570),"San Francisco Giants":(37.7786,-122.3893),"Seattle Mariners":(47.5914,-122.3325),"St. Louis Cardinals":(38.6226,-90.1928),"Tampa Bay Rays":(27.7683,-82.6534),"Texas Rangers":(32.7473,-97.0832),"Toronto Blue Jays":(43.6414,-79.3894),"Washington Nationals":(38.8730,-77.0074)}
 _CACHE = {}
+_LAST_DISCORD_SEND = 0.0
 
 def num(x,d=0.0):
     try:
@@ -157,15 +159,42 @@ def phase_for_game(game):
     if sec<=5*3600:return "LATE"
     return "EARLY"
 
+def _discord_retry_after(error):
+    wait=1.5
+    try:
+        raw=error.read().decode("utf-8","replace")
+        body=json.loads(raw) if raw else {}
+        wait=max(wait,float(body.get("retry_after",wait)))
+    except Exception:pass
+    try:
+        hdr=error.headers.get("Retry-After")
+        if hdr is not None:wait=max(wait,float(hdr))
+    except Exception:pass
+    return min(max(wait,.5),15.0)
+
 def send_embed(title,fields,color=5763719,description=None):
+    global _LAST_DISCORD_SEND
     if not DISCORD_URL:return False
     payload={"embeds":[{"title":title,"color":color,"fields":[{"name":n,"value":v,"inline":False} for n,v in fields]}]}
     if description:payload["embeds"][0]["description"]=description
-    try:
-        req=urllib.request.Request(DISCORD_URL,data=json.dumps(payload,ensure_ascii=False).encode(),headers={"Content-Type":"application/json","User-Agent":"MLB-Betting-Bot-V11"},method="POST")
-        with urllib.request.urlopen(req,timeout=15) as r:r.read()
-        return True
-    except Exception as e:logging.warning("Discord impossible: %s",e);return False
+    data=json.dumps(payload,ensure_ascii=False).encode()
+    for attempt in range(4):
+        elapsed=time.monotonic()-_LAST_DISCORD_SEND
+        if elapsed<DISCORD_MIN_INTERVAL:time.sleep(DISCORD_MIN_INTERVAL-elapsed)
+        try:
+            req=urllib.request.Request(DISCORD_URL,data=data,headers={"Content-Type":"application/json","User-Agent":"MLB-Betting-Bot-V11"},method="POST")
+            with urllib.request.urlopen(req,timeout=15) as r:r.read()
+            _LAST_DISCORD_SEND=time.monotonic();return True
+        except urllib.error.HTTPError as e:
+            _LAST_DISCORD_SEND=time.monotonic()
+            if e.code==429 and attempt<3:
+                wait=_discord_retry_after(e)
+                logging.info("Discord rate limit: nouvelle tentative dans %.2fs",wait)
+                time.sleep(wait);continue
+            logging.warning("Discord impossible: HTTP %s",e.code);return False
+        except Exception as e:
+            _LAST_DISCORD_SEND=time.monotonic();logging.warning("Discord impossible: %s",e);return False
+    return False
 
 def discord_test():
     if not DISCORD_URL:logging.warning("DISCORD_WEBHOOK_URL absente");return False
