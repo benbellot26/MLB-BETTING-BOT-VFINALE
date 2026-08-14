@@ -28,10 +28,13 @@ jobs:
           python-version: '3.12'
 
       - name: Compile
-        run: python -m py_compile v11/*.py tests/test_v11.py
+        run: python -m py_compile v11/*.py tests/test_v11.py tests/test_historical_bootstrap.py
 
       - name: Unit tests
-        run: python -m unittest tests.test_v11
+        run: python -m unittest tests.test_v11 tests.test_historical_bootstrap
+
+      - name: Historical bootstrap smoke test
+        run: python -m v11.historical_bootstrap --dry-run >/tmp/v12_historical_bootstrap.json
 
       - name: Engine self-test
         run: python -m v11.runner --self-test
