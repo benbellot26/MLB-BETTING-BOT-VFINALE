@@ -197,21 +197,23 @@ def _canonical_total_point(event):
 
 def _bootstrap_prior(structural_hmu, structural_amu, champ, phase):
     bootstrap = historical_bootstrap.load_model()
-    phase_model = ((champ.get("phase_models") or {}).get(str(phase or "EARLY").upper()) or {})
+    phase_name = str(phase or "EARLY").upper()
+    phase_is_final = phase_name == "FINAL"
+    phase_model = ((champ.get("phase_models") or {}).get(phase_name) or {})
     champion_residual_active = bool(champ.get("active") and (phase_model.get("residual") or {}).get("active"))
     prior_hmu, prior_amu = structural_hmu, structural_amu
     bootstrap_run = {"active": False, "source": "none", "home_delta": 0.0, "away_delta": 0.0}
-    if not champion_residual_active:
+    if phase_is_final and not champion_residual_active:
         prior_hmu, prior_amu, bootstrap_run = historical_bootstrap.apply_final_run_prior(
-            structural_hmu, structural_amu, bootstrap, phase
+            structural_hmu, structural_amu, bootstrap, phase_name
         )
 
     dispersion, dispersion_source = pro_model.model_dispersion(champ)
     env_sigma, env_source = pro_model.model_environment_sigma(champ)
     bootstrap_dispersion, bootstrap_env = historical_bootstrap.distribution_defaults(bootstrap)
-    if dispersion_source == "fixed" and bootstrap.get("active") and (bootstrap.get("dispersion") or {}).get("active"):
+    if phase_is_final and dispersion_source == "fixed" and bootstrap.get("active") and (bootstrap.get("dispersion") or {}).get("active"):
         dispersion, dispersion_source = bootstrap_dispersion, "historical-bootstrap"
-    if env_source == "fixed" and bootstrap.get("active") and (bootstrap.get("environment") or {}).get("active"):
+    if phase_is_final and env_source == "fixed" and bootstrap.get("active") and (bootstrap.get("environment") or {}).get("active"):
         env_sigma, env_source = bootstrap_env, "historical-bootstrap"
     return prior_hmu, prior_amu, bootstrap_run, bootstrap, dispersion, dispersion_source, env_sigma, env_source
 
