@@ -1,4 +1,4 @@
-name: MLB Betting Bot V12 Production
+name: MLB Betting Bot V12.2 Production
 
 on:
   workflow_dispatch:
@@ -7,36 +7,34 @@ permissions:
   contents: write
 
 concurrency:
-  group: mlb-betting-bot-v12
+  group: mlb-betting-bot-state
   cancel-in-progress: false
 
 jobs:
   run-bot:
-    name: Exécution du Bot V12
+    name: Exécution du Bot V12.2
     runs-on: ubuntu-latest
-    timeout-minutes: 50
-
+    timeout-minutes: 55
     steps:
-      - name: Récupération du repository
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Installation de Python
+      - name: Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: Validation V12
+      - name: Validation V12.2
         run: |
-          python --version
           python -m py_compile v11/*.py tests/test_v11.py
           python -m v11.runner --self-test
           python -m unittest tests.test_v11
           python -m v11.train --dry-run
 
-      - name: Exécution du Bot V12 sans Discord
+      - name: Run V12.2 without Discord
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
@@ -49,110 +47,102 @@ jobs:
           mkdir -p data runtime/v11
           python -m v11.runner
 
-      - name: Validation de l'état officiel
+      - name: Validate proposed state
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
-          for name in ('data/v11_3_live.jsonl', 'data/v11_bet_ledger.jsonl'):
-              p = Path(name)
+          for name in ('data/v11_3_live.jsonl','data/v11_bet_ledger.jsonl'):
+              p=Path(name)
               if p.exists():
                   for line in p.read_text(encoding='utf-8').splitlines():
-                      if line.strip():
-                          json.loads(line)
-                  print(f'{name}: valide')
-          p = Path('data/v11_3_live_report.json')
-          if p.exists():
-              json.loads(p.read_text(encoding='utf-8'))
-              print(f'{p}: valide')
-          payload = Path('runtime/v11/discord_payload.json')
-          if not payload.exists():
-              raise SystemExit('payload Discord absent')
-          json.loads(payload.read_text(encoding='utf-8'))
+                      if line.strip(): json.loads(line)
+          json.loads(Path('runtime/v11/discord_payload.json').read_text(encoding='utf-8'))
           PY
 
-      - name: Persist official execution state
+      - name: Persist PROPOSED recommendations
         run: |
-          git config user.name 'MLB Betting Bot V12'
+          git config user.name 'MLB Betting Bot V12.2'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-
           [ -f data/v11_3_live.jsonl ] && git add data/v11_3_live.jsonl
           [ -f data/v11_3_live_report.json ] && git add data/v11_3_live_report.json
           [ -f data/v11_bet_ledger.jsonl ] && git add -f data/v11_bet_ledger.jsonl
-
-          if git diff --cached --quiet; then
-            echo 'État officiel inchangé.'
-          else
-            git commit -m 'data: persist V12 official execution state [skip ci]'
+          if ! git diff --cached --quiet; then
+            git commit -m 'data: persist V12.2 proposed recommendations [skip ci]'
             git pull --rebase origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
 
-      - name: Send Discord after persistence
+      - name: Publish Discord recommendations
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: python -m v11.runner --send-persisted
 
-      - name: Champion challenger et backtest
+      - name: Persist PUBLISHED lifecycle state
+        run: |
+          git config user.name 'MLB Betting Bot V12.2'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add -f data/v11_bet_ledger.jsonl
+          if ! git diff --cached --quiet; then
+            git commit -m 'data: mark V12.2 recommendations published [skip ci]'
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
+
+      - name: Challenger and evaluation
         run: |
           python -m v11.train
           python -m v11.backtest
 
-      - name: Validation recherche
+      - name: Validate research artifacts
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
-          for name in ('data/v11_candidate_model.json', 'data/v11_point_in_time_backtest.json'):
-              p = Path(name)
-              if p.exists():
-                  json.loads(p.read_text(encoding='utf-8'))
-                  print(f'{name}: valide')
+          for name in ('data/v11_candidate_model.json','data/v11_point_in_time_backtest.json'):
+              p=Path(name)
+              if p.exists(): json.loads(p.read_text(encoding='utf-8'))
           PY
 
-      - name: Préparer archive RAW durable
+      - name: Prepare market archive
         if: always()
         run: |
+          mkdir -p runtime/v11/snapshots
           if [ -f data/v11_market_snapshots.jsonl ]; then
             gzip -9 -c data/v11_market_snapshots.jsonl > "runtime/v11/snapshots/market_${GITHUB_RUN_ID}.jsonl.gz"
           fi
 
-      - name: Archive RAW 90 jours
+      - name: Archive point-in-time sources 90 days
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v12-point-in-time-${{ github.run_id }}
-          path: runtime/v11/snapshots/
+          name: v12-2-point-in-time-${{ github.run_id }}
+          path: |
+            runtime/v11/snapshots/
+            runtime/v11/source_replays/
           if-no-files-found: ignore
           retention-days: 90
 
-      - name: Archive RAW durable via GitHub Release
+      - name: Durable source replay archive
         if: success()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release view v12-data-archive >/dev/null 2>&1 || \
-            gh release create v12-data-archive --title 'V12 durable point-in-time data archive' --notes 'Machine-generated compressed point-in-time snapshots. Do not delete while these seasons remain part of model training.'
+            gh release create v12-data-archive --title 'V12 durable point-in-time data archive' --notes 'Compressed source replays and market snapshots used for reproducible model research.'
           shopt -s nullglob
-          files=(runtime/v11/snapshots/*.gz)
-          if [ ${#files[@]} -gt 0 ]; then
-            gh release upload v12-data-archive "${files[@]}" --clobber
-          fi
+          files=(runtime/v11/snapshots/*.gz runtime/v11/source_replays/*.gz)
+          if [ ${#files[@]} -gt 0 ]; then gh release upload v12-data-archive "${files[@]}" --clobber; fi
 
-      - name: Sauvegarde des preuves de recherche
+      - name: Persist research evidence
         if: success()
         run: |
-          git config user.name 'MLB Betting Bot V12'
+          git config user.name 'MLB Betting Bot V12.2'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-
           [ -f data/v11_candidate_model.json ] && git add data/v11_candidate_model.json
           [ -f data/v11_point_in_time_backtest.json ] && git add data/v11_point_in_time_backtest.json
-
-          if git diff --cached --quiet; then
-            echo 'Preuves de recherche inchangées.'
-            exit 0
+          if ! git diff --cached --quiet; then
+            git commit -m 'data: update V12.2 research evidence [skip ci]'
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
           fi
-
-          git commit -m 'data: update V12 research evidence [skip ci]'
-          git pull --rebase origin "$GITHUB_REF_NAME"
-          git push origin "HEAD:$GITHUB_REF_NAME"
