@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from .methodology_v123 import install
+from .v123_runtime import activate
 
-install()
+activate()
 
 from . import train
 
