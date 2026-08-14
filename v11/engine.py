@@ -1,7 +1,7 @@
 from __future__ import annotations
 import math
 from collections import Counter
-from . import core
+from . import core, market
 
 def _poisson_pmf(mu,k):return math.exp(-mu)*(mu**k)/math.factorial(k)
 def score_matrix(home_mu,away_mu,max_runs=18):
@@ -97,11 +97,11 @@ def _most_common_total(event):
     return Counter(vals).most_common(1)[0][0] if vals else None
 
 def analyze(game,event):
-    hmu,amu,ctx,features=_project_runs(game);phase=core.phase_for_game(game);structural_home=prob_home_win(hmu,amu);sharp_home=core.sharp_consensus(event,"ML",ctx["home"]);p_home,_=_blend(structural_home,sharp_home)
+    hmu,amu,ctx,features=_project_runs(game);phase=core.phase_for_game(game);structural_home=prob_home_win(hmu,amu);sharp_home=market.sharp_consensus(event,"ML",ctx["home"]);p_home,_=_blend(structural_home,sharp_home)
     lineup_count=int(core.num(ctx["home_lineup"].get("count"))+core.num(ctx["away_lineup"].get("count")));quality=_quality(phase,sharp_home.get("n",0),lineup_count,bool(ctx.get("home_sp") and ctx.get("away_sp")));options=[]
-    def add(market,name,point,p_struct):
-        sharp=core.sharp_consensus(event,market,name,point);p,sw=_blend(p_struct,sharp);pe=_effective(p,phase,quality);price=core.winamax_price(event,market,name,point)
-        options.append({"market":market,"name":name,"point":point,"p_structural":round(p_struct,6),"p_model":round(p,6),"p_effective":round(pe,6),"p_market":round(sharp["p"],6) if sharp.get("p") is not None else None,"refs":sharp.get("n",0),"sharp_books":sharp.get("books",[]),"sharp_weight":sw,"confidence":round(_confidence(pe,quality,sharp.get("n",0)),3),"winamax_eval":{"price":price,"official_selected":False,"official_units":0}})
-    add("ML",ctx["home"],None,p_home);add("ML",ctx["away"],None,1-p_home);hp=_most_common_spread(event,ctx["home"]);ap=-hp;add("RUNLINE",ctx["home"],hp,prob_cover(hmu,amu,"home",hp));add("RUNLINE",ctx["away"],ap,prob_cover(hmu,amu,"away",ap));total=_most_common_total(event)
+    def add(market_name,name,point,p_struct):
+        sharp=market.sharp_consensus(event,market_name,name,point);p,sw=_blend(p_struct,sharp);pe=_effective(p,phase,quality);price=core.winamax_price(event,market_name,name,point)
+        options.append({"market":market_name,"name":name,"point":point,"p_structural":round(p_struct,6),"p_model":round(p,6),"p_effective":round(pe,6),"p_market":round(sharp["p"],6) if sharp.get("p") is not None else None,"refs":sharp.get("n",0),"sharp_books":sharp.get("books",[]),"sharp_weight":sw,"confidence":round(_confidence(pe,quality,sharp.get("n",0)),3),"winamax_eval":{"price":price,"official_selected":False,"official_units":0}})
+    add("ML",ctx["home"],None,structural_home);add("ML",ctx["away"],None,1-structural_home);hp=_most_common_spread(event,ctx["home"]);ap=-hp;add("RUNLINE",ctx["home"],hp,prob_cover(hmu,amu,"home",hp));add("RUNLINE",ctx["away"],ap,prob_cover(hmu,amu,"away",ap));total=_most_common_total(event)
     if total is not None:add("TOTAL","Over",total,prob_total(hmu,amu,"over",total));add("TOTAL","Under",total,prob_total(hmu,amu,"under",total))
     return {"game_pk":game.get("gamePk"),"game":game,"event":event,"ctx":ctx,"phase":phase,"hmu":hmu,"amu":amu,"p_home":p_home,"con":{"p":sharp_home.get("p"),"n":sharp_home.get("n",0),"books":sharp_home.get("books",[])},"quality":quality,"features":features,"options":options,"engine_version":"V11-standalone-all-markets"}
