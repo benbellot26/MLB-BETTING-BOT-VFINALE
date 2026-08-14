@@ -1,68 +1,103 @@
-# MLB Betting Bot — V12 Professional Foundation
+# MLB Betting Bot — V12.2 Professional Validation Foundation
 
-V12 keeps the interpretable V11 score-distribution primitives while replacing the most fragile production heuristics with auditable point-in-time data, model uncertainty, Champion/Challenger validation, bankroll-aware portfolio construction, an immutable bet ledger and CLV tracking.
+V12.2 keeps the interpretable structural baseball baseline while hardening the full decision chain around reproducible point-in-time data, phase-specific learning, end-to-end Champion/Challenger validation, empirical uncertainty, bankroll-aware selection, explicit recommendation lifecycle and CLV evidence.
 
 ## Production architecture
 
-- `v11/core.py` — MLB/The Odds API transport, Winamax execution prices and Discord transport.
-- `v11/engine.py` — retained compatibility/math layer for the established V11 score primitives.
-- `v11/engine_v12.py` — production V12 engine: multi-season starter priors, three-day bullpen context, learned residual hook, calibrated probabilities and all executable Winamax lines.
+- `v11/core.py` — MLB/The Odds API transport, explicit `as_of`, complete HTTP source recording/replay, Winamax prices and Discord transport.
+- `v11/engine.py` — retained structural compatibility layer.
+- `v11/engine_v12.py` — production engine with raw/current + multi-season starter priors, three-day bullpen context, phase-specific residual model, correlated run-environment score matrix, dynamic tail truncation and fixed canonical evaluation lines.
 - `v11/context.py` — weather and three-day bullpen availability context.
-- `v11/market.py` — book-by-book de-vig, strict timestamp freshness, exchange commission adjustment, configurable book quality and disagreement-aware blending.
-- `v11/pro_model.py` — pure-Python residual run model, trainable run dispersion and market-specific probability calibration with chronological holdout gates.
-- `v11/data_quality.py` — independent data-completeness score and hard NO-BET blockers.
-- `v11/selector.py` — uncertainty-adjusted price gate, fractional Kelly, bankroll/day/bet/correlation caps and duplicate-position prevention.
-- `v11/storage.py` — point-in-time raw snapshots, market snapshots, event-sourced bet ledger and CLV observations.
+- `v11/market.py` — point-in-time de-vig consensus, strict timestamp freshness, exchange commission adjustment, book weighting and disagreement-aware blending.
+- `v11/pro_model.py` — coherent missing-value handling, phase-specific residual/calibration models, push calibration, empirical uncertainty, end-to-end holdout validation, walk-forward promotion gate and model provenance metadata.
+- `v11/data_quality.py` — independent data quality based on actually usable lineup/starter/team data, not merely identities/counts.
+- `v11/selector.py` — uncertainty-adjusted price gate, fractional Kelly, persistent recommendation exposure and duplicate prevention. Official combos are disabled until a dependence model is validated.
+- `v11/storage.py` — run snapshots, source replays, market snapshots, recommendation/wager lifecycle ledger and CLV observations.
 - `v11/journal.py` — prediction journal and settlement compatibility layer.
-- `v11/backtest.py` — strictly pregame point-in-time evaluation, structural/model/sharp comparison and walk-forward challenger checks.
-- `v11/train.py` — Champion/Challenger candidate generation; promotion is explicit and holdout-gated.
-- `v11/discord_v12.py` — V12 game cards, official plan and data-health reporting.
-- `tests/test_v11.py` — V12 regression and production-safety tests.
+- `v11/backtest.py` — strict V12.2 cohort evaluation with WIN/PUSH/LOSS multiclass scoring.
+- `v11/train.py` — explicit Champion/Challenger generation and promotion.
+- `v11/discord_v12.py` — recommendation cards and data-health reporting.
+- `tests/test_v11.py` — regression, statistical and production-safety invariants.
 
-## Model policy
+## Probability stack
 
-The live probability stack is:
+1. immutable structural run baseline;
+2. phase-specific learned residual only after chronological improvement;
+3. Negative Binomial scoring with a shared run-environment factor, so home and away scores are not conditionally independent;
+4. dynamic score-tail truncation rather than a fixed hard matrix cut;
+5. fresh sharp-market de-vig blend at an explicit historical `as_of`;
+6. phase/market side calibration plus push calibration;
+7. empirical uncertainty from reliability bins, sharp disagreement and data quality;
+8. conservative execution probability used for EV, minimum price and Kelly sizing.
 
-1. interpretable baseball structural baseline;
-2. multi-season starter-prior and richer bullpen/context correction;
-3. optional learned run-residual correction only after chronological holdout improvement;
-4. Negative Binomial score matrix, with dispersion learned when enough settled point-in-time data exist;
-5. fresh sharp-market de-vig blend;
-6. market-specific probability calibration only when a candidate beats the uncalibrated model on holdout;
-7. explicit model uncertainty passed to the execution gate.
+EARLY, LATE and FINAL snapshots are trained separately while train/holdout splits remain grouped by `game_pk`, preventing the same game from leaking across validation boundaries.
 
-A missing Champion artifact does **not** silently activate an unvalidated model. The system runs structural-first and exposes the fallback uncertainty.
+## Champion / Challenger policy
+
+A Challenger is **not** promotable merely because one component improves. Promotion requires:
+
+- V12.2-compatible rows only (`engine_version`, schema and feature schema must match);
+- an external end-to-end holdout where the deployed stack improves Brier and LogLoss;
+- multiple positive future walk-forward windows;
+- compatible model provenance metadata and feature-schema hash;
+- sufficient live evidence at promotion time.
+
+The model artifact stores dataset fingerprint, training cutoff, engine/schema versions, feature-schema hash and producing Git commit when available.
+
+If a Champion file exists but is corrupt or schema-incompatible, the betting data-quality gate fails closed. Absence of a Champion is different: structural-only operation is allowed while evidence is collected.
+
+## Recommendation and wager lifecycle
+
+The bot does not claim that publishing a Discord recommendation means a bookmaker wager was placed.
+
+Lifecycle:
+
+`PROPOSED → PUBLISHED → CONFIRMED_PLACED → WIN / LOSS / PUSH`
+
+- `PROPOSED`: selected and durably persisted before Discord.
+- `PUBLISHED`: Discord publication succeeded.
+- `CONFIRMED_PLACED`: explicit external/user confirmation that the wager was actually placed.
+- settlement and ROI use only confirmed wagers.
+
+Manual confirmation is available with:
+
+```bash
+python -m v11.runner --confirm-placed '<bet_key>' --price 1.91
+```
 
 ## Betting policy
 
-A bet is official only when:
+A single recommendation requires:
 
-- required data quality is present;
-- a fresh sharp reference exists;
-- the exact Winamax market/line is executable;
-- the Winamax price clears fair value, minimum EV and edge after an uncertainty haircut;
-- the same game is not already an open position;
-- bankroll-aware fractional Kelly and portfolio exposure limits permit the stake.
+- usable team/starter/lineup data above the DQ threshold;
+- fresh sharp references;
+- an exact executable Winamax line;
+- uncertainty-adjusted positive value and minimum edge;
+- no already-published recommendation on the same game;
+- fractional Kelly above the minimum unit size;
+- room under persistent daily exposure limits.
 
-The optional two-leg combo cannot reuse a game already selected as a single.
+Official combinés are disabled in V12.2 because multiplying leg probabilities assumes independence that has not yet been validated. Research combo calculations can exist, but they cannot enter the official portfolio.
 
-## Point-in-time evidence and CLV
+## Point-in-time source replay and CLV
 
-Every production run captures raw MLB/Odds payloads under `runtime/v11/snapshots/` and flattened market snapshots. GitHub Actions uploads these as artifacts instead of committing large raw snapshots into Git history. Compact prediction evidence, model candidates and the event-sourced bet ledger remain in `data/`.
+Every production/snapshot run can record **all HTTP responses actually consumed**: schedule, Odds API, team/player stats, boxscores, starter priors, bullpen lookups and weather. API secrets are scrubbed from archived request URLs.
 
-The ledger records the official plan price, later price observations, FINAL-phase closing price when observed, CLV, settlement, ROI and chronologically ordered drawdown. It is an internal recommendation ledger; it does not place a wager at the bookmaker.
-
-Historical information that was never archived is never fabricated. Full historical engine replay becomes stronger as the point-in-time archive grows.
-
-## Champion / Challenger
+Source bundles under `runtime/v11/source_replays/` can be replayed without using the current clock:
 
 ```bash
-python -m v11.train --dry-run
-python -m v11.train
-python -m v11.train --promote
+python -m v11.runner --replay-dry-run runtime/v11/source_replays/<file>.json.gz
 ```
 
-`--promote` refuses promotion unless the candidate passes the configured chronological holdout gates.
+Market freshness and game phase use the recorded historical `as_of`, not `datetime.now()`.
+
+`.github/workflows/market-snapshot.yml` checks for published recommendations every 15 minutes. It only calls the APIs when something is open, then captures T-60, T-15 and close-candidate trajectories without generating or republishing picks.
+
+## Evidence boundary
+
+The system reports `COLLECTING` until it has at least the configured number of confirmed settled wagers and close-candidate CLV observations. A green CI validates software invariants; it is **not** treated as evidence of predictive profitability.
+
+Historical information that was never captured is never reconstructed from future data.
 
 ## Validation
 
@@ -74,4 +109,4 @@ python -m v11.train --dry-run
 python -m v11.backtest
 ```
 
-`.github/workflows/ci.yml` runs automatically on pushes and pull requests. `.github/workflows/mlb-bot.yml` remains the explicit production workflow and archives raw snapshots as workflow artifacts.
+`.github/workflows/ci.yml` runs on pushes and pull requests. `.github/workflows/mlb-bot.yml` is the explicit production workflow; `.github/workflows/market-snapshot.yml` is the CLV/source snapshotter.
