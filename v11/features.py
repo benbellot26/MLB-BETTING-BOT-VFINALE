@@ -21,19 +21,21 @@ def _collect_ops_values(obj, out, depth=0):
     elif isinstance(obj, (list, tuple)):
         for v in obj: _collect_ops_values(v, out, depth+1)
 
-def lineup_ops(ctx, side, regular_ops):
+def lineup_ops(ctx, side, regular_ops, allow_player_fallback=False):
     lineup = ctx.get(f"{side}_lineup") or {}; count = int(_num(lineup.get("count"), 0)); direct = lineup.get("weighted_ops")
     if direct is not None and .30 <= _num(direct, -1) <= 1.50 and count >= 5: return _num(direct), True, count, "weighted_ops"
-    values = []; _collect_ops_values(lineup, values)
-    if len(values) >= 5:
-        values = sorted(values); trimmed = values[1:-1] if len(values) >= 7 else values
-        return sum(trimmed)/len(trimmed), True, max(count, len(values)), "player_ops_fallback"
+    if allow_player_fallback:
+        values = []; _collect_ops_values(lineup, values)
+        if len(values) >= 5:
+            values = sorted(values); trimmed = values[1:-1] if len(values) >= 7 else values
+            return sum(trimmed)/len(trimmed), True, max(count, len(values)), "player_ops_fallback"
     return float(regular_ops), False, count, "team_ops_fallback"
 
-def live_ml_features(core, result):
+def live_ml_features(core, result, allow_player_fallback=False):
+    """Production defaults preserve the historically validated V11.3 lineup contract."""
     ctx = result.get("ctx") or {}; lg_ops = _num(core.league_baselines().get("ops"), .710)
     hreg = _num((core.season_stats(ctx.get("home_id"), "hitting") or {}).get("ops"), lg_ops); areg = _num((core.season_stats(ctx.get("away_id"), "hitting") or {}).get("ops"), lg_ops)
-    hlu, hok, hc, hsrc = lineup_ops(ctx, "home", hreg); alu, aok, ac, asrc = lineup_ops(ctx, "away", areg); lineup_ok = bool(hok and aok)
+    hlu, hok, hc, hsrc = lineup_ops(ctx, "home", hreg, allow_player_fallback); alu, aok, ac, asrc = lineup_ops(ctx, "away", areg, allow_player_fallback); lineup_ok = bool(hok and aok)
     if lineup_ok:
         relative = ((hlu-hreg) - (alu-areg)) / .08; regular_overlap = (hreg-areg) / .08; lineup_abs = (hlu-alu) / .08
     else: relative = regular_overlap = lineup_abs = 0.0
@@ -98,7 +100,7 @@ def _recent_bullpen_usage(core,prev,team_id):
     return {"relievers_used":len(usage),"total_relief_pitches":sum(x["pitches"] for x in usage),"heavy_usage_count":sum(x["pitches"]>=20 for x in usage),"top_usage":usage[:4]}
 
 def operational_features(core,result,previous_index):
-    ctx=result.get("ctx") or {}; game=result.get("game") or {}; current_home=ctx.get("home"); current_coord=(getattr(core,"COORD",{}) or {}).get(current_home); out={"starter_home":_starter_feature(core,game,"home"),"starter_away":_starter_feature(core,game,"away"),"current_doubleheader":str(game.get("doubleHeader") or "N")!="N"}
+    ctx=result.get("ctx") or {}; game=result.get("game") or {}; current_home=ctx.get("home"); current_coord=(getattr(core,"COORD",{}) or {}).get(current_home); out={"enhanced_lineup_shadow":live_ml_features(core,result,allow_player_fallback=True),"starter_home":_starter_feature(core,game,"home"),"starter_away":_starter_feature(core,game,"away"),"current_doubleheader":str(game.get("doubleHeader") or "N")!="N"}
     for side in ("home","away"):
         tid=str(ctx.get(f"{side}_id") or ""); prev=previous_index.get(tid); prefix=f"{side}_"
         if not prev:
