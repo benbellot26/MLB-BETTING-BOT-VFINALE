@@ -1,5 +1,5 @@
 from __future__ import annotations
-import hashlib, json
+import hashlib, json, sys
 from datetime import datetime, timezone
 from pathlib import Path
 from . import config, core, engine, selector, discord, journal
@@ -50,3 +50,6 @@ def main():
         discord.send_top(results);discord.send_plan(chosen,combo,portfolio,pool)
     performance=journal.metrics(rows);finance=journal.finance_summary(rows);report={"version":config.VERSION,"run_id":run_id,"analyzed_at":analyzed_at,"target_date":core.TARGET_DATE,"remaining_games_analyzed":len(results),"settled_this_run":settled_now,"production":{"engine":"V11 standalone","ML":"V11","RUNLINE":"V11","TOTAL":"V11","selector":"V11","combo":"V11","legacy_code_dependency":False},"performance":performance,"finance":finance,"historical_reference":_historical_reference(),"methodology":{"runs_model":"team offense + lineup batting-order OPS + opponent pitching + shrunk probable starter + park/home advantage + bounded rest/travel/bullpen context","distribution":"negative-binomial overdispersed score matrix","sharp":"book-level de-vig; >90m stale excluded; freshness weighted; disagreement reduces blend; bounded 12-25% base weight","pushes":"RL/Total p_win and p_push modeled separately; refunded outcomes included correctly in EV/minimum price","execution":"Winamax exact market/line price with EV + edge + safety gate","claim":"V11 is sole production engine. Superiority is accepted only when settled/backtest evidence demonstrates it."}}
     journal.write_report(report);_send_summary(report);core.logging.info("V11 standalone terminé | games=%d settled=%d ML/RL/TOTAL=V11 ROI=%s",len(results),settled_now,core.pct(finance.get("roi")))
+
+if __name__=="__main__":
+    self_test() if "--self-test" in sys.argv else main()
