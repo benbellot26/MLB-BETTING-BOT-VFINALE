@@ -2,8 +2,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-VERSION = "12.0-professional-foundation-v1"
-SCHEMA_VERSION = "v12-professional-v1"
+VERSION = "12.1-professional-foundation-v2"
+SCHEMA_VERSION = "v12-professional-v2"
 LIVE_FILE = Path(os.getenv("V11_LIVE_FILE", "data/v11_3_live.jsonl"))
 REPORT_FILE = Path(os.getenv("V11_REPORT_FILE", "data/v11_3_live_report.json"))
 CANDIDATE_MODEL_FILE = Path(os.getenv("V11_CANDIDATE_MODEL_FILE", "data/v11_candidate_model.json"))
@@ -51,6 +51,13 @@ MIN_RESIDUAL_RMSE_GAIN = float(os.getenv("V11_MIN_RESIDUAL_RMSE_GAIN", "0.015") 
 MIN_CALIBRATION_GAMES = int(os.getenv("V11_MIN_CALIBRATION_GAMES", "140") or 140)
 MIN_CALIBRATION_HOLDOUT = int(os.getenv("V11_MIN_CALIBRATION_HOLDOUT", "35") or 35)
 MIN_CALIBRATION_BRIER_GAIN = float(os.getenv("V11_MIN_CALIBRATION_BRIER_GAIN", "0.001") or .001)
+MIN_DISPERSION_TRAIN_GAMES = int(os.getenv("V11_MIN_DISPERSION_TRAIN_GAMES", "100") or 100)
+MIN_DISPERSION_HOLDOUT = int(os.getenv("V11_MIN_DISPERSION_HOLDOUT", "35") or 35)
+MIN_DISPERSION_NLL_GAIN = float(os.getenv("V11_MIN_DISPERSION_NLL_GAIN", "0.002") or .002)
+
+CLOSING_CANDIDATE_WINDOW_MIN = float(os.getenv("V11_CLOSING_CANDIDATE_WINDOW_MIN", "10") or 10)
+T60_WINDOW_MIN = float(os.getenv("V11_T60_WINDOW_MIN", "60") or 60)
+T15_WINDOW_MIN = float(os.getenv("V11_T15_WINDOW_MIN", "15") or 15)
 
 # Backward-compatible names kept so old external configuration does not crash.
 PRICE_SAFETY_MARGIN = 0.0
