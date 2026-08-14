@@ -2,7 +2,7 @@ from __future__ import annotations
 import argparse, hashlib, json, os
 from datetime import datetime, timezone
 from pathlib import Path
-from . import config, core, selector, journal, storage, data_quality, pro_model
+from . import config, core, selector, journal, storage, data_quality, pro_model, historical_bootstrap
 from . import engine_v12 as engine
 from . import discord_v12 as discord
 
@@ -14,9 +14,16 @@ def _historical_reference():
     if not p.exists(): return None
     try:
         d = json.loads(p.read_text(encoding="utf-8")); x = d.get("v10_ml") or {}
-        return {"source": "frozen benchmark only; never used by V12.2 predictions",
+        b = historical_bootstrap.load_model(); meta = b.get("metadata") or {}
+        return {"source": "frozen 2026 baseball bootstrap; FINAL-only; not betting-profitability evidence",
                 "ml_accuracy": x.get("accuracy"), "ml_brier": x.get("brier"),
-                "ml_logloss": x.get("logloss"), "historical_odds_used": (d.get("methodology") or {}).get("historical_odds_used")}
+                "ml_logloss": x.get("logloss"), "historical_odds_used": (d.get("methodology") or {}).get("historical_odds_used"),
+                "bootstrap": {"version": b.get("version"), "status": b.get("status"), "active": bool(b.get("active")),
+                              "games": meta.get("games"), "split": meta.get("split"), "phase_scope": b.get("phase_scope"),
+                              "run_prior_active": bool((b.get("run_correction") or {}).get("active")),
+                              "dispersion_active": bool((b.get("dispersion") or {}).get("active")),
+                              "environment_active": bool((b.get("environment") or {}).get("active")),
+                              "betting_profitability_claim": bool(meta.get("betting_profitability_claim", False))}}
     except Exception: return None
 
 
@@ -134,6 +141,7 @@ def run(snapshot_only=False):
     journal.write_rows(rows)
     health = data_quality.health_report(results, len(games), len(matches))
     finance = storage.ledger_summary(); model = pro_model.load_model(); evidence = pro_model.production_evidence_gate(finance)
+    bootstrap = historical_bootstrap.load_model()
     report = {"version": config.VERSION, "schema": config.SCHEMA_VERSION, "run_id": run_id, "analyzed_at": at,
               "target_date": core.TARGET_DATE, "scheduled_games": len(games), "matched_events": len(matches),
               "remaining_games_analyzed": len(results), "ledger_settled_this_run": ledger_settled,
@@ -142,15 +150,18 @@ def run(snapshot_only=False):
               "model": {"version": model.get("version"), "active": bool(model.get("active")),
                         "artifact_status": model.get("artifact_status"), "artifact_error": model.get("artifact_error"),
                         "run_dispersion": pro_model.model_dispersion(model)[0],
-                        "environment_sigma": pro_model.model_environment_sigma(model)[0]},
+                        "environment_sigma": pro_model.model_environment_sigma(model)[0],
+                        "historical_bootstrap": {"version": bootstrap.get("version"), "status": bootstrap.get("status"),
+                                                 "active": bool(bootstrap.get("active")), "phase_scope": bootstrap.get("phase_scope")}},
               "historical_reference": _historical_reference(),
-              "methodology": {"runs_model": "immutable structural baseline + phase-specific holdout-gated residual",
-                              "distribution": "correlated NB mixture with dynamic tail truncation",
+              "methodology": {"runs_model": "immutable structural baseline + validated FINAL historical prior fallback + phase-specific live residual",
+                              "distribution": "correlated NB mixture; validated historical FINAL fallback; dynamic tail truncation",
                               "calibration": "phase-specific side + push calibration; end-to-end promotion gate",
                               "uncertainty": "empirical phase/market reliability bins + market disagreement + DQ penalty",
                               "execution": "fixed Winamax canonical lines for evaluation; all executable lines for selection",
                               "staking": "bankroll-aware fractional Kelly; official combos disabled",
                               "ledger": "PROPOSED -> PUBLISHED -> CONFIRMED_PLACED -> SETTLED",
+                              "historical_evidence": "1801-game frozen baseball bootstrap is FINAL-only and never counted as betting-profitability/CLV evidence",
                               "raw_archive": str(raw), "source_replay": str(source)}}
     journal.write_report(report)
     if os.getenv("V12_DEFER_DISCORD", "0") == "1": _write_discord_payload(results, portfolio, chosen, combo, health, report)
