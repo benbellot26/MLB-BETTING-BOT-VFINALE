@@ -49,3 +49,6 @@ def build_candidate(rows=None):
 
 def write_candidate(path="data/v11_candidate_model.json"):
     c=build_candidate();p=Path(path);p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(c,ensure_ascii=False,indent=2,sort_keys=True),encoding="utf-8");return c
+
+if __name__=="__main__":
+    print(json.dumps(write_candidate(),ensure_ascii=False,indent=2,sort_keys=True))
