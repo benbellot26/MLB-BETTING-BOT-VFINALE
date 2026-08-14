@@ -29,10 +29,41 @@ jobs:
 
       - name: Validation V12.2
         run: |
-          python -m py_compile v11/*.py tests/test_v11.py
+          python -m py_compile v11/*.py tests/test_v11.py tests/test_historical_bootstrap.py
           python -m v11.runner --self-test
-          python -m unittest tests.test_v11
+          python -m unittest tests.test_v11 tests.test_historical_bootstrap
+          python -m v11.historical_bootstrap --dry-run >/tmp/v12_historical_bootstrap.json
           python -m v11.train --dry-run
+
+      - name: Ensure validated historical FINAL prior
+        run: |
+          python - <<'PY'
+          import json
+          from v11 import historical_bootstrap as hb
+          model = hb.ensure_artifact()
+          if not model.get('active') or model.get('phase_scope') != ['FINAL']:
+              raise SystemExit('Historical bootstrap did not pass FINAL-only validation gates')
+          print(json.dumps({
+              'version': model.get('version'),
+              'status': model.get('status'),
+              'games': (model.get('metadata') or {}).get('games'),
+              'split': (model.get('metadata') or {}).get('split'),
+              'run_prior_active': bool((model.get('run_correction') or {}).get('active')),
+              'dispersion_active': bool((model.get('dispersion') or {}).get('active')),
+              'environment_active': bool((model.get('environment') or {}).get('active')),
+          }, indent=2, sort_keys=True))
+          PY
+
+      - name: Persist historical FINAL prior before predictions
+        run: |
+          git config user.name 'MLB Betting Bot V12.2'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add data/v12_historical_bootstrap_model.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'data: persist validated historical FINAL prior [skip ci]'
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
 
       - name: Run V12.2 without Discord
         env:
@@ -99,7 +130,7 @@ jobs:
           python - <<'PY'
           import json
           from pathlib import Path
-          for name in ('data/v11_candidate_model.json','data/v11_point_in_time_backtest.json'):
+          for name in ('data/v12_historical_bootstrap_model.json','data/v11_candidate_model.json','data/v11_point_in_time_backtest.json'):
               p=Path(name)
               if p.exists(): json.loads(p.read_text(encoding='utf-8'))
           PY
@@ -139,6 +170,7 @@ jobs:
         run: |
           git config user.name 'MLB Betting Bot V12.2'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
+          [ -f data/v12_historical_bootstrap_model.json ] && git add data/v12_historical_bootstrap_model.json
           [ -f data/v11_candidate_model.json ] && git add data/v11_candidate_model.json
           [ -f data/v11_point_in_time_backtest.json ] && git add data/v11_point_in_time_backtest.json
           if ! git diff --cached --quiet; then
