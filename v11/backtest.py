@@ -36,3 +36,6 @@ def build_report(rows=None):
 
 def write_report(path="data/v11_point_in_time_backtest.json"):
     rep=build_report();p=Path(path);p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(rep,ensure_ascii=False,indent=2,sort_keys=True),encoding="utf-8");return rep
+
+if __name__=="__main__":
+    print(json.dumps(write_report(),ensure_ascii=False,indent=2,sort_keys=True))
