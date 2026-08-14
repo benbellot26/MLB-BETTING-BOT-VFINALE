@@ -1,0 +1,43 @@
+name: MLB Betting Bot V12 CI
+
+on:
+  push:
+    branches:
+      - main
+      - 'agent/**'
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v12-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Compile
+        run: python -m py_compile v11/*.py tests/test_v11.py
+
+      - name: Unit tests
+        run: python -m unittest tests.test_v11
+
+      - name: Engine self-test
+        run: python -m v11.runner --self-test
+
+      - name: Champion challenger dry-run
+        run: python -m v11.train --dry-run
+
+      - name: Point-in-time evaluation smoke test
+        run: python -m v11.backtest >/tmp/v12_backtest.json
