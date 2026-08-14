@@ -1,61 +1,48 @@
 from __future__ import annotations
-import hashlib
+import hashlib, json
 from datetime import datetime, timezone
-import bot as core
-from . import config
-from .features import live_ml_features, snapshot_features, point_in_time_snapshot, build_previous_game_index, operational_features
-from .models import load_model, apply_ml_heads, patch_ml_options, attach_market_challengers
-from .selector import allocate
-from .journal import load_rows, write_rows, settle_rows, capture_official_bets, capture_combo_row, comparison_summary, finance_summary, write_report, settle_bet
-from .champion import evaluate_all
-from .discord import send_game as send_v11_game, send_daily_plan as send_v11_daily_plan
+from pathlib import Path
+from . import config, core, engine, selector, discord, journal
 
-def _send_comparison(report):
+def _legacy_reference():
+    p=Path("data/mlb_backtest_2026_report.json")
+    if not p.exists():return None
+    try:
+        d=json.loads(p.read_text(encoding="utf-8"));return {"source":"historical frozen V10 benchmark only; never used for predictions","ml_accuracy":(d.get("v10_ml") or {}).get("accuracy"),"ml_brier":(d.get("v10_ml") or {}).get("brier"),"ml_logloss":(d.get("v10_ml") or {}).get("logloss"),"runline_proxy_hit_rate":(d.get("runline_proxy") or {}).get("hit_rate"),"historical_odds_used":(d.get("methodology") or {}).get("historical_odds_used")}
+    except Exception:return None
+
+def _row(result,run_id,analyzed_at):
+    return {"schema":"v11-live-v2","engine_version":config.VERSION,"run_id":run_id,"analyzed_at":analyzed_at,"target_date":core.TARGET_DATE,"game_pk":result.get("game_pk"),"game_date":(result.get("game") or {}).get("gameDate"),"home":result["ctx"]["home"],"away":result["ctx"]["away"],"phase":result.get("phase"),"projected_home_runs":round(core.num(result.get("hmu")),4),"projected_away_runs":round(core.num(result.get("amu")),4),"p_home":round(core.num(result.get("p_home"),.5),6),"quality":round(core.num(result.get("quality")),4),"features":result.get("features"),"starters":{"home":result["ctx"].get("home_starter"),"away":result["ctx"].get("away_starter")},"lineups":{"home":result["ctx"].get("home_lineup"),"away":result["ctx"].get("away_lineup")},"sharp_ml":result.get("con"),"options":[{k:o.get(k) for k in ("market","name","point","p_structural","p_model","p_effective","p_market","refs","sharp_books","sharp_weight","confidence","selection_score","result","brier","logloss","sharp_brier","sharp_logloss")} | {"winamax_eval":o.get("winamax_eval")} for o in result.get("options") or []],"official_bets":journal.capture_bets(result),"result_status":"PENDING","winner":None,"home_score":None,"away_score":None,"settled_at":None}
+
+def _send_summary(report):
     if not core.DISCORD_URL or int(report.get("settled_this_run") or 0)<=0:return
-    c=report.get("comparison") or {}; f=report.get("official_finance") or {}
-    def pct(x):return "—" if x is None else f"{100*float(x):.1f}%"
-    n=int(c.get("settled_games") or 0); net=int(c.get("v11_net_corrections") or 0); grade="\n".join(f"**{k}** {v['wins']}/{v['n']} ({pct(v['accuracy'])})" for k,v in (c.get("by_grade") or {}).items()) or "—"; pnl=f.get("profit_units"); pnl_txt="—" if pnl is None else f"{float(pnl):+.2f}u"
-    fields=[("🏆 Direction",f"V10 **{int(c.get('v10_wins') or 0)}/{n} ({pct(c.get('v10_accuracy'))})**\nV11.3 **{int(c.get('v11_3_wins') or 0)}/{n} ({pct(c.get('v11_3_accuracy'))})**\nNet corrections **{net:+d}**"),("🎯 Calibration",f"Brier V10 **{c.get('v10_brier','—')}** → V11.2 **{c.get('v11_2_brier','—')}**\nLogLoss V10 **{c.get('v10_logloss','—')}** → V11.2 **{c.get('v11_2_logloss','—')}**"),("⭐ Grades",grade),("💰 Plan Officiel",f"{int(f.get('wins') or 0)}V-{int(f.get('losses') or 0)}D-{int(f.get('pushes') or 0)}P • **{pnl_txt}** • ROI **{pct(f.get('roi'))}**\nDrawdown max **{float(f.get('max_drawdown_units') or 0):.2f}u** • pire série **{int(f.get('longest_losing_streak') or 0)}**"),("🧪 Challengers","RL/Total restent shadow tant qu'ils ne passent pas les gates chronologiques + live. Sharp reste benchmark uniquement. Aucun abaissement automatique des seuils.")]
-    try:core.send_embed("📊 BILAN LIVE — V10 vs V11",fields,5763719 if net>=0 else 15548997)
-    except Exception:core.logging.exception("Discord bilan V11 impossible")
+    met=report.get("performance") or {};fin=report.get("finance") or {};lines=[]
+    for m in ("ML","RUNLINE","TOTAL"):
+        x=(met.get("by_market") or {}).get(m)
+        if x:lines.append(f"**{m}** : {x['wins']}/{x['n']} ({core.pct(x['accuracy'])}) • Brier {x['brier']:.4f} • LL {x['logloss']:.4f}")
+    core.send_embed("📊 BILAN LIVE V11",[("🎯 Performance","\n".join(lines) if lines else "Pas encore assez de résultats."),("💰 Plan officiel",f"{fin.get('wins',0)}V-{fin.get('losses',0)}D-{fin.get('pushes',0)}P • P/L **{core.num(fin.get('profit_units')):+.2f}u** • ROI **{core.pct(fin.get('roi'))}** • DD max **{core.num(fin.get('max_drawdown_units')):.2f}u**"),("🧠 Moteur","100 % V11 en production : **ML + Run Line + Total + selector + combiné**. V10 n'est plus utilisé pour produire un pick.")],5763719)
 
 def self_test():
-    model=load_model(); assert model["validation"]["wins"]==271 and model["validation"]["holdout_n"]==451
-    from .models import v11_2_probability,v11_3_direction_probability
-    f={"lineup_relative":.5,"regular_overlap":.2,"lineup_abs":.7,"lineup_cov_diff":0,"lineup_x_uncertainty":.4,"lineup_available":1}
-    assert 0<v11_2_probability(.55,f,model)<1 and 0<v11_3_direction_probability(.55,f,model)<1
-    from .selector import required_price
-    assert required_price(core,{"p_effective":.60,"p_push":0,"winamax_eval":{"price":1.8}})>1.60
-    row={"result_status":"FINAL","home":"H","away":"A","home_score":4,"away_score":3}; bet={"market":"RUNLINE","pick":"A","point":1.0,"units":1,"winamax_price":1.9,"status":"PENDING"}; assert settle_bet(bet,row) and bet["status"]=="PUSH"
-    print("SELF-TEST V11 PACKAGE OK")
+    assert config.VERSION.startswith("11.");assert .5<engine.prob_home_win(5.0,4.0)<.8;fake={"p_effective":.60,"winamax_eval":{"price":2.0}};assert selector.required_price(fake)>1.60 and selector.value_gate(fake)["ok"]
+    row={"result_status":"FINAL","home":"H","away":"A","home_score":4,"away_score":3};opt={"market":"RUNLINE","name":"A","point":1.0,"p_effective":.55};journal.settle_option(opt,row);assert opt["result"]=="PUSH"
+    print("SELF-TEST V11 STANDALONE ALL MARKETS OK")
 
 def main():
     if not core.ODDS_KEY:raise SystemExit("ODDS_API_KEY absente")
-    model=load_model(); rows=load_rows(); settled_now=settle_rows(core,rows); discord_ok=core.discord_test(); hist=core.load_history(); core.settle_history(hist)
-    run_state=core.run_model_state(hist); disp_state=core.dispersion_state(hist); engine="learned-runs" if run_state.get("active") else "base-runs"; cal_state=core.calibration_state(hist,engine); skill=core.skill_state(hist,engine); states=(run_state,disp_state,cal_state,skill)
-    core.savant_league(); games=core.mlb_schedule(core.TARGET_DATE); events=core.odds_api(); matches=core.match_odds_events(games,events); results=[]; now=core.NOW
-    for game in games:
-        if core.parse_dt(game["gameDate"])<=now:continue
-        pair=matches.get(str(game["gamePk"]))
-        if not pair:continue
+    rows=journal.load_rows();settled_now=journal.settle_rows(rows);games=core.mlb_schedule(core.TARGET_DATE);events=core.odds_api();matches=core.match_odds_events(games,events);results=[]
+    for g in games:
         try:
-            r=core.analyze_base(game,pair[0],pair[1],states,hist); r["disp_state"]=disp_state; core.attach_model_recommendations(r); ml_features=live_ml_features(core,r); apply_ml_heads(r,ml_features,model); patch_ml_options(core,r); fs=snapshot_features(core,r); attach_market_challengers(core,r,fs,model); r["v11_feature_snapshot"]=fs; results.append(r)
-        except Exception:core.logging.exception("V11 analyse impossible gamePk=%s",game.get("gamePk"))
-    previous_index=build_previous_game_index(core,core.TARGET_DATE,results)
-    for r in results:
-        try:operational_features(core,r,previous_index)
-        except Exception:core.logging.exception("V11 operational features impossible gamePk=%s",r.get("game_pk"))
-    portfolio,chosen,combo=allocate(core,results) if results else ({"daily_cap":0,"allocated":0,"remaining":0,"game_cap":0},[],{})
-    analyzed_at=datetime.now(timezone.utc).isoformat(); run_id=hashlib.sha1(f"{analyzed_at}|{core.TARGET_DATE}|{config.VERSION}".encode()).hexdigest()[:16]; new=[]
-    for r in results:
-        row=dict(r["v11_3"]); row.update({"run_id":run_id,"analyzed_at":analyzed_at,"target_date":core.TARGET_DATE,"official_bets":capture_official_bets(core,r),"v11_market_challengers":r.get("v11_market_challengers"),"v11_feature_snapshot":r.get("v11_feature_snapshot"),"v11_operational_features":r.get("v11_operational_features"),"point_in_time":point_in_time_snapshot(core,r,analyzed_at)}); new.append(row)
-    combo_row=capture_combo_row(core,combo,core.TARGET_DATE,run_id,analyzed_at)
-    rows.extend(new)
-    if combo_row: rows.append(combo_row)
-    write_rows(rows)
-    if discord_ok and results:
-        for r in results:send_v11_game(core,r,portfolio)
-        core.send_top_messages(results,skill); send_v11_daily_plan(core,results)
-    comparison=comparison_summary(rows); finance=finance_summary(rows); challenger_evidence=evaluate_all(rows)
-    report={"version":config.VERSION,"run_id":run_id,"analyzed_at":analyzed_at,"target_date":core.TARGET_DATE,"model":model,"remaining_games_analyzed":len(new),"settled_this_run":settled_now,"comparison":comparison,"official_finance":finance,"challenger_evidence":challenger_evidence,"production":{"ML":"V11.3 direction + V11.2 probability","RUNLINE":"V10.0.15 until V11 challenger gate passes","TOTAL":"V10.0.15 until V11 challenger gate passes","selector":"V11 value-gated","price_gate":True,"combo":"V11 value-gated 2-leg","discord":"V10 layout with V11 economics wording"},"challenger_policy":{"auto_promotion":False,"requires_walk_forward":True,"requires_live_confirmation":True,"gates":{"min_holdout_n":config.MIN_HOLDOUT_N,"min_live_n":config.MIN_LIVE_N,"min_brier_gain":config.MIN_BRIER_GAIN,"min_gain_probability":config.MIN_GAIN_PROB}},"point_in_time_archive":True,"operational_shadow_features":["starter prior stats","bullpen previous-game usage","rest days","travel km","timezone shift approximation","extra innings","doubleheader"],"top_picks":[{k:r.get(k) for k in ("game_pk","away","home","base_v10_pick","v11_3_pick","v11_3_direction_score","v11_2_probability_for_pick","grade","rank_score","phase")} for r in sorted(new,key=lambda x:x.get("rank_score",0),reverse=True)[:5]]}
-    write_report(report); _send_comparison(report); core.logging.info("V11 terminé | games=%d settled=%d V10=%s V11=%s ROI=%s",len(new),settled_now,f"{100*comparison.get('v10_accuracy',0):.1f}%" if comparison.get("v10_accuracy") is not None else "-",f"{100*comparison.get('v11_3_accuracy',0):.1f}%" if comparison.get("v11_3_accuracy") is not None else "-",f"{100*finance.get('roi',0):+.1f}%" if finance.get("roi") is not None else "-")
+            if core.parse_dt(g.get("gameDate"))<=core.NOW:continue
+        except Exception:continue
+        event=matches.get(str(g.get("gamePk")))
+        if not event:continue
+        try:results.append(engine.analyze(g,event))
+        except Exception:core.logging.exception("Analyse V11 impossible gamePk=%s",g.get("gamePk"))
+    portfolio,chosen,combo,pool=selector.allocate(results,core.UNIT);analyzed_at=datetime.now(timezone.utc).isoformat();run_id=hashlib.sha1(f"{analyzed_at}|{core.TARGET_DATE}|{config.VERSION}".encode()).hexdigest()[:16];new=[_row(r,run_id,analyzed_at) for r in results];cr=journal.combo_row(combo,run_id,analyzed_at,core.TARGET_DATE);rows.extend(new)
+    if cr:rows.append(cr)
+    journal.write_rows(rows)
+    if core.discord_test() and results:
+        for r in results:discord.send_game(r,portfolio)
+        discord.send_top(results);discord.send_plan(chosen,combo,portfolio,pool)
+    performance=journal.metrics(rows);finance=journal.finance_summary(rows);report={"version":config.VERSION,"run_id":run_id,"analyzed_at":analyzed_at,"target_date":core.TARGET_DATE,"remaining_games_analyzed":len(results),"settled_this_run":settled_now,"production":{"engine":"V11 standalone","ML":"V11","RUNLINE":"V11","TOTAL":"V11","selector":"V11","combo":"V11","v10_dependency":False},"performance":performance,"finance":finance,"legacy_v10_reference":_legacy_reference(),"methodology":{"runs_model":"team offense + opponent pitching + probable starter + lineup OPS + park + home advantage","distribution":"independent Poisson score matrix","sharp":"de-vig consensus blended with bounded 15-30% weight when available","execution":"Winamax exact price with EV/edge/safety value gate","claim":"V11 is sole production engine; superiority must be demonstrated by settled/backtest evidence, not assumed"}}
+    journal.write_report(report);_send_summary(report);core.logging.info("V11 standalone terminé | games=%d settled=%d ML/RL/TOTAL=V11 ROI=%s",len(results),settled_now,core.pct(finance.get("roi")))
