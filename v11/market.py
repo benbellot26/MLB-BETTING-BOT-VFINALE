@@ -5,14 +5,16 @@ from datetime import datetime, timezone
 from . import core, config
 
 
-def _age_minutes(book, market=None):
+def _age_minutes(book, market=None, as_of=None):
     source = market or book
     s = source.get("last_update") or source.get("lastUpdate") or book.get("last_update") or book.get("lastUpdate")
     if not s:
         return None
     try:
+        ref = core.parse_dt(as_of) if isinstance(as_of, str) else as_of
+        ref = ref or (core.parse_dt(core.replay_as_of()) if core.replay_as_of() else datetime.now(timezone.utc))
         dt = core.parse_dt(s)
-        return max(0.0, (datetime.now(timezone.utc)-dt).total_seconds()/60.0)
+        return max(0.0, (ref-dt).total_seconds()/60.0)
     except Exception:
         return None
 
@@ -22,7 +24,7 @@ def _effective_decimal(price, book_key):
     if price <= 1:
         return None
     commission = max(0.0, min(.25, core.num(config.EXCHANGE_COMMISSION.get(book_key), 0)))
-    return 1 + (price-1) * (1-commission)
+    return 1+(price-1)*(1-commission)
 
 
 def _line_match(market_name, outcome_point, target_point):
@@ -35,17 +37,10 @@ def _line_match(market_name, outcome_point, target_point):
     return abs(op-tp) <= 1e-6
 
 
-def sharp_consensus(event, market, name, point=None):
-    """Freshness/book-quality weighted, book-by-book de-vig consensus.
-
-    Missing timestamps are excluded rather than treated as perfectly fresh. Exchange
-    prices are commission-adjusted before implied-probability conversion.
-    """
+def sharp_consensus(event, market, name, point=None, as_of=None):
+    """Point-in-time sharp consensus. All freshness calculations use explicit as_of when supplied."""
     key = {"ML": "h2h", "RUNLINE": "spreads", "TOTAL": "totals"}[market]
-    vals = []
-    books = []
-    ages = []
-    excluded = []
+    vals, books, ages, excluded = [], [], [], []
     for b in event.get("bookmakers") or []:
         bkey = b.get("key")
         if bkey not in core.SHARP_BOOKS:
@@ -53,7 +48,7 @@ def sharp_consensus(event, market, name, point=None):
         m = next((x for x in b.get("markets") or [] if x.get("key") == key), None)
         if not m:
             continue
-        age = _age_minutes(b, m)
+        age = _age_minutes(b, m, as_of)
         if age is None:
             excluded.append({"book": bkey, "reason": "timestamp_missing"})
             continue
@@ -80,33 +75,27 @@ def sharp_consensus(event, market, name, point=None):
         s = sum(inv)
         if s <= 0:
             continue
-        target_idx = relevant.index(target)
-        p = inv[target_idx] / s
+        p = inv[relevant.index(target)]/s
         freshness = max(.10, 1-age/max(1.0, config.MAX_SHARP_AGE_MIN)*.90)
         book_weight = max(.25, core.num(config.SHARP_BOOK_WEIGHTS.get(bkey), 1.0))
-        weight = freshness * book_weight
+        weight = freshness*book_weight
         vals.append((p, weight))
         books.append(bkey)
         ages.append(age)
 
     if not vals:
-        return {
-            "p": None, "n": 0, "books": [], "dispersion": None,
-            "max_age_min": None, "robustness": 0.0, "effective_n": 0.0,
-            "excluded": excluded,
-        }
+        return {"p": None, "n": 0, "books": [], "dispersion": None, "max_age_min": None,
+                "robustness": 0.0, "effective_n": 0.0, "excluded": excluded, "as_of": as_of}
     wsum = sum(w for _, w in vals)
-    p = sum(v*w for v, w in vals) / wsum
-    variance = sum(w*(v-p)**2 for v, w in vals) / wsum if wsum else 0.0
+    p = sum(v*w for v, w in vals)/wsum
+    variance = sum(w*(v-p)**2 for v, w in vals)/wsum if wsum else 0.0
     disp = math.sqrt(max(0.0, variance))
     robustness = max(.20, min(1.0, 1-disp/max(.001, config.SHARP_DISAGREEMENT_SCALE)))
     sumw2 = sum(w*w for _, w in vals)
     effective_n = (wsum*wsum/sumw2) if sumw2 else 0.0
-    return {
-        "p": p, "n": len(vals), "books": books, "dispersion": disp,
-        "max_age_min": max(ages) if ages else None, "robustness": robustness,
-        "effective_n": effective_n, "excluded": excluded,
-    }
+    return {"p": p, "n": len(vals), "books": books, "dispersion": disp,
+            "max_age_min": max(ages) if ages else None, "robustness": robustness,
+            "effective_n": effective_n, "excluded": excluded, "as_of": as_of}
 
 
 def blend_weight(consensus):
@@ -117,5 +106,5 @@ def blend_weight(consensus):
     robustness = max(.20, min(1.0, core.num(consensus.get("robustness"), .2)))
     return max(config.MIN_MARKET_BLEND_WEIGHT,
                min(config.MAX_MARKET_BLEND_WEIGHT,
-                   config.MIN_MARKET_BLEND_WEIGHT +
+                   config.MIN_MARKET_BLEND_WEIGHT+
                    (config.MAX_MARKET_BLEND_WEIGHT-config.MIN_MARKET_BLEND_WEIGHT)*coverage*robustness))
