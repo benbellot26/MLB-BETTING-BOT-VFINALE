@@ -25,7 +25,9 @@ def _candidate(core, result, rec):
     try: c = core.v1011_candidate(result, rec, True)
     except Exception: c = {"eligible": True, "score": _num(rec.get("selection_official_score"),0), "units": 1}
     gate = value_gate(core, rec); score = _num(rec.get("selection_official_score"), _num(c.get("official_score"), _num(c.get("score"),0)))
-    return {"result": result, "rec": rec, "eligible": bool(c.get("eligible")) and gate["ok"], "score": score, "gate": gate, "units": max(1,int(_num(c.get("units"),1)))}
+    try: profile=core.v1011_profile(rec)
+    except Exception: profile=str(rec.get("market") or "UNKNOWN")
+    return {"result": result, "rec": rec, "eligible": bool(c.get("eligible")) and gate["ok"], "score": score, "gate": gate, "units": max(1,int(_num(c.get("units"),1))), "profile":profile}
 
 def allocate(core, results):
     pool=[]
@@ -36,18 +38,18 @@ def allocate(core, results):
             c = _candidate(core,result,rec)
             if c["eligible"]: pool.append(c)
     pool.sort(key=lambda c:(c["score"],_num(c["rec"].get("p_effective"),.5)),reverse=True)
-    chosen=[]; used_games=set(); used_units=0.0
+    chosen=[]; used_games=set(); used_units=0.0; profiles={}
     for c in pool:
         if len(chosen)>=config.MAX_OFFICIAL_BETS: break
-        gid=str(c["result"].get("game_pk"))
-        if gid in used_games: continue
+        gid=str(c["result"].get("game_pk")); profile=c["profile"]
+        if gid in used_games or profiles.get(profile,0)>=2: continue
         units=float(c["units"])
         if used_units+units>config.MAX_DAILY_UNITS: units=1.0
         if used_units+units>config.MAX_DAILY_UNITS: continue
         e=c["rec"].get("winamax_eval") or {}
         if not e: continue
         e.update({"official_selected":True,"official_units":units,"selected":True,"units":units,"stake_eur":round(units*_num(getattr(core,"UNIT",.5),.5),2),"official_reason":f"retenu V11: Score {c['score']:.1f}/100, cote {c['gate']['price']:.2f} >= mini {c['gate']['required_price']:.2f}","portfolio_reason":"PARI OFFICIEL V11 VALUE-GATED"})
-        chosen.append(c); used_games.add(gid); used_units += units
+        chosen.append(c); used_games.add(gid); profiles[profile]=profiles.get(profile,0)+1; used_units += units
     combo={"available":False,"official":False,"legs":[],"units":0.0,"reason":"insufficient value-gated legs"}; combo_candidates=[c for c in pool if c["gate"]["price"] and c["score"]>=70]; legs=[]; seen=set()
     for c in combo_candidates:
         gid=str(c["result"].get("game_pk"))
@@ -61,6 +63,6 @@ def allocate(core, results):
         core._V1007_LAST_SLATE={"score":round(sum(c["score"] for c in chosen)/len(chosen),1) if chosen else 0.0,"grade":"FORT" if chosen and min(c["score"] for c in chosen)>=82 else "BON" if chosen else "FAIBLE","official_count":len(chosen),"units":used_units,"selector_version":"v11-value-gated-v1","combo_official":bool(combo["official"]),"combo_units":combo.get("units",0),"combo_probability":combo.get("probability")}
     if hasattr(core,"_V1013_LAST_COMBO"): core._V1013_LAST_COMBO=combo
     unit=_num(getattr(core,"UNIT",.5),.5); total_units=used_units+(_num(combo.get("units"),0) if combo.get("official") else 0)
-    portfolio={"daily_cap":round(config.MAX_DAILY_UNITS*unit,2),"allocated":round(total_units*unit,2),"remaining":round(max(0.0,(config.MAX_DAILY_UNITS-total_units)*unit),2),"game_cap":round(2*unit,2),"official_count":len(chosen),"official_units":used_units,"combo_official":bool(combo.get("official")),"combo_units":_num(combo.get("units"),0),"selector_version":"v11-value-gated-v1"}
+    portfolio={"daily_cap":round(config.MAX_DAILY_UNITS*unit,2),"allocated":round(total_units*unit,2),"remaining":round(max(0.0,(config.MAX_DAILY_UNITS-total_units)*unit),2),"game_cap":round(2*unit,2),"official_count":len(chosen),"official_units":used_units,"combo_official":bool(combo.get("official")),"combo_units":_num(combo.get("units"),0),"selector_version":"v11-value-gated-v1","profile_counts":profiles}
     if hasattr(core,"_V10_LAST_PORTFOLIO"): core._V10_LAST_PORTFOLIO=portfolio
     return portfolio,chosen,combo
