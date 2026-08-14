@@ -187,7 +187,7 @@ def calibrate(market, p, model=None):
 
 def _settled_rows(rows):
     return sorted(
-        [r for r in rows if r.get("result_status") == "FINAL" and r.get("home_score") is not None and r.get("away_score") is not None and r.get("features")],
+        [r for r in rows if r.get("result_status") == "FINAL" and r.get("home_score") is not None and r.get("away_score") is not None and r.get("projected_home_runs") is not None and r.get("projected_away_runs") is not None and r.get("features")],
         key=lambda r: str(r.get("analyzed_at") or "")
     )
 
