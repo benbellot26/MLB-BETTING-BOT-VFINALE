@@ -1,11 +1,11 @@
 {
-  "analyzed_at": "2026-08-14T12:03:48.417008+00:00",
+  "analyzed_at": "2026-08-14T15:42:19.890215+00:00",
   "data_health": {
     "analyzed_games": 14,
     "confirmed_lineups": 0,
     "confirmed_starters": 11,
     "matched_events": 14,
-    "mean_data_quality": 0.7179,
+    "mean_data_quality": 0.7238,
     "scheduled_games": 14,
     "sharp_coverage": {
       "ML": 14,
@@ -42,22 +42,18 @@
   },
   "historical_reference": {
     "bootstrap": {
-      "active": true,
+      "active": false,
       "betting_profitability_claim": false,
-      "dispersion_active": true,
-      "environment_active": true,
-      "games": 1801,
+      "dispersion_active": false,
+      "environment_active": false,
+      "games": null,
       "phase_scope": [
         "FINAL"
       ],
-      "run_prior_active": true,
-      "split": {
-        "test": 301,
-        "train": 1200,
-        "validation": 300
-      },
-      "status": "PASS",
-      "version": "historical-bootstrap-v1"
+      "run_prior_active": false,
+      "split": null,
+      "status": "INCOMPATIBLE_BASELINE",
+      "version": "historical-bootstrap-v2"
     },
     "historical_odds_used": false,
     "ml_accuracy": 0.5308162132148806,
@@ -69,15 +65,21 @@
   "matched_events": 14,
   "methodology": {
     "calibration": "phase-specific side + push calibration; end-to-end promotion gate",
+    "canonical_research_boundary": "sharp-only RL/Total are analysis-only and excluded from canonical training",
     "distribution": "correlated NB mixture; validated historical FINAL fallback; dynamic tail truncation",
+    "event_matching": "team identity + closest commence_time within strict tolerance",
     "execution": "fixed Winamax canonical lines for evaluation; all executable lines for selection",
-    "historical_evidence": "1801-game frozen baseball bootstrap is FINAL-only and never counted as betting-profitability/CLV evidence",
+    "execution_freshness": "Winamax quote timestamp required; max age 15 min",
+    "generation": "V12.3 methodology-audit-v1",
+    "historical_evidence": "legacy V10 1,801-game data are diagnostic only until a V12.3 structural baseline exists",
     "ledger": "PROPOSED -> PUBLISHED -> CONFIRMED_PLACED -> SETTLED",
-    "raw_archive": "runtime/v11/snapshots/2026-08-14_f9411eb9322d93e6.json.gz",
+    "raw_archive": "runtime/v11/snapshots/2026-08-14_8da5bb64c1c2826b.json.gz",
     "runs_model": "immutable structural baseline + validated FINAL historical prior fallback + phase-specific live residual",
-    "source_replay": "runtime/v11/source_replays/2026-08-14_f9411eb9322d93e6_sources.json.gz",
+    "source_replay": "runtime/v11/source_replays/2026-08-14_8da5bb64c1c2826b_sources.json.gz",
     "staking": "bankroll-aware fractional Kelly; official combos disabled",
-    "uncertainty": "empirical phase/market reliability bins + market disagreement + DQ penalty"
+    "starter_model": "current season + N-1/N-2 prior affects structural run means",
+    "uncertainty": "empirical phase/market reliability bins + market disagreement + DQ penalty",
+    "validation_parity": "production and Champion/Challenger share compose_runtime"
   },
   "model": {
     "active": false,
@@ -85,12 +87,12 @@
     "artifact_status": "ABSENT",
     "environment_sigma": 0.08,
     "historical_bootstrap": {
-      "active": true,
+      "active": false,
       "phase_scope": [
         "FINAL"
       ],
-      "status": "PASS",
-      "version": "historical-bootstrap-v1"
+      "status": "INCOMPATIBLE_BASELINE",
+      "version": "historical-bootstrap-v2"
     },
     "run_dispersion": 7.5,
     "version": "structural-only"
@@ -101,20 +103,32 @@
   },
   "production": {
     "claim": "COLLECTING",
-    "engine": "V12.2"
+    "engine": "V12.3"
   },
   "production_evidence": {
+    "claim": "live evidence gate; not a guarantee of future profitability",
     "clv_observations": 0,
+    "clv_safe": false,
+    "mean_close_candidate_clv_pct": null,
     "passes": false,
+    "positive_close_candidate_clv_rate": null,
+    "predictive_quality": {
+      "qualified_markets": [],
+      "ready": false,
+      "safe": false
+    },
     "required_clv_observations": 50,
     "required_settled_bets": 100,
+    "roi": null,
+    "roi_guard": false,
     "settled_bets": 0,
-    "status": "COLLECTING"
+    "status": "COLLECTING",
+    "volume_ready": false
   },
   "remaining_games_analyzed": 14,
-  "run_id": "f9411eb9322d93e6",
+  "run_id": "8da5bb64c1c2826b",
   "scheduled_games": 14,
-  "schema": "v12-professional-v3",
+  "schema": "v12-3-professional-v1",
   "target_date": "2026-08-14",
-  "version": "12.2-professional-validation-v3"
+  "version": "12.3-methodology-audit-v1"
 }
