@@ -10,6 +10,11 @@ Prediction:
 Delivery:
 - Discord is sent only through bot.py's V10 functions.
 - No V11-specific Discord formatter or extra V11 fields are shown.
+
+Observability:
+- data/v11_3_live.jsonl is the canonical V10 vs V11.3 comparison journal.
+- Pending rows are automatically settled from MLB Stats API on later runs.
+- data/v11_3_live_report.json exposes cumulative de-duplicated comparison metrics.
 """
 from __future__ import annotations
 
@@ -22,7 +27,7 @@ from pathlib import Path
 
 import bot as core
 
-VERSION = "11.3-live-v10-discord-v2"
+VERSION = "11.3-live-v10-discord-v3"
 MODEL_FILE = Path(os.getenv("V11_3_MODEL_FILE", "data/v11_3_direction_model.json"))
 LIVE_FILE = Path(os.getenv("V11_3_LIVE_FILE", "data/v11_3_live.jsonl"))
 REPORT_FILE = Path(os.getenv("V11_3_LIVE_REPORT", "data/v11_3_live_report.json"))
@@ -165,7 +170,9 @@ def v11_3_direction_probability(base_p_home, features, model):
     z = logit(base_p_home) + core.num(beta[0], 0)
     for i, name in enumerate(names, 1):
         sd = max(1e-9, abs(core.num(stds.get(name), 1)))
-        z += core.num(beta[i], 0) * ((core.num(features.get(name), 0)-core.num(means.get(name), 0))/sd)
+        z += core.num(beta[i], 0) * (
+            (core.num(features.get(name), 0)-core.num(means.get(name), 0))/sd
+        )
     return clamp(sigmoid(z))
 
 
@@ -182,6 +189,8 @@ def apply_heads(result, model):
     p113_pick = p113 if home_pick else 1-p113
     p112_side = ctx["home"] if p112 >= .5 else ctx["away"]
     agreement = pick == p112_side
+    v10_pick = ctx["home"] if base >= .5 else ctx["away"]
+    v10_pick_probability = base if v10_pick == ctx["home"] else 1-base
 
     rank_score = 100 * (
         .55 * abs(p113-.5)*2
@@ -213,38 +222,55 @@ def apply_heads(result, model):
         "away": ctx["away"],
         "phase": result.get("phase"),
         "base_v10_p_home": round(base, 6),
+        "base_v10_pick": v10_pick,
+        "base_v10_probability_for_pick": round(v10_pick_probability, 6),
         "v11_2_p_home": round(p112, 6),
         "v11_3_direction_p_home": round(p113, 6),
         "v11_3_pick": pick,
         "v11_3_direction_score": round(p113_pick, 6),
         "v11_2_probability_for_pick": round(p112_pick, 6),
         "heads_agree": agreement,
+        "v10_v11_same_pick": v10_pick == pick,
         "grade": grade,
         "rank_score": round(rank_score, 2),
         "quality": round(core.num(result.get("quality"), 0), 4),
         "lineup_both_available": f["lineup_both_available"],
         "home_lineup_count": f["home_lineup_count"],
         "away_lineup_count": f["away_lineup_count"],
-        "features": {k: round(core.num(v), 6) if isinstance(v, (int, float)) else v for k, v in f.items()},
+        "features": {
+            k: round(core.num(v), 6) if isinstance(v, (int, float)) else v
+            for k, v in f.items()
+        },
         "starter_home": ctx.get("home_sp"),
         "starter_away": ctx.get("away_sp"),
         "runline_inherited_from": "V10.0.15",
         "total_inherited_from": "V10.0.15",
         "official_effect": True,
+        "official_ml_selected": False,
+        "official_ml_units": 0,
+        "official_ml_winamax_price": None,
+        "official_ml_confidence": None,
+        "official_ml_p_effective": None,
+        "official_ml_score": None,
         "result_status": "PENDING",
-        "result": None,
+        "winner": None,
+        "home_score": None,
+        "away_score": None,
+        "v10_correct": None,
+        "v11_3_correct": None,
+        "v11_net_correction": None,
+        "v10_brier": None,
+        "v11_2_brier": None,
+        "v10_logloss": None,
+        "v11_2_logloss": None,
+        "settled_at": None,
     }
     result["v11_3"] = out
     return out
 
 
 def _orient_v112_for_v113(result):
-    """Expose V11.3 winner through V10's existing ML presentation contract.
-
-    The magnitude comes from V11.2 when both heads agree. On a disagreement,
-    V11.3 still owns the direction but the displayed ML probability is kept
-    deliberately near 50%, so disagreement cannot masquerade as strong confidence.
-    """
+    """Expose V11.3 winner through V10's existing ML presentation contract."""
     x = result["v11_3"]
     home_pick = x["v11_3_pick"] == result["ctx"]["home"]
     p112_home = clamp(x["v11_2_p_home"])
@@ -259,7 +285,6 @@ def _orient_v112_for_v113(result):
 def _patch_ml_options(result):
     """Replace only ML probabilities/direction; RL and Total remain V10.0.15."""
     x = result["v11_3"]
-    ctx = result["ctx"]
     pick = x["v11_3_pick"]
     p_pick = clamp(x["v11_2_probability_for_pick"])
     if not x["heads_agree"]:
@@ -273,34 +298,228 @@ def _patch_ml_options(result):
         rec["p_model"] = p_pick if is_pick else 1-p_pick
         core.v1011_apply_effective(rec, result)
 
-    # Keep the legacy representative ML pointer consistent when present.
     ml = (result.get("model_recs") or {}).get("ML")
-    if ml:
-        is_pick = str(ml.get("name") or "") == str(pick)
-        if not is_pick:
-            # If model_recs contains only one side, point it to the actual V11.3
-            # side when that side exists in the open option list.
-            replacement = next((r for r in options if r.get("market")=="ML" and str(r.get("name"))==str(pick)), None)
-            if replacement is not None:
-                result["model_recs"]["ML"] = replacement
+    if ml and str(ml.get("name") or "") != str(pick):
+        replacement = next(
+            (r for r in options
+             if r.get("market") == "ML" and str(r.get("name")) == str(pick)),
+            None,
+        )
+        if replacement is not None:
+            result["model_recs"]["ML"] = replacement
 
 
-def write_rows(new_rows):
-    old = []
-    if LIVE_FILE.exists():
-        for line in LIVE_FILE.read_text(encoding="utf-8").splitlines():
-            if not line.strip():
-                continue
-            try:
-                old.append(json.loads(line))
-            except Exception:
-                pass
-    old.extend(new_rows)
+def _capture_official_ml(result):
+    """Freeze the V10 selector/execution decision attached to the V11.3 ML side."""
+    x = result["v11_3"]
+    pick = str(x["v11_3_pick"])
+    for rec in core.v1011_iter_options(result):
+        if str(rec.get("market") or "").upper() != "ML":
+            continue
+        if str(rec.get("name") or "") != pick:
+            continue
+        e = rec.get("winamax_eval") or {}
+        x["official_ml_selected"] = bool(e.get("official_selected"))
+        x["official_ml_units"] = core.num(e.get("official_units"), 0)
+        price = core.num(e.get("price"), 0)
+        x["official_ml_winamax_price"] = round(price, 4) if price > 1 else None
+        x["official_ml_confidence"] = round(core.num(rec.get("confidence"), 0), 4)
+        pe = rec.get("p_effective", rec.get("p_model"))
+        x["official_ml_p_effective"] = round(core.num(pe, .5), 6)
+        score = rec.get("selection_official_score")
+        x["official_ml_score"] = round(core.num(score), 4) if score is not None else None
+        return
+
+
+def load_live_rows():
+    rows = []
+    if not LIVE_FILE.exists():
+        return rows
+    for line in LIVE_FILE.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            rows.append(json.loads(line))
+        except Exception:
+            core.logging.warning("V11.3 journal: ligne JSON ignorée")
+    return rows
+
+
+def _is_final_game(game):
+    status = game.get("status") or {}
+    return (
+        str(status.get("abstractGameState") or "").lower() == "final"
+        or str(status.get("codedGameState") or "").upper() == "F"
+        or str(status.get("detailedState") or "").lower()
+        in {"final", "game over", "completed early"}
+    )
+
+
+def _binary_logloss(p, y):
+    p = clamp(p, 1e-9, 1-1e-9)
+    return -(y*math.log(p) + (1-y)*math.log(1-p))
+
+
+def settle_live_rows(rows):
+    """Settle every pending comparison row from MLB's official schedule scores."""
+    pending_dates = sorted({
+        str(r.get("target_date"))
+        for r in rows
+        if r.get("result_status") != "FINAL" and r.get("target_date")
+    })
+    if not pending_dates:
+        return 0
+
+    games_by_pk = {}
+    for day in pending_dates:
+        try:
+            for game in core.mlb_schedule(day):
+                games_by_pk[str(game.get("gamePk"))] = game
+        except Exception:
+            core.logging.exception("V11.3 settlement MLB indisponible pour %s", day)
+
+    settled = 0
+    settled_at = datetime.now(timezone.utc).isoformat()
+    for row in rows:
+        if row.get("result_status") == "FINAL":
+            continue
+        game = games_by_pk.get(str(row.get("game_pk")))
+        if not game or not _is_final_game(game):
+            continue
+
+        teams = game.get("teams") or {}
+        hs = int(core.num((teams.get("home") or {}).get("score"), 0))
+        aps = int(core.num((teams.get("away") or {}).get("score"), 0))
+        if hs == aps:
+            continue
+        home = str(row.get("home"))
+        away = str(row.get("away"))
+        winner = home if hs > aps else away
+        p10 = clamp(row.get("base_v10_p_home", .5))
+        p112 = clamp(row.get("v11_2_p_home", .5))
+        y = 1 if winner == home else 0
+
+        v10_pick = row.get("base_v10_pick")
+        if not v10_pick:
+            v10_pick = home if p10 >= .5 else away
+            row["base_v10_pick"] = v10_pick
+            row["base_v10_probability_for_pick"] = round(
+                p10 if v10_pick == home else 1-p10, 6
+            )
+        v11_pick = row.get("v11_3_pick")
+        c10 = v10_pick == winner
+        c11 = v11_pick == winner
+
+        row.update({
+            "result_status": "FINAL",
+            "winner": winner,
+            "home_score": hs,
+            "away_score": aps,
+            "v10_correct": c10,
+            "v11_3_correct": c11,
+            "v10_v11_same_pick": v10_pick == v11_pick,
+            "v11_net_correction": 1 if c11 and not c10 else -1 if c10 and not c11 else 0,
+            "v10_brier": round((p10-y)**2, 8),
+            "v11_2_brier": round((p112-y)**2, 8),
+            "v10_logloss": round(_binary_logloss(p10, y), 8),
+            "v11_2_logloss": round(_binary_logloss(p112, y), 8),
+            "settled_at": settled_at,
+        })
+        settled += 1
+    return settled
+
+
+def write_rows(rows):
     LIVE_FILE.parent.mkdir(parents=True, exist_ok=True)
     LIVE_FILE.write_text(
-        "\n".join(json.dumps(r, ensure_ascii=False, separators=(",", ":")) for r in old) + ("\n" if old else ""),
+        "\n".join(json.dumps(r, ensure_ascii=False, separators=(",", ":")) for r in rows)
+        + ("\n" if rows else ""),
         encoding="utf-8",
     )
+
+
+def _canonical_final_rows(rows):
+    """One closest-to-first-pitch observation per settled game."""
+    best = {}
+    for row in rows:
+        if row.get("result_status") != "FINAL" or not row.get("game_pk"):
+            continue
+        analyzed = str(row.get("analyzed_at") or "")
+        game_date = str(row.get("game_date") or "")
+        key = str(row["game_pk"])
+        rank = (analyzed, game_date)
+        if key not in best or rank > best[key][0]:
+            best[key] = (rank, row)
+    return [x[1] for x in best.values()]
+
+
+def comparison_summary(rows):
+    xs = _canonical_final_rows(rows)
+    n = len(xs)
+    if not n:
+        return {
+            "settled_games": 0,
+            "v10_wins": 0,
+            "v11_3_wins": 0,
+            "v10_accuracy": None,
+            "v11_3_accuracy": None,
+            "changed_direction_games": 0,
+            "v11_corrections": 0,
+            "v11_regressions": 0,
+            "v11_net_corrections": 0,
+            "v10_brier": None,
+            "v11_2_brier": None,
+            "v10_logloss": None,
+            "v11_2_logloss": None,
+            "official_ml": {"n": 0, "wins": 0, "accuracy": None},
+            "by_grade": {},
+        }
+
+    w10 = sum(bool(x.get("v10_correct")) for x in xs)
+    w11 = sum(bool(x.get("v11_3_correct")) for x in xs)
+    changed = [x for x in xs if not x.get("v10_v11_same_pick", True)]
+    corr = sum(core.num(x.get("v11_net_correction"), 0) > 0 for x in xs)
+    reg = sum(core.num(x.get("v11_net_correction"), 0) < 0 for x in xs)
+
+    def avg(field):
+        vals = [core.num(x.get(field)) for x in xs if x.get(field) is not None]
+        return round(sum(vals)/len(vals), 8) if vals else None
+
+    official = [x for x in xs if x.get("official_ml_selected")]
+    off_wins = sum(bool(x.get("v11_3_correct")) for x in official)
+
+    by_grade = {}
+    for grade in ("FORT", "BON", "PRUDENCE", "FAIBLE"):
+        gx = [x for x in xs if x.get("grade") == grade]
+        if gx:
+            gw = sum(bool(x.get("v11_3_correct")) for x in gx)
+            by_grade[grade] = {
+                "n": len(gx),
+                "wins": gw,
+                "accuracy": round(gw/len(gx), 6),
+            }
+
+    return {
+        "settled_games": n,
+        "v10_wins": w10,
+        "v11_3_wins": w11,
+        "v10_accuracy": round(w10/n, 6),
+        "v11_3_accuracy": round(w11/n, 6),
+        "changed_direction_games": len(changed),
+        "v11_corrections": int(corr),
+        "v11_regressions": int(reg),
+        "v11_net_corrections": int(corr-reg),
+        "v10_brier": avg("v10_brier"),
+        "v11_2_brier": avg("v11_2_brier"),
+        "v10_logloss": avg("v10_logloss"),
+        "v11_2_logloss": avg("v11_2_logloss"),
+        "official_ml": {
+            "n": len(official),
+            "wins": off_wins,
+            "accuracy": round(off_wins/len(official), 6) if official else None,
+        },
+        "by_grade": by_grade,
+    }
 
 
 def self_test():
@@ -314,13 +533,28 @@ def self_test():
     assert 0 < p112 < 1 and 0 < p113 < 1
     assert model["validation"]["wins"] == 271 and model["validation"]["holdout_n"] == 451
     assert callable(core.send_game) and callable(core.send_top_messages) and callable(core.send_daily_plan)
-    print("SELF-TEST V11.3 LIVE + V10 DISCORD OK")
+
+    fake = [{
+        "game_pk": 1, "result_status": "FINAL", "analyzed_at": "1",
+        "grade": "BON", "v10_correct": False, "v11_3_correct": True,
+        "v10_v11_same_pick": False, "v11_net_correction": 1,
+        "v10_brier": .30, "v11_2_brier": .20,
+        "v10_logloss": .80, "v11_2_logloss": .60,
+        "official_ml_selected": True,
+    }]
+    s = comparison_summary(fake)
+    assert s["v11_3_wins"] == 1 and s["v11_net_corrections"] == 1
+    assert s["official_ml"]["n"] == 1
+    print("SELF-TEST V11.3 LIVE + V10 DISCORD + COMPARISON JOURNAL OK")
 
 
 def main():
     model = load_model()
     if not core.ODDS_KEY:
         raise SystemExit("ODDS_API_KEY absente")
+
+    journal_rows = load_live_rows()
+    settled_now = settle_live_rows(journal_rows)
 
     discord_ok = core.discord_test()
     hist = core.load_history()
@@ -348,11 +582,7 @@ def main():
         try:
             result = core.analyze_base(game, pair[0], pair[1], states, hist)
             result["disp_state"] = disp_state
-
-            # Build V10 markets first so RL/Total stay untouched.
             core.attach_model_recommendations(result)
-
-            # V11.3/V11.2 replace the ML direction/probability only.
             apply_heads(result, model)
             _orient_v112_for_v113(result)
             _patch_ml_options(result)
@@ -360,41 +590,48 @@ def main():
         except Exception:
             core.logging.exception("V11.3 analyse impossible pour gamePk=%s", game.get("gamePk"))
 
-    # Use the exact V10 portfolio/selector before any Discord delivery.
     portfolio = core.allocate_portfolio(results) if results else {
         "daily_cap": 0.0, "allocated": 0.0, "remaining": 0.0, "game_cap": 0.0
     }
 
     analyzed_at = datetime.now(timezone.utc).isoformat()
-    run_id = hashlib.sha1(f"{analyzed_at}|{core.TARGET_DATE}|{VERSION}".encode()).hexdigest()[:16]
-    rows = []
+    run_id = hashlib.sha1(
+        f"{analyzed_at}|{core.TARGET_DATE}|{VERSION}".encode()
+    ).hexdigest()[:16]
+    new_rows = []
     for result in results:
+        _capture_official_ml(result)
         row = dict(result["v11_3"])
         row.update({"run_id": run_id, "analyzed_at": analyzed_at})
-        rows.append(row)
-    write_rows(rows)
+        new_rows.append(row)
 
-    # IMPORTANT: no V11-specific Discord formatting here.
-    # The exact currently deployed V10 Discord functions are reused.
+    journal_rows.extend(new_rows)
+    write_rows(journal_rows)
+
     if discord_ok and results:
         for result in results:
             core.send_game(result, {}, portfolio)
         core.send_top_messages(results, skill)
         core.send_daily_plan(results)
 
-    ranked = sorted(rows, key=lambda r: r["rank_score"], reverse=True)
+    ranked = sorted(new_rows, key=lambda r: r["rank_score"], reverse=True)
+    comparison = comparison_summary(journal_rows)
     report = {
         "version": VERSION,
         "run_id": run_id,
         "analyzed_at": analyzed_at,
         "target_date": core.TARGET_DATE,
         "model": model,
-        "remaining_games_analyzed": len(rows),
+        "remaining_games_analyzed": len(new_rows),
+        "settled_comparison_rows_this_run": settled_now,
         "discord_delivery": "exact-current-V10-functions",
+        "comparison": comparison,
         "top_picks": [
             {k: r.get(k) for k in (
-                "game_pk", "away", "home", "v11_3_pick", "v11_3_direction_score",
-                "v11_2_probability_for_pick", "heads_agree", "grade", "rank_score", "phase"
+                "game_pk", "away", "home", "base_v10_pick", "v11_3_pick",
+                "v11_3_direction_score", "v11_2_probability_for_pick",
+                "heads_agree", "grade", "rank_score", "phase",
+                "official_ml_selected", "official_ml_units",
             )}
             for r in ranked[:5]
         ],
@@ -403,15 +640,25 @@ def main():
             "probability_head": "V11.2 lineup-calibrated head",
             "runline_total": "V10.0.15 inherited",
             "discord": "V10 exact delivery layer",
+            "comparison_canonicalization": "latest pregame observation per settled game",
+            "comparison_settlement": "MLB Stats API official final scores",
             "tonight_model_trained_through": "2026-08-12",
             "important_note": "The 60.09% evidence comes from rolling day-frozen evaluation. Live confirmation remains required.",
         },
     }
     REPORT_FILE.parent.mkdir(parents=True, exist_ok=True)
-    REPORT_FILE.write_text(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
+    REPORT_FILE.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
     core.logging.info(
-        "V11.3 LIVE terminé | Discord=V10 exact | matchs restants=%d | top=%s",
-        len(rows), ", ".join(r["v11_3_pick"] for r in ranked[:3]) or "-"
+        "V11.3 LIVE terminé | Discord=V10 exact | nouveaux=%d | réglés=%d | "
+        "comparatif=%d matchs V10=%s V11.3=%s net=%+d | top=%s",
+        len(new_rows), settled_now, comparison["settled_games"],
+        f"{100*comparison['v10_accuracy']:.1f}%" if comparison["v10_accuracy"] is not None else "-",
+        f"{100*comparison['v11_3_accuracy']:.1f}%" if comparison["v11_3_accuracy"] is not None else "-",
+        comparison["v11_net_corrections"],
+        ", ".join(r["v11_3_pick"] for r in ranked[:3]) or "-",
     )
 
 
