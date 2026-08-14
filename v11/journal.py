@@ -67,21 +67,39 @@ def settle_rows(rows):
         g=games.get(str(r.get("game_pk")))
         if not g or not _is_final(g):continue
         teams=g.get("teams") or {};hs=int(_num((teams.get("home") or {}).get("score")));aps=int(_num((teams.get("away") or {}).get("score")))
+        if hs==aps:continue
         r.update({"result_status":"FINAL","home_score":hs,"away_score":aps,"winner":r.get("home") if hs>aps else r.get("away"),"settled_at":now})
         for o in r.get("options") or []:settle_option(o,r)
         for b in r.get("official_bets") or []:settle_bet(b,r)
         changed+=1
-    finals={str(r.get("game_pk")):r for r in rows if r.get("result_status")=="FINAL" and r.get("game_pk")}
+    finals={}
+    for r in rows:
+        if r.get("result_status")=="FINAL" and r.get("game_pk"):
+            gid=str(r.get("game_pk"));rank=str(r.get("analyzed_at") or "")
+            if gid not in finals or rank>finals[gid][0]:finals[gid]=(rank,r)
+    finals={k:v[1] for k,v in finals.items()}
     for r in rows:
         if r.get("bet_type")!="COMBO" or r.get("result_status")=="FINAL":continue
-        legs=r.get("combo_legs") or [];statuses=[];ready=True
+        legs=r.get("combo_legs") or [];graded=[];ready=True
         for leg in legs:
             fr=finals.get(str(leg.get("game_pk")))
             if not fr:ready=False;break
-            b={"market":leg.get("market"),"pick":leg.get("pick"),"point":leg.get("point"),"p_effective":leg.get("p_effective"),"status":"PENDING","units":1,"winamax_price":leg.get("winamax_price")};settle_bet(b,fr);statuses.append(b.get("status"))
-        if not ready or any(x not in {"WIN","LOSS","PUSH"} for x in statuses):continue
-        status="LOSS" if "LOSS" in statuses else "PUSH" if "PUSH" in statuses else "WIN";u=_num(r.get("units"));price=_num(r.get("winamax_price"));pnl=u*(price-1) if status=="WIN" and price>1 else -u if status=="LOSS" else 0.0
-        r.update({"result_status":"FINAL","result":status,"profit_units":round(pnl,4),"settled_at":now});changed+=1
+            b={"market":leg.get("market"),"pick":leg.get("pick"),"point":leg.get("point"),"p_effective":leg.get("p_effective"),"status":"PENDING","units":1,"winamax_price":leg.get("winamax_price")};settle_bet(b,fr)
+            if b.get("status") not in {"WIN","LOSS","PUSH"}:ready=False;break
+            graded.append(b)
+        if not ready:continue
+        if any(x["status"]=="LOSS" for x in graded):
+            status="LOSS";settled_price=None
+        else:
+            winning_prices=[_num(x.get("winamax_price"),0) for x in graded if x["status"]=="WIN"]
+            if not winning_prices:
+                status="PUSH";settled_price=1.0
+            elif all(p>1 for p in winning_prices):
+                status="WIN";settled_price=math.prod(winning_prices)
+            else:
+                status="WIN";settled_price=None
+        u=_num(r.get("units"));pnl=(u*(settled_price-1) if status=="WIN" and settled_price is not None else -u if status=="LOSS" else 0.0 if status=="PUSH" else None)
+        r.update({"result_status":"FINAL","result":status,"settled_price":round(settled_price,4) if settled_price is not None else None,"profit_units":round(pnl,4) if pnl is not None else None,"settled_at":now,"leg_results":[x["status"] for x in graded]});changed+=1
     return changed
 
 def capture_bets(result):
@@ -107,6 +125,14 @@ def _canonical_games(rows):
         if k not in best or rank>best[k][0]:best[k]=(rank,r)
     return [x[1] for x in best.values()]
 
+def _canonical_bet_rows(rows):
+    best={}
+    for r in rows:
+        if r.get("bet_type")=="COMBO" or r.get("result_status")!="FINAL" or not r.get("game_pk") or not r.get("official_bets"):continue
+        k=str(r["game_pk"]);rank=str(r.get("analyzed_at") or "")
+        if k not in best or rank>best[k][0]:best[k]=(rank,r)
+    return [x[1] for x in best.values()]
+
 def metrics(rows):
     games=_canonical_games(rows);markets={}
     for m in ("ML","RUNLINE","TOTAL"):
@@ -121,15 +147,29 @@ def metrics(rows):
 
 def finance_summary(rows):
     bets=[]
-    for r in _canonical_games(rows):bets.extend(r.get("official_bets") or [])
-    combos=[r for r in rows if r.get("bet_type")=="COMBO" and r.get("result_status")=="FINAL"]
-    settled=[b for b in bets if b.get("status") in {"WIN","LOSS","PUSH"}];stake=sum(_num(b.get("units")) for b in settled if b.get("status")!="PUSH")+sum(_num(c.get("units")) for c in combos if c.get("result")!="PUSH");pnl=sum(_num(b.get("profit_units")) for b in settled if b.get("profit_units") is not None)+sum(_num(c.get("profit_units")) for c in combos)
-    seq=[_num(b.get("profit_units")) for b in settled if b.get("profit_units") is not None]+[_num(c.get("profit_units")) for c in combos];eq=peak=0;dd=0;losing=cur=0
-    for x in seq:
+    for r in _canonical_bet_rows(rows):bets.extend(r.get("official_bets") or [])
+    combo_best={}
+    for r in rows:
+        if r.get("bet_type")!="COMBO" or r.get("result_status")!="FINAL":continue
+        sig="|".join(f"{x.get('game_pk')}:{x.get('market')}:{_norm(x.get('pick'))}:{x.get('point')}" for x in r.get("combo_legs") or []);rank=str(r.get("analyzed_at") or "")
+        if sig not in combo_best or rank>combo_best[sig][0]:combo_best[sig]=(rank,r)
+    combos=[x[1] for x in combo_best.values()]
+    settled=[b for b in bets if b.get("status") in {"WIN","LOSS","PUSH"}];stake=sum(_num(b.get("units")) for b in settled if b.get("status")!="PUSH")+sum(_num(c.get("units")) for c in combos if c.get("result")!="PUSH");pnl=sum(_num(b.get("profit_units")) for b in settled if b.get("profit_units") is not None)+sum(_num(c.get("profit_units")) for c in combos if c.get("profit_units") is not None)
+    events=[]
+    for b in settled:
+        if b.get("profit_units") is not None:events.append(_num(b.get("profit_units")))
+    for c in combos:
+        if c.get("profit_units") is not None:events.append(_num(c.get("profit_units")))
+    eq=peak=0.0;dd=0.0;losing=cur=0
+    for x in events:
         eq+=x;peak=max(peak,eq);dd=max(dd,peak-eq)
         if x<0:cur+=1;losing=max(losing,cur)
         elif x>0:cur=0
-    return {"settled_singles":len(settled),"settled_combos":len(combos),"wins":sum(b.get("status")=="WIN" for b in settled)+sum(c.get("result")=="WIN" for c in combos),"losses":sum(b.get("status")=="LOSS" for b in settled)+sum(c.get("result")=="LOSS" for c in combos),"pushes":sum(b.get("status")=="PUSH" for b in settled)+sum(c.get("result")=="PUSH" for c in combos),"staked_units":round(stake,4),"profit_units":round(pnl,4),"roi":pnl/stake if stake else None,"max_drawdown_units":round(dd,4),"longest_losing_streak":losing}
+    by_market={}
+    for m in ("ML","RUNLINE","TOTAL"):
+        z=[b for b in settled if b.get("market")==m];st=sum(_num(b.get("units")) for b in z if b.get("status")!="PUSH");pu=sum(_num(b.get("profit_units")) for b in z if b.get("profit_units") is not None)
+        if z:by_market[m]={"n":len(z),"wins":sum(b.get("status")=="WIN" for b in z),"losses":sum(b.get("status")=="LOSS" for b in z),"pushes":sum(b.get("status")=="PUSH" for b in z),"profit_units":round(pu,4),"roi":pu/st if st else None}
+    return {"settled_singles":len(settled),"settled_combos":len(combos),"wins":sum(b.get("status")=="WIN" for b in settled)+sum(c.get("result")=="WIN" for c in combos),"losses":sum(b.get("status")=="LOSS" for b in settled)+sum(c.get("result")=="LOSS" for c in combos),"pushes":sum(b.get("status")=="PUSH" for b in settled)+sum(c.get("result")=="PUSH" for c in combos),"staked_units":round(stake,4),"profit_units":round(pnl,4),"roi":pnl/stake if stake else None,"by_market":by_market,"max_drawdown_units":round(dd,4),"longest_losing_streak":losing}
 
 def write_report(rep,path=config.REPORT_FILE):
     p=Path(path);p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(rep,ensure_ascii=False,indent=2,sort_keys=True),encoding="utf-8")
