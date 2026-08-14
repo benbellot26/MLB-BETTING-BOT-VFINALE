@@ -1,106 +1,50 @@
 {
-  "analyzed_at": "2026-08-13T21:37:59.344712+00:00",
-  "discord_delivery": "exact-current-V10-functions",
+  "analyzed_at": "2026-08-14T08:14:50.539899+00:00",
+  "finance": {
+    "by_market": {},
+    "longest_losing_streak": 0,
+    "losses": 0,
+    "max_drawdown_units": 0.0,
+    "profit_units": 0,
+    "pushes": 0,
+    "roi": null,
+    "settled_combos": 0,
+    "settled_singles": 0,
+    "staked_units": 0,
+    "wins": 0
+  },
+  "historical_reference": {
+    "historical_odds_used": false,
+    "ml_accuracy": 0.5308162132148806,
+    "ml_brier": 0.2511040924287901,
+    "ml_logloss": 0.6956229275396945,
+    "runline_proxy_hit_rate": 0.6057745696835092,
+    "source": "frozen historical benchmark only; never imported or used by V11 predictions"
+  },
   "methodology": {
-    "discord": "V10 exact delivery layer",
-    "important_note": "The 60.09% evidence comes from rolling day-frozen evaluation. Live confirmation remains required.",
-    "probability_head": "V11.2 lineup-calibrated head",
-    "runline_total": "V10.0.15 inherited",
-    "tonight_model_trained_through": "2026-08-12",
-    "winner_direction": "V11.3 recent-400 residual head"
+    "claim": "V11 is sole production engine. Superiority is accepted only when settled/backtest evidence demonstrates it.",
+    "distribution": "negative-binomial overdispersed score matrix",
+    "execution": "Winamax exact market/line price with EV + edge + safety gate",
+    "pushes": "RL/Total p_win and p_push modeled separately; refunded outcomes included correctly in EV/minimum price",
+    "runs_model": "team offense + lineup batting-order OPS + opponent pitching + shrunk probable starter + park/home advantage + bounded rest/travel/bullpen context",
+    "sharp": "book-level de-vig; >90m stale excluded; freshness weighted; disagreement reduces blend; bounded 12-25% base weight"
   },
-  "model": {
-    "beta": [
-      0.08480752116865005,
-      -0.1289723019635723,
-      -0.023497525218618854,
-      -0.1084445530804969,
-      0.0,
-      0.35530824359040025,
-      0.0
-    ],
-    "decision_threshold": 0.5,
-    "features": [
-      "lineup_relative",
-      "regular_overlap",
-      "lineup_abs",
-      "lineup_cov_diff",
-      "lineup_x_uncertainty",
-      "lineup_available"
-    ],
-    "l2": 3.333,
-    "means": {
-      "lineup_abs": -0.017934375,
-      "lineup_available": 1.0,
-      "lineup_cov_diff": 0.0,
-      "lineup_relative": -0.00223125,
-      "lineup_x_uncertainty": -0.0028245662561229784,
-      "regular_overlap": -0.015703125
-    },
-    "stds": {
-      "lineup_abs": 0.447148145095235,
-      "lineup_available": 1.0,
-      "lineup_cov_diff": 1.0,
-      "lineup_relative": 0.31243396496049763,
-      "lineup_x_uncertainty": 0.2717101855670158,
-      "regular_overlap": 0.34877941429216314
-    },
-    "trained_through": "2026-08-12",
-    "v11_2_params": {
-      "intercept": 0.045,
-      "regular_overlap_coef": -0.25,
-      "relative_lineup_coef": 0.05
-    },
-    "validation": {
-      "accuracy": 0.6008869179600886,
-      "holdout_n": 451,
-      "method": "rolling recent-400; predict all games on an Eastern date before adding that date",
-      "note": "historical validation only; live confirmation still required",
-      "wins": 271
-    },
-    "version": "11.3-directional-recent400-v1",
-    "window_games": 400
+  "performance": {
+    "by_market": {},
+    "settled_games": 0
   },
-  "remaining_games_analyzed": 3,
-  "run_id": "a97677484e8597a5",
-  "target_date": "2026-08-13",
-  "top_picks": [
-    {
-      "away": "Philadelphia Phillies",
-      "game_pk": 823669,
-      "grade": "BON",
-      "heads_agree": true,
-      "home": "Minnesota Twins",
-      "phase": "FINAL",
-      "rank_score": 27.3,
-      "v11_2_probability_for_pick": 0.596012,
-      "v11_3_direction_score": 0.60493,
-      "v11_3_pick": "Minnesota Twins"
-    },
-    {
-      "away": "Milwaukee Brewers",
-      "game_pk": 823915,
-      "grade": "PRUDENCE",
-      "heads_agree": true,
-      "home": "Los Angeles Dodgers",
-      "phase": "LATE",
-      "rank_score": 12.96,
-      "v11_2_probability_for_pick": 0.52024,
-      "v11_3_direction_score": 0.52951,
-      "v11_3_pick": "Los Angeles Dodgers"
-    },
-    {
-      "away": "Texas Rangers",
-      "game_pk": 823995,
-      "grade": "FAIBLE",
-      "heads_agree": true,
-      "home": "Los Angeles Angels",
-      "phase": "LATE",
-      "rank_score": 9.62,
-      "v11_2_probability_for_pick": 0.500555,
-      "v11_3_direction_score": 0.509847,
-      "v11_3_pick": "Los Angeles Angels"
-    }
-  ],
-  "version": "11.3-live-v10-discord-v2"
+  "production": {
+    "ML": "V11",
+    "RUNLINE": "V11",
+    "TOTAL": "V11",
+    "combo": "V11",
+    "engine": "V11 standalone",
+    "legacy_code_dependency": false,
+    "selector": "V11"
+  },
+  "remaining_games_analyzed": 14,
+  "run_id": "a3e37eff2be4f73d",
+  "settled_this_run": 14,
+  "target_date": "2026-08-14",
+  "version": "11.5-standalone-all-markets-v3"
 }
