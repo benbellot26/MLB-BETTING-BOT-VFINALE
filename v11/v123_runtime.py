@@ -29,4 +29,6 @@ def activate():
     selector._score = selection_score_price_symmetric
     from .alternate_runlines_v1231 import install as install_alternate_runlines
     install_alternate_runlines()
+    from .safe_singles_v1231 import install as install_safe_singles
+    install_safe_singles()
     return True
