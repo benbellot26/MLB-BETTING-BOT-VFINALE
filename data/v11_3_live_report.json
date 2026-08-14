@@ -1,50 +1,120 @@
 {
-  "analyzed_at": "2026-08-14T08:20:04.416898+00:00",
+  "analyzed_at": "2026-08-14T11:45:27.897260+00:00",
+  "data_health": {
+    "analyzed_games": 14,
+    "confirmed_lineups": 0,
+    "confirmed_starters": 11,
+    "matched_events": 14,
+    "mean_data_quality": 0.7181,
+    "scheduled_games": 14,
+    "sharp_coverage": {
+      "ML": 14,
+      "RUNLINE": 0,
+      "TOTAL": 0
+    },
+    "usable_lineups": 0,
+    "usable_starters": 11,
+    "winamax_coverage": {
+      "ML": 14,
+      "RUNLINE": 0,
+      "TOTAL": 0
+    }
+  },
   "finance": {
-    "by_market": {},
+    "close_candidate_clv_n": 0,
+    "confirmed_open_bets": 0,
     "longest_losing_streak": 0,
     "losses": 0,
     "max_drawdown_units": 0.0,
+    "mean_close_candidate_clv_pct": null,
+    "mean_sharp_probability_move": null,
+    "positive_close_candidate_clv_rate": null,
     "profit_units": 0,
+    "proposed": 0,
+    "published_recommendations": 0,
     "pushes": 0,
     "roi": null,
     "settled_combos": 0,
     "settled_singles": 0,
+    "sharp_move_n": 0,
     "staked_units": 0,
     "wins": 0
   },
   "historical_reference": {
+    "bootstrap": {
+      "active": true,
+      "betting_profitability_claim": false,
+      "dispersion_active": true,
+      "environment_active": true,
+      "games": 1801,
+      "phase_scope": [
+        "FINAL"
+      ],
+      "run_prior_active": true,
+      "split": {
+        "test": 301,
+        "train": 1200,
+        "validation": 300
+      },
+      "status": "PASS",
+      "version": "historical-bootstrap-v1"
+    },
     "historical_odds_used": false,
     "ml_accuracy": 0.5308162132148806,
     "ml_brier": 0.2511040924287901,
     "ml_logloss": 0.6956229275396945,
-    "runline_proxy_hit_rate": 0.6057745696835092,
-    "source": "frozen historical benchmark only; never imported or used by V11 predictions"
+    "source": "frozen 2026 baseball bootstrap; FINAL-only; not betting-profitability evidence"
   },
+  "ledger_settled_this_run": 0,
+  "matched_events": 14,
   "methodology": {
-    "claim": "V11 is sole production engine. Superiority is accepted only when settled/backtest evidence demonstrates it.",
-    "distribution": "negative-binomial overdispersed score matrix",
-    "execution": "Winamax exact market/line price with EV + edge + safety gate",
-    "pushes": "RL/Total p_win and p_push modeled separately; refunded outcomes included correctly in EV/minimum price",
-    "runs_model": "team offense + lineup batting-order OPS + opponent pitching + shrunk probable starter + park/home advantage + bounded rest/travel/bullpen context",
-    "sharp": "book-level de-vig; >90m stale excluded; freshness weighted; disagreement reduces blend; bounded 12-25% base weight"
+    "calibration": "phase-specific side + push calibration; end-to-end promotion gate",
+    "distribution": "correlated NB mixture; validated historical FINAL fallback; dynamic tail truncation",
+    "execution": "fixed Winamax canonical lines for evaluation; all executable lines for selection",
+    "historical_evidence": "1801-game frozen baseball bootstrap is FINAL-only and never counted as betting-profitability/CLV evidence",
+    "ledger": "PROPOSED -> PUBLISHED -> CONFIRMED_PLACED -> SETTLED",
+    "raw_archive": "runtime/v11/snapshots/2026-08-14_71a454a36c6f1836.json.gz",
+    "runs_model": "immutable structural baseline + validated FINAL historical prior fallback + phase-specific live residual",
+    "source_replay": "runtime/v11/source_replays/2026-08-14_71a454a36c6f1836_sources.json.gz",
+    "staking": "bankroll-aware fractional Kelly; official combos disabled",
+    "uncertainty": "empirical phase/market reliability bins + market disagreement + DQ penalty"
+  },
+  "model": {
+    "active": false,
+    "artifact_error": null,
+    "artifact_status": "ABSENT",
+    "environment_sigma": 0.08,
+    "historical_bootstrap": {
+      "active": true,
+      "phase_scope": [
+        "FINAL"
+      ],
+      "status": "PASS",
+      "version": "historical-bootstrap-v1"
+    },
+    "run_dispersion": 7.5,
+    "version": "structural-only"
   },
   "performance": {
     "by_market": {},
     "settled_games": 0
   },
   "production": {
-    "ML": "V11",
-    "RUNLINE": "V11",
-    "TOTAL": "V11",
-    "combo": "V11",
-    "engine": "V11 standalone",
-    "legacy_code_dependency": false,
-    "selector": "V11"
+    "claim": "COLLECTING",
+    "engine": "V12.2"
+  },
+  "production_evidence": {
+    "clv_observations": 0,
+    "passes": false,
+    "required_clv_observations": 50,
+    "required_settled_bets": 100,
+    "settled_bets": 0,
+    "status": "COLLECTING"
   },
   "remaining_games_analyzed": 14,
-  "run_id": "918ff6dd42f909a9",
-  "settled_this_run": 0,
+  "run_id": "71a454a36c6f1836",
+  "scheduled_games": 14,
+  "schema": "v12-professional-v3",
   "target_date": "2026-08-14",
-  "version": "11.5-standalone-all-markets-v3"
+  "version": "12.2-professional-validation-v3"
 }
