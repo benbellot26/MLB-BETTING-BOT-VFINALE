@@ -1,4 +1,4 @@
-name: MLB Betting Bot V12.2 Production
+name: MLB Betting Bot V12.3 Production
 
 on:
   workflow_dispatch:
@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   run-bot:
-    name: Exécution du Bot V12.2
+    name: Exécution du Bot V12.3
     runs-on: ubuntu-latest
     timeout-minutes: 55
     steps:
@@ -27,45 +27,55 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Validation V12.2
+      - name: Validation V12.3
         run: |
-          python -m py_compile v11/*.py tests/test_v11.py tests/test_historical_bootstrap.py
-          python -m v11.runner --self-test
+          python -m py_compile v11/*.py tests/test_v11.py tests/test_historical_bootstrap.py tests/test_v123.py
           python -m unittest tests.test_v11 tests.test_historical_bootstrap
-          python -m v11.historical_bootstrap --dry-run >/tmp/v12_historical_bootstrap.json
-          python -m v11.train --dry-run
+          python -m unittest tests.test_v123
+          python -m v11.v123_entry --self-test
+          python -m v11.v123_bootstrap --dry-run >/tmp/v12_3_historical_bootstrap.json
+          python -m v11.v123_train --dry-run >/tmp/v12_3_candidate.json
 
-      - name: Ensure validated historical FINAL prior
+      - name: Ensure baseline-safe historical reference
         run: |
           python - <<'PY'
           import json
-          from v11 import historical_bootstrap as hb
+          from v11.methodology_v123 import install
+          install()
+          from v11 import v123_bootstrap as hb
           model = hb.ensure_artifact()
-          if not model.get('active') or model.get('phase_scope') != ['FINAL']:
-              raise SystemExit('Historical bootstrap did not pass FINAL-only validation gates')
+          allowed = {'PASS', 'FAIL', 'COLLECTING', 'INCOMPATIBLE_BASELINE'}
+          if model.get('status') not in allowed:
+              raise SystemExit(f"Unexpected V12.3 bootstrap status: {model.get('status')}")
+          meta = model.get('metadata') or {}
+          if model.get('eligible_for_final_prior') and meta.get('baseline_schema') != hb.BASELINE_SCHEMA:
+              raise SystemExit('Historical prior baseline schema mismatch')
+          if model.get('status') == 'INCOMPATIBLE_BASELINE' and model.get('eligible_for_final_prior'):
+              raise SystemExit('Legacy V10 baseline must never activate a V12.3 prior')
+          if meta.get('test_used_for_activation') is not False:
+              raise SystemExit('Frozen historical test must remain reporting-only')
           print(json.dumps({
-              'version': model.get('version'),
-              'status': model.get('status'),
-              'games': (model.get('metadata') or {}).get('games'),
-              'split': (model.get('metadata') or {}).get('split'),
-              'run_prior_active': bool((model.get('run_correction') or {}).get('active')),
-              'dispersion_active': bool((model.get('dispersion') or {}).get('active')),
-              'environment_active': bool((model.get('environment') or {}).get('active')),
+              'version': model.get('version'), 'status': model.get('status'),
+              'eligible_for_final_prior': model.get('eligible_for_final_prior'),
+              'source_games': meta.get('source_games'), 'native_baseline_games': meta.get('native_baseline_games'),
+              'baseline_schema': meta.get('baseline_schema'),
+              'algorithm_fingerprint': meta.get('algorithm_fingerprint'),
+              'test_used_for_activation': meta.get('test_used_for_activation'),
           }, indent=2, sort_keys=True))
           PY
 
-      - name: Persist historical FINAL prior before predictions
+      - name: Persist V12.3 historical reference before predictions
         run: |
-          git config user.name 'MLB Betting Bot V12.2'
+          git config user.name 'MLB Betting Bot V12.3'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add data/v12_historical_bootstrap_model.json
+          [ -f data/v12_3_historical_bootstrap_model.json ] && git add data/v12_3_historical_bootstrap_model.json
           if ! git diff --cached --quiet; then
-            git commit -m 'data: persist validated historical FINAL prior [skip ci]'
+            git commit -m 'data: persist V12.3 baseline-safe historical reference [skip ci]'
             git pull --rebase origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
 
-      - name: Run V12.2 without Discord
+      - name: Run V12.3 without Discord
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
@@ -76,7 +86,7 @@ jobs:
           V12_DEFER_DISCORD: '1'
         run: |
           mkdir -p data runtime/v11
-          python -m v11.runner
+          python -m v11.v123_entry
 
       - name: Validate proposed state
         run: |
@@ -93,13 +103,13 @@ jobs:
 
       - name: Persist PROPOSED recommendations
         run: |
-          git config user.name 'MLB Betting Bot V12.2'
+          git config user.name 'MLB Betting Bot V12.3'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           [ -f data/v11_3_live.jsonl ] && git add data/v11_3_live.jsonl
           [ -f data/v11_3_live_report.json ] && git add data/v11_3_live_report.json
           [ -f data/v11_bet_ledger.jsonl ] && git add -f data/v11_bet_ledger.jsonl
           if ! git diff --cached --quiet; then
-            git commit -m 'data: persist V12.2 proposed recommendations [skip ci]'
+            git commit -m 'data: persist V12.3 proposed recommendations [skip ci]'
             git pull --rebase origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
@@ -107,30 +117,30 @@ jobs:
       - name: Publish Discord recommendations
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-        run: python -m v11.runner --send-persisted
+        run: python -m v11.v123_entry --send-persisted
 
       - name: Persist PUBLISHED lifecycle state
         run: |
-          git config user.name 'MLB Betting Bot V12.2'
+          git config user.name 'MLB Betting Bot V12.3'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           [ -f data/v11_bet_ledger.jsonl ] && git add -f data/v11_bet_ledger.jsonl
           if ! git diff --cached --quiet; then
-            git commit -m 'data: mark V12.2 recommendations published [skip ci]'
+            git commit -m 'data: mark V12.3 recommendations published [skip ci]'
             git pull --rebase origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
 
       - name: Challenger and evaluation
         run: |
-          python -m v11.train
-          python -m v11.backtest
+          python -m v11.v123_train
+          python -m v11.v123_backtest
 
       - name: Validate research artifacts
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
-          for name in ('data/v12_historical_bootstrap_model.json','data/v11_candidate_model.json','data/v11_point_in_time_backtest.json'):
+          for name in ('data/v12_3_historical_bootstrap_model.json','data/v11_candidate_model.json','data/v11_point_in_time_backtest.json'):
               p=Path(name)
               if p.exists(): json.loads(p.read_text(encoding='utf-8'))
           PY
@@ -147,7 +157,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v12-2-point-in-time-${{ github.run_id }}
+          name: v12-3-point-in-time-${{ github.run_id }}
           path: |
             runtime/v11/snapshots/
             runtime/v11/source_replays/
@@ -168,13 +178,13 @@ jobs:
       - name: Persist research evidence
         if: success()
         run: |
-          git config user.name 'MLB Betting Bot V12.2'
+          git config user.name 'MLB Betting Bot V12.3'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          [ -f data/v12_historical_bootstrap_model.json ] && git add data/v12_historical_bootstrap_model.json
+          [ -f data/v12_3_historical_bootstrap_model.json ] && git add data/v12_3_historical_bootstrap_model.json
           [ -f data/v11_candidate_model.json ] && git add data/v11_candidate_model.json
           [ -f data/v11_point_in_time_backtest.json ] && git add data/v11_point_in_time_backtest.json
           if ! git diff --cached --quiet; then
-            git commit -m 'data: update V12.2 research evidence [skip ci]'
+            git commit -m 'data: update V12.3 research evidence [skip ci]'
             git pull --rebase origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
