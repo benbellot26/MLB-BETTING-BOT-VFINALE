@@ -1,5 +1,5 @@
 {
-  "analyzed_at": "2026-08-15T19:51:46.779793+00:00",
+  "analyzed_at": "2026-08-15T19:55:23.387067+00:00",
   "calibration_health": {
     "by_phase": {
       "EARLY": {
@@ -678,14 +678,14 @@
     "generation": "V12.3.2 value-selection-v1 + V12.4 predictive shadow",
     "historical_evidence": "legacy V10 1,801-game data are diagnostic only until a V12.3 structural baseline exists",
     "ledger": "PROPOSED -> PUBLISHED -> CONFIRMED_PLACED -> SETTLED",
-    "raw_archive": "runtime/v11/snapshots/2026-08-15_14e6b030f32839c3.json.gz",
+    "raw_archive": "runtime/v11/snapshots/2026-08-15_718f0d1c1f17574d.json.gz",
     "runs_model": "immutable structural baseline + validated FINAL historical prior fallback + phase-specific live residual",
     "selection": "informational recommendations use model confidence + conservative EV/edge + DQ + uncertainty + Kelly; Winamax never decides eligibility",
     "selection_confidence": "RL >= 55%; ML/TOTAL >= 58%",
     "selection_price_floor": "reference decimal odds >= 1.40",
     "selection_reference_price": "fresh configured sharp books; exact side/point; second-best effective quote when >=2 books, otherwise single fresh sharp quote",
     "sharp_disagreement": "large model-vs-sharp disagreement reduces selection score but is not a hard directional veto",
-    "source_replay": "runtime/v11/source_replays/2026-08-15_14e6b030f32839c3_sources.json.gz",
+    "source_replay": "runtime/v11/source_replays/2026-08-15_718f0d1c1f17574d_sources.json.gz",
     "staking": "bankroll-aware fractional Kelly; official combos disabled",
     "starter_model": "current season + N-1/N-2 prior affects structural run means",
     "uncertainty": "empirical phase/market reliability bins + market disagreement + DQ penalty",
@@ -2051,50 +2051,50 @@
       }
     },
     "affects_v12_selection": false,
-    "analyzed_at": "2026-08-15T19:51:46.779793+00:00",
+    "analyzed_at": "2026-08-15T19:55:23.387067+00:00",
     "canonicalization": "latest settled pre-game snapshot per game_pk",
     "current_run_disagreements": [
       {
-        "abs_gap": 0.009981000000000018,
-        "baseline_p": 0.553004,
+        "abs_gap": 0.009982000000000046,
+        "baseline_p": 0.553003,
         "challenger": "all_core",
         "crosses_55": true,
         "game": "Boston Red Sox @ Pittsburgh Pirates",
         "game_pk": 823347,
-        "gap": -0.009981000000000018,
+        "gap": -0.009982000000000046,
         "market": "ML",
         "name": "Boston Red Sox",
         "point": null,
-        "v124_p": 0.543023
+        "v124_p": 0.543021
       }
     ],
     "evolution": {
       "has_previous": true,
-      "settled_games_delta": 1,
+      "settled_games_delta": 0,
       "variants": {
         "all_core": {
-          "accuracy": null,
-          "brier": null,
-          "gt55_hit_rate": null,
-          "gt55_n": 3,
-          "logloss": null,
-          "n": 8
+          "accuracy": 0.0,
+          "brier": 0.0,
+          "gt55_hit_rate": 0.0,
+          "gt55_n": 0,
+          "logloss": 0.0,
+          "n": 0
         },
         "baseline_v1232": {
-          "accuracy": null,
-          "brier": null,
-          "gt55_hit_rate": null,
-          "gt55_n": 3,
-          "logloss": null,
-          "n": 8
+          "accuracy": 0.0,
+          "brier": 0.0,
+          "gt55_hit_rate": 0.0,
+          "gt55_n": 0,
+          "logloss": 0.0,
+          "n": 0
         },
         "ensemble": {
-          "accuracy": null,
-          "brier": null,
-          "gt55_hit_rate": null,
-          "gt55_n": 3,
-          "logloss": null,
-          "n": 8
+          "accuracy": 0.0,
+          "brier": 0.0,
+          "gt55_hit_rate": 0.0,
+          "gt55_n": 0,
+          "logloss": 0.0,
+          "n": 0
         }
       }
     },
@@ -2206,7 +2206,7 @@
       "weight_source": "NO_ELIGIBLE_WARM_START"
     },
     "research_only": true,
-    "run_id": "14e6b030f32839c3",
+    "run_id": "718f0d1c1f17574d",
     "schema": "v12-4-research-monitor-v1",
     "target_date": "2026-08-15",
     "v115": {
@@ -2323,7 +2323,7 @@
     },
     "version": "v12.4-research-monitor-v1"
   },
-  "run_id": "14e6b030f32839c3",
+  "run_id": "718f0d1c1f17574d",
   "scheduled_games": 15,
   "schema": "v12-3-professional-v1",
   "shadow_challenger": {
