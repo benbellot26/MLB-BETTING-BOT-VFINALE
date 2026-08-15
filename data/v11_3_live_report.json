@@ -1,5 +1,5 @@
 {
-  "analyzed_at": "2026-08-15T19:55:23.387067+00:00",
+  "analyzed_at": "2026-08-15T20:59:30.370245+00:00",
   "calibration_health": {
     "by_phase": {
       "EARLY": {
@@ -605,21 +605,21 @@
     "schema": "v12-calibration-diagnostics-v2"
   },
   "data_health": {
-    "analyzed_games": 12,
-    "confirmed_lineups": 5,
-    "confirmed_starters": 12,
-    "matched_events": 15,
-    "mean_data_quality": 0.9133,
+    "analyzed_games": 10,
+    "confirmed_lineups": 8,
+    "confirmed_starters": 10,
+    "matched_events": 14,
+    "mean_data_quality": 0.9523,
     "scheduled_games": 15,
     "sharp_coverage": {
-      "ML": 12,
-      "RUNLINE": 12,
-      "TOTAL": 12
+      "ML": 10,
+      "RUNLINE": 10,
+      "TOTAL": 10
     },
-    "usable_lineups": 5,
-    "usable_starters": 12,
+    "usable_lineups": 8,
+    "usable_starters": 10,
     "winamax_coverage": {
-      "ML": 12,
+      "ML": 10,
       "RUNLINE": 0,
       "TOTAL": 0
     }
@@ -666,7 +666,7 @@
     "source": "frozen 2026 baseball bootstrap; FINAL-only; not betting-profitability evidence"
   },
   "ledger_settled_this_run": 0,
-  "matched_events": 15,
+  "matched_events": 14,
   "methodology": {
     "alternate_runlines": "event-level alternate_spreads; evaluates both +/-1.5 pairs when actually available",
     "calibration": "hierarchical market fallback + phase-specific challenger; identity vs Platt vs beta; holdout Brier/LogLoss/ECE; existing stack walk-forward remains mandatory",
@@ -678,14 +678,14 @@
     "generation": "V12.3.2 value-selection-v1 + V12.4 predictive shadow",
     "historical_evidence": "legacy V10 1,801-game data are diagnostic only until a V12.3 structural baseline exists",
     "ledger": "PROPOSED -> PUBLISHED -> CONFIRMED_PLACED -> SETTLED",
-    "raw_archive": "runtime/v11/snapshots/2026-08-15_718f0d1c1f17574d.json.gz",
+    "raw_archive": "runtime/v11/snapshots/2026-08-15_ddbceb8b323b7fe0.json.gz",
     "runs_model": "immutable structural baseline + validated FINAL historical prior fallback + phase-specific live residual",
     "selection": "informational recommendations use model confidence + conservative EV/edge + DQ + uncertainty + Kelly; Winamax never decides eligibility",
     "selection_confidence": "RL >= 55%; ML/TOTAL >= 58%",
     "selection_price_floor": "reference decimal odds >= 1.40",
     "selection_reference_price": "fresh configured sharp books; exact side/point; second-best effective quote when >=2 books, otherwise single fresh sharp quote",
     "sharp_disagreement": "large model-vs-sharp disagreement reduces selection score but is not a hard directional veto",
-    "source_replay": "runtime/v11/source_replays/2026-08-15_718f0d1c1f17574d_sources.json.gz",
+    "source_replay": "runtime/v11/source_replays/2026-08-15_ddbceb8b323b7fe0_sources.json.gz",
     "staking": "bankroll-aware fractional Kelly; official combos disabled",
     "starter_model": "current season + N-1/N-2 prior affects structural run means",
     "uncertainty": "empirical phase/market reliability bins + market disagreement + DQ penalty",
@@ -1764,7 +1764,7 @@
     "status": "COLLECTING",
     "volume_ready": false
   },
-  "remaining_games_analyzed": 12,
+  "remaining_games_analyzed": 10,
   "research_monitor_v124": {
     "ablations": {
       "bullpen_player": {
@@ -2051,21 +2051,47 @@
       }
     },
     "affects_v12_selection": false,
-    "analyzed_at": "2026-08-15T19:55:23.387067+00:00",
+    "analyzed_at": "2026-08-15T20:59:30.370245+00:00",
     "canonicalization": "latest settled pre-game snapshot per game_pk",
     "current_run_disagreements": [
       {
-        "abs_gap": 0.009982000000000046,
-        "baseline_p": 0.553003,
+        "abs_gap": 0.009948999999999986,
+        "baseline_p": 0.553792,
         "challenger": "all_core",
         "crosses_55": true,
         "game": "Boston Red Sox @ Pittsburgh Pirates",
         "game_pk": 823347,
-        "gap": -0.009982000000000046,
+        "gap": -0.009948999999999986,
         "market": "ML",
         "name": "Boston Red Sox",
         "point": null,
-        "v124_p": 0.543021
+        "v124_p": 0.543843
+      },
+      {
+        "abs_gap": 0.00962200000000002,
+        "baseline_p": 0.546832,
+        "challenger": "all_core",
+        "crosses_55": true,
+        "game": "Arizona Diamondbacks @ Atlanta Braves",
+        "game_pk": 824884,
+        "gap": 0.00962200000000002,
+        "market": "ML",
+        "name": "Atlanta Braves",
+        "point": null,
+        "v124_p": 0.556454
+      },
+      {
+        "abs_gap": 0.007937000000000083,
+        "baseline_p": 0.545167,
+        "challenger": "all_core",
+        "crosses_55": true,
+        "game": "Philadelphia Phillies @ Minnesota Twins",
+        "game_pk": 823671,
+        "gap": 0.007937000000000083,
+        "market": "ML",
+        "name": "Philadelphia Phillies",
+        "point": null,
+        "v124_p": 0.553104
       }
     ],
     "evolution": {
@@ -2206,7 +2232,7 @@
       "weight_source": "NO_ELIGIBLE_WARM_START"
     },
     "research_only": true,
-    "run_id": "718f0d1c1f17574d",
+    "run_id": "ddbceb8b323b7fe0",
     "schema": "v12-4-research-monitor-v1",
     "target_date": "2026-08-15",
     "v115": {
@@ -2323,7 +2349,7 @@
     },
     "version": "v12.4-research-monitor-v1"
   },
-  "run_id": "718f0d1c1f17574d",
+  "run_id": "ddbceb8b323b7fe0",
   "scheduled_games": 15,
   "schema": "v12-3-professional-v1",
   "shadow_challenger": {
