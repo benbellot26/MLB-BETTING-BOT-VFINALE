@@ -1,5 +1,5 @@
 {
-  "analyzed_at": "2026-08-15T19:10:46.097931+00:00",
+  "analyzed_at": "2026-08-15T19:51:46.779793+00:00",
   "calibration_health": {
     "by_phase": {
       "EARLY": {
@@ -81,241 +81,520 @@
       },
       "FINAL": {
         "ML": {
-          "confidence_bands": [],
+          "confidence_bands": [
+            {
+              "avg_confidence": 0.612805,
+              "gap": -0.612805,
+              "hi": 0.65,
+              "hit_rate": 0.0,
+              "lo": 0.6,
+              "n": 1
+            }
+          ],
           "observed_effective": {
-            "accuracy": null,
-            "brier": null,
+            "accuracy": 0.0,
+            "brier": 0.37552996802500005,
             "calibration_intercept": null,
             "calibration_slope": null,
-            "ece": null,
-            "logloss": null,
-            "mce": null,
-            "n": 0,
-            "reliability_bins": []
+            "ece": 0.612805,
+            "hit_rate": 0.0,
+            "logloss": 0.948826836886232,
+            "mce": 0.612805,
+            "mean_probability": 0.612805,
+            "n": 1,
+            "reliability_bins": [
+              {
+                "avg_probability": 0.612805,
+                "gap": 0.612805,
+                "hi": 0.65,
+                "hit_rate": 0.0,
+                "lo": 0.6,
+                "n": 1
+              }
+            ]
           },
           "raw_model": {
-            "accuracy": null,
-            "brier": null,
+            "accuracy": 0.0,
+            "brier": 0.37552996802500005,
             "calibration_intercept": null,
             "calibration_slope": null,
-            "ece": null,
-            "logloss": null,
-            "mce": null,
-            "n": 0,
-            "reliability_bins": []
+            "ece": 0.612805,
+            "hit_rate": 0.0,
+            "logloss": 0.948826836886232,
+            "mce": 0.612805,
+            "mean_probability": 0.612805,
+            "n": 1,
+            "reliability_bins": [
+              {
+                "avg_probability": 0.612805,
+                "gap": 0.612805,
+                "hi": 0.65,
+                "hit_rate": 0.0,
+                "lo": 0.6,
+                "n": 1
+              }
+            ]
           }
         },
         "RUNLINE": {
-          "confidence_bands": [],
+          "confidence_bands": [
+            {
+              "avg_confidence": 0.566617,
+              "gap": 0.43338299999999996,
+              "hi": 0.6,
+              "hit_rate": 1.0,
+              "lo": 0.55,
+              "n": 1
+            }
+          ],
           "observed_effective": {
-            "accuracy": null,
-            "brier": null,
+            "accuracy": 1.0,
+            "brier": 0.18782082468900002,
             "calibration_intercept": null,
             "calibration_slope": null,
-            "ece": null,
-            "logloss": null,
-            "mce": null,
-            "n": 0,
-            "reliability_bins": []
+            "ece": 0.433383,
+            "hit_rate": 0.0,
+            "logloss": 0.5680716885059909,
+            "mce": 0.433383,
+            "mean_probability": 0.433383,
+            "n": 1,
+            "reliability_bins": [
+              {
+                "avg_probability": 0.433383,
+                "gap": 0.433383,
+                "hi": 0.45,
+                "hit_rate": 0.0,
+                "lo": 0.4,
+                "n": 1
+              }
+            ]
           },
           "raw_model": {
-            "accuracy": null,
-            "brier": null,
+            "accuracy": 1.0,
+            "brier": 0.18782082468900002,
             "calibration_intercept": null,
             "calibration_slope": null,
-            "ece": null,
-            "logloss": null,
-            "mce": null,
-            "n": 0,
-            "reliability_bins": []
+            "ece": 0.433383,
+            "hit_rate": 0.0,
+            "logloss": 0.5680716885059909,
+            "mce": 0.433383,
+            "mean_probability": 0.433383,
+            "n": 1,
+            "reliability_bins": [
+              {
+                "avg_probability": 0.433383,
+                "gap": 0.433383,
+                "hi": 0.45,
+                "hit_rate": 0.0,
+                "lo": 0.4,
+                "n": 1
+              }
+            ]
           }
         },
         "TOTAL": {
-          "confidence_bands": [],
+          "confidence_bands": [
+            {
+              "avg_confidence": 0.544439,
+              "gap": -0.544439,
+              "hi": 0.55,
+              "hit_rate": 0.0,
+              "lo": 0.5,
+              "n": 1
+            }
+          ],
           "observed_effective": {
-            "accuracy": null,
-            "brier": null,
+            "accuracy": 0.0,
+            "brier": 0.29641382472100003,
             "calibration_intercept": null,
             "calibration_slope": null,
-            "ece": null,
-            "logloss": null,
-            "mce": null,
-            "n": 0,
-            "reliability_bins": []
+            "ece": 0.544439,
+            "hit_rate": 0.0,
+            "logloss": 0.7862256524778604,
+            "mce": 0.544439,
+            "mean_probability": 0.544439,
+            "n": 1,
+            "reliability_bins": [
+              {
+                "avg_probability": 0.544439,
+                "gap": 0.544439,
+                "hi": 0.55,
+                "hit_rate": 0.0,
+                "lo": 0.5,
+                "n": 1
+              }
+            ]
           },
           "raw_model": {
-            "accuracy": null,
-            "brier": null,
+            "accuracy": 0.0,
+            "brier": 0.29641382472100003,
             "calibration_intercept": null,
             "calibration_slope": null,
-            "ece": null,
-            "logloss": null,
-            "mce": null,
-            "n": 0,
-            "reliability_bins": []
+            "ece": 0.544439,
+            "hit_rate": 0.0,
+            "logloss": 0.7862256524778604,
+            "mce": 0.544439,
+            "mean_probability": 0.544439,
+            "n": 1,
+            "reliability_bins": [
+              {
+                "avg_probability": 0.544439,
+                "gap": 0.544439,
+                "hi": 0.55,
+                "hit_rate": 0.0,
+                "lo": 0.5,
+                "n": 1
+              }
+            ]
           }
         }
       },
       "LATE": {
         "ML": {
-          "confidence_bands": [],
+          "confidence_bands": [
+            {
+              "avg_confidence": 0.60912,
+              "gap": -0.60912,
+              "hi": 0.65,
+              "hit_rate": 0.0,
+              "lo": 0.6,
+              "n": 1
+            }
+          ],
           "observed_effective": {
-            "accuracy": null,
-            "brier": null,
+            "accuracy": 0.0,
+            "brier": 0.3710271744,
             "calibration_intercept": null,
             "calibration_slope": null,
-            "ece": null,
-            "logloss": null,
-            "mce": null,
-            "n": 0,
-            "reliability_bins": []
+            "ece": 0.60912,
+            "hit_rate": 0.0,
+            "logloss": 0.9393546714727067,
+            "mce": 0.60912,
+            "mean_probability": 0.60912,
+            "n": 1,
+            "reliability_bins": [
+              {
+                "avg_probability": 0.60912,
+                "gap": 0.60912,
+                "hi": 0.65,
+                "hit_rate": 0.0,
+                "lo": 0.6,
+                "n": 1
+              }
+            ]
           },
           "raw_model": {
-            "accuracy": null,
-            "brier": null,
+            "accuracy": 0.0,
+            "brier": 0.3710271744,
             "calibration_intercept": null,
             "calibration_slope": null,
-            "ece": null,
-            "logloss": null,
-            "mce": null,
-            "n": 0,
-            "reliability_bins": []
+            "ece": 0.60912,
+            "hit_rate": 0.0,
+            "logloss": 0.9393546714727067,
+            "mce": 0.60912,
+            "mean_probability": 0.60912,
+            "n": 1,
+            "reliability_bins": [
+              {
+                "avg_probability": 0.60912,
+                "gap": 0.60912,
+                "hi": 0.65,
+                "hit_rate": 0.0,
+                "lo": 0.6,
+                "n": 1
+              }
+            ]
           }
         },
         "RUNLINE": {
-          "confidence_bands": [],
+          "confidence_bands": [
+            {
+              "avg_confidence": 0.568914,
+              "gap": 0.43108599999999997,
+              "hi": 0.6,
+              "hit_rate": 1.0,
+              "lo": 0.55,
+              "n": 1
+            }
+          ],
           "observed_effective": {
-            "accuracy": null,
-            "brier": null,
+            "accuracy": 1.0,
+            "brier": 0.18583513939600002,
             "calibration_intercept": null,
             "calibration_slope": null,
-            "ece": null,
-            "logloss": null,
-            "mce": null,
-            "n": 0,
-            "reliability_bins": []
+            "ece": 0.431086,
+            "hit_rate": 0.0,
+            "logloss": 0.5640259986339718,
+            "mce": 0.431086,
+            "mean_probability": 0.431086,
+            "n": 1,
+            "reliability_bins": [
+              {
+                "avg_probability": 0.431086,
+                "gap": 0.431086,
+                "hi": 0.45,
+                "hit_rate": 0.0,
+                "lo": 0.4,
+                "n": 1
+              }
+            ]
           },
           "raw_model": {
-            "accuracy": null,
-            "brier": null,
+            "accuracy": 1.0,
+            "brier": 0.18583513939600002,
             "calibration_intercept": null,
             "calibration_slope": null,
-            "ece": null,
-            "logloss": null,
-            "mce": null,
-            "n": 0,
-            "reliability_bins": []
+            "ece": 0.431086,
+            "hit_rate": 0.0,
+            "logloss": 0.5640259986339718,
+            "mce": 0.431086,
+            "mean_probability": 0.431086,
+            "n": 1,
+            "reliability_bins": [
+              {
+                "avg_probability": 0.431086,
+                "gap": 0.431086,
+                "hi": 0.45,
+                "hit_rate": 0.0,
+                "lo": 0.4,
+                "n": 1
+              }
+            ]
           }
         },
         "TOTAL": {
-          "confidence_bands": [],
+          "confidence_bands": [
+            {
+              "avg_confidence": 0.54174,
+              "gap": -0.54174,
+              "hi": 0.55,
+              "hit_rate": 0.0,
+              "lo": 0.5,
+              "n": 1
+            }
+          ],
           "observed_effective": {
-            "accuracy": null,
-            "brier": null,
+            "accuracy": 0.0,
+            "brier": 0.2934822276,
             "calibration_intercept": null,
             "calibration_slope": null,
-            "ece": null,
-            "logloss": null,
-            "mce": null,
-            "n": 0,
-            "reliability_bins": []
+            "ece": 0.54174,
+            "hit_rate": 0.0,
+            "logloss": 0.7803185703509405,
+            "mce": 0.54174,
+            "mean_probability": 0.54174,
+            "n": 1,
+            "reliability_bins": [
+              {
+                "avg_probability": 0.54174,
+                "gap": 0.54174,
+                "hi": 0.55,
+                "hit_rate": 0.0,
+                "lo": 0.5,
+                "n": 1
+              }
+            ]
           },
           "raw_model": {
-            "accuracy": null,
-            "brier": null,
+            "accuracy": 0.0,
+            "brier": 0.2934822276,
             "calibration_intercept": null,
             "calibration_slope": null,
-            "ece": null,
-            "logloss": null,
-            "mce": null,
-            "n": 0,
-            "reliability_bins": []
+            "ece": 0.54174,
+            "hit_rate": 0.0,
+            "logloss": 0.7803185703509405,
+            "mce": 0.54174,
+            "mean_probability": 0.54174,
+            "n": 1,
+            "reliability_bins": [
+              {
+                "avg_probability": 0.54174,
+                "gap": 0.54174,
+                "hi": 0.55,
+                "hit_rate": 0.0,
+                "lo": 0.5,
+                "n": 1
+              }
+            ]
           }
         }
       }
     },
     "champion_active": false,
-    "compatible_games": 0,
+    "compatible_games": 1,
     "generation": "hierarchical identity-vs-platt-vs-beta challenger",
     "global": {
       "ML": {
-        "confidence_bands": [],
+        "confidence_bands": [
+          {
+            "avg_confidence": 0.612805,
+            "gap": -0.612805,
+            "hi": 0.65,
+            "hit_rate": 0.0,
+            "lo": 0.6,
+            "n": 1
+          }
+        ],
         "observed_effective": {
-          "accuracy": null,
-          "brier": null,
+          "accuracy": 0.0,
+          "brier": 0.37552996802500005,
           "calibration_intercept": null,
           "calibration_slope": null,
-          "ece": null,
-          "logloss": null,
-          "mce": null,
-          "n": 0,
-          "reliability_bins": []
+          "ece": 0.612805,
+          "hit_rate": 0.0,
+          "logloss": 0.948826836886232,
+          "mce": 0.612805,
+          "mean_probability": 0.612805,
+          "n": 1,
+          "reliability_bins": [
+            {
+              "avg_probability": 0.612805,
+              "gap": 0.612805,
+              "hi": 0.65,
+              "hit_rate": 0.0,
+              "lo": 0.6,
+              "n": 1
+            }
+          ]
         },
         "raw_model": {
-          "accuracy": null,
-          "brier": null,
+          "accuracy": 0.0,
+          "brier": 0.37552996802500005,
           "calibration_intercept": null,
           "calibration_slope": null,
-          "ece": null,
-          "logloss": null,
-          "mce": null,
-          "n": 0,
-          "reliability_bins": []
+          "ece": 0.612805,
+          "hit_rate": 0.0,
+          "logloss": 0.948826836886232,
+          "mce": 0.612805,
+          "mean_probability": 0.612805,
+          "n": 1,
+          "reliability_bins": [
+            {
+              "avg_probability": 0.612805,
+              "gap": 0.612805,
+              "hi": 0.65,
+              "hit_rate": 0.0,
+              "lo": 0.6,
+              "n": 1
+            }
+          ]
         }
       },
       "RUNLINE": {
-        "confidence_bands": [],
+        "confidence_bands": [
+          {
+            "avg_confidence": 0.566617,
+            "gap": 0.43338299999999996,
+            "hi": 0.6,
+            "hit_rate": 1.0,
+            "lo": 0.55,
+            "n": 1
+          }
+        ],
         "observed_effective": {
-          "accuracy": null,
-          "brier": null,
+          "accuracy": 1.0,
+          "brier": 0.18782082468900002,
           "calibration_intercept": null,
           "calibration_slope": null,
-          "ece": null,
-          "logloss": null,
-          "mce": null,
-          "n": 0,
-          "reliability_bins": []
+          "ece": 0.433383,
+          "hit_rate": 0.0,
+          "logloss": 0.5680716885059909,
+          "mce": 0.433383,
+          "mean_probability": 0.433383,
+          "n": 1,
+          "reliability_bins": [
+            {
+              "avg_probability": 0.433383,
+              "gap": 0.433383,
+              "hi": 0.45,
+              "hit_rate": 0.0,
+              "lo": 0.4,
+              "n": 1
+            }
+          ]
         },
         "raw_model": {
-          "accuracy": null,
-          "brier": null,
+          "accuracy": 1.0,
+          "brier": 0.18782082468900002,
           "calibration_intercept": null,
           "calibration_slope": null,
-          "ece": null,
-          "logloss": null,
-          "mce": null,
-          "n": 0,
-          "reliability_bins": []
+          "ece": 0.433383,
+          "hit_rate": 0.0,
+          "logloss": 0.5680716885059909,
+          "mce": 0.433383,
+          "mean_probability": 0.433383,
+          "n": 1,
+          "reliability_bins": [
+            {
+              "avg_probability": 0.433383,
+              "gap": 0.433383,
+              "hi": 0.45,
+              "hit_rate": 0.0,
+              "lo": 0.4,
+              "n": 1
+            }
+          ]
         }
       },
       "TOTAL": {
-        "confidence_bands": [],
+        "confidence_bands": [
+          {
+            "avg_confidence": 0.544439,
+            "gap": -0.544439,
+            "hi": 0.55,
+            "hit_rate": 0.0,
+            "lo": 0.5,
+            "n": 1
+          }
+        ],
         "observed_effective": {
-          "accuracy": null,
-          "brier": null,
+          "accuracy": 0.0,
+          "brier": 0.29641382472100003,
           "calibration_intercept": null,
           "calibration_slope": null,
-          "ece": null,
-          "logloss": null,
-          "mce": null,
-          "n": 0,
-          "reliability_bins": []
+          "ece": 0.544439,
+          "hit_rate": 0.0,
+          "logloss": 0.7862256524778604,
+          "mce": 0.544439,
+          "mean_probability": 0.544439,
+          "n": 1,
+          "reliability_bins": [
+            {
+              "avg_probability": 0.544439,
+              "gap": 0.544439,
+              "hi": 0.55,
+              "hit_rate": 0.0,
+              "lo": 0.5,
+              "n": 1
+            }
+          ]
         },
         "raw_model": {
-          "accuracy": null,
-          "brier": null,
+          "accuracy": 0.0,
+          "brier": 0.29641382472100003,
           "calibration_intercept": null,
           "calibration_slope": null,
-          "ece": null,
-          "logloss": null,
-          "mce": null,
-          "n": 0,
-          "reliability_bins": []
+          "ece": 0.544439,
+          "hit_rate": 0.0,
+          "logloss": 0.7862256524778604,
+          "mce": 0.544439,
+          "mean_probability": 0.544439,
+          "n": 1,
+          "reliability_bins": [
+            {
+              "avg_probability": 0.544439,
+              "gap": 0.544439,
+              "hi": 0.55,
+              "hit_rate": 0.0,
+              "lo": 0.5,
+              "n": 1
+            }
+          ]
         }
       }
     },
     "global_calibration": {},
-    "latest_games": 0,
+    "latest_games": 1,
     "policy": {
       "alternate_runlines_trainable": false,
       "global_market_fallback": true,
@@ -327,17 +606,17 @@
   },
   "data_health": {
     "analyzed_games": 12,
-    "confirmed_lineups": 3,
+    "confirmed_lineups": 5,
     "confirmed_starters": 12,
     "matched_events": 15,
-    "mean_data_quality": 0.8838,
+    "mean_data_quality": 0.9133,
     "scheduled_games": 15,
     "sharp_coverage": {
       "ML": 12,
       "RUNLINE": 12,
       "TOTAL": 12
     },
-    "usable_lineups": 3,
+    "usable_lineups": 5,
     "usable_starters": 12,
     "winamax_coverage": {
       "ML": 12,
@@ -399,14 +678,14 @@
     "generation": "V12.3.2 value-selection-v1 + V12.4 predictive shadow",
     "historical_evidence": "legacy V10 1,801-game data are diagnostic only until a V12.3 structural baseline exists",
     "ledger": "PROPOSED -> PUBLISHED -> CONFIRMED_PLACED -> SETTLED",
-    "raw_archive": "runtime/v11/snapshots/2026-08-15_3403c7a943b8d363.json.gz",
+    "raw_archive": "runtime/v11/snapshots/2026-08-15_14e6b030f32839c3.json.gz",
     "runs_model": "immutable structural baseline + validated FINAL historical prior fallback + phase-specific live residual",
     "selection": "informational recommendations use model confidence + conservative EV/edge + DQ + uncertainty + Kelly; Winamax never decides eligibility",
     "selection_confidence": "RL >= 55%; ML/TOTAL >= 58%",
     "selection_price_floor": "reference decimal odds >= 1.40",
     "selection_reference_price": "fresh configured sharp books; exact side/point; second-best effective quote when >=2 books, otherwise single fresh sharp quote",
     "sharp_disagreement": "large model-vs-sharp disagreement reduces selection score but is not a hard directional veto",
-    "source_replay": "runtime/v11/source_replays/2026-08-15_3403c7a943b8d363_sources.json.gz",
+    "source_replay": "runtime/v11/source_replays/2026-08-15_14e6b030f32839c3_sources.json.gz",
     "staking": "bankroll-aware fractional Kelly; official combos disabled",
     "starter_model": "current season + N-1/N-2 prior affects structural run means",
     "uncertainty": "empirical phase/market reliability bins + market disagreement + DQ penalty",
@@ -434,17 +713,17 @@
   "performance": {
     "by_market": {
       "ML": {
-        "accuracy": 0.5714285714285714,
-        "brier": 0.2802029771428572,
-        "logloss": 0.7542144178571428,
-        "n": 14,
+        "accuracy": 0.5333333333333333,
+        "brier": 0.28655811,
+        "logloss": 0.7671885793333334,
+        "n": 15,
         "selection": "canonical main line",
-        "sharp_brier": 0.2668040392857143,
-        "sharp_logloss": 0.7272971685714286,
+        "sharp_brier": 0.271091672,
+        "sharp_logloss": 0.735922426,
         "wins": 8
       }
     },
-    "settled_games": 14
+    "settled_games": 15
   },
   "predictive_v124": {
     "activation": {
@@ -502,8 +781,315 @@
       }
     },
     "schema": "v12-4-shadow-metrics-v1",
-    "settled_games": 0,
-    "variants": {},
+    "settled_games": 1,
+    "variants": {
+      "all_core": {
+        "accuracy": 0.5,
+        "brier": 0.23172879970450005,
+        "by_market": {
+          "ML": {
+            "accuracy": 0.5,
+            "brier": 0.38159158836100004,
+            "gt55_hit_rate": 0.0,
+            "gt55_n": 1,
+            "logloss": 0.9616307297182588,
+            "n": 2
+          },
+          "RUNLINE": {
+            "accuracy": 0.5,
+            "brier": 0.125116191364,
+            "gt55_hit_rate": 1.0,
+            "gt55_n": 2,
+            "logloss": 0.4249594491453315,
+            "n": 4
+          },
+          "TOTAL": {
+            "accuracy": 0.5,
+            "brier": 0.29509122772900004,
+            "gt55_hit_rate": null,
+            "gt55_n": 0,
+            "logloss": 0.7835599721706507,
+            "n": 2
+          }
+        },
+        "gt55_hit_rate": 0.6666666666666666,
+        "gt55_n": 3,
+        "logloss": 0.6487774000448931,
+        "n": 8
+      },
+      "baseline_v1232": {
+        "accuracy": 0.5,
+        "brier": 0.22869997516274998,
+        "by_market": {
+          "ML": {
+            "accuracy": 0.5,
+            "brier": 0.37552996802500005,
+            "gt55_hit_rate": 0.0,
+            "gt55_n": 1,
+            "logloss": 0.948826836886232,
+            "n": 2
+          },
+          "RUNLINE": {
+            "accuracy": 0.5,
+            "brier": 0.12142805395249999,
+            "gt55_hit_rate": 1.0,
+            "gt55_n": 2,
+            "logloss": 0.417711584242287,
+            "n": 4
+          },
+          "TOTAL": {
+            "accuracy": 0.5,
+            "brier": 0.29641382472100003,
+            "gt55_hit_rate": null,
+            "gt55_n": 0,
+            "logloss": 0.7862256524778604,
+            "n": 2
+          }
+        },
+        "gt55_hit_rate": 0.6666666666666666,
+        "gt55_n": 3,
+        "logloss": 0.6426189144621666,
+        "n": 8
+      },
+      "ensemble": {
+        "accuracy": 0.5,
+        "brier": 0.22738230037799995,
+        "by_market": {
+          "ML": {
+            "accuracy": 0.5,
+            "brier": 0.366753782404,
+            "gt55_hit_rate": 0.0,
+            "gt55_n": 1,
+            "logloss": 0.9303947272604289,
+            "n": 2
+          },
+          "RUNLINE": {
+            "accuracy": 0.5,
+            "brier": 0.126051739754,
+            "gt55_hit_rate": 1.0,
+            "gt55_n": 2,
+            "logloss": 0.43022292365198056,
+            "n": 4
+          },
+          "TOTAL": {
+            "accuracy": 0.5,
+            "brier": 0.29067193959999993,
+            "gt55_hit_rate": null,
+            "gt55_n": 0,
+            "logloss": 0.7746609697434914,
+            "n": 2
+          }
+        },
+        "gt55_hit_rate": 0.6666666666666666,
+        "gt55_n": 3,
+        "logloss": 0.6413753860769704,
+        "n": 8
+      },
+      "only_bullpen_player": {
+        "accuracy": 0.5,
+        "brier": 0.22389179159649997,
+        "by_market": {
+          "ML": {
+            "accuracy": 0.5,
+            "brier": 0.37445342947599997,
+            "gt55_hit_rate": 0.0,
+            "gt55_n": 1,
+            "logloss": 0.9465592358944408,
+            "n": 2
+          },
+          "RUNLINE": {
+            "accuracy": 0.5,
+            "brier": 0.1200565139425,
+            "gt55_hit_rate": 1.0,
+            "gt55_n": 2,
+            "logloss": 0.4147759204858687,
+            "n": 4
+          },
+          "TOTAL": {
+            "accuracy": 0.5,
+            "brier": 0.28100070902499996,
+            "gt55_hit_rate": null,
+            "gt55_n": 0,
+            "logloss": 0.7552247323681557,
+            "n": 2
+          }
+        },
+        "gt55_hit_rate": 0.6666666666666666,
+        "gt55_n": 3,
+        "logloss": 0.6328339523085834,
+        "n": 8
+      },
+      "only_lineup_player": {
+        "accuracy": 0.5,
+        "brier": 0.23242976908875,
+        "by_market": {
+          "ML": {
+            "accuracy": 0.5,
+            "brier": 0.37934635992099996,
+            "gt55_hit_rate": 0.0,
+            "gt55_n": 1,
+            "logloss": 0.9568809824157871,
+            "n": 2
+          },
+          "RUNLINE": {
+            "accuracy": 0.5,
+            "brier": 0.12277418427650001,
+            "gt55_hit_rate": 1.0,
+            "gt55_n": 2,
+            "logloss": 0.4200726860374379,
+            "n": 4
+          },
+          "TOTAL": {
+            "accuracy": 0.5,
+            "brier": 0.30482434788099994,
+            "gt55_hit_rate": 0.0,
+            "gt55_n": 1,
+            "logloss": 0.8032053797416963,
+            "n": 2
+          }
+        },
+        "gt55_hit_rate": 0.5,
+        "gt55_n": 4,
+        "logloss": 0.6500579335580897,
+        "n": 8
+      },
+      "only_platoon": {
+        "accuracy": 0.5,
+        "brier": 0.22869997516274998,
+        "by_market": {
+          "ML": {
+            "accuracy": 0.5,
+            "brier": 0.37552996802500005,
+            "gt55_hit_rate": 0.0,
+            "gt55_n": 1,
+            "logloss": 0.948826836886232,
+            "n": 2
+          },
+          "RUNLINE": {
+            "accuracy": 0.5,
+            "brier": 0.12142805395249999,
+            "gt55_hit_rate": 1.0,
+            "gt55_n": 2,
+            "logloss": 0.417711584242287,
+            "n": 4
+          },
+          "TOTAL": {
+            "accuracy": 0.5,
+            "brier": 0.29641382472100003,
+            "gt55_hit_rate": null,
+            "gt55_n": 0,
+            "logloss": 0.7862256524778604,
+            "n": 2
+          }
+        },
+        "gt55_hit_rate": 0.6666666666666666,
+        "gt55_n": 3,
+        "logloss": 0.6426189144621666,
+        "n": 8
+      },
+      "only_starter_ip": {
+        "accuracy": 0.5,
+        "brier": 0.22925017210150003,
+        "by_market": {
+          "ML": {
+            "accuracy": 0.5,
+            "brier": 0.37943998416900004,
+            "gt55_hit_rate": 0.0,
+            "gt55_n": 1,
+            "logloss": 0.9570788728007829,
+            "n": 2
+          },
+          "RUNLINE": {
+            "accuracy": 0.5,
+            "brier": 0.12195688228649999,
+            "gt55_hit_rate": 1.0,
+            "gt55_n": 2,
+            "logloss": 0.4181897498915771,
+            "n": 4
+          },
+          "TOTAL": {
+            "accuracy": 0.5,
+            "brier": 0.293646939664,
+            "gt55_hit_rate": null,
+            "gt55_n": 0,
+            "logloss": 0.7806503148059936,
+            "n": 2
+          }
+        },
+        "gt55_hit_rate": 0.6666666666666666,
+        "gt55_n": 3,
+        "logloss": 0.6435271718474826,
+        "n": 8
+      },
+      "only_statcast": {
+        "accuracy": 0.5,
+        "brier": 0.23110415272449997,
+        "by_market": {
+          "ML": {
+            "accuracy": 0.5,
+            "brier": 0.37797658080399993,
+            "gt55_hit_rate": 0.0,
+            "gt55_n": 1,
+            "logloss": 0.9539874069636496,
+            "n": 2
+          },
+          "RUNLINE": {
+            "accuracy": 0.5,
+            "brier": 0.12229269276249999,
+            "gt55_hit_rate": 1.0,
+            "gt55_n": 2,
+            "logloss": 0.4192310123637031,
+            "n": 4
+          },
+          "TOTAL": {
+            "accuracy": 0.5,
+            "brier": 0.30185464456899996,
+            "gt55_hit_rate": null,
+            "gt55_n": 0,
+            "logloss": 0.7972041018218345,
+            "n": 2
+          }
+        },
+        "gt55_hit_rate": 0.6666666666666666,
+        "gt55_n": 3,
+        "logloss": 0.6474133833782226,
+        "n": 8
+      },
+      "only_weather_park": {
+        "accuracy": 0.5,
+        "brier": 0.2299949911515,
+        "by_market": {
+          "ML": {
+            "accuracy": 0.5,
+            "brier": 0.375723639369,
+            "gt55_hit_rate": 0.0,
+            "gt55_n": 1,
+            "logloss": 0.9492349832872935,
+            "n": 2
+          },
+          "RUNLINE": {
+            "accuracy": 0.5,
+            "brier": 0.121783753018,
+            "gt55_hit_rate": 1.0,
+            "gt55_n": 2,
+            "logloss": 0.4184873034797457,
+            "n": 4
+          },
+          "TOTAL": {
+            "accuracy": 0.5,
+            "brier": 0.30068881920100005,
+            "gt55_hit_rate": null,
+            "gt55_n": 0,
+            "logloss": 0.7948499494925771,
+            "n": 2
+          }
+        },
+        "gt55_hit_rate": 0.6666666666666666,
+        "gt55_n": 3,
+        "logloss": 0.6452648849348405,
+        "n": 8
+      }
+    },
     "version": "12.4-predictive-core-shadow-v1",
     "weight_optimizer": {
       "active_for_v124_shadow": false,
@@ -804,12 +1390,58 @@
       "historical_weight_share": 0.0,
       "in_sample_diagnostic": {
         "baseline": {
-          "games": 0,
-          "options": 0
+          "brier": 0.22869997516274998,
+          "by_market": {
+            "ML": {
+              "brier": 0.37552996802500005,
+              "logloss": 0.948826836886232,
+              "n": 2
+            },
+            "RUNLINE": {
+              "brier": 0.12142805395250002,
+              "logloss": 0.417711584242287,
+              "n": 4
+            },
+            "TOTAL": {
+              "brier": 0.29641382472100003,
+              "logloss": 0.7862256524778604,
+              "n": 2
+            }
+          },
+          "games": 1,
+          "gt55_hit_rate": 0.6666666666666666,
+          "gt55_n": 3,
+          "logloss": 0.6426189144621666,
+          "options": 8,
+          "team_run_mae": 1.0928615081154784,
+          "total_run_mae": 1.3291008817906533
         },
         "optimized": {
-          "games": 0,
-          "options": 0
+          "brier": 0.22869997516274998,
+          "by_market": {
+            "ML": {
+              "brier": 0.37552996802500005,
+              "logloss": 0.948826836886232,
+              "n": 2
+            },
+            "RUNLINE": {
+              "brier": 0.12142805395250002,
+              "logloss": 0.417711584242287,
+              "n": 4
+            },
+            "TOTAL": {
+              "brier": 0.29641382472100003,
+              "logloss": 0.7862256524778604,
+              "n": 2
+            }
+          },
+          "games": 1,
+          "gt55_hit_rate": 0.6666666666666666,
+          "gt55_n": 3,
+          "logloss": 0.6426189144621666,
+          "options": 8,
+          "team_run_mae": 1.0928615081154784,
+          "total_run_mae": 1.3291008817906533
         }
       },
       "mature_games": 250,
@@ -888,7 +1520,7 @@
           "verdict": "WATCH"
         }
       },
-      "native_settled_games": 0,
+      "native_settled_games": 1,
       "native_weight_share": 0.0,
       "native_weights": {
         "bullpen_player": 0.0,
@@ -916,7 +1548,7 @@
       },
       "research_only": true,
       "schema": "v12-4-weight-optimizer-v1",
-      "settled_games": 0,
+      "settled_games": 1,
       "stage": "COLLECT",
       "status": "COLLECTING",
       "version": "v12.4-weight-optimizer-v1",
@@ -941,17 +1573,136 @@
       "affects_v12_selection": false,
       "in_sample_diagnostic": {
         "baseline": {
-          "games": 0,
-          "options": 0
+          "brier": 0.22869997516274998,
+          "by_market": {
+            "ML": {
+              "brier": 0.37552996802500005,
+              "logloss": 0.948826836886232,
+              "n": 2
+            },
+            "RUNLINE": {
+              "brier": 0.12142805395250002,
+              "logloss": 0.417711584242287,
+              "n": 4
+            },
+            "TOTAL": {
+              "brier": 0.29641382472100003,
+              "logloss": 0.7862256524778604,
+              "n": 2
+            }
+          },
+          "games": 1,
+          "gt55_hit_rate": 0.6666666666666666,
+          "gt55_n": 3,
+          "logloss": 0.6426189144621666,
+          "options": 8,
+          "team_run_mae": 1.0928615081154784,
+          "total_run_mae": 1.3291008817906533
         },
         "optimized": {
-          "games": 0,
-          "options": 0
+          "brier": 0.22869997516274998,
+          "by_market": {
+            "ML": {
+              "brier": 0.37552996802500005,
+              "logloss": 0.948826836886232,
+              "n": 2
+            },
+            "RUNLINE": {
+              "brier": 0.12142805395250002,
+              "logloss": 0.417711584242287,
+              "n": 4
+            },
+            "TOTAL": {
+              "brier": 0.29641382472100003,
+              "logloss": 0.7862256524778604,
+              "n": 2
+            }
+          },
+          "games": 1,
+          "gt55_hit_rate": 0.6666666666666666,
+          "gt55_n": 3,
+          "logloss": 0.6426189144621666,
+          "options": 8,
+          "team_run_mae": 1.0928615081154784,
+          "total_run_mae": 1.3291008817906533
         }
       },
       "mature_games": 250,
       "minimum_games": 75,
-      "modules": {},
+      "modules": {
+        "bullpen_player": {
+          "brier_improvement": 0.004808183566250013,
+          "learned_weight": 0.0,
+          "logloss_improvement": 0.009784962153583154,
+          "paired_objective_ci95": [
+            null,
+            null
+          ],
+          "paired_objective_improvement": 0.007002657547979463,
+          "team_run_mae_improvement": 0.014243740766679336,
+          "verdict": "WATCH"
+        },
+        "lineup_player": {
+          "brier_improvement": -0.0035215419789837443,
+          "learned_weight": 0.0,
+          "logloss_improvement": -0.007023273430052601,
+          "paired_objective_ci95": [
+            null,
+            null
+          ],
+          "paired_objective_improvement": -0.005481246549770724,
+          "team_run_mae_improvement": -0.024569004736670896,
+          "verdict": "WATCH"
+        },
+        "platoon": {
+          "brier_improvement": 0.0,
+          "learned_weight": 0.0,
+          "logloss_improvement": 0.0,
+          "paired_objective_ci95": [
+            null,
+            null
+          ],
+          "paired_objective_improvement": 0.0,
+          "team_run_mae_improvement": 0.0,
+          "verdict": "WATCH"
+        },
+        "starter_ip": {
+          "brier_improvement": -0.0005302059108448498,
+          "learned_weight": 0.0,
+          "logloss_improvement": -0.0008750924662787041,
+          "paired_objective_ci95": [
+            null,
+            null
+          ],
+          "paired_objective_improvement": -0.0012113207550351057,
+          "team_run_mae_improvement": -0.01960674843666932,
+          "verdict": "WATCH"
+        },
+        "statcast": {
+          "brier_improvement": -0.002042487099272572,
+          "learned_weight": 0.0,
+          "logloss_improvement": -0.004072797437087328,
+          "paired_objective_ci95": [
+            null,
+            null
+          ],
+          "paired_objective_improvement": -0.0031762440004309833,
+          "team_run_mae_improvement": -0.014165826571399087,
+          "verdict": "WATCH"
+        },
+        "weather_park": {
+          "brier_improvement": -0.001295015988750009,
+          "learned_weight": 0.0,
+          "logloss_improvement": -0.0026459704726738975,
+          "paired_objective_ci95": [
+            null,
+            null
+          ],
+          "paired_objective_improvement": -0.001877935885447879,
+          "team_run_mae_improvement": -0.003389835101613059,
+          "verdict": "WATCH"
+        }
+      },
       "objective": {
         "coverage_adjusted": true,
         "probability": "0.50 LogLoss + 0.35 Brier",
@@ -969,7 +1720,7 @@
       },
       "research_only": true,
       "schema": "v12-4-weight-optimizer-v1",
-      "settled_games": 0,
+      "settled_games": 1,
       "stage": "COLLECT",
       "status": "COLLECTING",
       "version": "v12.4-weight-optimizer-v1",
@@ -1025,13 +1776,38 @@
         "label": "Bullpen",
         "logloss_improvement": -0.0005385468325463938,
         "metrics": {
-          "accuracy": null,
-          "brier": null,
-          "by_market": {},
-          "gt55_hit_rate": null,
-          "gt55_n": 0,
-          "logloss": null,
-          "n": 0
+          "accuracy": 0.5,
+          "brier": 0.22389179159649997,
+          "by_market": {
+            "ML": {
+              "accuracy": 0.5,
+              "brier": 0.37445342947599997,
+              "gt55_hit_rate": 0.0,
+              "gt55_n": 1,
+              "logloss": 0.9465592358944408,
+              "n": 2
+            },
+            "RUNLINE": {
+              "accuracy": 0.5,
+              "brier": 0.1200565139425,
+              "gt55_hit_rate": 1.0,
+              "gt55_n": 2,
+              "logloss": 0.4147759204858687,
+              "n": 4
+            },
+            "TOTAL": {
+              "accuracy": 0.5,
+              "brier": 0.28100070902499996,
+              "gt55_hit_rate": null,
+              "gt55_n": 0,
+              "logloss": 0.7552247323681557,
+              "n": 2
+            }
+          },
+          "gt55_hit_rate": 0.6666666666666666,
+          "gt55_n": 3,
+          "logloss": 0.6328339523085834,
+          "n": 8
         },
         "objective_improvement": -0.0003809713837062305,
         "team_run_mae_improvement": -0.0008409635159645212,
@@ -1047,13 +1823,38 @@
         "label": "Lineup",
         "logloss_improvement": -0.0006743708360728018,
         "metrics": {
-          "accuracy": null,
-          "brier": null,
-          "by_market": {},
-          "gt55_hit_rate": null,
-          "gt55_n": 0,
-          "logloss": null,
-          "n": 0
+          "accuracy": 0.5,
+          "brier": 0.23242976908875,
+          "by_market": {
+            "ML": {
+              "accuracy": 0.5,
+              "brier": 0.37934635992099996,
+              "gt55_hit_rate": 0.0,
+              "gt55_n": 1,
+              "logloss": 0.9568809824157871,
+              "n": 2
+            },
+            "RUNLINE": {
+              "accuracy": 0.5,
+              "brier": 0.12277418427650001,
+              "gt55_hit_rate": 1.0,
+              "gt55_n": 2,
+              "logloss": 0.4200726860374379,
+              "n": 4
+            },
+            "TOTAL": {
+              "accuracy": 0.5,
+              "brier": 0.30482434788099994,
+              "gt55_hit_rate": 0.0,
+              "gt55_n": 1,
+              "logloss": 0.8032053797416963,
+              "n": 2
+            }
+          },
+          "gt55_hit_rate": 0.5,
+          "gt55_n": 4,
+          "logloss": 0.6500579335580897,
+          "n": 8
         },
         "objective_improvement": -0.0005604166475434863,
         "team_run_mae_improvement": -0.003820997308473295,
@@ -1069,13 +1870,38 @@
         "label": "Platoon",
         "logloss_improvement": 4.467255244255952e-05,
         "metrics": {
-          "accuracy": null,
-          "brier": null,
-          "by_market": {},
-          "gt55_hit_rate": null,
-          "gt55_n": 0,
-          "logloss": null,
-          "n": 0
+          "accuracy": 0.5,
+          "brier": 0.22869997516274998,
+          "by_market": {
+            "ML": {
+              "accuracy": 0.5,
+              "brier": 0.37552996802500005,
+              "gt55_hit_rate": 0.0,
+              "gt55_n": 1,
+              "logloss": 0.948826836886232,
+              "n": 2
+            },
+            "RUNLINE": {
+              "accuracy": 0.5,
+              "brier": 0.12142805395249999,
+              "gt55_hit_rate": 1.0,
+              "gt55_n": 2,
+              "logloss": 0.417711584242287,
+              "n": 4
+            },
+            "TOTAL": {
+              "accuracy": 0.5,
+              "brier": 0.29641382472100003,
+              "gt55_hit_rate": null,
+              "gt55_n": 0,
+              "logloss": 0.7862256524778604,
+              "n": 2
+            }
+          },
+          "gt55_hit_rate": 0.6666666666666666,
+          "gt55_n": 3,
+          "logloss": 0.6426189144621666,
+          "n": 8
         },
         "objective_improvement": 5.201649947592856e-05,
         "team_run_mae_improvement": 0.0007198097233471756,
@@ -1091,13 +1917,38 @@
         "label": "Starter IP",
         "logloss_improvement": -6.447340861326367e-05,
         "metrics": {
-          "accuracy": null,
-          "brier": null,
-          "by_market": {},
-          "gt55_hit_rate": null,
-          "gt55_n": 0,
-          "logloss": null,
-          "n": 0
+          "accuracy": 0.5,
+          "brier": 0.22925017210150003,
+          "by_market": {
+            "ML": {
+              "accuracy": 0.5,
+              "brier": 0.37943998416900004,
+              "gt55_hit_rate": 0.0,
+              "gt55_n": 1,
+              "logloss": 0.9570788728007829,
+              "n": 2
+            },
+            "RUNLINE": {
+              "accuracy": 0.5,
+              "brier": 0.12195688228649999,
+              "gt55_hit_rate": 1.0,
+              "gt55_n": 2,
+              "logloss": 0.4181897498915771,
+              "n": 4
+            },
+            "TOTAL": {
+              "accuracy": 0.5,
+              "brier": 0.293646939664,
+              "gt55_hit_rate": null,
+              "gt55_n": 0,
+              "logloss": 0.7806503148059936,
+              "n": 2
+            }
+          },
+          "gt55_hit_rate": 0.6666666666666666,
+          "gt55_n": 3,
+          "logloss": 0.6435271718474826,
+          "n": 8
         },
         "objective_improvement": 1.101057179524952e-05,
         "team_run_mae_improvement": 0.001754211519422899,
@@ -1113,13 +1964,38 @@
         "label": "Statcast",
         "logloss_improvement": -1.1851950704078185e-05,
         "metrics": {
-          "accuracy": null,
-          "brier": null,
-          "by_market": {},
-          "gt55_hit_rate": null,
-          "gt55_n": 0,
-          "logloss": null,
-          "n": 0
+          "accuracy": 0.5,
+          "brier": 0.23110415272449997,
+          "by_market": {
+            "ML": {
+              "accuracy": 0.5,
+              "brier": 0.37797658080399993,
+              "gt55_hit_rate": 0.0,
+              "gt55_n": 1,
+              "logloss": 0.9539874069636496,
+              "n": 2
+            },
+            "RUNLINE": {
+              "accuracy": 0.5,
+              "brier": 0.12229269276249999,
+              "gt55_hit_rate": 1.0,
+              "gt55_n": 2,
+              "logloss": 0.4192310123637031,
+              "n": 4
+            },
+            "TOTAL": {
+              "accuracy": 0.5,
+              "brier": 0.30185464456899996,
+              "gt55_hit_rate": null,
+              "gt55_n": 0,
+              "logloss": 0.7972041018218345,
+              "n": 2
+            }
+          },
+          "gt55_hit_rate": 0.6666666666666666,
+          "gt55_n": 3,
+          "logloss": 0.6474133833782226,
+          "n": 8
         },
         "objective_improvement": -7.090052654149212e-05,
         "team_run_mae_improvement": -0.002216992418174968,
@@ -1135,13 +2011,38 @@
         "label": "Weather x Park",
         "logloss_improvement": 0.0,
         "metrics": {
-          "accuracy": null,
-          "brier": null,
-          "by_market": {},
-          "gt55_hit_rate": null,
-          "gt55_n": 0,
-          "logloss": null,
-          "n": 0
+          "accuracy": 0.5,
+          "brier": 0.2299949911515,
+          "by_market": {
+            "ML": {
+              "accuracy": 0.5,
+              "brier": 0.375723639369,
+              "gt55_hit_rate": 0.0,
+              "gt55_n": 1,
+              "logloss": 0.9492349832872935,
+              "n": 2
+            },
+            "RUNLINE": {
+              "accuracy": 0.5,
+              "brier": 0.121783753018,
+              "gt55_hit_rate": 1.0,
+              "gt55_n": 2,
+              "logloss": 0.4184873034797457,
+              "n": 4
+            },
+            "TOTAL": {
+              "accuracy": 0.5,
+              "brier": 0.30068881920100005,
+              "gt55_hit_rate": null,
+              "gt55_n": 0,
+              "logloss": 0.7948499494925771,
+              "n": 2
+            }
+          },
+          "gt55_hit_rate": 0.6666666666666666,
+          "gt55_n": 3,
+          "logloss": 0.6452648849348405,
+          "n": 8
         },
         "objective_improvement": 0.0,
         "team_run_mae_improvement": 0.0,
@@ -1150,40 +2051,52 @@
       }
     },
     "affects_v12_selection": false,
-    "analyzed_at": "2026-08-15T19:10:46.097931+00:00",
+    "analyzed_at": "2026-08-15T19:51:46.779793+00:00",
     "canonicalization": "latest settled pre-game snapshot per game_pk",
     "current_run_disagreements": [
       {
-        "abs_gap": 0.011515000000000053,
-        "baseline_p": 0.554416,
+        "abs_gap": 0.009981000000000018,
+        "baseline_p": 0.553004,
         "challenger": "all_core",
         "crosses_55": true,
         "game": "Boston Red Sox @ Pittsburgh Pirates",
         "game_pk": 823347,
-        "gap": -0.011515000000000053,
+        "gap": -0.009981000000000018,
         "market": "ML",
         "name": "Boston Red Sox",
         "point": null,
-        "v124_p": 0.542901
-      },
-      {
-        "abs_gap": 0.002854999999999941,
-        "baseline_p": 0.547536,
-        "challenger": "all_core",
-        "crosses_55": true,
-        "game": "Arizona Diamondbacks @ Atlanta Braves",
-        "game_pk": 824884,
-        "gap": 0.002854999999999941,
-        "market": "ML",
-        "name": "Atlanta Braves",
-        "point": null,
-        "v124_p": 0.550391
+        "v124_p": 0.543023
       }
     ],
     "evolution": {
       "has_previous": true,
-      "settled_games_delta": 0,
-      "variants": {}
+      "settled_games_delta": 1,
+      "variants": {
+        "all_core": {
+          "accuracy": null,
+          "brier": null,
+          "gt55_hit_rate": null,
+          "gt55_n": 3,
+          "logloss": null,
+          "n": 8
+        },
+        "baseline_v1232": {
+          "accuracy": null,
+          "brier": null,
+          "gt55_hit_rate": null,
+          "gt55_n": 3,
+          "logloss": null,
+          "n": 8
+        },
+        "ensemble": {
+          "accuracy": null,
+          "brier": null,
+          "gt55_hit_rate": null,
+          "gt55_n": 3,
+          "logloss": null,
+          "n": 8
+        }
+      }
     },
     "guardrails": {
       "automatic_promotion": false,
@@ -1281,33 +2194,136 @@
       "historical_warm_start_eligible": false,
       "mature_games": 250,
       "minimum_games": 75,
-      "minimum_progress": 0.0,
+      "minimum_progress": 0.013333333333333334,
       "next_target": 75,
       "optimized_shadow_active": false,
-      "remaining_to_minimum": 75,
-      "remaining_to_next_target": 75,
-      "settled_games": 0,
+      "remaining_to_minimum": 74,
+      "remaining_to_next_target": 74,
+      "settled_games": 1,
       "stage": "COLLECT",
       "status": "COLLECTING • HIST-DIAG 1801",
       "walk_forward_ready_games": 150,
       "weight_source": "NO_ELIGIBLE_WARM_START"
     },
     "research_only": true,
-    "run_id": "3403c7a943b8d363",
+    "run_id": "14e6b030f32839c3",
     "schema": "v12-4-research-monitor-v1",
     "target_date": "2026-08-15",
     "v115": {
       "affects_v12_selection": false,
-      "consensus_gt55_hit_rate": null,
-      "consensus_gt55_n": 0,
-      "settled_games": 0,
+      "consensus_gt55_hit_rate": 0.5,
+      "consensus_gt55_n": 2,
+      "settled_games": 1,
       "strong_disagreement_hit_rate": null,
       "strong_disagreement_n": 0
     },
-    "variants": {},
+    "variants": {
+      "all_core": {
+        "accuracy": 0.5,
+        "brier": 0.23172879970450005,
+        "by_market": {
+          "ML": {
+            "accuracy": 0.5,
+            "brier": 0.38159158836100004,
+            "gt55_hit_rate": 0.0,
+            "gt55_n": 1,
+            "logloss": 0.9616307297182588,
+            "n": 2
+          },
+          "RUNLINE": {
+            "accuracy": 0.5,
+            "brier": 0.125116191364,
+            "gt55_hit_rate": 1.0,
+            "gt55_n": 2,
+            "logloss": 0.4249594491453315,
+            "n": 4
+          },
+          "TOTAL": {
+            "accuracy": 0.5,
+            "brier": 0.29509122772900004,
+            "gt55_hit_rate": null,
+            "gt55_n": 0,
+            "logloss": 0.7835599721706507,
+            "n": 2
+          }
+        },
+        "gt55_hit_rate": 0.6666666666666666,
+        "gt55_n": 3,
+        "logloss": 0.6487774000448931,
+        "n": 8
+      },
+      "baseline_v1232": {
+        "accuracy": 0.5,
+        "brier": 0.22869997516274998,
+        "by_market": {
+          "ML": {
+            "accuracy": 0.5,
+            "brier": 0.37552996802500005,
+            "gt55_hit_rate": 0.0,
+            "gt55_n": 1,
+            "logloss": 0.948826836886232,
+            "n": 2
+          },
+          "RUNLINE": {
+            "accuracy": 0.5,
+            "brier": 0.12142805395249999,
+            "gt55_hit_rate": 1.0,
+            "gt55_n": 2,
+            "logloss": 0.417711584242287,
+            "n": 4
+          },
+          "TOTAL": {
+            "accuracy": 0.5,
+            "brier": 0.29641382472100003,
+            "gt55_hit_rate": null,
+            "gt55_n": 0,
+            "logloss": 0.7862256524778604,
+            "n": 2
+          }
+        },
+        "gt55_hit_rate": 0.6666666666666666,
+        "gt55_n": 3,
+        "logloss": 0.6426189144621666,
+        "n": 8
+      },
+      "ensemble": {
+        "accuracy": 0.5,
+        "brier": 0.22738230037799995,
+        "by_market": {
+          "ML": {
+            "accuracy": 0.5,
+            "brier": 0.366753782404,
+            "gt55_hit_rate": 0.0,
+            "gt55_n": 1,
+            "logloss": 0.9303947272604289,
+            "n": 2
+          },
+          "RUNLINE": {
+            "accuracy": 0.5,
+            "brier": 0.126051739754,
+            "gt55_hit_rate": 1.0,
+            "gt55_n": 2,
+            "logloss": 0.43022292365198056,
+            "n": 4
+          },
+          "TOTAL": {
+            "accuracy": 0.5,
+            "brier": 0.29067193959999993,
+            "gt55_hit_rate": null,
+            "gt55_n": 0,
+            "logloss": 0.7746609697434914,
+            "n": 2
+          }
+        },
+        "gt55_hit_rate": 0.6666666666666666,
+        "gt55_n": 3,
+        "logloss": 0.6413753860769704,
+        "n": 8
+      }
+    },
     "version": "v12.4-research-monitor-v1"
   },
-  "run_id": "3403c7a943b8d363",
+  "run_id": "14e6b030f32839c3",
   "scheduled_games": 15,
   "schema": "v12-3-professional-v1",
   "shadow_challenger": {
@@ -1318,9 +2334,9 @@
     "by_market": {
       "ML": {
         "consensus_gt55": {
-          "hit_rate_ex_push": null,
-          "losses": 0,
-          "n": 0,
+          "hit_rate_ex_push": 0.0,
+          "losses": 1,
+          "n": 1,
           "pushes": 0,
           "wins": 0
         },
@@ -1348,11 +2364,11 @@
       },
       "RUNLINE": {
         "consensus_gt55": {
-          "hit_rate_ex_push": null,
+          "hit_rate_ex_push": 1.0,
           "losses": 0,
-          "n": 0,
+          "n": 1,
           "pushes": 0,
-          "wins": 0
+          "wins": 1
         },
         "strong_disagreement": {
           "hit_rate_ex_push": null,
@@ -1409,11 +2425,11 @@
     },
     "overall": {
       "consensus_gt55": {
-        "hit_rate_ex_push": null,
-        "losses": 0,
-        "n": 0,
+        "hit_rate_ex_push": 0.5,
+        "losses": 1,
+        "n": 2,
         "pushes": 0,
-        "wins": 0
+        "wins": 1
       },
       "strong_disagreement": {
         "hit_rate_ex_push": null,
@@ -1437,7 +2453,7 @@
         "wins": 0
       }
     },
-    "settled_games": 0,
+    "settled_games": 1,
     "source_commit": "34b35283d043c6ec9a004013945a23a7da356a77",
     "strong_gap": 0.08,
     "threshold": 0.55,
