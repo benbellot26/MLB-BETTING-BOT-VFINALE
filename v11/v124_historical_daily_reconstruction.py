@@ -7,6 +7,27 @@ from . import v124_historical_reconstruction as base
 VERSION = "v12.4-historical-daily-freeze-v1"
 
 
+def _starter_name(box, side, starter_id):
+    if starter_id is None:
+        return None
+    for player in base._box_players(box, side):
+        person = player.get("person") or {}
+        if str(person.get("id")) == str(starter_id):
+            return person.get("fullName")
+    return None
+
+
+def _hydrate_starter_names(result, row, box):
+    ctx = result.get("ctx") or {}
+    for side in ("home", "away"):
+        pid = base._starter_id(row, side)
+        starter = ctx.get(f"{side}_starter") or {}
+        if pid is not None and not starter.get("name"):
+            starter["name"] = _starter_name(box, side, pid)
+            ctx[f"{side}_starter"] = starter
+    return result
+
+
 def reconstruct(source_rows, boxes, use_statcast=True):
     """Strict J-1 reconstruction: all games on a date see the same prior-day state."""
     from . import core
@@ -31,7 +52,7 @@ def reconstruct(source_rows, boxes, use_statcast=True):
                 continue
             pending_updates.append((row, box))
             try:
-                result = base._build_result(row, box, state)
+                result = _hydrate_starter_names(base._build_result(row, box, state), row, box)
                 base_h = max(1.6, min(8.0, base._num((row.get("v10") or {}).get("home_struct"), 4.4)))
                 base_a = max(1.6, min(8.0, base._num((row.get("v10") or {}).get("away_struct"), 4.2)))
                 modules = base._modules(result, row, state, use_statcast=use_statcast)
@@ -72,6 +93,7 @@ def reconstruct(source_rows, boxes, use_statcast=True):
                         "historical_odds_used": False,
                         "roi_trainable": False,
                         "lineup_identity": "posthoc starting-lineup identity for FINAL-phase counterfactual",
+                        "starter_identity": "boxscore starter id/name used only for identity; performance state is strict J-1",
                         "player_stats": "strict J-1 state; current calendar date applied only after every game on that date is predicted",
                         "same_day_results_visible": False,
                         "weather": "excluded: no archived pregame forecast",
