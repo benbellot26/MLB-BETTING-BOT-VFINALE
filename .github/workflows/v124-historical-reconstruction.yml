@@ -87,7 +87,7 @@ jobs:
           }, indent=2, sort_keys=True))
           PY
 
-      - name: Upload reconstruction evidence
+      - name: Upload full reconstruction evidence
         uses: actions/upload-artifact@v4
         with:
           name: v124-historical-reconstruction-${{ github.run_id }}
@@ -96,14 +96,14 @@ jobs:
             data/v124_historical_warmstart.json
           retention-days: 90
 
-      - name: Persist full reconstruction on branch
+      - name: Persist compact warm-start model on branch
         if: github.event_name == 'push' || github.event.inputs.limit == '0'
         run: |
           git config user.name 'MLB V12.4 Research Bot'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add data/v124_historical_reconstructed.jsonl data/v124_historical_warmstart.json
+          git add data/v124_historical_warmstart.json
           if ! git diff --cached --quiet; then
-            git commit -m 'data: persist V12.4 historical reconstruction [historical-replay] [skip ci]'
+            git commit -m 'data: persist V12.4 historical warm-start model [historical-replay] [skip ci]'
             git pull --rebase origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
