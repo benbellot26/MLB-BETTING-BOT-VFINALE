@@ -15,10 +15,12 @@ on:
   push:
     branches:
       - agent/v124-historical-reconstruction-warmstart
+      - agent/v124-starter-ip-v2
     paths:
       - 'v11/v124_historical_reconstruction.py'
       - 'v11/v124_historical_daily_reconstruction.py'
       - 'v11/v124_historical_validation.py'
+      - 'v11/v124_starter_ip_v2.py'
       - '.github/workflows/v124-historical-reconstruction.yml'
 
 permissions:
@@ -79,6 +81,7 @@ jobs:
               assert len(rows) >= 1600, len(rows)
           assert model['historical_reconstructed_games'] == len(rows)
           assert all((r.get('historical_reconstruction') or {}).get('same_day_results_visible') is False for r in rows)
+          assert all((r.get('historical_reconstruction') or {}).get('starter_ip_version') == 'v2-duration-quality-decoupled' for r in rows)
           assert model['guardrails']['historical_odds_used'] is False
           assert model['guardrails']['roi_used_for_training'] is False
           assert model['guardrails']['affects_v12_selection'] is False

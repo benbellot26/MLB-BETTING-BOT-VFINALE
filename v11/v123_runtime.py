@@ -56,6 +56,10 @@ def activate():
     install_v124_statcast()
     from .v124_weather import install as install_v124_weather
     install_v124_weather()
+    # Starter IP v2 changes only the V12.4 shadow module: duration is decoupled
+    # from pitcher quality and the marginal IP effect uses a true reliever pool.
+    from .v124_starter_ip_v2 import install as install_v124_starter_ip_v2
+    install_v124_starter_ip_v2()
     # Native optimizer still learns only from settled V12.4 rows.
     from .v124_weight_optimizer import install as install_v124_optimizer
     install_v124_optimizer()
