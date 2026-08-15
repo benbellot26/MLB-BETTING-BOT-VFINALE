@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import unittest
 
+from v11 import v124_historical_validation as validation
 from v11 import v124_historical_warmstart as warm
 from v11 import v124_weight_optimizer as opt
 
@@ -30,8 +31,41 @@ class HistoricalWarmstartTests(unittest.TestCase):
             "modules": {"starter_ip": {"verdict": "KEEP"}},
         }
 
+    def gate_candidate(self, wf_brier=.003, wf_logloss=.004, frozen_brier=.002, frozen_logloss=.003):
+        return {
+            "historical_reconstructed_games": 1801,
+            "minimum_games": 600,
+            "walk_forward": {
+                "status": "ACTIVE", "windows": 20,
+                "baseline": {"brier": .251, "logloss": .695, "team_run_mae": 2.54, "total_run_mae": 3.63},
+                "optimized": {"brier": .251-wf_brier, "logloss": .695-wf_logloss, "team_run_mae": 2.53, "total_run_mae": 3.62},
+            },
+            "frozen_test": {
+                "brier_improvement": frozen_brier,
+                "logloss_improvement": frozen_logloss,
+                "team_run_mae_improvement": .01,
+                "used_for_weight_fitting": False,
+            },
+            "guardrails": {"historical_odds_used": False, "roi_used_for_training": False, "affects_v12_selection": False},
+        }
+
     def compose(self, n, eligible=True):
         return warm.compose(self.native(n), self.historical(eligible), opt.MODULES, opt.MAX_WEIGHT, opt.MIN_GAMES, opt.WALK_FORWARD_READY_GAMES)
+
+    def test_oos_gate_accepts_only_non_regressing_walkforward_and_frozen_test(self):
+        model = validation.harden(self.gate_candidate())
+        self.assertTrue(model["eligible_for_warm_start"])
+        self.assertTrue(model["out_of_sample_gate"]["passes"])
+
+    def test_oos_gate_rejects_walkforward_probability_regression(self):
+        model = validation.harden(self.gate_candidate(wf_brier=-.001))
+        self.assertFalse(model["eligible_for_warm_start"])
+        self.assertFalse(model["out_of_sample_gate"]["checks"]["walk_forward_brier_non_regression"])
+
+    def test_oos_gate_rejects_frozen_probability_regression(self):
+        model = validation.harden(self.gate_candidate(frozen_logloss=-.001))
+        self.assertFalse(model["eligible_for_warm_start"])
+        self.assertFalse(model["out_of_sample_gate"]["checks"]["frozen_logloss_non_regression"])
 
     def test_historical_weights_can_activate_only_shadow_before_75_native(self):
         model = self.compose(0)
