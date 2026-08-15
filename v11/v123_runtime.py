@@ -41,6 +41,10 @@ def activate():
     install_alternate_runlines()
     from .safe_singles_v1231 import install as install_value_selection
     install_value_selection()
+    # Discord is presentation-only. Enforce Discord embed limits centrally so an
+    # oversized game/research message cannot block the recommendation lifecycle.
+    from .discord_limits import install as install_discord_limits
+    install_discord_limits()
     # Calibration v2 is research/challenger infrastructure. It does not change
     # production probabilities unless a Champion model has passed the existing
     # holdout, walk-forward and live-evidence promotion gates.
