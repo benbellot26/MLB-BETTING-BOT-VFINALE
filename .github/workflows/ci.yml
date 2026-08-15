@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - 'agent/**'
+      - 'hotfix/**'
   pull_request:
 
 permissions:
@@ -28,7 +29,7 @@ jobs:
           python-version: '3.12'
 
       - name: Compile
-        run: python -m py_compile v11/*.py tests/test_v11.py tests/test_historical_bootstrap.py tests/test_v123.py tests/test_v1231_runlines.py tests/test_safe_singles_v1231.py tests/test_shadow_v115.py tests/test_calibration_v1232.py tests/test_predictive_v124.py tests/test_v124_statcast_provider.py tests/test_v124_weather.py tests/test_v124_weight_optimizer.py tests/test_v124_research_monitor.py
+        run: python -m py_compile v11/*.py tests/test_v11.py tests/test_historical_bootstrap.py tests/test_v123.py tests/test_v1231_runlines.py tests/test_safe_singles_v1231.py tests/test_shadow_v115.py tests/test_calibration_v1232.py tests/test_predictive_v124.py tests/test_v124_statcast_provider.py tests/test_v124_weather.py tests/test_v124_weight_optimizer.py tests/test_v124_research_monitor.py tests/test_discord_limits.py
 
       - name: V12.2 regression tests
         run: python -m unittest tests.test_v11 tests.test_historical_bootstrap
@@ -62,6 +63,9 @@ jobs:
 
       - name: V12.4 research monitor tests
         run: python -m unittest tests.test_v124_research_monitor
+
+      - name: Discord embed limit tests
+        run: python -m unittest tests.test_discord_limits
 
       - name: V12.4 optimizer persisted-journal smoke test
         run: |
