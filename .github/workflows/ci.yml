@@ -28,7 +28,7 @@ jobs:
           python-version: '3.12'
 
       - name: Compile
-        run: python -m py_compile v11/*.py tests/test_v11.py tests/test_historical_bootstrap.py tests/test_v123.py tests/test_v1231_runlines.py tests/test_safe_singles_v1231.py tests/test_shadow_v115.py tests/test_calibration_v1232.py tests/test_predictive_v124.py tests/test_v124_statcast_provider.py tests/test_v124_weather.py
+        run: python -m py_compile v11/*.py tests/test_v11.py tests/test_historical_bootstrap.py tests/test_v123.py tests/test_v1231_runlines.py tests/test_safe_singles_v1231.py tests/test_shadow_v115.py tests/test_calibration_v1232.py tests/test_predictive_v124.py tests/test_v124_statcast_provider.py tests/test_v124_weather.py tests/test_v124_weight_optimizer.py
 
       - name: V12.2 regression tests
         run: python -m unittest tests.test_v11 tests.test_historical_bootstrap
@@ -56,6 +56,9 @@ jobs:
 
       - name: V12.4 complete weather tests
         run: python -m unittest tests.test_v124_weather
+
+      - name: V12.4 weight optimizer tests
+        run: python -m unittest tests.test_v124_weight_optimizer
 
       - name: V12.3 baseline-safe bootstrap validation
         run: python -m v11.v123_bootstrap --dry-run >/tmp/v12_3_bootstrap.json
