@@ -27,7 +27,10 @@ def weather_for_game(game, home_name):
         return _WEATHER_CACHE[key]
     params = {
         "latitude": coord[0], "longitude": coord[1], "timezone": "UTC",
-        "hourly": "temperature_2m,relative_humidity_2m,precipitation_probability,wind_speed_10m,wind_direction_10m",
+        "hourly": (
+            "temperature_2m,relative_humidity_2m,dew_point_2m,surface_pressure,"
+            "precipitation_probability,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m"
+        ),
         "start_date": game_dt.date().isoformat(), "end_date": game_dt.date().isoformat(),
     }
     try:
@@ -42,14 +45,24 @@ def weather_for_game(game, home_name):
             dt = datetime.fromisoformat(str(value))
             parsed.append(dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt.astimezone(timezone.utc))
         i = min(range(len(parsed)), key=lambda j: abs((parsed[j]-target).total_seconds()))
+
+        def at(name):
+            vals = h.get(name) or []
+            return vals[i] if i < len(vals) else None
+
         out = {
             "available": True,
-            "temperature_c": _num((h.get("temperature_2m") or [None])[i], None),
-            "humidity_pct": _num((h.get("relative_humidity_2m") or [None])[i], None),
-            "precip_probability": _num((h.get("precipitation_probability") or [None])[i], None),
-            "wind_kph": _num((h.get("wind_speed_10m") or [None])[i], None),
-            "wind_direction_deg": _num((h.get("wind_direction_10m") or [None])[i], None),
+            "temperature_c": _num(at("temperature_2m"), None),
+            "humidity_pct": _num(at("relative_humidity_2m"), None),
+            "dew_point_c": _num(at("dew_point_2m"), None),
+            "surface_pressure_hpa": _num(at("surface_pressure"), None),
+            "precip_probability": _num(at("precipitation_probability"), None),
+            "cloud_cover_pct": _num(at("cloud_cover"), None),
+            "wind_kph": _num(at("wind_speed_10m"), None),
+            "wind_direction_deg": _num(at("wind_direction_10m"), None),
+            "wind_gust_kph": _num(at("wind_gusts_10m"), None),
             "observed_hour": times[i],
+            "provider": "Open-Meteo hourly point-in-time forecast",
         }
     except Exception as e:
         out = {"available": False, "reason": f"weather_error:{type(e).__name__}"}
