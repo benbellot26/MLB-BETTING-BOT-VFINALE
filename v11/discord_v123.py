@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from . import core
 
-VERSION_LABEL = "V12.3"
+VERSION_LABEL = "V12.3.2"
 
 
 def _label(r):
@@ -13,22 +13,33 @@ def _label(r):
     return f"{str(r.get('name')).title()} {core.num(r.get('point')):g}"
 
 
+def _price_text(value):
+    return "—" if value is None or core.num(value) <= 1 else f"{core.num(value):.2f}"
+
+
 def _line(r):
     e = r.get("winamax_eval") or {}
     g = e.get("v11_price_gate") or {}
     dq = r.get("data_quality") or {}
-    price = g.get("price") or e.get("price")
+    ref_price = g.get("price")
+    winamax_price = g.get("winamax_price") or e.get("price")
     mini, ev = g.get("required_price"), g.get("ev_at_price")
+    min_conf = g.get("min_confidence")
     state = "✅ RECOMMANDÉ" if e.get("official_selected") else "🟢 QUALIFIÉ" if g.get("ok") and dq.get("eligible") else "⚪ NON RETENU"
     source = r.get("line_source") or "—"
     execution = "oui" if r.get("execution_available") else "non"
+    ref_source = str(g.get("price_source") or "—").replace("sharp_", "")
+    ref_count = int(core.num(g.get("reference_quote_count")))
     return (
         f"{state} • **{_label(r)}**\n"
-        f"p {VERSION_LABEL} **{core.pct(r.get('p_effective'))}** • prudent **{core.pct(g.get('p_conservative'))}** • "
-        f"incert. **{core.pct(r.get('model_uncertainty'))}** • DQ **{100*core.num(dq.get('score')):.0f}/100**\n"
+        f"p {VERSION_LABEL} **{core.pct(r.get('p_effective'))}**"
+        +(f" • seuil **{core.pct(min_conf)}**" if min_conf is not None else "")+
+        f" • prudent **{core.pct(g.get('p_conservative'))}** • incert. **{core.pct(r.get('model_uncertainty'))}** • DQ **{100*core.num(dq.get('score')):.0f}/100**\n"
         f"sharp **{core.pct(r.get('p_market'))}** ({int(core.num(r.get('refs')))} refs) • "
-        f"ligne **{source}** • exécution **{execution}** • Winamax **{core.num(price):.2f}**"
-        +(f" • mini **{core.num(mini):.2f}**" if mini else "")
+        f"ligne **{source}** • exécution Winamax **{execution}**\n"
+        f"cote réf. sharp **{_price_text(ref_price)}** ({ref_source}, {ref_count} quote{'s' if ref_count != 1 else ''}) • "
+        f"Winamax **{_price_text(winamax_price)}**"
+        +(f" • mini value **{core.num(mini):.2f}**" if mini else "")
         +(f" • EV prudent **{100*core.num(ev):+.1f}%**" if ev is not None else "")
     )
 
@@ -83,14 +94,15 @@ def send_top(results):
 def send_plan(chosen, combo, portfolio, pool):
     simple = "\n\n".join(
         f"**#{i+1} {_label(c['rec'])} — {core.num((c['rec'].get('winamax_eval') or {}).get('official_units')):g}u recommandées**\n"
-        f"EV prudent {100*core.num(c['gate'].get('ev_at_price')):+.1f}% • DQ {100*core.num(c['dq'].get('score')):.0f}/100"
+        f"Réf. sharp {_price_text(c['gate'].get('price'))} • EV prudent {100*core.num(c['gate'].get('ev_at_price')):+.1f}% • "
+        f"DQ {100*core.num(c['dq'].get('score')):.0f}/100"
         for i, c in enumerate(chosen)
     ) or "**AUCUNE RECOMMANDATION SIMPLE.**"
     ctext = f"⚪ Combinés officiels désactivés en {VERSION_LABEL} tant que la dépendance n'est pas validée."
     status = (f"Bankroll référence **{core.num(portfolio.get('bankroll_eur')):.2f}€** • exposition recommandée "
               f"**{core.num(portfolio.get('allocated')):.2f}€** • staking **{portfolio.get('staking')}**")
     return core.send_embed(f"🎟️ RECOMMANDATIONS {VERSION_LABEL}", [("✅ Simples", simple), ("🔗 Combiné", ctext), ("📊 Portfolio", status)], 5763719,
-                           description="Ces sélections sont des recommandations du bot. Le ledger ne les considère pas comme des mises réelles tant qu'elles ne sont pas confirmées comme placées.")
+                           description="Sélection informative basée sur modèle + EV/edge + DQ + cote sharp de référence. Winamax n'est qu'une cote d'exécution éventuelle; le ledger ne considère une mise réelle qu'après confirmation.")
 
 
 def send_health(h):

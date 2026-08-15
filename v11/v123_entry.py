@@ -25,6 +25,7 @@ def _row_v123(result, run_id, at, snapshot=None, source_replay=None):
         src = live.get((str(saved.get("market")), str(saved.get("name")), saved.get("point"))) or {}
         saved["line_source"] = src.get("line_source")
         saved["execution_available"] = bool(src.get("execution_available"))
+        saved["reference_market"] = src.get("reference_market")
     row["baseline_schema"] = "v12.3-structural-v1"
     return row
 
@@ -33,12 +34,12 @@ def _summary_v123(report):
     if int(report.get("ledger_settled_this_run") or 0) <= 0:
         return True
     fin = report.get("finance") or {}
-    return core.send_embed("📊 BILAN V12.3.1", [("Ledger confirmé",
+    return core.send_embed("📊 BILAN V12.3.2", [("Ledger confirmé",
         f"{fin.get('wins',0)}V-{fin.get('losses',0)}D-{fin.get('pushes',0)}P • P/L **{core.num(fin.get('profit_units')):+.2f}u** • ROI **{core.pct(fin.get('roi'))}**")], 5763719)
 
 
 def self_test_v123():
-    assert config.VERSION.startswith("12.3")
+    assert config.VERSION.startswith("12.3.2")
     assert .5 < engine.prob_home_win(5, 4) < .8
     j = engine.joint_score_matrix(4.5, 4, dispersion=3.0, env_sigma=.12)
     assert abs(sum(sum(x) for x in j)-1) < 1e-9
@@ -46,7 +47,7 @@ def self_test_v123():
     model = v123_bootstrap.build_from_file()
     assert model.get("status") in {"PASS", "FAIL", "COLLECTING", "INCOMPATIBLE_BASELINE"}
     assert (model.get("metadata") or {}).get("test_used_for_activation") is False
-    print("SELF-TEST V12.3.1 ALTERNATE RUNLINES OK")
+    print("SELF-TEST V12.3.2 VALUE SELECTION OK")
 
 
 def run_v123(snapshot_only=False):
@@ -54,17 +55,22 @@ def run_v123(snapshot_only=False):
     if snapshot_only or not isinstance(report, dict):
         return report
     report["version"] = config.VERSION
-    report.setdefault("production", {})["engine"] = "V12.3.1"
+    report.setdefault("production", {})["engine"] = "V12.3.2"
     report["production"]["claim"] = "LIVE_VALIDATED" if (report.get("production_evidence") or {}).get("passes") else "COLLECTING"
     report.setdefault("methodology", {}).update({
-        "generation": "V12.3.1 alternate-runlines-v1",
+        "generation": "V12.3.2 value-selection-v1",
         "event_matching": "team identity + closest commence_time within strict tolerance",
         "starter_model": "current season + N-1/N-2 prior affects structural run means",
         "validation_parity": "production and Champion/Challenger share compose_runtime",
-        "canonical_research_boundary": "standard Winamax RL remains canonical; alternate run lines are execution/research options only",
+        "canonical_research_boundary": "standard featured RL remains canonical for training/evaluation; alternate run lines remain optional analysis choices",
         "alternate_runlines": "event-level alternate_spreads; evaluates both +/-1.5 pairs when actually available",
+        "selection": "informational recommendations use model confidence + conservative EV/edge + DQ + uncertainty + Kelly; Winamax never decides eligibility",
+        "selection_reference_price": "fresh configured sharp books; exact side/point; second-best effective quote when >=2 books, otherwise single fresh sharp quote",
+        "selection_price_floor": f"reference decimal odds >= {getattr(config, 'V123_MIN_REFERENCE_PRICE', 1.40):.2f}",
+        "selection_confidence": f"RL >= {100*getattr(config, 'V123_MIN_CONFIDENCE_RUNLINE', .55):.0f}%; ML/TOTAL >= {100*getattr(config, 'V123_MIN_CONFIDENCE_ML', .58):.0f}%",
+        "sharp_disagreement": "large model-vs-sharp disagreement reduces selection score but is not a hard directional veto",
         "historical_evidence": "legacy V10 1,801-game data are diagnostic only until a V12.3 structural baseline exists",
-        "execution_freshness": f"Winamax quote timestamp required; max age {getattr(config, 'V123_MAX_WINAMAX_AGE_MIN', 15):g} min",
+        "execution_freshness": f"Winamax is optional execution/display only; if shown, timestamp required and max age {getattr(config, 'V123_MAX_WINAMAX_AGE_MIN', 15):g} min",
     })
     journal.write_report(report)
     return report
