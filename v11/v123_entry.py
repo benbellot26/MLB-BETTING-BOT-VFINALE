@@ -5,7 +5,7 @@ from .v123_runtime import activate
 activate()
 
 from . import config, core, journal, runner, shadow_v115, pro_model, predictive_v124
-from . import discord_v123, v123_bootstrap
+from . import discord_v123, v123_bootstrap, v124_research_monitor
 from . import engine_v12 as engine
 
 runner.discord = discord_v123
@@ -80,6 +80,13 @@ def _row_v123(result, run_id, at, snapshot=None, source_replay=None):
 
 
 def _summary_v123(report):
+    monitor = report.get("research_monitor_v124") or {}
+    if monitor:
+        try:
+            if not discord_v123.send_research_monitor(monitor):
+                core.logging.warning("Research Monitor V12.4 Discord non publié; publication officielle non bloquée")
+        except Exception:
+            core.logging.exception("Research Monitor V12.4 Discord impossible; publication officielle non bloquée")
     if int(report.get("ledger_settled_this_run") or 0) <= 0:
         return True
     fin = report.get("finance") or {}
@@ -100,6 +107,7 @@ def self_test_v123():
     assert .5 < shadow_v115.prob_home_win(5, 4) < .8
     assert predictive_v124.VERSION.startswith("12.4-")
     assert predictive_v124.implementation_report()["8_model_ensemble"]["status"] == "ADDED_RESEARCH_ONLY"
+    assert v124_research_monitor.VERSION.startswith("v12.4-research-monitor-")
     assert getattr(pro_model, "CALIBRATION_GENERATION", "") == "hierarchical-challenger-v2"
     synthetic = {
         "options": [
@@ -113,11 +121,12 @@ def self_test_v123():
     ]}
     cmp = shadow_v115.compare(synthetic, shadow)
     assert cmp["consensus_gt55"] == 1 and cmp["v12_only_gt55"] == 0
-    print("SELF-TEST V12.3.2 + V11.5 SHADOW + CALIBRATION + V12.4 PREDICTIVE SHADOW OK")
+    print("SELF-TEST V12.3.2 + V11.5 SHADOW + CALIBRATION + V12.4 PREDICTIVE/MONITOR SHADOW OK")
 
 
 def run_v123(snapshot_only=False):
     global _shadow_context_enabled
+    previous_report = None if snapshot_only else v124_research_monitor.load_report(config.REPORT_FILE)
     previous_shadow_context = _shadow_context_enabled
     _shadow_context_enabled = not snapshot_only
     try:
@@ -146,6 +155,7 @@ def run_v123(snapshot_only=False):
         "execution_freshness": f"Winamax is optional execution/display only; if shown, timestamp required and max age {getattr(config, 'V123_MAX_WINAMAX_AGE_MIN', 15):g} min",
         "v115_shadow": "frozen V11.5 probability challenger runs on the same game/market snapshot; research-only and never changes V12 selection",
         "v124_predictive_shadow": "8-module predictive challenger with ablation variants; research-only; V12.3.2 remains official Champion",
+        "v124_research_monitor": "one latest settled pre-game snapshot per gamePk; per-market ablations, optimizer progress, disagreements and prior-run deltas; Discord monitor is non-blocking",
     })
     rows = journal.load_rows()
     try:
@@ -177,6 +187,16 @@ def run_v123(snapshot_only=False):
             "status": "ERROR", "error": f"{type(exc).__name__}: {exc}",
             "activation": {"affects_v12_selection": False},
             "implementation": predictive_v124.implementation_report(),
+        }
+    try:
+        report["research_monitor_v124"] = v124_research_monitor.build(report, previous_report, rows)
+    except Exception as exc:
+        core.logging.exception("Research Monitor V12.4 impossible")
+        report["research_monitor_v124"] = {
+            "schema": v124_research_monitor.SCHEMA, "version": v124_research_monitor.VERSION,
+            "status": "ERROR", "error": f"{type(exc).__name__}: {exc}",
+            "research_only": True, "affects_v12_selection": False,
+            "guardrails": {"selector_unchanged": True, "staking_unchanged": True, "discord_monitor_non_blocking": True},
         }
     journal.write_report(report)
     return report
