@@ -18,6 +18,7 @@ on:
     paths:
       - 'v11/v124_historical_reconstruction.py'
       - 'v11/v124_historical_daily_reconstruction.py'
+      - 'v11/v124_historical_validation.py'
       - '.github/workflows/v124-historical-reconstruction.yml'
 
 permissions:
@@ -62,6 +63,9 @@ jobs:
           if [ '${{ github.event_name }}' = 'workflow_dispatch' ] && [ '${{ github.event.inputs.statcast }}' = 'false' ]; then EXTRA='--no-statcast'; fi
           python -m v11.v124_historical_daily_reconstruction --limit "$LIMIT" $EXTRA | tee /tmp/v124-historical-summary.json
 
+      - name: Harden out-of-sample activation gate
+        run: python -m v11.v124_historical_validation > /tmp/v124-historical-gate.json
+
       - name: Validate reconstruction artifact
         run: |
           python - <<'PY'
@@ -79,11 +83,16 @@ jobs:
           assert model['guardrails']['roi_used_for_training'] is False
           assert model['guardrails']['affects_v12_selection'] is False
           assert model['frozen_test']['used_for_weight_fitting'] is False
+          gate=model.get('out_of_sample_gate') or {}
+          assert gate.get('checks', {}).get('frozen_not_fit') is True
+          assert gate.get('checks', {}).get('no_historical_odds') is True
+          assert gate.get('checks', {}).get('no_roi_training') is True
           print(json.dumps({
               'games': len(rows),
               'eligible': model.get('eligible_for_warm_start'),
               'weights': model.get('weights'),
-              'frozen_test': model.get('frozen_test'),
+              'walk_forward': gate.get('walk_forward_gains'),
+              'frozen_test': gate.get('frozen_test_gains'),
           }, indent=2, sort_keys=True))
           PY
 
