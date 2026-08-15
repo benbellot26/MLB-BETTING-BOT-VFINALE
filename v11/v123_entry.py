@@ -4,7 +4,7 @@ from .v123_runtime import activate
 
 activate()
 
-from . import config, core, journal, runner
+from . import config, core, journal, runner, shadow_v115
 from . import discord_v123, v123_bootstrap
 from . import engine_v12 as engine
 
@@ -13,6 +13,30 @@ runner.historical_bootstrap = v123_bootstrap
 
 _original_row = runner._row
 _original_run = runner.run
+_original_analyze = engine.analyze
+_shadow_context_enabled = True
+
+
+def _analyze_with_v115_shadow(game, event, as_of=None):
+    result = _original_analyze(game, event, as_of=as_of)
+    if not _shadow_context_enabled or not shadow_v115.enabled():
+        return result
+    try:
+        shadow = shadow_v115.analyze(game, event, as_of=as_of)
+        shadow["comparison"] = shadow_v115.compare(result, shadow)
+        result["shadow_v115"] = shadow
+    except Exception as exc:
+        core.logging.exception("V11.5 shadow impossible gamePk=%s", game.get("gamePk"))
+        result["shadow_v115"] = {
+            "enabled": True,
+            "version": shadow_v115.VERSION,
+            "source_commit": shadow_v115.SOURCE_COMMIT,
+            "status": "ERROR",
+            "error": f"{type(exc).__name__}: {exc}",
+            "options": [],
+            "comparison": {"exact_common_options": 0},
+        }
+    return result
 
 
 def _row_v123(result, run_id, at, snapshot=None, source_replay=None):
@@ -27,6 +51,9 @@ def _row_v123(result, run_id, at, snapshot=None, source_replay=None):
         saved["execution_available"] = bool(src.get("execution_available"))
         saved["reference_market"] = src.get("reference_market")
     row["baseline_schema"] = "v12.3-structural-v1"
+    shadow = result.get("shadow_v115")
+    if isinstance(shadow, dict):
+        row["shadow_v115"] = shadow
     return row
 
 
@@ -47,11 +74,31 @@ def self_test_v123():
     model = v123_bootstrap.build_from_file()
     assert model.get("status") in {"PASS", "FAIL", "COLLECTING", "INCOMPATIBLE_BASELINE"}
     assert (model.get("metadata") or {}).get("test_used_for_activation") is False
-    print("SELF-TEST V12.3.2 VALUE SELECTION OK")
+    assert shadow_v115.VERSION.startswith("11.5-")
+    assert .5 < shadow_v115.prob_home_win(5, 4) < .8
+    synthetic = {
+        "options": [
+            {"market": "RUNLINE", "name": "A", "point": 1.5, "p_effective": .62},
+            {"market": "RUNLINE", "name": "B", "point": -1.5, "p_effective": .38},
+        ]
+    }
+    shadow = {"options": [
+        {"market": "RUNLINE", "name": "A", "point": 1.5, "p_effective": .58},
+        {"market": "RUNLINE", "name": "B", "point": -1.5, "p_effective": .42},
+    ]}
+    cmp = shadow_v115.compare(synthetic, shadow)
+    assert cmp["consensus_gt55"] == 1 and cmp["v12_only_gt55"] == 0
+    print("SELF-TEST V12.3.2 + V11.5 SHADOW CHALLENGER OK")
 
 
 def run_v123(snapshot_only=False):
-    report = _original_run(snapshot_only=snapshot_only)
+    global _shadow_context_enabled
+    previous_shadow_context = _shadow_context_enabled
+    _shadow_context_enabled = not snapshot_only
+    try:
+        report = _original_run(snapshot_only=snapshot_only)
+    finally:
+        _shadow_context_enabled = previous_shadow_context
     if snapshot_only or not isinstance(report, dict):
         return report
     report["version"] = config.VERSION
@@ -71,11 +118,23 @@ def run_v123(snapshot_only=False):
         "sharp_disagreement": "large model-vs-sharp disagreement reduces selection score but is not a hard directional veto",
         "historical_evidence": "legacy V10 1,801-game data are diagnostic only until a V12.3 structural baseline exists",
         "execution_freshness": f"Winamax is optional execution/display only; if shown, timestamp required and max age {getattr(config, 'V123_MAX_WINAMAX_AGE_MIN', 15):g} min",
+        "v115_shadow": "frozen V11.5 probability challenger runs on the same game/market snapshot; research-only and never changes V12 selection",
     })
+    try:
+        report["shadow_challenger"] = shadow_v115.metrics(journal.load_rows())
+    except Exception as exc:
+        core.logging.exception("Rapport V11.5 shadow impossible")
+        report["shadow_challenger"] = {
+            "version": shadow_v115.VERSION,
+            "status": "ERROR",
+            "error": f"{type(exc).__name__}: {exc}",
+            "activation": {"affects_v12_selection": False},
+        }
     journal.write_report(report)
     return report
 
 
+runner.engine.analyze = _analyze_with_v115_shadow
 runner._row = _row_v123
 runner._summary = _summary_v123
 runner.self_test = self_test_v123
