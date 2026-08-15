@@ -22,8 +22,8 @@ def book(key, markets, updated):
 
 
 class AlternateRunLineTests(unittest.TestCase):
-    def test_generation_bumped_to_v1231(self):
-        self.assertTrue(config.VERSION.startswith("12.3.1"))
+    def test_alternate_runlines_remain_active_in_v1232(self):
+        self.assertTrue(config.VERSION.startswith("12.3.2"))
 
     def test_fresh_winamax_reverse_runline_is_executable(self):
         now = datetime.now(timezone.utc)
