@@ -1,5 +1,5 @@
 {
-  "analyzed_at": "2026-08-15T13:25:43.676834+00:00",
+  "analyzed_at": "2026-08-15T13:40:07.654645+00:00",
   "calibration_health": {
     "by_phase": {
       "EARLY": {
@@ -330,7 +330,7 @@
     "confirmed_lineups": 0,
     "confirmed_starters": 14,
     "matched_events": 15,
-    "mean_data_quality": 0.7594,
+    "mean_data_quality": 0.7618,
     "scheduled_games": 15,
     "sharp_coverage": {
       "ML": 15,
@@ -399,14 +399,14 @@
     "generation": "V12.3.2 value-selection-v1 + V12.4 predictive shadow",
     "historical_evidence": "legacy V10 1,801-game data are diagnostic only until a V12.3 structural baseline exists",
     "ledger": "PROPOSED -> PUBLISHED -> CONFIRMED_PLACED -> SETTLED",
-    "raw_archive": "runtime/v11/snapshots/2026-08-15_18d73601e07ae995.json.gz",
+    "raw_archive": "runtime/v11/snapshots/2026-08-15_d87124d4052dec96.json.gz",
     "runs_model": "immutable structural baseline + validated FINAL historical prior fallback + phase-specific live residual",
     "selection": "informational recommendations use model confidence + conservative EV/edge + DQ + uncertainty + Kelly; Winamax never decides eligibility",
     "selection_confidence": "RL >= 55%; ML/TOTAL >= 58%",
     "selection_price_floor": "reference decimal odds >= 1.40",
     "selection_reference_price": "fresh configured sharp books; exact side/point; second-best effective quote when >=2 books, otherwise single fresh sharp quote",
     "sharp_disagreement": "large model-vs-sharp disagreement reduces selection score but is not a hard directional veto",
-    "source_replay": "runtime/v11/source_replays/2026-08-15_18d73601e07ae995_sources.json.gz",
+    "source_replay": "runtime/v11/source_replays/2026-08-15_d87124d4052dec96_sources.json.gz",
     "staking": "bankroll-aware fractional Kelly; official combos disabled",
     "starter_model": "current season + N-1/N-2 prior affects structural run means",
     "uncertainty": "empirical phase/market reliability bins + market disagreement + DQ penalty",
@@ -718,51 +718,51 @@
       }
     },
     "affects_v12_selection": false,
-    "analyzed_at": "2026-08-15T13:25:43.676834+00:00",
+    "analyzed_at": "2026-08-15T13:40:07.654645+00:00",
     "canonicalization": "latest settled pre-game snapshot per game_pk",
     "current_run_disagreements": [
       {
-        "abs_gap": 0.014869999999999939,
-        "baseline_p": 0.549285,
+        "abs_gap": 0.014870999999999968,
+        "baseline_p": 0.549288,
         "challenger": "all_core",
         "crosses_55": true,
         "game": "New York Yankees @ Toronto Blue Jays",
         "game_pk": 822775,
-        "gap": 0.014869999999999939,
+        "gap": 0.014870999999999968,
         "market": "TOTAL",
         "name": "Under",
         "point": 7.5,
-        "v124_p": 0.564155
+        "v124_p": 0.564159
       },
       {
-        "abs_gap": 0.014104000000000005,
-        "baseline_p": 0.553415,
+        "abs_gap": 0.014164999999999983,
+        "baseline_p": 0.554128,
         "challenger": "all_core",
         "crosses_55": true,
         "game": "Baltimore Orioles @ Tampa Bay Rays",
         "game_pk": 822941,
-        "gap": -0.014104000000000005,
+        "gap": -0.014164999999999983,
         "market": "ML",
         "name": "Tampa Bay Rays",
         "point": null,
-        "v124_p": 0.539311
+        "v124_p": 0.539963
       },
       {
-        "abs_gap": 0.010624000000000078,
-        "baseline_p": 0.55827,
+        "abs_gap": 0.010561000000000043,
+        "baseline_p": 0.55767,
         "challenger": "all_core",
         "crosses_55": true,
         "game": "Boston Red Sox @ Pittsburgh Pirates",
         "game_pk": 823347,
-        "gap": -0.010624000000000078,
+        "gap": -0.010561000000000043,
         "market": "ML",
         "name": "Boston Red Sox",
         "point": null,
-        "v124_p": 0.547646
+        "v124_p": 0.547109
       }
     ],
     "evolution": {
-      "has_previous": false,
+      "has_previous": true,
       "settled_games_delta": 0,
       "variants": {}
     },
@@ -805,7 +805,7 @@
       "walk_forward_ready_games": 150
     },
     "research_only": true,
-    "run_id": "18d73601e07ae995",
+    "run_id": "d87124d4052dec96",
     "schema": "v12-4-research-monitor-v1",
     "target_date": "2026-08-15",
     "v115": {
@@ -819,7 +819,7 @@
     "variants": {},
     "version": "v12.4-research-monitor-v1"
   },
-  "run_id": "18d73601e07ae995",
+  "run_id": "d87124d4052dec96",
   "scheduled_games": 15,
   "schema": "v12-3-professional-v1",
   "shadow_challenger": {
