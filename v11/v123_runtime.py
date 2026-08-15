@@ -52,4 +52,8 @@ def activate():
     install_v124_statcast()
     from .v124_weather import install as install_v124_weather
     install_v124_weather()
+    # Learns coverage-adjusted module weights only from already-settled V12.4 rows.
+    # The learned variant remains a shadow and can never alter production selection.
+    from .v124_weight_optimizer import install as install_v124_optimizer
+    install_v124_optimizer()
     return True
