@@ -20,7 +20,17 @@ def selection_score_price_symmetric(rec, gate, dq):
     # Relative edge is invariant to favorite/underdog price scale for equal EV.
     relative_edge = max(0.0, min(.30, pwin/max(1e-9, breakeven)-1.0)) if price > 1 else 0.0
     unc = max(0.0, _num(gate.get("uncertainty"), config.FALLBACK_MODEL_UNCERTAINTY))
-    return max(0.0, min(100.0, 45+155*max(0.0, ev)+35*relative_edge+18*(dq["score"]-.65)-80*unc))
+    base = 45+155*max(0.0, ev)+35*relative_edge+18*(dq["score"]-.65)-80*unc
+
+    # Sharp disagreement is a score penalty, not a direction veto. The model can
+    # disagree with the market, but a large gap needs stronger EV/DQ to survive.
+    sharp_gap = gate.get("sharp_disagreement")
+    penalty = 0.0
+    if sharp_gap is not None:
+        free = max(0.0, _num(getattr(config, "V123_SHARP_GAP_FREE", .08), .08))
+        scale = max(0.0, _num(getattr(config, "V123_SHARP_GAP_SCORE_PENALTY", 200.0), 200.0))
+        penalty = min(12.0, scale*max(0.0, _num(sharp_gap)-free))
+    return max(0.0, min(100.0, base-penalty))
 
 
 def activate():
@@ -29,6 +39,6 @@ def activate():
     selector._score = selection_score_price_symmetric
     from .alternate_runlines_v1231 import install as install_alternate_runlines
     install_alternate_runlines()
-    from .safe_singles_v1231 import install as install_safe_singles
-    install_safe_singles()
+    from .safe_singles_v1231 import install as install_value_selection
+    install_value_selection()
     return True
