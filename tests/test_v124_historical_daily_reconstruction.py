@@ -8,6 +8,19 @@ from v11 import v124_historical_reconstruction as base
 
 
 class HistoricalDailyFreezeTests(unittest.TestCase):
+    def test_starter_name_is_resolved_from_boxscore_identity(self):
+        row = {"starters": {"home_id": 11, "away_id": 22}}
+        box = {
+            "teams": {
+                "home": {"players": {"ID11": {"person": {"id": 11, "fullName": "Home Starter"}}}},
+                "away": {"players": {"ID22": {"person": {"id": 22, "fullName": "Away Starter"}}}},
+            }
+        }
+        result = {"ctx": {"home_starter": {"id": 11, "name": None}, "away_starter": {"id": 22, "name": None}}}
+        hydrated = daily._hydrate_starter_names(result, row, box)
+        self.assertEqual(hydrated["ctx"]["home_starter"]["name"], "Home Starter")
+        self.assertEqual(hydrated["ctx"]["away_starter"]["name"], "Away Starter")
+
     def test_same_date_games_do_not_see_each_others_results(self):
         rows = [
             {"game_pk": 1, "game_date": "2026-05-01T17:00:00Z", "home": "H1", "away": "A1", "home_score": 5, "away_score": 3,
@@ -29,7 +42,6 @@ class HistoricalDailyFreezeTests(unittest.TestCase):
              patch.object(base, "_modules", return_value=neutral), \
              patch.object(base, "_variant_options", return_value=[{"market": "ML", "name": "X", "point": None, "p_effective": .5}]), \
              patch.object(base.State, "update", autospec=True) as update:
-            # Make updates observable without relying on MLB boxscore details.
             def mutate(self, row, box):
                 self.pitching[row["game_pk"]]["gamesPitched"] += 1
             update.side_effect = mutate
