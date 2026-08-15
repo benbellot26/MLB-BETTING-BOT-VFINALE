@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import json
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from v11 import discord_v123
@@ -103,6 +106,26 @@ class V124ResearchMonitorTests(unittest.TestCase):
         report = {"ledger_settled_this_run": 0, "research_monitor_v124": self.report()}
         with patch.object(v123_entry.discord_v123, "send_research_monitor", return_value=False):
             self.assertTrue(v123_entry._summary_v123(report))
+
+    def test_deferred_payload_is_refreshed_with_enriched_report(self):
+        from v11 import v123_entry
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)/"discord_payload.json"
+            path.write_text(json.dumps({"results": [], "report": {"run_id": "old"}}), encoding="utf-8")
+            enriched = {"run_id": "new", "research_monitor_v124": {"research_only": True}}
+            with patch.object(v123_entry.runner, "DISCORD_PAYLOAD", path):
+                self.assertTrue(v123_entry._refresh_deferred_payload(enriched))
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(payload["report"]["run_id"], "new")
+            self.assertTrue(payload["report"]["research_monitor_v124"]["research_only"])
+
+    def test_empty_results_can_still_publish_nonblocking_summary(self):
+        from v11 import v123_entry
+        report = {"ledger_settled_this_run": 0, "research_monitor_v124": self.report()}
+        with patch.object(v123_entry.core, "discord_test", return_value=True), \
+             patch.object(v123_entry, "_summary_v123", return_value=True) as summary:
+            self.assertTrue(v123_entry._send_v123([], {}, [], {}, {}, report))
+        summary.assert_called_once_with(report)
 
 
 if __name__ == "__main__":
