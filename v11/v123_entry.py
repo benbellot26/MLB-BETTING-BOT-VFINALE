@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+import os
+
 from .v123_runtime import activate
 
 activate()
@@ -13,6 +16,7 @@ runner.historical_bootstrap = v123_bootstrap
 
 _original_row = runner._row
 _original_run = runner.run
+_original_send = runner._send
 _original_analyze = engine.analyze
 _shadow_context_enabled = True
 
@@ -92,6 +96,30 @@ def _summary_v123(report):
     fin = report.get("finance") or {}
     return core.send_embed("📊 BILAN V12.3.2", [("Ledger confirmé",
         f"{fin.get('wins',0)}V-{fin.get('losses',0)}D-{fin.get('pushes',0)}P • P/L **{core.num(fin.get('profit_units')):+.2f}u** • ROI **{core.pct(fin.get('roi'))}**")], 5763719)
+
+
+def _send_v123(results, portfolio, chosen, combo, health, report):
+    # Keep the official sender untouched when games exist. If no games remain,
+    # still allow the research/settlement summary to publish on a valid webhook.
+    if results:
+        return _original_send(results, portfolio, chosen, combo, health, report)
+    if not core.discord_test():
+        return False
+    return bool(_summary_v123(report))
+
+
+def _refresh_deferred_payload(report):
+    path = runner.DISCORD_PAYLOAD
+    if not path.exists():
+        return False
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload["report"] = report
+        path.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        return True
+    except Exception:
+        core.logging.exception("Impossible de rafraîchir le payload Discord avec le Research Monitor V12.4")
+        return False
 
 
 def self_test_v123():
@@ -199,12 +227,22 @@ def run_v123(snapshot_only=False):
             "guardrails": {"selector_unchanged": True, "staking_unchanged": True, "discord_monitor_non_blocking": True},
         }
     journal.write_report(report)
+    if os.getenv("V12_DEFER_DISCORD", "0") == "1":
+        _refresh_deferred_payload(report)
+    else:
+        monitor = report.get("research_monitor_v124") or {}
+        if monitor:
+            try:
+                discord_v123.send_research_monitor(monitor)
+            except Exception:
+                core.logging.exception("Research Monitor V12.4 Discord post-run impossible; production inchangée")
     return report
 
 
 runner.engine.analyze = _analyze_with_shadows
 runner._row = _row_v123
 runner._summary = _summary_v123
+runner._send = _send_v123
 runner.self_test = self_test_v123
 runner.run = run_v123
 
