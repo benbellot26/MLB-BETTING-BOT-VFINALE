@@ -15,17 +15,19 @@ on:
   push:
     branches:
       - agent/v124-historical-reconstruction-warmstart
+    paths:
+      - 'v11/v124_historical_reconstruction.py'
+      - '.github/workflows/v124-historical-reconstruction.yml'
 
 permissions:
   contents: write
 
 concurrency:
   group: v124-historical-reconstruction-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   reconstruct:
-    if: github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[historical-replay]')
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
