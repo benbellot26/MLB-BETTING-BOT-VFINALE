@@ -13,6 +13,10 @@ def _label(r):
     return f"{str(r.get('name')).title()} {core.num(r.get('point')):g}"
 
 
+def _price_text(value):
+    return "—" if value is None or core.num(value) <= 1 else f"{core.num(value):.2f}"
+
+
 def _line(r):
     e = r.get("winamax_eval") or {}
     g = e.get("v11_price_gate") or {}
@@ -33,8 +37,8 @@ def _line(r):
         f" • prudent **{core.pct(g.get('p_conservative'))}** • incert. **{core.pct(r.get('model_uncertainty'))}** • DQ **{100*core.num(dq.get('score')):.0f}/100**\n"
         f"sharp **{core.pct(r.get('p_market'))}** ({int(core.num(r.get('refs')))} refs) • "
         f"ligne **{source}** • exécution Winamax **{execution}**\n"
-        f"cote réf. sharp **{core.num(ref_price):.2f}** ({ref_source}, {ref_count} quote{'s' if ref_count != 1 else ''}) • "
-        f"Winamax **{core.num(winamax_price):.2f}**"
+        f"cote réf. sharp **{_price_text(ref_price)}** ({ref_source}, {ref_count} quote{'s' if ref_count != 1 else ''}) • "
+        f"Winamax **{_price_text(winamax_price)}**"
         +(f" • mini value **{core.num(mini):.2f}**" if mini else "")
         +(f" • EV prudent **{100*core.num(ev):+.1f}%**" if ev is not None else "")
     )
@@ -90,7 +94,7 @@ def send_top(results):
 def send_plan(chosen, combo, portfolio, pool):
     simple = "\n\n".join(
         f"**#{i+1} {_label(c['rec'])} — {core.num((c['rec'].get('winamax_eval') or {}).get('official_units')):g}u recommandées**\n"
-        f"Réf. sharp {core.num(c['gate'].get('price')):.2f} • EV prudent {100*core.num(c['gate'].get('ev_at_price')):+.1f}% • "
+        f"Réf. sharp {_price_text(c['gate'].get('price'))} • EV prudent {100*core.num(c['gate'].get('ev_at_price')):+.1f}% • "
         f"DQ {100*core.num(c['dq'].get('score')):.0f}/100"
         for i, c in enumerate(chosen)
     ) or "**AUCUNE RECOMMANDATION SIMPLE.**"
