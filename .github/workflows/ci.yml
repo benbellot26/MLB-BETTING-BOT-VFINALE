@@ -1,4 +1,4 @@
-name: MLB Betting Bot V12.3.2 CI
+name: MLB Betting Bot V12.3.2 + V12.4 Shadow CI
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: v12-3-2-ci-${{ github.ref }}
+  group: v12-3-2-v12-4-ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -28,7 +28,7 @@ jobs:
           python-version: '3.12'
 
       - name: Compile
-        run: python -m py_compile v11/*.py tests/test_v11.py tests/test_historical_bootstrap.py tests/test_v123.py tests/test_v1231_runlines.py tests/test_safe_singles_v1231.py tests/test_shadow_v115.py tests/test_calibration_v1232.py
+        run: python -m py_compile v11/*.py tests/test_v11.py tests/test_historical_bootstrap.py tests/test_v123.py tests/test_v1231_runlines.py tests/test_safe_singles_v1231.py tests/test_shadow_v115.py tests/test_calibration_v1232.py tests/test_predictive_v124.py tests/test_v124_statcast_provider.py
 
       - name: V12.2 regression tests
         run: python -m unittest tests.test_v11 tests.test_historical_bootstrap
@@ -47,6 +47,12 @@ jobs:
 
       - name: V12.3.2 calibration challenger tests
         run: python -m unittest tests.test_calibration_v1232
+
+      - name: V12.4 predictive core shadow tests
+        run: python -m unittest tests.test_predictive_v124
+
+      - name: V12.4 Statcast provider tests
+        run: python -m unittest tests.test_v124_statcast_provider
 
       - name: V12.3 baseline-safe bootstrap validation
         run: python -m v11.v123_bootstrap --dry-run >/tmp/v12_3_bootstrap.json
