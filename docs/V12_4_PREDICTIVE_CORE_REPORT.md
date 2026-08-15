@@ -11,9 +11,23 @@ V12.4 is implemented as a **research-only shadow challenger** beside the officia
 | 3 | Bullpen player-level | **ADDED** | Individual reliever season ERA/WHIP quality, three-day pitch load, consecutive use, probable availability and expected bullpen share. | Role labels such as closer/setup are not treated as ground truth because MLB Stats does not expose a stable live role field. |
 | 4 | Lineup player-level | **ADDED** | All available starting hitters are valued individually with batting-order exposure and a bounded non-linear offensive adjustment. | Still uses OPS as the always-available player baseline when richer Statcast data are unavailable. |
 | 5 | Starter expected innings | **ADDED** | Expected IP derived from season workload/starts, skill and sample shrinkage; starter/team-pitching contribution is rebalanced by projected innings. | No manager-specific hook model yet; prediction is bounded and empirical rather than a dedicated survival model. |
-| 6 | Weather × park interaction | **PARTIAL** | Temperature, humidity and wind magnitude interact with park factor; retractable/covered parks fail neutral unless explicitly marked roof-open; wind direction is stored. | **Not added:** directional run adjustment from wind direction, because verified center-field bearings/roof state are not yet available for every park. No fabricated geometry is used. |
+| 6 | Weather × park interaction | **ADDED** | Moist-air density from temperature/humidity/surface pressure; gust-aware wind split into outfield and crosswind components; MLB field-relative wind preferred, with MLB venue azimuth + Open-Meteo vector fallback; park-sensitivity scaling and explicit roof-state safety. | If a retractable-roof game has no verifiable current roof state, outside weather remains neutral rather than guessed. This is a runtime data-availability safeguard, not a missing model component. |
 | 7 | Uncertainty decomposition | **ADDED** | Separate starter, lineup, bullpen, Statcast-coverage, sharp-dispersion and V11/V12-disagreement components; combined uncertainty shrinks probabilities toward 50%. | Component weights remain challenger assumptions until enough settled V12.4 evidence exists. |
 | 8 | Model ensemble | **ADDED — RESEARCH ONLY** | V12.4 core + official V12 + V11.5 shadow + sharp probability, normalized over available sources and shrunk by uncertainty. | Fixed initial weights are not eligible for production promotion without out-of-sample evidence. |
+
+## Weather implementation v2
+
+The weather module no longer applies independent temperature, humidity and wind bonuses. It first estimates moist-air density using temperature, relative humidity and surface pressure. Lower-density air increases the carry component; higher-density air reduces it.
+
+Wind direction uses the following hierarchy:
+
+1. MLB hydrated game weather when it supplies a field-relative label such as `Out To CF`, `In From CF`, `L To R` or `R To L`;
+2. otherwise MLB venue `azimuthAngle` combined with Open-Meteo meteorological wind direction to project the wind vector onto the home-plate-to-center-field axis;
+3. if neither direction source exists, wind direction is neutral instead of inferred.
+
+Wind gusts can strengthen the projected component within a bounded multiplier. Crosswind is tracked separately and receives only a small bounded effect. Existing park factor is not counted twice: it only scales weather sensitivity in this module.
+
+Roof handling is explicit. Open-air venues use outside weather; fixed domes neutralize it; retractable venues use a verified game-level roof state or an explicit environment override. Unknown retractable-roof state fails neutral.
 
 ## Ablation design
 
