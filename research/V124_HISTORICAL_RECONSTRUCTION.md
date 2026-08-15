@@ -8,18 +8,18 @@ The native V12.4 counter remains separate (`0/75`, then `150`, then `250`). Hist
 
 ## Point-in-time reconstruction
 
-Games are processed chronologically with a **strict J-1 freeze**. All games sharing a calendar date are predicted from exactly the same cumulative player/team state, containing only earlier calendar dates. Only after every game for that date has been frozen are that date's boxscore statistics added to state.
+The newly reconstructed V12.4 module state is processed chronologically with a **strict J-1 freeze**. All games sharing a calendar date are predicted from exactly the same cumulative player/team state, containing only earlier calendar dates. Only after every game for that date has been frozen are that date's boxscore statistics added to state.
 
 For each game, the reconstruction:
 
 1. reads the legacy gamePk/date/final score and legacy V10 structural run means;
-2. uses the historical starting-lineup identity from the final boxscore only as a FINAL-phase counterfactual identity;
+2. uses the historical starting-lineup and starter identities from the final boxscore only as FINAL-phase counterfactual identities;
 3. builds hitter, starter, team-pitching and reliever state from **prior calendar dates only**;
 4. computes the V12.4 module effects while same-day results remain invisible;
 5. optionally queries Baseball Savant aggregate data with a cutoff before the game;
 6. updates cumulative boxscore state only after every prediction for the current date has been created.
 
-This is deliberately more conservative than using an earlier completed game from the same day: it prevents any same-day result or overlapping-game timing ambiguity from leaking into another prediction.
+This is deliberately more conservative than using an earlier completed game from the same day: it prevents any same-day result or overlapping-game timing ambiguity from leaking into another reconstructed V12.4 module.
 
 ## Reconstructed modules
 
@@ -27,7 +27,7 @@ This is deliberately more conservative than using an earlier completed game from
 - Starter expected IP: chronological pitcher workload/skill from prior dates.
 - Bullpen player-level: prior reliever performance plus prior-date three-day pitch usage.
 - Platoon: chronological proxy that buckets a game's batting line by the opposing starter hand. Because it is not exact PA-by-PA handedness, its coverage is deliberately discounted by 35%.
-- Statcast: Baseball Savant aggregate point-in-time cutoff when available.
+- Statcast: Baseball Savant aggregate point-in-time cutoff when available; starter identity is resolved by ID/name from the historical boxscore, while performance remains point-in-time.
 - Weather x park: **coverage forced to zero** because the legacy cohort has no archived pregame weather forecast.
 
 ## Market boundary
@@ -43,6 +43,8 @@ Historical Totals are not synthesized, historical closing lines are not invented
 ## Baseline boundary
 
 The historical rows use legacy V10 structural run means as an explicitly labeled `baseline_historical_proxy`. They are **not renamed into native V12.3.2 evidence**.
+
+The original 1,801-game V10 dataset is documented as leakage-safe walk-forward: each prediction was generated before the current game's boxscore entered state, with no future-game stats or fabricated historical odds. The new strict J-1 freeze applies specifically to the **reconstructed V12.4 module state**; it does not retroactively claim that the stored legacy V10 baseline itself used a prior-calendar-day freeze.
 
 The proxy is used only to measure incremental module effects and initialize V12.4 shadow weights.
 
