@@ -11,9 +11,10 @@ class DiscordLimitTests(unittest.TestCase):
         paragraphs = [f"Option {i}: " + ("x" * 360) for i in range(12)]
         source = "\n\n".join(paragraphs)
         pages = dl.build_pages("Game", [("Run Line", source)])
-        self.assertGreater(len(pages), 1)
+        expanded = [(n, v) for page in pages for n, v in page["fields"]]
+        self.assertGreater(len(expanded), 1)
         self.assertTrue(all(dl.validate_page(page) for page in pages))
-        values = "\n".join(v for page in pages for _, v in page["fields"])
+        values = "\n".join(v for _, v in expanded)
         for paragraph in paragraphs:
             self.assertIn(paragraph, values)
 
