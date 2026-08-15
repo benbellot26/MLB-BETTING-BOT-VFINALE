@@ -27,14 +27,16 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Validation V12.3.2
+      - name: Validation V12.3.2 + shadows
         run: |
-          python -m py_compile v11/*.py tests/test_v11.py tests/test_historical_bootstrap.py tests/test_v123.py tests/test_v1231_runlines.py tests/test_safe_singles_v1231.py tests/test_shadow_v115.py
+          python -m py_compile v11/*.py tests/test_v11.py tests/test_historical_bootstrap.py tests/test_v123.py tests/test_v1231_runlines.py tests/test_safe_singles_v1231.py tests/test_shadow_v115.py tests/test_calibration_v1232.py tests/test_predictive_v124.py tests/test_v124_statcast_provider.py
           python -m unittest tests.test_v11 tests.test_historical_bootstrap
           python -m unittest tests.test_v123
           python -m unittest tests.test_v1231_runlines
           python -m unittest tests.test_safe_singles_v1231
           python -m unittest tests.test_shadow_v115
+          python -m unittest tests.test_calibration_v1232
+          python -m unittest tests.test_predictive_v124 tests.test_v124_statcast_provider
           python -m v11.v123_entry --self-test
           python -m v11.v123_bootstrap --dry-run >/tmp/v12_3_historical_bootstrap.json
           python -m v11.v123_train --dry-run >/tmp/v12_3_candidate.json
@@ -93,6 +95,7 @@ jobs:
           V123_MIN_CONFIDENCE_ML: '0.58'
           V123_MIN_CONFIDENCE_TOTAL: '0.58'
           V1232_ENABLE_V115_SHADOW: '1'
+          V124_ENABLE_SHADOW: '1'
         run: |
           mkdir -p data runtime/v11
           python -m v11.v123_entry
@@ -112,6 +115,9 @@ jobs:
           shadow=report.get('shadow_challenger') or {}
           if (shadow.get('activation') or {}).get('affects_v12_selection') is not False:
               raise SystemExit('V11.5 shadow must remain research-only')
+          v124=report.get('predictive_v124') or {}
+          if (v124.get('activation') or {}).get('affects_v12_selection') is not False:
+              raise SystemExit('V12.4 predictive shadow must remain research-only')
           PY
 
       - name: Persist PROPOSED recommendations
