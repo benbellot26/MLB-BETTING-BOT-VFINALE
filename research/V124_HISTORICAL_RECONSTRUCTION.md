@@ -53,24 +53,48 @@ The proxy is used only to measure incremental module effects and initialize V12.
 The reconstruction is eligible only if:
 
 - at least 600 reconstructed games are available;
-- an expanding chronological walk-forward is active;
+- an expanding chronological walk-forward has at least three future windows;
+- aggregate walk-forward Brier and LogLoss do not regress;
 - a frozen final test (15%, minimum 100 games) was never used for fitting the weights;
-- frozen-test Brier does not regress;
-- frozen-test LogLoss does not regress;
-- team-run MAE does not regress by more than 0.02 runs.
+- frozen-test Brier and LogLoss do not regress;
+- team-run MAE stays within a 0.02-run non-regression tolerance in both OOS layers.
 
 If the gate fails, the historical artifact stays diagnostic-only and V12.4 optimized remains governed by native data.
 
+## 2026 reconstruction result — 2026-08-15
+
+All **1,801 / 1,801** source games were reconstructed successfully with zero boxscore failures. Coverage was 100% for Starter Expected IP, 99.0% for bullpen player-level, 98.1% for lineup player-level, 85.2% for Statcast, 58.8% for the discounted platoon proxy, and 0% for weather as designed.
+
+The in-development optimizer converged to these candidate weights:
+
+- Starter Expected IP: **0.65**
+- Platoon: **0.10**
+- Statcast: **0.05**
+- Bullpen player-level: **0.00**
+- Lineup player-level: **0.00**
+- Weather x park: **0.00**
+
+However, the candidate **failed the out-of-sample activation gate** and is therefore `DIAGNOSTIC_ONLY`:
+
+- aggregate chronological walk-forward (1,456 future games / 59 windows): Brier `-0.000199`, LogLoss `-0.000453` versus baseline; team-run MAE improved by `+0.00206` runs;
+- untouched frozen test (270 games): Brier `-0.001406`, LogLoss `-0.002899` versus baseline; team-run MAE improved by `+0.00214` runs.
+
+Here a negative probability-score improvement means the reconstructed candidate was worse than baseline. The result is therefore useful evidence **against activating** the historical weight vector, despite its tiny run-error improvement. No gate is relaxed to force a warm start.
+
+Starter Expected IP remains the strongest historical research signal, but even a small Starter-IP-only candidate failed to improve the untouched frozen probability scores, so it is not activated separately.
+
 ## Historical/native blending
 
-If the historical artifact passes:
+If a future historical reconstruction passes the same untouched OOS gate:
 
 - native 0-74 games: historical weights may drive **V12.4 optimized shadow only**;
 - native 75-149 games: historical and native weights are blended, with native influence increasing with sample size;
 - native 150+ games: native weights fully replace the historical prior.
 
+For the current 1,801-game artifact this branch is **not active**, because the historical gate failed. Native V12.4 evidence remains authoritative.
+
 V12.3.2 production selection, Kelly, staking, Discord official picks and lifecycle are unchanged throughout.
 
 ## Storage boundary
 
-The full reconstructed 1,801-row evidence file is retained as a GitHub Actions artifact for 90 days. Only the compact validated warm-start model is committed to the repository, avoiding unnecessary repository bloat while preserving reproducibility and auditability.
+The full reconstructed 1,801-row evidence file is retained as a GitHub Actions artifact for 90 days. Only the compact validated diagnostic/warm-start model is committed to the repository, avoiding unnecessary repository bloat while preserving reproducibility and auditability.
