@@ -27,13 +27,13 @@
       "status": "COLLECTING"
     },
     "stack_validation": null,
-    "training_games": 0,
+    "training_games": 1,
     "version": "v12-professional-challenger-3",
     "walk_forward_gate": null
   },
-  "compatible_games": 0,
+  "compatible_games": 1,
   "engine": "12.3.2-value-selection-v1",
-  "generated_at": "2026-08-15T17:04:17.484230+00:00",
+  "generated_at": "2026-08-15T19:57:55.626776+00:00",
   "methodology": {
     "claim_limit": "Only V12.2 rows with matching feature schema train/calibrate the challenger.",
     "end_to_end_stack_gate": true,
@@ -92,19 +92,25 @@
       }
     },
     "FINAL": {
-      "games": 0,
+      "games": 1,
       "markets": {
         "ML": {
           "model": {
-            "n": 0
+            "multiclass_brier": 0.7510599360500001,
+            "multiclass_logloss": 0.948826836886232,
+            "n": 1
           },
-          "n": 0,
+          "n": 1,
           "precalibration": {
-            "n": 0
+            "multiclass_brier": 0.7510599360500001,
+            "multiclass_logloss": 0.948826836886232,
+            "n": 1
           },
           "selection": "fixed canonical execution line; pushes retained as third outcome",
           "sharp_with_model_push": {
-            "n": 0
+            "multiclass_brier": 0.6622370680819999,
+            "multiclass_logloss": 0.8566760316215751,
+            "n": 1
           }
         },
         "RUNLINE": {
@@ -136,19 +142,25 @@
       }
     },
     "LATE": {
-      "games": 0,
+      "games": 1,
       "markets": {
         "ML": {
           "model": {
-            "n": 0
+            "multiclass_brier": 0.7420543488,
+            "multiclass_logloss": 0.9393546714727067,
+            "n": 1
           },
-          "n": 0,
+          "n": 1,
           "precalibration": {
-            "n": 0
+            "multiclass_brier": 0.7420543488,
+            "multiclass_logloss": 0.9393546714727067,
+            "n": 1
           },
           "selection": "fixed canonical execution line; pushes retained as third outcome",
           "sharp_with_model_push": {
-            "n": 0
+            "multiclass_brier": 0.635702542178,
+            "multiclass_logloss": 0.8296154530258452,
+            "n": 1
           }
         },
         "RUNLINE": {
@@ -224,7 +236,12 @@
     {
       "engine_version": "12.3.1-alternate-runlines-v1",
       "feature_schema": "v12-3-features-v1",
-      "rows": 96
+      "rows": 99
+    },
+    {
+      "engine_version": "12.3.2-value-selection-v1",
+      "feature_schema": "v12-3-features-v1",
+      "rows": 6
     }
   ]
 }

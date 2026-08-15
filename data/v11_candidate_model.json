@@ -4,12 +4,12 @@
   "calibration_generation": "hierarchical-challenger-v2",
   "dispersion": {
     "active": false,
-    "n": 0,
+    "n": 1,
     "value": 7.5
   },
   "environment": {
     "active": false,
-    "n": 0,
+    "n": 1,
     "sigma": 0.08
   },
   "feature_schema": "v12-3-features-v1",
@@ -45,40 +45,62 @@
     "home_bullpen_unavailable",
     "away_bullpen_unavailable"
   ],
-  "generated_at": "2026-08-15T17:04:17.046534+00:00",
+  "generated_at": "2026-08-15T19:57:55.247935+00:00",
   "global_calibration": {
     "ML": {
       "active": false,
       "diagnostics": {
         "calibrated": {
-          "accuracy": null,
-          "brier": null,
+          "accuracy": 0.0,
+          "brier": 0.37552996802500005,
           "calibration_intercept": null,
           "calibration_slope": null,
-          "ece": null,
-          "logloss": null,
-          "mce": null,
-          "n": 0,
-          "reliability_bins": []
+          "ece": 0.612805,
+          "hit_rate": 0.0,
+          "logloss": 0.948826836886232,
+          "mce": 0.612805,
+          "mean_probability": 0.612805,
+          "n": 1,
+          "reliability_bins": [
+            {
+              "avg_probability": 0.612805,
+              "gap": 0.612805,
+              "hi": 0.65,
+              "hit_rate": 0.0,
+              "lo": 0.6,
+              "n": 1
+            }
+          ]
         },
         "raw": {
-          "accuracy": null,
-          "brier": null,
+          "accuracy": 0.0,
+          "brier": 0.37552996802500005,
           "calibration_intercept": null,
           "calibration_slope": null,
-          "ece": null,
-          "logloss": null,
-          "mce": null,
-          "n": 0,
-          "reliability_bins": []
+          "ece": 0.612805,
+          "hit_rate": 0.0,
+          "logloss": 0.948826836886232,
+          "mce": 0.612805,
+          "mean_probability": 0.612805,
+          "n": 1,
+          "reliability_bins": [
+            {
+              "avg_probability": 0.612805,
+              "gap": 0.612805,
+              "hi": 0.65,
+              "hit_rate": 0.0,
+              "lo": 0.6,
+              "n": 1
+            }
+          ]
         }
       },
       "holdout_n": 0,
-      "n": 0,
+      "n": 1,
       "push": {
         "active": false,
         "method": "identity",
-        "n": 0,
+        "n": 1,
         "status": "N/A"
       },
       "research_line_policy": "featured sharp/main line allowed; alternate_spreads excluded; Winamax not required",
@@ -87,46 +109,77 @@
         "candidates": {},
         "holdout_n": 0,
         "method": "identity",
-        "n": 0,
+        "n": 1,
         "status": "COLLECTING",
         "train_n": 0
       },
       "status": "COLLECTING",
       "train_n": 0,
-      "uncertainty_bins": []
+      "uncertainty_bins": [
+        {
+          "avg_probability": 0.612805,
+          "hi": 1.001,
+          "hit_rate": 0.0,
+          "lo": 0.6,
+          "n": 1,
+          "uncertainty": 0.12
+        }
+      ]
     },
     "RUNLINE": {
       "active": false,
       "diagnostics": {
         "calibrated": {
-          "accuracy": null,
-          "brier": null,
+          "accuracy": 1.0,
+          "brier": 0.18782082468900002,
           "calibration_intercept": null,
           "calibration_slope": null,
-          "ece": null,
-          "logloss": null,
-          "mce": null,
-          "n": 0,
-          "reliability_bins": []
+          "ece": 0.433383,
+          "hit_rate": 0.0,
+          "logloss": 0.5680716885059909,
+          "mce": 0.433383,
+          "mean_probability": 0.433383,
+          "n": 1,
+          "reliability_bins": [
+            {
+              "avg_probability": 0.433383,
+              "gap": 0.433383,
+              "hi": 0.45,
+              "hit_rate": 0.0,
+              "lo": 0.4,
+              "n": 1
+            }
+          ]
         },
         "raw": {
-          "accuracy": null,
-          "brier": null,
+          "accuracy": 1.0,
+          "brier": 0.18782082468900002,
           "calibration_intercept": null,
           "calibration_slope": null,
-          "ece": null,
-          "logloss": null,
-          "mce": null,
-          "n": 0,
-          "reliability_bins": []
+          "ece": 0.433383,
+          "hit_rate": 0.0,
+          "logloss": 0.5680716885059909,
+          "mce": 0.433383,
+          "mean_probability": 0.433383,
+          "n": 1,
+          "reliability_bins": [
+            {
+              "avg_probability": 0.433383,
+              "gap": 0.433383,
+              "hi": 0.45,
+              "hit_rate": 0.0,
+              "lo": 0.4,
+              "n": 1
+            }
+          ]
         }
       },
       "holdout_n": 0,
-      "n": 0,
+      "n": 1,
       "push": {
         "active": false,
         "method": "identity",
-        "n": 0,
+        "n": 1,
         "status": "COLLECTING"
       },
       "research_line_policy": "featured sharp/main line allowed; alternate_spreads excluded; Winamax not required",
@@ -135,46 +188,77 @@
         "candidates": {},
         "holdout_n": 0,
         "method": "identity",
-        "n": 0,
+        "n": 1,
         "status": "COLLECTING",
         "train_n": 0
       },
       "status": "COLLECTING",
       "train_n": 0,
-      "uncertainty_bins": []
+      "uncertainty_bins": [
+        {
+          "avg_probability": 0.433383,
+          "hi": 0.45,
+          "hit_rate": 0.0,
+          "lo": 0.4,
+          "n": 1,
+          "uncertainty": 0.12
+        }
+      ]
     },
     "TOTAL": {
       "active": false,
       "diagnostics": {
         "calibrated": {
-          "accuracy": null,
-          "brier": null,
+          "accuracy": 0.0,
+          "brier": 0.29641382472100003,
           "calibration_intercept": null,
           "calibration_slope": null,
-          "ece": null,
-          "logloss": null,
-          "mce": null,
-          "n": 0,
-          "reliability_bins": []
+          "ece": 0.544439,
+          "hit_rate": 0.0,
+          "logloss": 0.7862256524778604,
+          "mce": 0.544439,
+          "mean_probability": 0.544439,
+          "n": 1,
+          "reliability_bins": [
+            {
+              "avg_probability": 0.544439,
+              "gap": 0.544439,
+              "hi": 0.55,
+              "hit_rate": 0.0,
+              "lo": 0.5,
+              "n": 1
+            }
+          ]
         },
         "raw": {
-          "accuracy": null,
-          "brier": null,
+          "accuracy": 0.0,
+          "brier": 0.29641382472100003,
           "calibration_intercept": null,
           "calibration_slope": null,
-          "ece": null,
-          "logloss": null,
-          "mce": null,
-          "n": 0,
-          "reliability_bins": []
+          "ece": 0.544439,
+          "hit_rate": 0.0,
+          "logloss": 0.7862256524778604,
+          "mce": 0.544439,
+          "mean_probability": 0.544439,
+          "n": 1,
+          "reliability_bins": [
+            {
+              "avg_probability": 0.544439,
+              "gap": 0.544439,
+              "hi": 0.55,
+              "hit_rate": 0.0,
+              "lo": 0.5,
+              "n": 1
+            }
+          ]
         }
       },
       "holdout_n": 0,
-      "n": 0,
+      "n": 1,
       "push": {
         "active": false,
         "method": "identity",
-        "n": 0,
+        "n": 1,
         "status": "COLLECTING"
       },
       "research_line_policy": "featured sharp/main line allowed; alternate_spreads excluded; Winamax not required",
@@ -183,27 +267,36 @@
         "candidates": {},
         "holdout_n": 0,
         "method": "identity",
-        "n": 0,
+        "n": 1,
         "status": "COLLECTING",
         "train_n": 0
       },
       "status": "COLLECTING",
       "train_n": 0,
-      "uncertainty_bins": []
+      "uncertainty_bins": [
+        {
+          "avg_probability": 0.544439,
+          "hi": 0.55,
+          "hit_rate": 0.0,
+          "lo": 0.5,
+          "n": 1,
+          "uncertainty": 0.12
+        }
+      ]
     }
   },
   "metadata": {
-    "code_commit": "ecb179a018fe30607b1d4efeb7542d633e1b7036",
-    "dataset_fingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "code_commit": "8df1e4cd7951c1fb06295499aa215f22c3f43eeb",
+    "dataset_fingerprint": "b97c03da076de344d3b93da64cbf9f782c2868c2b436ea7513423246794ed55b",
     "engine_version": "12.3.2-value-selection-v1",
     "feature_schema": "v12-3-features-v1",
     "feature_schema_hash": "8ac7aa7658db1e944cb1df7b268322319680451e29d0e0afd6db0ea0189c0a2d",
     "incumbent_artifact_status": "ABSENT",
     "incumbent_version": "structural-only",
     "schema_version": "v12-3-professional-v1",
-    "training_cutoff": null,
-    "training_games_available": 0,
-    "training_rows_available": 0
+    "training_cutoff": "2026-08-15T17:10:00Z",
+    "training_games_available": 1,
+    "training_rows_available": 2
   },
   "passes": false,
   "phase_models": {
@@ -367,34 +460,56 @@
           "active": false,
           "diagnostics": {
             "calibrated": {
-              "accuracy": null,
-              "brier": null,
+              "accuracy": 0.0,
+              "brier": 0.37552996802500005,
               "calibration_intercept": null,
               "calibration_slope": null,
-              "ece": null,
-              "logloss": null,
-              "mce": null,
-              "n": 0,
-              "reliability_bins": []
+              "ece": 0.612805,
+              "hit_rate": 0.0,
+              "logloss": 0.948826836886232,
+              "mce": 0.612805,
+              "mean_probability": 0.612805,
+              "n": 1,
+              "reliability_bins": [
+                {
+                  "avg_probability": 0.612805,
+                  "gap": 0.612805,
+                  "hi": 0.65,
+                  "hit_rate": 0.0,
+                  "lo": 0.6,
+                  "n": 1
+                }
+              ]
             },
             "raw": {
-              "accuracy": null,
-              "brier": null,
+              "accuracy": 0.0,
+              "brier": 0.37552996802500005,
               "calibration_intercept": null,
               "calibration_slope": null,
-              "ece": null,
-              "logloss": null,
-              "mce": null,
-              "n": 0,
-              "reliability_bins": []
+              "ece": 0.612805,
+              "hit_rate": 0.0,
+              "logloss": 0.948826836886232,
+              "mce": 0.612805,
+              "mean_probability": 0.612805,
+              "n": 1,
+              "reliability_bins": [
+                {
+                  "avg_probability": 0.612805,
+                  "gap": 0.612805,
+                  "hi": 0.65,
+                  "hit_rate": 0.0,
+                  "lo": 0.6,
+                  "n": 1
+                }
+              ]
             }
           },
           "holdout_n": 0,
-          "n": 0,
+          "n": 1,
           "push": {
             "active": false,
             "method": "identity",
-            "n": 0,
+            "n": 1,
             "status": "N/A"
           },
           "research_line_policy": "featured sharp/main line allowed; alternate_spreads excluded; Winamax not required",
@@ -403,46 +518,77 @@
             "candidates": {},
             "holdout_n": 0,
             "method": "identity",
-            "n": 0,
+            "n": 1,
             "status": "COLLECTING",
             "train_n": 0
           },
           "status": "COLLECTING",
           "train_n": 0,
-          "uncertainty_bins": []
+          "uncertainty_bins": [
+            {
+              "avg_probability": 0.612805,
+              "hi": 1.001,
+              "hit_rate": 0.0,
+              "lo": 0.6,
+              "n": 1,
+              "uncertainty": 0.12
+            }
+          ]
         },
         "RUNLINE": {
           "active": false,
           "diagnostics": {
             "calibrated": {
-              "accuracy": null,
-              "brier": null,
+              "accuracy": 1.0,
+              "brier": 0.18782082468900002,
               "calibration_intercept": null,
               "calibration_slope": null,
-              "ece": null,
-              "logloss": null,
-              "mce": null,
-              "n": 0,
-              "reliability_bins": []
+              "ece": 0.433383,
+              "hit_rate": 0.0,
+              "logloss": 0.5680716885059909,
+              "mce": 0.433383,
+              "mean_probability": 0.433383,
+              "n": 1,
+              "reliability_bins": [
+                {
+                  "avg_probability": 0.433383,
+                  "gap": 0.433383,
+                  "hi": 0.45,
+                  "hit_rate": 0.0,
+                  "lo": 0.4,
+                  "n": 1
+                }
+              ]
             },
             "raw": {
-              "accuracy": null,
-              "brier": null,
+              "accuracy": 1.0,
+              "brier": 0.18782082468900002,
               "calibration_intercept": null,
               "calibration_slope": null,
-              "ece": null,
-              "logloss": null,
-              "mce": null,
-              "n": 0,
-              "reliability_bins": []
+              "ece": 0.433383,
+              "hit_rate": 0.0,
+              "logloss": 0.5680716885059909,
+              "mce": 0.433383,
+              "mean_probability": 0.433383,
+              "n": 1,
+              "reliability_bins": [
+                {
+                  "avg_probability": 0.433383,
+                  "gap": 0.433383,
+                  "hi": 0.45,
+                  "hit_rate": 0.0,
+                  "lo": 0.4,
+                  "n": 1
+                }
+              ]
             }
           },
           "holdout_n": 0,
-          "n": 0,
+          "n": 1,
           "push": {
             "active": false,
             "method": "identity",
-            "n": 0,
+            "n": 1,
             "status": "COLLECTING"
           },
           "research_line_policy": "featured sharp/main line allowed; alternate_spreads excluded; Winamax not required",
@@ -451,46 +597,77 @@
             "candidates": {},
             "holdout_n": 0,
             "method": "identity",
-            "n": 0,
+            "n": 1,
             "status": "COLLECTING",
             "train_n": 0
           },
           "status": "COLLECTING",
           "train_n": 0,
-          "uncertainty_bins": []
+          "uncertainty_bins": [
+            {
+              "avg_probability": 0.433383,
+              "hi": 0.45,
+              "hit_rate": 0.0,
+              "lo": 0.4,
+              "n": 1,
+              "uncertainty": 0.12
+            }
+          ]
         },
         "TOTAL": {
           "active": false,
           "diagnostics": {
             "calibrated": {
-              "accuracy": null,
-              "brier": null,
+              "accuracy": 0.0,
+              "brier": 0.29641382472100003,
               "calibration_intercept": null,
               "calibration_slope": null,
-              "ece": null,
-              "logloss": null,
-              "mce": null,
-              "n": 0,
-              "reliability_bins": []
+              "ece": 0.544439,
+              "hit_rate": 0.0,
+              "logloss": 0.7862256524778604,
+              "mce": 0.544439,
+              "mean_probability": 0.544439,
+              "n": 1,
+              "reliability_bins": [
+                {
+                  "avg_probability": 0.544439,
+                  "gap": 0.544439,
+                  "hi": 0.55,
+                  "hit_rate": 0.0,
+                  "lo": 0.5,
+                  "n": 1
+                }
+              ]
             },
             "raw": {
-              "accuracy": null,
-              "brier": null,
+              "accuracy": 0.0,
+              "brier": 0.29641382472100003,
               "calibration_intercept": null,
               "calibration_slope": null,
-              "ece": null,
-              "logloss": null,
-              "mce": null,
-              "n": 0,
-              "reliability_bins": []
+              "ece": 0.544439,
+              "hit_rate": 0.0,
+              "logloss": 0.7862256524778604,
+              "mce": 0.544439,
+              "mean_probability": 0.544439,
+              "n": 1,
+              "reliability_bins": [
+                {
+                  "avg_probability": 0.544439,
+                  "gap": 0.544439,
+                  "hi": 0.55,
+                  "hit_rate": 0.0,
+                  "lo": 0.5,
+                  "n": 1
+                }
+              ]
             }
           },
           "holdout_n": 0,
-          "n": 0,
+          "n": 1,
           "push": {
             "active": false,
             "method": "identity",
-            "n": 0,
+            "n": 1,
             "status": "COLLECTING"
           },
           "research_line_policy": "featured sharp/main line allowed; alternate_spreads excluded; Winamax not required",
@@ -499,21 +676,30 @@
             "candidates": {},
             "holdout_n": 0,
             "method": "identity",
-            "n": 0,
+            "n": 1,
             "status": "COLLECTING",
             "train_n": 0
           },
           "status": "COLLECTING",
           "train_n": 0,
-          "uncertainty_bins": []
+          "uncertainty_bins": [
+            {
+              "avg_probability": 0.544439,
+              "hi": 0.55,
+              "hit_rate": 0.0,
+              "lo": 0.5,
+              "n": 1,
+              "uncertainty": 0.12
+            }
+          ]
         }
       },
       "residual": {
         "active": false,
-        "n": 0,
+        "n": 1,
         "status": "COLLECTING"
       },
-      "training_games": 0
+      "training_games": 1
     },
     "LATE": {
       "calibration": {
@@ -521,34 +707,56 @@
           "active": false,
           "diagnostics": {
             "calibrated": {
-              "accuracy": null,
-              "brier": null,
+              "accuracy": 0.0,
+              "brier": 0.3710271744,
               "calibration_intercept": null,
               "calibration_slope": null,
-              "ece": null,
-              "logloss": null,
-              "mce": null,
-              "n": 0,
-              "reliability_bins": []
+              "ece": 0.60912,
+              "hit_rate": 0.0,
+              "logloss": 0.9393546714727067,
+              "mce": 0.60912,
+              "mean_probability": 0.60912,
+              "n": 1,
+              "reliability_bins": [
+                {
+                  "avg_probability": 0.60912,
+                  "gap": 0.60912,
+                  "hi": 0.65,
+                  "hit_rate": 0.0,
+                  "lo": 0.6,
+                  "n": 1
+                }
+              ]
             },
             "raw": {
-              "accuracy": null,
-              "brier": null,
+              "accuracy": 0.0,
+              "brier": 0.3710271744,
               "calibration_intercept": null,
               "calibration_slope": null,
-              "ece": null,
-              "logloss": null,
-              "mce": null,
-              "n": 0,
-              "reliability_bins": []
+              "ece": 0.60912,
+              "hit_rate": 0.0,
+              "logloss": 0.9393546714727067,
+              "mce": 0.60912,
+              "mean_probability": 0.60912,
+              "n": 1,
+              "reliability_bins": [
+                {
+                  "avg_probability": 0.60912,
+                  "gap": 0.60912,
+                  "hi": 0.65,
+                  "hit_rate": 0.0,
+                  "lo": 0.6,
+                  "n": 1
+                }
+              ]
             }
           },
           "holdout_n": 0,
-          "n": 0,
+          "n": 1,
           "push": {
             "active": false,
             "method": "identity",
-            "n": 0,
+            "n": 1,
             "status": "N/A"
           },
           "research_line_policy": "featured sharp/main line allowed; alternate_spreads excluded; Winamax not required",
@@ -557,46 +765,77 @@
             "candidates": {},
             "holdout_n": 0,
             "method": "identity",
-            "n": 0,
+            "n": 1,
             "status": "COLLECTING",
             "train_n": 0
           },
           "status": "COLLECTING",
           "train_n": 0,
-          "uncertainty_bins": []
+          "uncertainty_bins": [
+            {
+              "avg_probability": 0.60912,
+              "hi": 1.001,
+              "hit_rate": 0.0,
+              "lo": 0.6,
+              "n": 1,
+              "uncertainty": 0.12
+            }
+          ]
         },
         "RUNLINE": {
           "active": false,
           "diagnostics": {
             "calibrated": {
-              "accuracy": null,
-              "brier": null,
+              "accuracy": 1.0,
+              "brier": 0.18583513939600002,
               "calibration_intercept": null,
               "calibration_slope": null,
-              "ece": null,
-              "logloss": null,
-              "mce": null,
-              "n": 0,
-              "reliability_bins": []
+              "ece": 0.431086,
+              "hit_rate": 0.0,
+              "logloss": 0.5640259986339718,
+              "mce": 0.431086,
+              "mean_probability": 0.431086,
+              "n": 1,
+              "reliability_bins": [
+                {
+                  "avg_probability": 0.431086,
+                  "gap": 0.431086,
+                  "hi": 0.45,
+                  "hit_rate": 0.0,
+                  "lo": 0.4,
+                  "n": 1
+                }
+              ]
             },
             "raw": {
-              "accuracy": null,
-              "brier": null,
+              "accuracy": 1.0,
+              "brier": 0.18583513939600002,
               "calibration_intercept": null,
               "calibration_slope": null,
-              "ece": null,
-              "logloss": null,
-              "mce": null,
-              "n": 0,
-              "reliability_bins": []
+              "ece": 0.431086,
+              "hit_rate": 0.0,
+              "logloss": 0.5640259986339718,
+              "mce": 0.431086,
+              "mean_probability": 0.431086,
+              "n": 1,
+              "reliability_bins": [
+                {
+                  "avg_probability": 0.431086,
+                  "gap": 0.431086,
+                  "hi": 0.45,
+                  "hit_rate": 0.0,
+                  "lo": 0.4,
+                  "n": 1
+                }
+              ]
             }
           },
           "holdout_n": 0,
-          "n": 0,
+          "n": 1,
           "push": {
             "active": false,
             "method": "identity",
-            "n": 0,
+            "n": 1,
             "status": "COLLECTING"
           },
           "research_line_policy": "featured sharp/main line allowed; alternate_spreads excluded; Winamax not required",
@@ -605,46 +844,77 @@
             "candidates": {},
             "holdout_n": 0,
             "method": "identity",
-            "n": 0,
+            "n": 1,
             "status": "COLLECTING",
             "train_n": 0
           },
           "status": "COLLECTING",
           "train_n": 0,
-          "uncertainty_bins": []
+          "uncertainty_bins": [
+            {
+              "avg_probability": 0.431086,
+              "hi": 0.45,
+              "hit_rate": 0.0,
+              "lo": 0.4,
+              "n": 1,
+              "uncertainty": 0.12
+            }
+          ]
         },
         "TOTAL": {
           "active": false,
           "diagnostics": {
             "calibrated": {
-              "accuracy": null,
-              "brier": null,
+              "accuracy": 0.0,
+              "brier": 0.2934822276,
               "calibration_intercept": null,
               "calibration_slope": null,
-              "ece": null,
-              "logloss": null,
-              "mce": null,
-              "n": 0,
-              "reliability_bins": []
+              "ece": 0.54174,
+              "hit_rate": 0.0,
+              "logloss": 0.7803185703509405,
+              "mce": 0.54174,
+              "mean_probability": 0.54174,
+              "n": 1,
+              "reliability_bins": [
+                {
+                  "avg_probability": 0.54174,
+                  "gap": 0.54174,
+                  "hi": 0.55,
+                  "hit_rate": 0.0,
+                  "lo": 0.5,
+                  "n": 1
+                }
+              ]
             },
             "raw": {
-              "accuracy": null,
-              "brier": null,
+              "accuracy": 0.0,
+              "brier": 0.2934822276,
               "calibration_intercept": null,
               "calibration_slope": null,
-              "ece": null,
-              "logloss": null,
-              "mce": null,
-              "n": 0,
-              "reliability_bins": []
+              "ece": 0.54174,
+              "hit_rate": 0.0,
+              "logloss": 0.7803185703509405,
+              "mce": 0.54174,
+              "mean_probability": 0.54174,
+              "n": 1,
+              "reliability_bins": [
+                {
+                  "avg_probability": 0.54174,
+                  "gap": 0.54174,
+                  "hi": 0.55,
+                  "hit_rate": 0.0,
+                  "lo": 0.5,
+                  "n": 1
+                }
+              ]
             }
           },
           "holdout_n": 0,
-          "n": 0,
+          "n": 1,
           "push": {
             "active": false,
             "method": "identity",
-            "n": 0,
+            "n": 1,
             "status": "COLLECTING"
           },
           "research_line_policy": "featured sharp/main line allowed; alternate_spreads excluded; Winamax not required",
@@ -653,21 +923,30 @@
             "candidates": {},
             "holdout_n": 0,
             "method": "identity",
-            "n": 0,
+            "n": 1,
             "status": "COLLECTING",
             "train_n": 0
           },
           "status": "COLLECTING",
           "train_n": 0,
-          "uncertainty_bins": []
+          "uncertainty_bins": [
+            {
+              "avg_probability": 0.54174,
+              "hi": 0.55,
+              "hit_rate": 0.0,
+              "lo": 0.5,
+              "n": 1,
+              "uncertainty": 0.12
+            }
+          ]
         }
       },
       "residual": {
         "active": false,
-        "n": 0,
+        "n": 1,
         "status": "COLLECTING"
       },
-      "training_games": 0
+      "training_games": 1
     }
   },
   "promotion_gate": {
