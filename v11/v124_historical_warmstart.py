@@ -103,8 +103,6 @@ def compose(native_model, historical, modules, max_weight, native_min, native_fu
     model["weight_source"] = source
     model["native_weight_share"] = native_share
     model["historical_weight_share"] = 1-native_share if hist_eligible else 0.0
-    # Historical reconstruction may activate only the V12.4 optimized shadow.
-    # Production V12.3.2 remains untouched and the 75-game native gate remains a separate counter.
     model["active_for_v124_shadow"] = bool(hist_eligible or native_n >= native_min)
     model["research_only"] = True
     model["affects_v12_selection"] = False
@@ -122,6 +120,7 @@ def install():
         return True
     from . import predictive_v124 as v124
     from . import v124_weight_optimizer as optimizer
+    from . import v124_research_monitor as monitor
     if getattr(optimizer, "_historical_warmstart_installed", False):
         _INSTALLED = True
         return True
@@ -129,6 +128,7 @@ def install():
     native_current_model = optimizer.current_model
     native_reset_cache = optimizer.reset_cache
     original_metrics = v124.metrics
+    original_monitor_build = monitor.build
     cache = {"model": None}
 
     def composed_from_rows(rows):
@@ -143,7 +143,6 @@ def install():
             from . import journal
             cache["model"] = composed_from_rows(journal.load_rows())
         except Exception:
-            # Fall back to the original native model rather than ever breaking V12.4 shadow execution.
             cache["model"] = native_current_model()
         return cache["model"]
 
@@ -160,9 +159,35 @@ def install():
         report.setdefault("activation", {})["historical_warmstart_affects_v12_selection"] = False
         return report
 
+    def monitor_build(report, previous_report=None, rows=None):
+        payload = original_monitor_build(report, previous_report, rows)
+        composed = ((report.get("predictive_v124") or {}).get("weight_optimizer") or {})
+        hist = composed.get("historical_warm_start") or {}
+        payload["historical_warm_start"] = {
+            "games": int(_num(composed.get("historical_reconstructed_games"), 0) or 0),
+            "eligible": bool(composed.get("historical_warm_start_eligible")),
+            "weight_source": composed.get("weight_source"),
+            "historical_weight_share": _num(composed.get("historical_weight_share"), 0.0),
+            "native_weight_share": _num(composed.get("native_weight_share"), 0.0),
+            "frozen_test": hist.get("frozen_test") or {},
+            "coverage": hist.get("coverage") or {},
+            "evidence_boundary": hist.get("evidence_boundary"),
+        }
+        progress = payload.setdefault("progress", {})
+        progress["historical_reconstructed_games"] = payload["historical_warm_start"]["games"]
+        progress["historical_warm_start_eligible"] = payload["historical_warm_start"]["eligible"]
+        progress["weight_source"] = composed.get("weight_source")
+        # Presentation-only suffix: native status/counter remains the actual gate.
+        if payload["historical_warm_start"]["games"]:
+            status = str(progress.get("status") or "COLLECTING")
+            tag = "HIST-WARM" if payload["historical_warm_start"]["eligible"] else "HIST-DIAG"
+            progress["status"] = f"{status} • {tag} {payload['historical_warm_start']['games']}"
+        return payload
+
     optimizer.current_model = current_model
     optimizer.reset_cache = reset_cache
     v124.metrics = metrics
+    monitor.build = monitor_build
     optimizer._historical_warmstart_installed = True
     _INSTALLED = True
     return True
