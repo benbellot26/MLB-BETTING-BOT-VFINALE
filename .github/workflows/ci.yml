@@ -28,7 +28,7 @@ jobs:
           python-version: '3.12'
 
       - name: Compile
-        run: python -m py_compile v11/*.py tests/test_v11.py tests/test_historical_bootstrap.py tests/test_v123.py tests/test_v1231_runlines.py tests/test_safe_singles_v1231.py tests/test_shadow_v115.py
+        run: python -m py_compile v11/*.py tests/test_v11.py tests/test_historical_bootstrap.py tests/test_v123.py tests/test_v1231_runlines.py tests/test_safe_singles_v1231.py tests/test_shadow_v115.py tests/test_calibration_v1232.py
 
       - name: V12.2 regression tests
         run: python -m unittest tests.test_v11 tests.test_historical_bootstrap
@@ -44,6 +44,9 @@ jobs:
 
       - name: V11.5 shadow challenger tests
         run: python -m unittest tests.test_shadow_v115
+
+      - name: V12.3.2 calibration challenger tests
+        run: python -m unittest tests.test_calibration_v1232
 
       - name: V12.3 baseline-safe bootstrap validation
         run: python -m v11.v123_bootstrap --dry-run >/tmp/v12_3_bootstrap.json
