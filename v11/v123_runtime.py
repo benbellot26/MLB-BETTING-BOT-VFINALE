@@ -46,4 +46,8 @@ def activate():
     # holdout, walk-forward and live-evidence promotion gates.
     from .calibration_v1232 import install as install_calibration_challenger
     install_calibration_challenger()
+    # V12.4 remains shadow-only. Its Statcast provider is bounded/aggregated and
+    # point-in-time-recordable; it cannot change official V12.3.2 selections.
+    from .v124_statcast_provider import install as install_v124_statcast
+    install_v124_statcast()
     return True
