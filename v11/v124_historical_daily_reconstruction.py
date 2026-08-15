@@ -32,8 +32,10 @@ def reconstruct(source_rows, boxes, use_statcast=True):
     """Strict J-1 reconstruction: all games on a date see the same prior-day state."""
     from . import core
     from .v124_statcast_provider import install as install_statcast
+    from .v124_starter_ip_v2 import install as install_starter_ip_v2
 
     install_statcast()
+    install_starter_ip_v2()
     core.SEASON = 2026
     state = base.State()
     reconstructed = []
@@ -96,6 +98,7 @@ def reconstruct(source_rows, boxes, use_statcast=True):
                         "starter_identity": "boxscore starter id/name used only for identity; performance state is strict J-1",
                         "player_stats": "strict J-1 state; current calendar date applied only after every game on that date is predicted",
                         "same_day_results_visible": False,
+                        "starter_ip_version": "v2-duration-quality-decoupled",
                         "weather": "excluded: no archived pregame forecast",
                         "statcast": "Baseball Savant point-in-time cutoff" if use_statcast else "disabled",
                         "native_v124_evidence": False,
