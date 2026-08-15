@@ -1,21 +1,21 @@
 {
-  "analyzed_at": "2026-08-15T03:08:47.062211+00:00",
+  "analyzed_at": "2026-08-15T04:52:42.211448+00:00",
   "data_health": {
-    "analyzed_games": 0,
+    "analyzed_games": 15,
     "confirmed_lineups": 0,
-    "confirmed_starters": 0,
-    "matched_events": 5,
-    "mean_data_quality": null,
-    "scheduled_games": 14,
+    "confirmed_starters": 14,
+    "matched_events": 15,
+    "mean_data_quality": 0.7299,
+    "scheduled_games": 15,
     "sharp_coverage": {
-      "ML": 0,
-      "RUNLINE": 0,
-      "TOTAL": 0
+      "ML": 13,
+      "RUNLINE": 12,
+      "TOTAL": 13
     },
     "usable_lineups": 0,
-    "usable_starters": 0,
+    "usable_starters": 14,
     "winamax_coverage": {
-      "ML": 0,
+      "ML": 15,
       "RUNLINE": 0,
       "TOTAL": 0
     }
@@ -62,7 +62,7 @@
     "source": "frozen 2026 baseball bootstrap; FINAL-only; not betting-profitability evidence"
   },
   "ledger_settled_this_run": 0,
-  "matched_events": 5,
+  "matched_events": 15,
   "methodology": {
     "alternate_runlines": "event-level alternate_spreads; evaluates both +/-1.5 pairs when actually available",
     "calibration": "phase-specific side + push calibration; end-to-end promotion gate",
@@ -74,9 +74,9 @@
     "generation": "V12.3.1 alternate-runlines-v1",
     "historical_evidence": "legacy V10 1,801-game data are diagnostic only until a V12.3 structural baseline exists",
     "ledger": "PROPOSED -> PUBLISHED -> CONFIRMED_PLACED -> SETTLED",
-    "raw_archive": "runtime/v11/snapshots/2026-08-14_997eed9064ffe09f.json.gz",
+    "raw_archive": "runtime/v11/snapshots/2026-08-15_e92416c4c4472be2.json.gz",
     "runs_model": "immutable structural baseline + validated FINAL historical prior fallback + phase-specific live residual",
-    "source_replay": "runtime/v11/source_replays/2026-08-14_997eed9064ffe09f_sources.json.gz",
+    "source_replay": "runtime/v11/source_replays/2026-08-15_e92416c4c4472be2_sources.json.gz",
     "staking": "bankroll-aware fractional Kelly; official combos disabled",
     "starter_model": "current season + N-1/N-2 prior affects structural run means",
     "uncertainty": "empirical phase/market reliability bins + market disagreement + DQ penalty",
@@ -101,17 +101,17 @@
   "performance": {
     "by_market": {
       "ML": {
-        "accuracy": 0.5555555555555556,
-        "brier": 0.2913183688888889,
-        "logloss": 0.7765041633333333,
-        "n": 9,
+        "accuracy": 0.5714285714285714,
+        "brier": 0.2802029771428572,
+        "logloss": 0.7542144178571428,
+        "n": 14,
         "selection": "canonical main line",
-        "sharp_brier": 0.2848104311111111,
-        "sharp_logloss": 0.76395703,
-        "wins": 5
+        "sharp_brier": 0.2668040392857143,
+        "sharp_logloss": 0.7272971685714286,
+        "wins": 8
       }
     },
-    "settled_games": 9
+    "settled_games": 14
   },
   "production": {
     "claim": "COLLECTING",
@@ -137,10 +137,10 @@
     "status": "COLLECTING",
     "volume_ready": false
   },
-  "remaining_games_analyzed": 0,
-  "run_id": "997eed9064ffe09f",
-  "scheduled_games": 14,
+  "remaining_games_analyzed": 15,
+  "run_id": "e92416c4c4472be2",
+  "scheduled_games": 15,
   "schema": "v12-3-professional-v1",
-  "target_date": "2026-08-14",
+  "target_date": "2026-08-15",
   "version": "12.3.1-alternate-runlines-v1"
 }
