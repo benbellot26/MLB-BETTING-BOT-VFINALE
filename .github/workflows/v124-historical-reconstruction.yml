@@ -1,0 +1,104 @@
+name: V12.4 Historical Reconstruction Warm Start
+
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: '0 = full 2026 cohort; positive = first N games for diagnostics'
+        required: false
+        default: '0'
+      statcast:
+        description: 'Use point-in-time Baseball Savant aggregate data'
+        type: boolean
+        required: false
+        default: true
+  push:
+    branches:
+      - agent/v124-historical-reconstruction-warmstart
+
+permissions:
+  contents: write
+
+concurrency:
+  group: v124-historical-reconstruction-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  reconstruct:
+    if: github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[historical-replay]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate source cohort
+        run: |
+          python -m v11.v124_historical_reconstruction --offline-dry-run > /tmp/source.json
+          python - <<'PY'
+          import json
+          p=json.load(open('/tmp/source.json'))
+          assert p['source_games'] >= 1700, p
+          print('historical source', p)
+          PY
+
+      - name: Reconstruct point-in-time V12.4 module effects
+        env:
+          V124_HIST_BOX_WORKERS: '10'
+        run: |
+          LIMIT='${{ github.event.inputs.limit }}'
+          [ -n "$LIMIT" ] || LIMIT=0
+          EXTRA=''
+          if [ '${{ github.event_name }}' = 'workflow_dispatch' ] && [ '${{ github.event.inputs.statcast }}' = 'false' ]; then EXTRA='--no-statcast'; fi
+          python -m v11.v124_historical_reconstruction --limit "$LIMIT" $EXTRA | tee /tmp/v124-historical-summary.json
+
+      - name: Validate reconstruction artifact
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=Path('data/v124_historical_reconstructed.jsonl').read_text(encoding='utf-8').splitlines()
+          model=json.loads(Path('data/v124_historical_warmstart.json').read_text(encoding='utf-8'))
+          limit=int('${{ github.event.inputs.limit }}' or '0') if '${{ github.event_name }}' == 'workflow_dispatch' else 0
+          if limit == 0:
+              assert len(rows) >= 1600, len(rows)
+          assert model['historical_reconstructed_games'] == len(rows)
+          assert model['guardrails']['historical_odds_used'] is False
+          assert model['guardrails']['roi_used_for_training'] is False
+          assert model['guardrails']['affects_v12_selection'] is False
+          assert model['frozen_test']['used_for_weight_fitting'] is False
+          print(json.dumps({
+              'games': len(rows),
+              'eligible': model.get('eligible_for_warm_start'),
+              'weights': model.get('weights'),
+              'frozen_test': model.get('frozen_test'),
+          }, indent=2, sort_keys=True))
+          PY
+
+      - name: Upload reconstruction evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: v124-historical-reconstruction-${{ github.run_id }}
+          path: |
+            data/v124_historical_reconstructed.jsonl
+            data/v124_historical_warmstart.json
+          retention-days: 90
+
+      - name: Persist full reconstruction on branch
+        if: github.event_name == 'push' || github.event.inputs.limit == '0'
+        run: |
+          git config user.name 'MLB V12.4 Research Bot'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add data/v124_historical_reconstructed.jsonl data/v124_historical_warmstart.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'data: persist V12.4 historical reconstruction [historical-replay] [skip ci]'
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
