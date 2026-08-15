@@ -4,7 +4,7 @@ from .v123_runtime import activate
 
 activate()
 
-from . import config, core, journal, runner, shadow_v115, pro_model
+from . import config, core, journal, runner, shadow_v115, pro_model, predictive_v124
 from . import discord_v123, v123_bootstrap
 from . import engine_v12 as engine
 
@@ -17,25 +17,46 @@ _original_analyze = engine.analyze
 _shadow_context_enabled = True
 
 
-def _analyze_with_v115_shadow(game, event, as_of=None):
+def _analyze_with_shadows(game, event, as_of=None):
     result = _original_analyze(game, event, as_of=as_of)
-    if not _shadow_context_enabled or not shadow_v115.enabled():
+    if not _shadow_context_enabled:
         return result
-    try:
-        shadow = shadow_v115.analyze(game, event, as_of=as_of)
-        shadow["comparison"] = shadow_v115.compare(result, shadow)
-        result["shadow_v115"] = shadow
-    except Exception as exc:
-        core.logging.exception("V11.5 shadow impossible gamePk=%s", game.get("gamePk"))
-        result["shadow_v115"] = {
-            "enabled": True,
-            "version": shadow_v115.VERSION,
-            "source_commit": shadow_v115.SOURCE_COMMIT,
-            "status": "ERROR",
-            "error": f"{type(exc).__name__}: {exc}",
-            "options": [],
-            "comparison": {"exact_common_options": 0},
-        }
+
+    shadow115 = None
+    if shadow_v115.enabled():
+        try:
+            shadow115 = shadow_v115.analyze(game, event, as_of=as_of)
+            shadow115["comparison"] = shadow_v115.compare(result, shadow115)
+            result["shadow_v115"] = shadow115
+        except Exception as exc:
+            core.logging.exception("V11.5 shadow impossible gamePk=%s", game.get("gamePk"))
+            shadow115 = {
+                "enabled": True,
+                "version": shadow_v115.VERSION,
+                "source_commit": shadow_v115.SOURCE_COMMIT,
+                "status": "ERROR",
+                "error": f"{type(exc).__name__}: {exc}",
+                "options": [],
+                "comparison": {"exact_common_options": 0},
+            }
+            result["shadow_v115"] = shadow115
+
+    if predictive_v124.enabled():
+        try:
+            result["shadow_v124"] = predictive_v124.analyze(result, shadow115)
+        except Exception as exc:
+            core.logging.exception("V12.4 predictive shadow impossible gamePk=%s", game.get("gamePk"))
+            result["shadow_v124"] = {
+                "enabled": True,
+                "version": predictive_v124.VERSION,
+                "schema": predictive_v124.SCHEMA,
+                "research_only": True,
+                "affects_v12_selection": False,
+                "status": "ERROR",
+                "error": f"{type(exc).__name__}: {exc}",
+                "variants": {},
+                "implementation": predictive_v124.implementation_report(),
+            }
     return result
 
 
@@ -51,9 +72,10 @@ def _row_v123(result, run_id, at, snapshot=None, source_replay=None):
         saved["execution_available"] = bool(src.get("execution_available"))
         saved["reference_market"] = src.get("reference_market")
     row["baseline_schema"] = "v12.3-structural-v1"
-    shadow = result.get("shadow_v115")
-    if isinstance(shadow, dict):
-        row["shadow_v115"] = shadow
+    for key in ("shadow_v115", "shadow_v124"):
+        shadow = result.get(key)
+        if isinstance(shadow, dict):
+            row[key] = shadow
     return row
 
 
@@ -76,6 +98,8 @@ def self_test_v123():
     assert (model.get("metadata") or {}).get("test_used_for_activation") is False
     assert shadow_v115.VERSION.startswith("11.5-")
     assert .5 < shadow_v115.prob_home_win(5, 4) < .8
+    assert predictive_v124.VERSION.startswith("12.4-")
+    assert predictive_v124.implementation_report()["8_model_ensemble"]["status"] == "ADDED_RESEARCH_ONLY"
     assert getattr(pro_model, "CALIBRATION_GENERATION", "") == "hierarchical-challenger-v2"
     synthetic = {
         "options": [
@@ -89,7 +113,7 @@ def self_test_v123():
     ]}
     cmp = shadow_v115.compare(synthetic, shadow)
     assert cmp["consensus_gt55"] == 1 and cmp["v12_only_gt55"] == 0
-    print("SELF-TEST V12.3.2 + V11.5 SHADOW + CALIBRATION CHALLENGER OK")
+    print("SELF-TEST V12.3.2 + V11.5 SHADOW + CALIBRATION + V12.4 PREDICTIVE SHADOW OK")
 
 
 def run_v123(snapshot_only=False):
@@ -106,7 +130,7 @@ def run_v123(snapshot_only=False):
     report.setdefault("production", {})["engine"] = "V12.3.2"
     report["production"]["claim"] = "LIVE_VALIDATED" if (report.get("production_evidence") or {}).get("passes") else "COLLECTING"
     report.setdefault("methodology", {}).update({
-        "generation": "V12.3.2 value-selection-v1",
+        "generation": "V12.3.2 value-selection-v1 + V12.4 predictive shadow",
         "event_matching": "team identity + closest commence_time within strict tolerance",
         "starter_model": "current season + N-1/N-2 prior affects structural run means",
         "validation_parity": "production and Champion/Challenger share compose_runtime",
@@ -121,6 +145,7 @@ def run_v123(snapshot_only=False):
         "historical_evidence": "legacy V10 1,801-game data are diagnostic only until a V12.3 structural baseline exists",
         "execution_freshness": f"Winamax is optional execution/display only; if shown, timestamp required and max age {getattr(config, 'V123_MAX_WINAMAX_AGE_MIN', 15):g} min",
         "v115_shadow": "frozen V11.5 probability challenger runs on the same game/market snapshot; research-only and never changes V12 selection",
+        "v124_predictive_shadow": "8-module predictive challenger with ablation variants; research-only; V12.3.2 remains official Champion",
     })
     rows = journal.load_rows()
     try:
@@ -143,11 +168,21 @@ def run_v123(snapshot_only=False):
             "error": f"{type(exc).__name__}: {exc}",
             "affects_v12_selection": False,
         }
+    try:
+        report["predictive_v124"] = predictive_v124.metrics(rows)
+    except Exception as exc:
+        core.logging.exception("Rapport V12.4 predictive shadow impossible")
+        report["predictive_v124"] = {
+            "schema": "v12-4-shadow-metrics-v1", "version": predictive_v124.VERSION,
+            "status": "ERROR", "error": f"{type(exc).__name__}: {exc}",
+            "activation": {"affects_v12_selection": False},
+            "implementation": predictive_v124.implementation_report(),
+        }
     journal.write_report(report)
     return report
 
 
-runner.engine.analyze = _analyze_with_v115_shadow
+runner.engine.analyze = _analyze_with_shadows
 runner._row = _row_v123
 runner._summary = _summary_v123
 runner.self_test = self_test_v123
