@@ -1,5 +1,5 @@
 {
-  "analyzed_at": "2026-08-15T13:40:07.654645+00:00",
+  "analyzed_at": "2026-08-15T14:58:59.528206+00:00",
   "calibration_health": {
     "by_phase": {
       "EARLY": {
@@ -327,17 +327,17 @@
   },
   "data_health": {
     "analyzed_games": 15,
-    "confirmed_lineups": 0,
+    "confirmed_lineups": 1,
     "confirmed_starters": 14,
     "matched_events": 15,
-    "mean_data_quality": 0.7618,
+    "mean_data_quality": 0.7762,
     "scheduled_games": 15,
     "sharp_coverage": {
       "ML": 15,
       "RUNLINE": 15,
       "TOTAL": 15
     },
-    "usable_lineups": 0,
+    "usable_lineups": 1,
     "usable_starters": 14,
     "winamax_coverage": {
       "ML": 15,
@@ -399,14 +399,14 @@
     "generation": "V12.3.2 value-selection-v1 + V12.4 predictive shadow",
     "historical_evidence": "legacy V10 1,801-game data are diagnostic only until a V12.3 structural baseline exists",
     "ledger": "PROPOSED -> PUBLISHED -> CONFIRMED_PLACED -> SETTLED",
-    "raw_archive": "runtime/v11/snapshots/2026-08-15_d87124d4052dec96.json.gz",
+    "raw_archive": "runtime/v11/snapshots/2026-08-15_53ef501a1d16c160.json.gz",
     "runs_model": "immutable structural baseline + validated FINAL historical prior fallback + phase-specific live residual",
     "selection": "informational recommendations use model confidence + conservative EV/edge + DQ + uncertainty + Kelly; Winamax never decides eligibility",
     "selection_confidence": "RL >= 55%; ML/TOTAL >= 58%",
     "selection_price_floor": "reference decimal odds >= 1.40",
     "selection_reference_price": "fresh configured sharp books; exact side/point; second-best effective quote when >=2 books, otherwise single fresh sharp quote",
     "sharp_disagreement": "large model-vs-sharp disagreement reduces selection score but is not a hard directional veto",
-    "source_replay": "runtime/v11/source_replays/2026-08-15_d87124d4052dec96_sources.json.gz",
+    "source_replay": "runtime/v11/source_replays/2026-08-15_53ef501a1d16c160_sources.json.gz",
     "staking": "bankroll-aware fractional Kelly; official combos disabled",
     "starter_model": "current season + N-1/N-2 prior affects structural run means",
     "uncertainty": "empirical phase/market reliability bins + market disagreement + DQ penalty",
@@ -449,6 +449,7 @@
   "predictive_v124": {
     "activation": {
       "affects_v12_selection": false,
+      "historical_warmstart_affects_v12_selection": false,
       "minimum_settled_games_before_consideration": 75,
       "optimizer_affects_v12_selection": false,
       "status": "RESEARCH_ONLY"
@@ -505,6 +506,437 @@
     "variants": {},
     "version": "12.4-predictive-core-shadow-v1",
     "weight_optimizer": {
+      "active_for_v124_shadow": false,
+      "affects_v12_selection": false,
+      "historical_reconstructed_games": 1801,
+      "historical_walk_forward": {
+        "baseline": {
+          "brier": 0.24805547936328723,
+          "logloss": 0.6896047226514682,
+          "team_run_mae": 2.571692616758243,
+          "total_run_mae": 3.639951030219788
+        },
+        "optimized": {
+          "brier": 0.24825443039338257,
+          "logloss": 0.6900581494482322,
+          "team_run_mae": 2.569634738494931,
+          "total_run_mae": 3.6377903125958486
+        },
+        "status": "ACTIVE",
+        "test_games": 1456,
+        "windows": 59,
+        "windows_detail": [
+          {
+            "brier_improvement": 0.001302705015961858,
+            "logloss_improvement": 0.002636853496986169,
+            "team_run_mae_improvement": 0.01450772336066608,
+            "test_games": 25,
+            "train_games": 1400,
+            "weights": {
+              "bullpen_player": 0.0,
+              "lineup_player": 0.0,
+              "platoon": 0.05,
+              "starter_ip": 0.6,
+              "statcast": 0.05,
+              "weather_park": 0.0
+            }
+          },
+          {
+            "brier_improvement": 0.0001692741026309008,
+            "logloss_improvement": 0.000695386588226099,
+            "team_run_mae_improvement": -0.0031136351837557363,
+            "test_games": 25,
+            "train_games": 1425,
+            "weights": {
+              "bullpen_player": 0.0,
+              "lineup_player": 0.0,
+              "platoon": 0.05,
+              "starter_ip": 0.6,
+              "statcast": 0.0,
+              "weather_park": 0.0
+            }
+          },
+          {
+            "brier_improvement": 0.0006753916437672869,
+            "logloss_improvement": 0.0012766324004475083,
+            "team_run_mae_improvement": 0.005380188501868499,
+            "test_games": 25,
+            "train_games": 1450,
+            "weights": {
+              "bullpen_player": 0.0,
+              "lineup_player": 0.0,
+              "platoon": 0.0,
+              "starter_ip": 0.6,
+              "statcast": 0.0,
+              "weather_park": 0.0
+            }
+          },
+          {
+            "brier_improvement": -0.0020012607834897223,
+            "logloss_improvement": -0.004936783768635489,
+            "team_run_mae_improvement": -0.0051724544744433665,
+            "test_games": 25,
+            "train_games": 1475,
+            "weights": {
+              "bullpen_player": 0.0,
+              "lineup_player": 0.0,
+              "platoon": 0.05,
+              "starter_ip": 0.65,
+              "statcast": 0.0,
+              "weather_park": 0.0
+            }
+          },
+          {
+            "brier_improvement": 0.00248085227449929,
+            "logloss_improvement": 0.00545436065916749,
+            "team_run_mae_improvement": 0.011999880934805862,
+            "test_games": 25,
+            "train_games": 1500,
+            "weights": {
+              "bullpen_player": 0.0,
+              "lineup_player": 0.0,
+              "platoon": 0.05,
+              "starter_ip": 0.55,
+              "statcast": 0.05,
+              "weather_park": 0.0
+            }
+          },
+          {
+            "brier_improvement": -0.0008669402043406937,
+            "logloss_improvement": -0.001386126863973658,
+            "team_run_mae_improvement": 0.02321526182374889,
+            "test_games": 6,
+            "train_games": 1525,
+            "weights": {
+              "bullpen_player": 0.0,
+              "lineup_player": 0.0,
+              "platoon": 0.1,
+              "starter_ip": 0.65,
+              "statcast": 0.0,
+              "weather_park": 0.0
+            }
+          }
+        ]
+      },
+      "historical_warm_start": {
+        "coverage": {
+          "bullpen_player": 0.9902024820378837,
+          "lineup_player": 0.9812758545612889,
+          "platoon": 0.588108716162276,
+          "starter_ip": 1.0,
+          "statcast": 0.8524820378837362,
+          "weather_park": 0.0
+        },
+        "eligible": false,
+        "evidence_boundary": "Reconstructed V10-baseline counterfactual used only to warm-start V12.4 shadow module weights. It is not V12.3.2-native evidence and not profitability evidence.",
+        "frozen_test": {
+          "baseline": {
+            "brier": 0.2500061240529319,
+            "by_market": {
+              "ML": {
+                "brier": 0.2546439484263146,
+                "logloss": 0.7028223240932031,
+                "n": 270
+              },
+              "RUNLINE": {
+                "brier": 0.24536829967954887,
+                "logloss": 0.685477357755145,
+                "n": 270
+              }
+            },
+            "games": 270,
+            "gt55_hit_rate": 0.583596214511041,
+            "gt55_n": 317,
+            "logloss": 0.6941498409241738,
+            "options": 540,
+            "team_run_mae": 2.4616818518518517,
+            "total_run_mae": 3.682085925925927
+          },
+          "brier_improvement": -0.0014064978004557638,
+          "logloss_improvement": -0.002899415620276069,
+          "optimized": {
+            "brier": 0.25141262185338764,
+            "by_market": {
+              "ML": {
+                "brier": 0.25621082936812234,
+                "logloss": 0.7060329972822202,
+                "n": 270
+              },
+              "RUNLINE": {
+                "brier": 0.24661441433865325,
+                "logloss": 0.6880655158066797,
+                "n": 270
+              }
+            },
+            "games": 270,
+            "gt55_hit_rate": 0.5705329153605015,
+            "gt55_n": 319,
+            "logloss": 0.6970492565444498,
+            "options": 540,
+            "team_run_mae": 2.4595372851333717,
+            "total_run_mae": 3.6751479375772447
+          },
+          "team_run_mae_improvement": 0.0021445667184800676,
+          "used_for_weight_fitting": false
+        },
+        "games": 1801,
+        "schema": "v12-4-historical-warmstart-v1",
+        "status": "DIAGNOSTIC_ONLY",
+        "walk_forward": {
+          "baseline": {
+            "brier": 0.24805547936328723,
+            "logloss": 0.6896047226514682,
+            "team_run_mae": 2.571692616758243,
+            "total_run_mae": 3.639951030219788
+          },
+          "optimized": {
+            "brier": 0.24825443039338257,
+            "logloss": 0.6900581494482322,
+            "team_run_mae": 2.569634738494931,
+            "total_run_mae": 3.6377903125958486
+          },
+          "status": "ACTIVE",
+          "test_games": 1456,
+          "windows": 59,
+          "windows_detail": [
+            {
+              "brier_improvement": 0.001302705015961858,
+              "logloss_improvement": 0.002636853496986169,
+              "team_run_mae_improvement": 0.01450772336066608,
+              "test_games": 25,
+              "train_games": 1400,
+              "weights": {
+                "bullpen_player": 0.0,
+                "lineup_player": 0.0,
+                "platoon": 0.05,
+                "starter_ip": 0.6,
+                "statcast": 0.05,
+                "weather_park": 0.0
+              }
+            },
+            {
+              "brier_improvement": 0.0001692741026309008,
+              "logloss_improvement": 0.000695386588226099,
+              "team_run_mae_improvement": -0.0031136351837557363,
+              "test_games": 25,
+              "train_games": 1425,
+              "weights": {
+                "bullpen_player": 0.0,
+                "lineup_player": 0.0,
+                "platoon": 0.05,
+                "starter_ip": 0.6,
+                "statcast": 0.0,
+                "weather_park": 0.0
+              }
+            },
+            {
+              "brier_improvement": 0.0006753916437672869,
+              "logloss_improvement": 0.0012766324004475083,
+              "team_run_mae_improvement": 0.005380188501868499,
+              "test_games": 25,
+              "train_games": 1450,
+              "weights": {
+                "bullpen_player": 0.0,
+                "lineup_player": 0.0,
+                "platoon": 0.0,
+                "starter_ip": 0.6,
+                "statcast": 0.0,
+                "weather_park": 0.0
+              }
+            },
+            {
+              "brier_improvement": -0.0020012607834897223,
+              "logloss_improvement": -0.004936783768635489,
+              "team_run_mae_improvement": -0.0051724544744433665,
+              "test_games": 25,
+              "train_games": 1475,
+              "weights": {
+                "bullpen_player": 0.0,
+                "lineup_player": 0.0,
+                "platoon": 0.05,
+                "starter_ip": 0.65,
+                "statcast": 0.0,
+                "weather_park": 0.0
+              }
+            },
+            {
+              "brier_improvement": 0.00248085227449929,
+              "logloss_improvement": 0.00545436065916749,
+              "team_run_mae_improvement": 0.011999880934805862,
+              "test_games": 25,
+              "train_games": 1500,
+              "weights": {
+                "bullpen_player": 0.0,
+                "lineup_player": 0.0,
+                "platoon": 0.05,
+                "starter_ip": 0.55,
+                "statcast": 0.05,
+                "weather_park": 0.0
+              }
+            },
+            {
+              "brier_improvement": -0.0008669402043406937,
+              "logloss_improvement": -0.001386126863973658,
+              "team_run_mae_improvement": 0.02321526182374889,
+              "test_games": 6,
+              "train_games": 1525,
+              "weights": {
+                "bullpen_player": 0.0,
+                "lineup_player": 0.0,
+                "platoon": 0.1,
+                "starter_ip": 0.65,
+                "statcast": 0.0,
+                "weather_park": 0.0
+              }
+            }
+          ]
+        },
+        "weights": {
+          "bullpen_player": 0.0,
+          "lineup_player": 0.0,
+          "platoon": 0.1,
+          "starter_ip": 0.65,
+          "statcast": 0.05,
+          "weather_park": 0.0
+        }
+      },
+      "historical_warm_start_eligible": false,
+      "historical_weight_share": 0.0,
+      "in_sample_diagnostic": {
+        "baseline": {
+          "games": 0,
+          "options": 0
+        },
+        "optimized": {
+          "games": 0,
+          "options": 0
+        }
+      },
+      "mature_games": 250,
+      "minimum_games": 75,
+      "modules": {
+        "bullpen_player": {
+          "brier_improvement": -0.0002582444940347761,
+          "learned_weight": 0.0,
+          "logloss_improvement": -0.0005403245926928202,
+          "paired_objective_ci95": [
+            -0.0008001128859621558,
+            1.33434583345593e-05
+          ],
+          "paired_objective_improvement": -0.0003831111191461095,
+          "team_run_mae_improvement": -0.0008733414681159068,
+          "verdict": "WATCH"
+        },
+        "lineup_player": {
+          "brier_improvement": -0.00030970687211073766,
+          "learned_weight": 0.0,
+          "logloss_improvement": -0.0006743708360728018,
+          "paired_objective_ci95": [
+            -0.000908010484186833,
+            -0.00022230667092410124
+          ],
+          "paired_objective_improvement": -0.0005604166475434863,
+          "team_run_mae_improvement": -0.003820997308473295,
+          "verdict": "REJECT"
+        },
+        "platoon": {
+          "brier_improvement": 2.396993953140969e-05,
+          "learned_weight": 0.1,
+          "logloss_improvement": 4.467255244255952e-05,
+          "paired_objective_ci95": [
+            -0.00022532206736661586,
+            0.00032364387873600413
+          ],
+          "paired_objective_improvement": 5.201649947592856e-05,
+          "team_run_mae_improvement": 0.0007198097233471756,
+          "verdict": "WATCH"
+        },
+        "starter_ip": {
+          "brier_improvement": 0.0003070619463375057,
+          "learned_weight": 0.65,
+          "logloss_improvement": 0.0006267441640718241,
+          "paired_objective_ci95": [
+            -0.00039230805244634464,
+            0.0016728869232814395
+          ],
+          "paired_objective_improvement": 0.0006168029073244,
+          "team_run_mae_improvement": 0.0062820311330589185,
+          "verdict": "WATCH"
+        },
+        "statcast": {
+          "brier_improvement": 1.0554753460761956e-05,
+          "learned_weight": 0.05,
+          "logloss_improvement": -1.1851950704078185e-05,
+          "paired_objective_ci95": [
+            -0.0005819586311962496,
+            0.0004289312214325163
+          ],
+          "paired_objective_improvement": -7.090052654149212e-05,
+          "team_run_mae_improvement": -0.002216992418174968,
+          "verdict": "WATCH"
+        },
+        "weather_park": {
+          "brier_improvement": 0.0,
+          "learned_weight": 0.0,
+          "logloss_improvement": 0.0,
+          "paired_objective_ci95": [
+            0.0,
+            0.0
+          ],
+          "paired_objective_improvement": 0.0,
+          "team_run_mae_improvement": 0.0,
+          "verdict": "WATCH"
+        }
+      },
+      "native_settled_games": 0,
+      "native_weight_share": 0.0,
+      "native_weights": {
+        "bullpen_player": 0.0,
+        "lineup_player": 0.0,
+        "platoon": 0.0,
+        "starter_ip": 0.0,
+        "statcast": 0.0,
+        "weather_park": 0.0
+      },
+      "objective": {
+        "coverage_adjusted": true,
+        "probability": "0.50 LogLoss + 0.35 Brier",
+        "regularization": 0.0025,
+        "roi_used_for_training": false,
+        "runs": "0.15 scaled team-run MAE",
+        "weight_bounds": [
+          0.0,
+          1.25
+        ]
+      },
+      "promotion": {
+        "automatic": false,
+        "historical_cannot_promote_production": true,
+        "note": "No learned weight can affect V12.3.2. Promotion requires durable out-of-sample evidence and an explicit future production change."
+      },
+      "research_only": true,
+      "schema": "v12-4-weight-optimizer-v1",
+      "settled_games": 0,
+      "stage": "COLLECT",
+      "status": "COLLECTING",
+      "version": "v12.4-weight-optimizer-v1",
+      "walk_forward": {
+        "status": "COLLECTING",
+        "test_games": 0,
+        "windows": 0
+      },
+      "walk_forward_ready_games": 150,
+      "weight_source": "NO_ELIGIBLE_WARM_START",
+      "weights": {
+        "bullpen_player": 0.0,
+        "lineup_player": 0.0,
+        "platoon": 0.0,
+        "starter_ip": 0.0,
+        "statcast": 0.0,
+        "weather_park": 0.0
+      }
+    },
+    "weight_optimizer_native": {
       "active_for_v124_shadow": false,
       "affects_v12_selection": false,
       "in_sample_diagnostic": {
@@ -585,13 +1017,13 @@
   "research_monitor_v124": {
     "ablations": {
       "bullpen_player": {
-        "brier_improvement": null,
+        "brier_improvement": -0.0002582444940347761,
         "ci95": [
-          null,
-          null
+          -0.0008001128859621558,
+          1.33434583345593e-05
         ],
         "label": "Bullpen",
-        "logloss_improvement": null,
+        "logloss_improvement": -0.0005403245926928202,
         "metrics": {
           "accuracy": null,
           "brier": null,
@@ -601,19 +1033,19 @@
           "logloss": null,
           "n": 0
         },
-        "objective_improvement": null,
-        "team_run_mae_improvement": null,
+        "objective_improvement": -0.0003831111191461095,
+        "team_run_mae_improvement": -0.0008733414681159068,
         "verdict": "WATCH",
         "weight": 0.0
       },
       "lineup_player": {
-        "brier_improvement": null,
+        "brier_improvement": -0.00030970687211073766,
         "ci95": [
-          null,
-          null
+          -0.000908010484186833,
+          -0.00022230667092410124
         ],
         "label": "Lineup",
-        "logloss_improvement": null,
+        "logloss_improvement": -0.0006743708360728018,
         "metrics": {
           "accuracy": null,
           "brier": null,
@@ -623,19 +1055,19 @@
           "logloss": null,
           "n": 0
         },
-        "objective_improvement": null,
-        "team_run_mae_improvement": null,
-        "verdict": "WATCH",
+        "objective_improvement": -0.0005604166475434863,
+        "team_run_mae_improvement": -0.003820997308473295,
+        "verdict": "REJECT",
         "weight": 0.0
       },
       "platoon": {
-        "brier_improvement": null,
+        "brier_improvement": 2.396993953140969e-05,
         "ci95": [
-          null,
-          null
+          -0.00022532206736661586,
+          0.00032364387873600413
         ],
         "label": "Platoon",
-        "logloss_improvement": null,
+        "logloss_improvement": 4.467255244255952e-05,
         "metrics": {
           "accuracy": null,
           "brier": null,
@@ -645,19 +1077,19 @@
           "logloss": null,
           "n": 0
         },
-        "objective_improvement": null,
-        "team_run_mae_improvement": null,
+        "objective_improvement": 5.201649947592856e-05,
+        "team_run_mae_improvement": 0.0007198097233471756,
         "verdict": "WATCH",
         "weight": 0.0
       },
       "starter_ip": {
-        "brier_improvement": null,
+        "brier_improvement": 0.0003070619463375057,
         "ci95": [
-          null,
-          null
+          -0.00039230805244634464,
+          0.0016728869232814395
         ],
         "label": "Starter IP",
-        "logloss_improvement": null,
+        "logloss_improvement": 0.0006267441640718241,
         "metrics": {
           "accuracy": null,
           "brier": null,
@@ -667,19 +1099,19 @@
           "logloss": null,
           "n": 0
         },
-        "objective_improvement": null,
-        "team_run_mae_improvement": null,
+        "objective_improvement": 0.0006168029073244,
+        "team_run_mae_improvement": 0.0062820311330589185,
         "verdict": "WATCH",
         "weight": 0.0
       },
       "statcast": {
-        "brier_improvement": null,
+        "brier_improvement": 1.0554753460761956e-05,
         "ci95": [
-          null,
-          null
+          -0.0005819586311962496,
+          0.0004289312214325163
         ],
         "label": "Statcast",
-        "logloss_improvement": null,
+        "logloss_improvement": -1.1851950704078185e-05,
         "metrics": {
           "accuracy": null,
           "brier": null,
@@ -689,19 +1121,19 @@
           "logloss": null,
           "n": 0
         },
-        "objective_improvement": null,
-        "team_run_mae_improvement": null,
+        "objective_improvement": -7.090052654149212e-05,
+        "team_run_mae_improvement": -0.002216992418174968,
         "verdict": "WATCH",
         "weight": 0.0
       },
       "weather_park": {
-        "brier_improvement": null,
+        "brier_improvement": 0.0,
         "ci95": [
-          null,
-          null
+          0.0,
+          0.0
         ],
         "label": "Weather x Park",
-        "logloss_improvement": null,
+        "logloss_improvement": 0.0,
         "metrics": {
           "accuracy": null,
           "brier": null,
@@ -711,54 +1143,67 @@
           "logloss": null,
           "n": 0
         },
-        "objective_improvement": null,
-        "team_run_mae_improvement": null,
+        "objective_improvement": 0.0,
+        "team_run_mae_improvement": 0.0,
         "verdict": "WATCH",
         "weight": 0.0
       }
     },
     "affects_v12_selection": false,
-    "analyzed_at": "2026-08-15T13:40:07.654645+00:00",
+    "analyzed_at": "2026-08-15T14:58:59.528206+00:00",
     "canonicalization": "latest settled pre-game snapshot per game_pk",
     "current_run_disagreements": [
       {
-        "abs_gap": 0.014870999999999968,
-        "baseline_p": 0.549288,
+        "abs_gap": 0.014892000000000016,
+        "baseline_p": 0.549728,
         "challenger": "all_core",
         "crosses_55": true,
         "game": "New York Yankees @ Toronto Blue Jays",
         "game_pk": 822775,
-        "gap": 0.014870999999999968,
+        "gap": 0.014892000000000016,
         "market": "TOTAL",
         "name": "Under",
         "point": 7.5,
-        "v124_p": 0.564159
+        "v124_p": 0.56462
       },
       {
-        "abs_gap": 0.014164999999999983,
-        "baseline_p": 0.554128,
+        "abs_gap": 0.014236000000000026,
+        "baseline_p": 0.554505,
         "challenger": "all_core",
         "crosses_55": true,
         "game": "Baltimore Orioles @ Tampa Bay Rays",
         "game_pk": 822941,
-        "gap": -0.014164999999999983,
+        "gap": -0.014236000000000026,
         "market": "ML",
         "name": "Tampa Bay Rays",
         "point": null,
-        "v124_p": 0.539963
+        "v124_p": 0.540269
       },
       {
-        "abs_gap": 0.010561000000000043,
-        "baseline_p": 0.55767,
+        "abs_gap": 0.010433999999999943,
+        "baseline_p": 0.556823,
         "challenger": "all_core",
         "crosses_55": true,
         "game": "Boston Red Sox @ Pittsburgh Pirates",
         "game_pk": 823347,
-        "gap": -0.010561000000000043,
+        "gap": -0.010433999999999943,
         "market": "ML",
         "name": "Boston Red Sox",
         "point": null,
-        "v124_p": 0.547109
+        "v124_p": 0.546389
+      },
+      {
+        "abs_gap": 0.004016999999999937,
+        "baseline_p": 0.548521,
+        "challenger": "all_core",
+        "crosses_55": true,
+        "game": "Philadelphia Phillies @ Minnesota Twins",
+        "game_pk": 823671,
+        "gap": 0.004016999999999937,
+        "market": "ML",
+        "name": "Philadelphia Phillies",
+        "point": null,
+        "v124_p": 0.552538
       }
     ],
     "evolution": {
@@ -772,6 +1217,72 @@
       "production_engine": "V12.3.2",
       "selector_unchanged": true,
       "staking_unchanged": true
+    },
+    "historical_warm_start": {
+      "coverage": {
+        "bullpen_player": 0.9902024820378837,
+        "lineup_player": 0.9812758545612889,
+        "platoon": 0.588108716162276,
+        "starter_ip": 1.0,
+        "statcast": 0.8524820378837362,
+        "weather_park": 0.0
+      },
+      "eligible": false,
+      "evidence_boundary": "Reconstructed V10-baseline counterfactual used only to warm-start V12.4 shadow module weights. It is not V12.3.2-native evidence and not profitability evidence.",
+      "frozen_test": {
+        "baseline": {
+          "brier": 0.2500061240529319,
+          "by_market": {
+            "ML": {
+              "brier": 0.2546439484263146,
+              "logloss": 0.7028223240932031,
+              "n": 270
+            },
+            "RUNLINE": {
+              "brier": 0.24536829967954887,
+              "logloss": 0.685477357755145,
+              "n": 270
+            }
+          },
+          "games": 270,
+          "gt55_hit_rate": 0.583596214511041,
+          "gt55_n": 317,
+          "logloss": 0.6941498409241738,
+          "options": 540,
+          "team_run_mae": 2.4616818518518517,
+          "total_run_mae": 3.682085925925927
+        },
+        "brier_improvement": -0.0014064978004557638,
+        "logloss_improvement": -0.002899415620276069,
+        "optimized": {
+          "brier": 0.25141262185338764,
+          "by_market": {
+            "ML": {
+              "brier": 0.25621082936812234,
+              "logloss": 0.7060329972822202,
+              "n": 270
+            },
+            "RUNLINE": {
+              "brier": 0.24661441433865325,
+              "logloss": 0.6880655158066797,
+              "n": 270
+            }
+          },
+          "games": 270,
+          "gt55_hit_rate": 0.5705329153605015,
+          "gt55_n": 319,
+          "logloss": 0.6970492565444498,
+          "options": 540,
+          "team_run_mae": 2.4595372851333717,
+          "total_run_mae": 3.6751479375772447
+        },
+        "team_run_mae_improvement": 0.0021445667184800676,
+        "used_for_weight_fitting": false
+      },
+      "games": 1801,
+      "historical_weight_share": 0.0,
+      "native_weight_share": 0.0,
+      "weight_source": "NO_ELIGIBLE_WARM_START"
     },
     "optimizer": {
       "automatic_promotion": false,
@@ -792,6 +1303,8 @@
       }
     },
     "progress": {
+      "historical_reconstructed_games": 1801,
+      "historical_warm_start_eligible": false,
       "mature_games": 250,
       "minimum_games": 75,
       "minimum_progress": 0.0,
@@ -801,11 +1314,12 @@
       "remaining_to_next_target": 75,
       "settled_games": 0,
       "stage": "COLLECT",
-      "status": "COLLECTING",
-      "walk_forward_ready_games": 150
+      "status": "COLLECTING • HIST-DIAG 1801",
+      "walk_forward_ready_games": 150,
+      "weight_source": "NO_ELIGIBLE_WARM_START"
     },
     "research_only": true,
-    "run_id": "d87124d4052dec96",
+    "run_id": "53ef501a1d16c160",
     "schema": "v12-4-research-monitor-v1",
     "target_date": "2026-08-15",
     "v115": {
@@ -819,7 +1333,7 @@
     "variants": {},
     "version": "v12.4-research-monitor-v1"
   },
-  "run_id": "d87124d4052dec96",
+  "run_id": "53ef501a1d16c160",
   "scheduled_games": 15,
   "schema": "v12-3-professional-v1",
   "shadow_challenger": {
