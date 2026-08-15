@@ -1,5 +1,5 @@
 {
-  "analyzed_at": "2026-08-15T17:00:44.349516+00:00",
+  "analyzed_at": "2026-08-15T17:03:15.439491+00:00",
   "calibration_health": {
     "by_phase": {
       "EARLY": {
@@ -327,17 +327,17 @@
   },
   "data_health": {
     "analyzed_games": 15,
-    "confirmed_lineups": 3,
+    "confirmed_lineups": 4,
     "confirmed_starters": 14,
     "matched_events": 15,
-    "mean_data_quality": 0.8126,
+    "mean_data_quality": 0.82,
     "scheduled_games": 15,
     "sharp_coverage": {
       "ML": 15,
       "RUNLINE": 15,
       "TOTAL": 15
     },
-    "usable_lineups": 3,
+    "usable_lineups": 4,
     "usable_starters": 14,
     "winamax_coverage": {
       "ML": 15,
@@ -399,14 +399,14 @@
     "generation": "V12.3.2 value-selection-v1 + V12.4 predictive shadow",
     "historical_evidence": "legacy V10 1,801-game data are diagnostic only until a V12.3 structural baseline exists",
     "ledger": "PROPOSED -> PUBLISHED -> CONFIRMED_PLACED -> SETTLED",
-    "raw_archive": "runtime/v11/snapshots/2026-08-15_0749db7d727b5ec8.json.gz",
+    "raw_archive": "runtime/v11/snapshots/2026-08-15_540ef4fd9f1941d7.json.gz",
     "runs_model": "immutable structural baseline + validated FINAL historical prior fallback + phase-specific live residual",
     "selection": "informational recommendations use model confidence + conservative EV/edge + DQ + uncertainty + Kelly; Winamax never decides eligibility",
     "selection_confidence": "RL >= 55%; ML/TOTAL >= 58%",
     "selection_price_floor": "reference decimal odds >= 1.40",
     "selection_reference_price": "fresh configured sharp books; exact side/point; second-best effective quote when >=2 books, otherwise single fresh sharp quote",
     "sharp_disagreement": "large model-vs-sharp disagreement reduces selection score but is not a hard directional veto",
-    "source_replay": "runtime/v11/source_replays/2026-08-15_0749db7d727b5ec8_sources.json.gz",
+    "source_replay": "runtime/v11/source_replays/2026-08-15_540ef4fd9f1941d7_sources.json.gz",
     "staking": "bankroll-aware fractional Kelly; official combos disabled",
     "starter_model": "current season + N-1/N-2 prior affects structural run means",
     "uncertainty": "empirical phase/market reliability bins + market disagreement + DQ penalty",
@@ -1150,34 +1150,34 @@
       }
     },
     "affects_v12_selection": false,
-    "analyzed_at": "2026-08-15T17:00:44.349516+00:00",
+    "analyzed_at": "2026-08-15T17:03:15.439491+00:00",
     "canonicalization": "latest settled pre-game snapshot per game_pk",
     "current_run_disagreements": [
       {
-        "abs_gap": 0.019310999999999967,
+        "abs_gap": 0.01930999999999994,
         "baseline_p": 0.549139,
         "challenger": "all_core",
         "crosses_55": true,
         "game": "New York Yankees @ Toronto Blue Jays",
         "game_pk": 822775,
-        "gap": 0.019310999999999967,
+        "gap": 0.01930999999999994,
         "market": "TOTAL",
         "name": "Under",
         "point": 7.5,
-        "v124_p": 0.56845
+        "v124_p": 0.568449
       },
       {
-        "abs_gap": 0.011388000000000065,
-        "baseline_p": 0.552969,
+        "abs_gap": 0.01142399999999999,
+        "baseline_p": 0.55319,
         "challenger": "all_core",
         "crosses_55": true,
         "game": "Boston Red Sox @ Pittsburgh Pirates",
         "game_pk": 823347,
-        "gap": -0.011388000000000065,
+        "gap": -0.01142399999999999,
         "market": "ML",
         "name": "Boston Red Sox",
         "point": null,
-        "v124_p": 0.541581
+        "v124_p": 0.541766
       },
       {
         "abs_gap": 0.00659299999999996,
@@ -1306,7 +1306,7 @@
       "weight_source": "NO_ELIGIBLE_WARM_START"
     },
     "research_only": true,
-    "run_id": "0749db7d727b5ec8",
+    "run_id": "540ef4fd9f1941d7",
     "schema": "v12-4-research-monitor-v1",
     "target_date": "2026-08-15",
     "v115": {
@@ -1320,7 +1320,7 @@
     "variants": {},
     "version": "v12.4-research-monitor-v1"
   },
-  "run_id": "0749db7d727b5ec8",
+  "run_id": "540ef4fd9f1941d7",
   "scheduled_games": 15,
   "schema": "v12-3-professional-v1",
   "shadow_challenger": {
