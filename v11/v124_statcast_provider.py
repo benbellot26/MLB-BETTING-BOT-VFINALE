@@ -97,7 +97,7 @@ def install():
             "player_type": player_type,
             "game_date_gt": f"{v124.core.SEASON}-03-01",
             "game_date_lt": cutoff,
-            "group_by": "name-year",
+            "group_by": "name",
             "hfGT": "R|",
             "hfSea": f"{v124.core.SEASON}|",
             "min_pas": 0,
