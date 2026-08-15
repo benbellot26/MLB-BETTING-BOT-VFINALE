@@ -6,6 +6,7 @@ from pathlib import Path
 
 VERSION = "v12.4-research-monitor-v1"
 SCHEMA = "v12-4-research-monitor-v1"
+_INSTALLED = False
 
 MODULE_LABELS = {
     "platoon": "Platoon",
@@ -54,6 +55,66 @@ def load_report(path):
         return value if isinstance(value, dict) else None
     except Exception:
         return None
+
+
+def canonical_rows(rows):
+    """Use one settled point-in-time snapshot per MLB game: the latest pre-game row."""
+    latest = {}
+    for row in rows or []:
+        if row.get("bet_type") == "COMBO" or not row.get("game_pk"):
+            continue
+        shadow = row.get("shadow_v124") or {}
+        if not shadow.get("enabled") or shadow.get("status") == "ERROR":
+            continue
+        has_score = row.get("home_score") is not None and row.get("away_score") is not None
+        has_result = any((o or {}).get("result") in {"WIN", "LOSS", "PUSH"} for o in row.get("options") or [])
+        if not has_score or not has_result:
+            continue
+        gid = str(row.get("game_pk"))
+        rank = str(row.get("analyzed_at") or row.get("as_of") or row.get("game_date") or "")
+        if gid not in latest or rank > latest[gid][0]:
+            latest[gid] = (rank, row)
+    selected = [value[1] for value in latest.values()]
+    selected.sort(key=lambda row: str(row.get("game_date") or row.get("analyzed_at") or row.get("game_pk") or ""))
+    return selected
+
+
+def _variant_market_metrics(rows):
+    aggregate = {}
+    for row in rows or []:
+        results = {_key(o): o.get("result") for o in row.get("options") or [] if o.get("result") in {"WIN", "LOSS"}}
+        variants = ((row.get("shadow_v124") or {}).get("variants") or {})
+        for variant, payload in variants.items():
+            markets = aggregate.setdefault(variant, {})
+            for option in payload.get("options") or []:
+                outcome = results.get(_key(option))
+                if outcome not in {"WIN", "LOSS"}:
+                    continue
+                market = str(option.get("market") or "").upper()
+                bucket = markets.setdefault(market, {"n": 0, "wins": 0, "brier": 0.0, "logloss": 0.0, "gt55_n": 0, "gt55_wins": 0})
+                p = max(.001, min(.999, _num(option.get("p_effective"), .5)))
+                y = 1 if outcome == "WIN" else 0
+                bucket["n"] += 1
+                bucket["wins"] += y
+                bucket["brier"] += (p-y)**2
+                bucket["logloss"] += -(y*math.log(p)+(1-y)*math.log(1-p))
+                if p > .55:
+                    bucket["gt55_n"] += 1
+                    bucket["gt55_wins"] += y
+    out = {}
+    for variant, markets in aggregate.items():
+        out[variant] = {}
+        for market, bucket in markets.items():
+            n = bucket["n"]
+            out[variant][market] = {
+                "n": n,
+                "accuracy": bucket["wins"]/n if n else None,
+                "brier": bucket["brier"]/n if n else None,
+                "logloss": bucket["logloss"]/n if n else None,
+                "gt55_n": bucket["gt55_n"],
+                "gt55_hit_rate": bucket["gt55_wins"]/bucket["gt55_n"] if bucket["gt55_n"] else None,
+            }
+    return out
 
 
 def _metric_snapshot(payload):
@@ -209,7 +270,7 @@ def _v115_summary(shadow):
 def build(report, previous_report=None, rows=None):
     predictive = report.get("predictive_v124") or {}
     optimizer = predictive.get("weight_optimizer") or {}
-    monitor = {
+    return {
         "schema": SCHEMA,
         "version": VERSION,
         "run_id": report.get("run_id"),
@@ -217,6 +278,7 @@ def build(report, previous_report=None, rows=None):
         "target_date": report.get("target_date"),
         "research_only": True,
         "affects_v12_selection": False,
+        "canonicalization": "latest settled pre-game snapshot per game_pk",
         "progress": _progress(optimizer, predictive),
         "variants": _variant_table(predictive),
         "ablations": _ablations(predictive, optimizer),
@@ -238,4 +300,41 @@ def build(report, previous_report=None, rows=None):
             "automatic_promotion": False,
         },
     }
-    return monitor
+
+
+def install():
+    """Canonicalize all V12.4 research metrics/optimizer evidence without touching production."""
+    global _INSTALLED
+    if _INSTALLED:
+        return True
+    from . import predictive_v124 as v124
+    from . import v124_weight_optimizer as optimizer
+    if getattr(v124, "_research_monitor_v124_installed", False):
+        _INSTALLED = True
+        return True
+
+    original_examples = optimizer.examples
+    original_metrics = v124.metrics
+
+    def canonical_examples(rows):
+        return original_examples(canonical_rows(rows))
+
+    def metrics(rows):
+        canonical = canonical_rows(rows)
+        report = original_metrics(canonical)
+        by_market = _variant_market_metrics(canonical)
+        for name, payload in (report.get("variants") or {}).items():
+            payload["by_market"] = by_market.get(name) or {}
+        report["settled_games"] = len(canonical)
+        report["canonicalization"] = {
+            "unit": "game_pk",
+            "snapshot": "latest settled pre-game row",
+            "duplicate_snapshots_count_once": True,
+        }
+        return report
+
+    optimizer.examples = canonical_examples
+    v124.metrics = metrics
+    v124._research_monitor_v124_installed = True
+    _INSTALLED = True
+    return True
