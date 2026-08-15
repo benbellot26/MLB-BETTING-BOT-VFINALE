@@ -56,10 +56,13 @@ def activate():
     install_v124_statcast()
     from .v124_weather import install as install_v124_weather
     install_v124_weather()
-    # Learns coverage-adjusted module weights only from already-settled V12.4 rows.
-    # The learned variant remains a shadow and can never alter production selection.
+    # Native optimizer still learns only from settled V12.4 rows.
     from .v124_weight_optimizer import install as install_v124_optimizer
     install_v124_optimizer()
+    # A separately validated historical reconstruction may warm-start only the
+    # V12.4 optimized shadow. The native 0/75 counter and production gates remain untouched.
+    from .v124_historical_warmstart import install as install_v124_historical_warmstart
+    install_v124_historical_warmstart()
     # Canonicalize research evidence to one latest pre-game snapshot per gamePk,
     # expose per-market metrics, and keep monitoring completely production-isolated.
     from .v124_research_monitor import install as install_v124_monitor

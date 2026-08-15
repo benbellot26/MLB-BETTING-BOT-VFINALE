@@ -29,7 +29,7 @@ jobs:
           python-version: '3.12'
 
       - name: Compile
-        run: python -m py_compile v11/*.py tests/test_v11.py tests/test_historical_bootstrap.py tests/test_v123.py tests/test_v1231_runlines.py tests/test_safe_singles_v1231.py tests/test_shadow_v115.py tests/test_calibration_v1232.py tests/test_predictive_v124.py tests/test_v124_statcast_provider.py tests/test_v124_weather.py tests/test_v124_weight_optimizer.py tests/test_v124_research_monitor.py tests/test_discord_limits.py
+        run: python -m py_compile v11/*.py tests/test_v11.py tests/test_historical_bootstrap.py tests/test_v123.py tests/test_v1231_runlines.py tests/test_safe_singles_v1231.py tests/test_shadow_v115.py tests/test_calibration_v1232.py tests/test_predictive_v124.py tests/test_v124_statcast_provider.py tests/test_v124_weather.py tests/test_v124_weight_optimizer.py tests/test_v124_research_monitor.py tests/test_v124_historical_reconstruction.py tests/test_v124_historical_daily_reconstruction.py tests/test_v124_historical_warmstart.py tests/test_discord_limits.py
 
       - name: V12.2 regression tests
         run: python -m unittest tests.test_v11 tests.test_historical_bootstrap
@@ -64,6 +64,19 @@ jobs:
       - name: V12.4 research monitor tests
         run: python -m unittest tests.test_v124_research_monitor
 
+      - name: V12.4 historical reconstruction tests
+        run: python -m unittest tests.test_v124_historical_reconstruction tests.test_v124_historical_daily_reconstruction tests.test_v124_historical_warmstart
+
+      - name: Historical source cohort smoke test
+        run: |
+          python -m v11.v124_historical_reconstruction --offline-dry-run > /tmp/v124_hist_source.json
+          python - <<'PY'
+          import json
+          p=json.load(open('/tmp/v124_hist_source.json'))
+          assert p['source_games'] >= 1700, p
+          print(p)
+          PY
+
       - name: Discord embed limit tests
         run: python -m unittest tests.test_discord_limits
 
@@ -74,14 +87,16 @@ jobs:
           activate()
           from v11 import journal
           from v11.v124_research_monitor import canonical_rows
-          from v11.v124_weight_optimizer import build_model
+          from v11.v124_weight_optimizer import build_model, current_model
           rows = journal.load_rows()
-          model = build_model(rows)
-          assert model['affects_v12_selection'] is False
-          assert model['research_only'] is True
-          assert model['settled_games'] == len(canonical_rows(rows))
-          assert all(0.0 <= float(w) <= 1.25 for w in model['weights'].values())
-          print('optimizer status=', model['status'], 'settled_games=', model['settled_games'], 'weights=', model['weights'])
+          native = build_model(rows)
+          composed = current_model()
+          assert composed['affects_v12_selection'] is False
+          assert composed['research_only'] is True
+          assert native['settled_games'] == len(canonical_rows(rows))
+          assert composed.get('native_settled_games', composed['settled_games']) == native['settled_games']
+          assert all(0.0 <= float(w) <= 1.25 for w in composed['weights'].values())
+          print('native=', native['settled_games'], 'source=', composed.get('weight_source'), 'weights=', composed['weights'])
           PY
 
       - name: V12.3 baseline-safe bootstrap validation
