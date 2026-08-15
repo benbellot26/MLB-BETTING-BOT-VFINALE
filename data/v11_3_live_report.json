@@ -1,5 +1,5 @@
 {
-  "analyzed_at": "2026-08-15T17:55:08.627895+00:00",
+  "analyzed_at": "2026-08-15T19:10:46.097931+00:00",
   "calibration_health": {
     "by_phase": {
       "EARLY": {
@@ -326,21 +326,21 @@
     "schema": "v12-calibration-diagnostics-v2"
   },
   "data_health": {
-    "analyzed_games": 14,
-    "confirmed_lineups": 4,
-    "confirmed_starters": 13,
+    "analyzed_games": 12,
+    "confirmed_lineups": 3,
+    "confirmed_starters": 12,
     "matched_events": 15,
-    "mean_data_quality": 0.8301,
+    "mean_data_quality": 0.8838,
     "scheduled_games": 15,
     "sharp_coverage": {
-      "ML": 14,
-      "RUNLINE": 14,
-      "TOTAL": 14
+      "ML": 12,
+      "RUNLINE": 12,
+      "TOTAL": 12
     },
-    "usable_lineups": 4,
-    "usable_starters": 13,
+    "usable_lineups": 3,
+    "usable_starters": 12,
     "winamax_coverage": {
-      "ML": 14,
+      "ML": 12,
       "RUNLINE": 0,
       "TOTAL": 0
     }
@@ -399,14 +399,14 @@
     "generation": "V12.3.2 value-selection-v1 + V12.4 predictive shadow",
     "historical_evidence": "legacy V10 1,801-game data are diagnostic only until a V12.3 structural baseline exists",
     "ledger": "PROPOSED -> PUBLISHED -> CONFIRMED_PLACED -> SETTLED",
-    "raw_archive": "runtime/v11/snapshots/2026-08-15_420a31e8fca8ad5a.json.gz",
+    "raw_archive": "runtime/v11/snapshots/2026-08-15_3403c7a943b8d363.json.gz",
     "runs_model": "immutable structural baseline + validated FINAL historical prior fallback + phase-specific live residual",
     "selection": "informational recommendations use model confidence + conservative EV/edge + DQ + uncertainty + Kelly; Winamax never decides eligibility",
     "selection_confidence": "RL >= 55%; ML/TOTAL >= 58%",
     "selection_price_floor": "reference decimal odds >= 1.40",
     "selection_reference_price": "fresh configured sharp books; exact side/point; second-best effective quote when >=2 books, otherwise single fresh sharp quote",
     "sharp_disagreement": "large model-vs-sharp disagreement reduces selection score but is not a hard directional veto",
-    "source_replay": "runtime/v11/source_replays/2026-08-15_420a31e8fca8ad5a_sources.json.gz",
+    "source_replay": "runtime/v11/source_replays/2026-08-15_3403c7a943b8d363_sources.json.gz",
     "staking": "bankroll-aware fractional Kelly; official combos disabled",
     "starter_model": "current season + N-1/N-2 prior affects structural run means",
     "uncertainty": "empirical phase/market reliability bins + market disagreement + DQ penalty",
@@ -1013,7 +1013,7 @@
     "status": "COLLECTING",
     "volume_ready": false
   },
-  "remaining_games_analyzed": 14,
+  "remaining_games_analyzed": 12,
   "research_monitor_v124": {
     "ablations": {
       "bullpen_player": {
@@ -1150,34 +1150,34 @@
       }
     },
     "affects_v12_selection": false,
-    "analyzed_at": "2026-08-15T17:55:08.627895+00:00",
+    "analyzed_at": "2026-08-15T19:10:46.097931+00:00",
     "canonicalization": "latest settled pre-game snapshot per game_pk",
     "current_run_disagreements": [
       {
-        "abs_gap": 0.019316,
-        "baseline_p": 0.548484,
-        "challenger": "all_core",
-        "crosses_55": true,
-        "game": "New York Yankees @ Toronto Blue Jays",
-        "game_pk": 822775,
-        "gap": 0.019316,
-        "market": "TOTAL",
-        "name": "Under",
-        "point": 7.5,
-        "v124_p": 0.5678
-      },
-      {
-        "abs_gap": 0.011332000000000009,
-        "baseline_p": 0.552722,
+        "abs_gap": 0.011515000000000053,
+        "baseline_p": 0.554416,
         "challenger": "all_core",
         "crosses_55": true,
         "game": "Boston Red Sox @ Pittsburgh Pirates",
         "game_pk": 823347,
-        "gap": -0.011332000000000009,
+        "gap": -0.011515000000000053,
         "market": "ML",
         "name": "Boston Red Sox",
         "point": null,
-        "v124_p": 0.54139
+        "v124_p": 0.542901
+      },
+      {
+        "abs_gap": 0.002854999999999941,
+        "baseline_p": 0.547536,
+        "challenger": "all_core",
+        "crosses_55": true,
+        "game": "Arizona Diamondbacks @ Atlanta Braves",
+        "game_pk": 824884,
+        "gap": 0.002854999999999941,
+        "market": "ML",
+        "name": "Atlanta Braves",
+        "point": null,
+        "v124_p": 0.550391
       }
     ],
     "evolution": {
@@ -1293,7 +1293,7 @@
       "weight_source": "NO_ELIGIBLE_WARM_START"
     },
     "research_only": true,
-    "run_id": "420a31e8fca8ad5a",
+    "run_id": "3403c7a943b8d363",
     "schema": "v12-4-research-monitor-v1",
     "target_date": "2026-08-15",
     "v115": {
@@ -1307,7 +1307,7 @@
     "variants": {},
     "version": "v12.4-research-monitor-v1"
   },
-  "run_id": "420a31e8fca8ad5a",
+  "run_id": "3403c7a943b8d363",
   "scheduled_games": 15,
   "schema": "v12-3-professional-v1",
   "shadow_challenger": {
