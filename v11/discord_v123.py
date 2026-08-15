@@ -115,3 +115,103 @@ def send_health(h):
         f"Winamax **{win.get('ML',0)}/{win.get('RUNLINE',0)}/{win.get('TOTAL',0)}**"
     )
     return core.send_embed(f"🩺 DATA HEALTH {VERSION_LABEL}", [("Couverture", txt)], 5763719)
+
+
+def _research_pct(value):
+    return "—" if value is None else f"{100*core.num(value):.1f}%"
+
+
+def _research_num(value, digits=4, signed=False):
+    if value is None:
+        return "—"
+    fmt = f"{{:{'+' if signed else ''}.{digits}f}}"
+    return fmt.format(core.num(value))
+
+
+def _research_variant_line(label, metrics):
+    metrics = metrics or {}
+    return (
+        f"**{label}** • B {_research_num(metrics.get('brier'))} • LL {_research_num(metrics.get('logloss'))} • "
+        f">55 **{_research_pct(metrics.get('gt55_hit_rate'))}** ({int(core.num(metrics.get('gt55_n')))})"
+    )
+
+
+def send_research_monitor(monitor):
+    progress = monitor.get("progress") or {}
+    variants = monitor.get("variants") or {}
+    settled = int(core.num(progress.get("settled_games")))
+    minimum = max(1, int(core.num(progress.get("minimum_games"), 75)))
+    remaining = max(0, int(core.num(progress.get("remaining_to_minimum"))))
+    active = "ACTIVE" if progress.get("optimized_shadow_active") else "OFF jusqu'au seuil"
+    head = (
+        f"Évidence canonique **{settled}/{minimum} matchs** • reste **{remaining}** • statut **{progress.get('status') or 'COLLECTING'}**\n"
+        f"V12.4 optimized **{active}** • 1 gamePk = 1 observation • dernier snapshot pré-match"
+    )
+
+    variant_lines = []
+    labels = {
+        "baseline_v1232": "V12.3.2",
+        "all_core": "V12.4 all_core",
+        "optimized": "V12.4 optimized",
+        "ensemble": "V12.4 ensemble",
+    }
+    for name in ("baseline_v1232", "all_core", "optimized", "ensemble"):
+        if name in variants:
+            variant_lines.append(_research_variant_line(labels[name], variants[name]))
+    if not variant_lines:
+        variant_lines.append("Aucun match V12.4 réglé pour l'instant.")
+
+    ablation_lines = []
+    for item in (monitor.get("ablations") or {}).values():
+        ablation_lines.append(
+            f"**{item.get('label')}** • w {core.num(item.get('weight')):.2f} • **{item.get('verdict') or 'WATCH'}** • "
+            f"ΔB {_research_num(item.get('brier_improvement'), signed=True)} • ΔLL {_research_num(item.get('logloss_improvement'), signed=True)}"
+        )
+    if not ablation_lines:
+        ablation_lines.append("Diagnostics modules en attente.")
+
+    evolution = monitor.get("evolution") or {}
+    if evolution.get("has_previous"):
+        evo_lines = [f"Nouveaux matchs réglés depuis le rapport précédent : **{int(core.num(evolution.get('settled_games_delta'))):+d}**"]
+        for name in ("all_core", "optimized"):
+            change = (evolution.get("variants") or {}).get(name)
+            if change:
+                evo_lines.append(
+                    f"{labels[name]} • ΔB {_research_num(change.get('brier'), signed=True)} • ΔLL {_research_num(change.get('logloss'), signed=True)}"
+                )
+        evolution_text = "\n".join(evo_lines)
+    else:
+        evolution_text = "Premier rapport comparable du Research Monitor."
+
+    disagreements = []
+    for item in monitor.get("current_run_disagreements") or []:
+        point = "" if item.get("point") is None else f" {core.num(item.get('point')):+g}"
+        flag = " 🔄55" if item.get("crosses_55") else ""
+        disagreements.append(
+            f"**{item.get('game')}** • {item.get('market')} {item.get('name')}{point} • "
+            f"{_research_pct(item.get('baseline_p'))} → **{_research_pct(item.get('v124_p'))}** "
+            f"({_research_pct(abs(core.num(item.get('gap'))))} écart){flag}"
+        )
+    disagreement_text = "\n".join(disagreements[:6]) or "Aucun écart ≥5 pp ni franchissement du seuil 55% sur ce run."
+
+    v115 = monitor.get("v115") or {}
+    v115_text = (
+        f"Matchs réglés **{int(core.num(v115.get('settled_games')))}** • consensus >55 **{_research_pct(v115.get('consensus_gt55_hit_rate'))}** "
+        f"({int(core.num(v115.get('consensus_gt55_n')))}) • désaccords forts **{int(core.num(v115.get('strong_disagreement_n')))}**"
+    )
+
+    fields = [
+        ("🧪 Progression", head),
+        ("📐 V12.3.2 vs V12.4", "\n".join(variant_lines)),
+        ("🧩 Ablations / poids", "\n".join(ablation_lines)),
+        ("📈 Évolution", evolution_text),
+        ("⚡ Désaccords du run", disagreement_text),
+        ("👻 V11.5 shadow", v115_text),
+        ("🔒 Garde-fou", "**RESEARCH ONLY** • selector/Kelly/staking/Discord picks inchangés • aucune promotion automatique."),
+    ]
+    return core.send_embed(
+        "🧪 V12.4 RESEARCH MONITOR",
+        fields,
+        10181046,
+        description="Suivi expérimental des challengers. Ce message n'est pas une recommandation de pari et ne peut pas bloquer la publication V12.3.2.",
+    )

@@ -56,4 +56,8 @@ def activate():
     # The learned variant remains a shadow and can never alter production selection.
     from .v124_weight_optimizer import install as install_v124_optimizer
     install_v124_optimizer()
+    # Canonicalize research evidence to one latest pre-game snapshot per gamePk,
+    # expose per-market metrics, and keep monitoring completely production-isolated.
+    from .v124_research_monitor import install as install_v124_monitor
+    install_v124_monitor()
     return True

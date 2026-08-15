@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import json
+import os
+
 from .v123_runtime import activate
 
 activate()
 
 from . import config, core, journal, runner, shadow_v115, pro_model, predictive_v124
-from . import discord_v123, v123_bootstrap
+from . import discord_v123, v123_bootstrap, v124_research_monitor
 from . import engine_v12 as engine
 
 runner.discord = discord_v123
@@ -13,6 +16,7 @@ runner.historical_bootstrap = v123_bootstrap
 
 _original_row = runner._row
 _original_run = runner.run
+_original_send = runner._send
 _original_analyze = engine.analyze
 _shadow_context_enabled = True
 
@@ -80,11 +84,42 @@ def _row_v123(result, run_id, at, snapshot=None, source_replay=None):
 
 
 def _summary_v123(report):
+    monitor = report.get("research_monitor_v124") or {}
+    if monitor:
+        try:
+            if not discord_v123.send_research_monitor(monitor):
+                core.logging.warning("Research Monitor V12.4 Discord non publié; publication officielle non bloquée")
+        except Exception:
+            core.logging.exception("Research Monitor V12.4 Discord impossible; publication officielle non bloquée")
     if int(report.get("ledger_settled_this_run") or 0) <= 0:
         return True
     fin = report.get("finance") or {}
     return core.send_embed("📊 BILAN V12.3.2", [("Ledger confirmé",
         f"{fin.get('wins',0)}V-{fin.get('losses',0)}D-{fin.get('pushes',0)}P • P/L **{core.num(fin.get('profit_units')):+.2f}u** • ROI **{core.pct(fin.get('roi'))}**")], 5763719)
+
+
+def _send_v123(results, portfolio, chosen, combo, health, report):
+    # Keep the official sender untouched when games exist. If no games remain,
+    # still allow the research/settlement summary to publish on a valid webhook.
+    if results:
+        return _original_send(results, portfolio, chosen, combo, health, report)
+    if not core.discord_test():
+        return False
+    return bool(_summary_v123(report))
+
+
+def _refresh_deferred_payload(report):
+    path = runner.DISCORD_PAYLOAD
+    if not path.exists():
+        return False
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload["report"] = report
+        path.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        return True
+    except Exception:
+        core.logging.exception("Impossible de rafraîchir le payload Discord avec le Research Monitor V12.4")
+        return False
 
 
 def self_test_v123():
@@ -100,6 +135,7 @@ def self_test_v123():
     assert .5 < shadow_v115.prob_home_win(5, 4) < .8
     assert predictive_v124.VERSION.startswith("12.4-")
     assert predictive_v124.implementation_report()["8_model_ensemble"]["status"] == "ADDED_RESEARCH_ONLY"
+    assert v124_research_monitor.VERSION.startswith("v12.4-research-monitor-")
     assert getattr(pro_model, "CALIBRATION_GENERATION", "") == "hierarchical-challenger-v2"
     synthetic = {
         "options": [
@@ -113,11 +149,12 @@ def self_test_v123():
     ]}
     cmp = shadow_v115.compare(synthetic, shadow)
     assert cmp["consensus_gt55"] == 1 and cmp["v12_only_gt55"] == 0
-    print("SELF-TEST V12.3.2 + V11.5 SHADOW + CALIBRATION + V12.4 PREDICTIVE SHADOW OK")
+    print("SELF-TEST V12.3.2 + V11.5 SHADOW + CALIBRATION + V12.4 PREDICTIVE/MONITOR SHADOW OK")
 
 
 def run_v123(snapshot_only=False):
     global _shadow_context_enabled
+    previous_report = None if snapshot_only else v124_research_monitor.load_report(config.REPORT_FILE)
     previous_shadow_context = _shadow_context_enabled
     _shadow_context_enabled = not snapshot_only
     try:
@@ -146,6 +183,7 @@ def run_v123(snapshot_only=False):
         "execution_freshness": f"Winamax is optional execution/display only; if shown, timestamp required and max age {getattr(config, 'V123_MAX_WINAMAX_AGE_MIN', 15):g} min",
         "v115_shadow": "frozen V11.5 probability challenger runs on the same game/market snapshot; research-only and never changes V12 selection",
         "v124_predictive_shadow": "8-module predictive challenger with ablation variants; research-only; V12.3.2 remains official Champion",
+        "v124_research_monitor": "one latest settled pre-game snapshot per gamePk; per-market ablations, optimizer progress, disagreements and prior-run deltas; Discord monitor is non-blocking",
     })
     rows = journal.load_rows()
     try:
@@ -178,13 +216,33 @@ def run_v123(snapshot_only=False):
             "activation": {"affects_v12_selection": False},
             "implementation": predictive_v124.implementation_report(),
         }
+    try:
+        report["research_monitor_v124"] = v124_research_monitor.build(report, previous_report, rows)
+    except Exception as exc:
+        core.logging.exception("Research Monitor V12.4 impossible")
+        report["research_monitor_v124"] = {
+            "schema": v124_research_monitor.SCHEMA, "version": v124_research_monitor.VERSION,
+            "status": "ERROR", "error": f"{type(exc).__name__}: {exc}",
+            "research_only": True, "affects_v12_selection": False,
+            "guardrails": {"selector_unchanged": True, "staking_unchanged": True, "discord_monitor_non_blocking": True},
+        }
     journal.write_report(report)
+    if os.getenv("V12_DEFER_DISCORD", "0") == "1":
+        _refresh_deferred_payload(report)
+    else:
+        monitor = report.get("research_monitor_v124") or {}
+        if monitor:
+            try:
+                discord_v123.send_research_monitor(monitor)
+            except Exception:
+                core.logging.exception("Research Monitor V12.4 Discord post-run impossible; production inchangée")
     return report
 
 
 runner.engine.analyze = _analyze_with_shadows
 runner._row = _row_v123
 runner._summary = _summary_v123
+runner._send = _send_v123
 runner.self_test = self_test_v123
 runner.run = run_v123
 
