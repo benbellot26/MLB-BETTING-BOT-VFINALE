@@ -4,7 +4,7 @@ from .v123_runtime import activate
 
 activate()
 
-from . import config, core, journal, runner, shadow_v115
+from . import config, core, journal, runner, shadow_v115, pro_model
 from . import discord_v123, v123_bootstrap
 from . import engine_v12 as engine
 
@@ -76,6 +76,7 @@ def self_test_v123():
     assert (model.get("metadata") or {}).get("test_used_for_activation") is False
     assert shadow_v115.VERSION.startswith("11.5-")
     assert .5 < shadow_v115.prob_home_win(5, 4) < .8
+    assert getattr(pro_model, "CALIBRATION_GENERATION", "") == "hierarchical-challenger-v2"
     synthetic = {
         "options": [
             {"market": "RUNLINE", "name": "A", "point": 1.5, "p_effective": .62},
@@ -88,7 +89,7 @@ def self_test_v123():
     ]}
     cmp = shadow_v115.compare(synthetic, shadow)
     assert cmp["consensus_gt55"] == 1 and cmp["v12_only_gt55"] == 0
-    print("SELF-TEST V12.3.2 + V11.5 SHADOW CHALLENGER OK")
+    print("SELF-TEST V12.3.2 + V11.5 SHADOW + CALIBRATION CHALLENGER OK")
 
 
 def run_v123(snapshot_only=False):
@@ -109,19 +110,21 @@ def run_v123(snapshot_only=False):
         "event_matching": "team identity + closest commence_time within strict tolerance",
         "starter_model": "current season + N-1/N-2 prior affects structural run means",
         "validation_parity": "production and Champion/Challenger share compose_runtime",
-        "canonical_research_boundary": "standard featured RL remains canonical for training/evaluation; alternate run lines remain optional analysis choices",
+        "canonical_research_boundary": "featured standard sharp RL/TOTAL may train calibration when Winamax is absent; alternate_spreads are excluded",
         "alternate_runlines": "event-level alternate_spreads; evaluates both +/-1.5 pairs when actually available",
         "selection": "informational recommendations use model confidence + conservative EV/edge + DQ + uncertainty + Kelly; Winamax never decides eligibility",
         "selection_reference_price": "fresh configured sharp books; exact side/point; second-best effective quote when >=2 books, otherwise single fresh sharp quote",
         "selection_price_floor": f"reference decimal odds >= {getattr(config, 'V123_MIN_REFERENCE_PRICE', 1.40):.2f}",
         "selection_confidence": f"RL >= {100*getattr(config, 'V123_MIN_CONFIDENCE_RUNLINE', .55):.0f}%; ML/TOTAL >= {100*getattr(config, 'V123_MIN_CONFIDENCE_ML', .58):.0f}%",
         "sharp_disagreement": "large model-vs-sharp disagreement reduces selection score but is not a hard directional veto",
+        "calibration": "hierarchical market fallback + phase-specific challenger; identity vs Platt vs beta; holdout Brier/LogLoss/ECE; existing stack walk-forward remains mandatory",
         "historical_evidence": "legacy V10 1,801-game data are diagnostic only until a V12.3 structural baseline exists",
         "execution_freshness": f"Winamax is optional execution/display only; if shown, timestamp required and max age {getattr(config, 'V123_MAX_WINAMAX_AGE_MIN', 15):g} min",
         "v115_shadow": "frozen V11.5 probability challenger runs on the same game/market snapshot; research-only and never changes V12 selection",
     })
+    rows = journal.load_rows()
     try:
-        report["shadow_challenger"] = shadow_v115.metrics(journal.load_rows())
+        report["shadow_challenger"] = shadow_v115.metrics(rows)
     except Exception as exc:
         core.logging.exception("Rapport V11.5 shadow impossible")
         report["shadow_challenger"] = {
@@ -129,6 +132,16 @@ def run_v123(snapshot_only=False):
             "status": "ERROR",
             "error": f"{type(exc).__name__}: {exc}",
             "activation": {"affects_v12_selection": False},
+        }
+    try:
+        report["calibration_health"] = pro_model.calibration_diagnostics(rows, pro_model.load_model())
+    except Exception as exc:
+        core.logging.exception("Rapport calibration V12 impossible")
+        report["calibration_health"] = {
+            "schema": "v12-calibration-diagnostics-v2",
+            "status": "ERROR",
+            "error": f"{type(exc).__name__}: {exc}",
+            "affects_v12_selection": False,
         }
     journal.write_report(report)
     return report

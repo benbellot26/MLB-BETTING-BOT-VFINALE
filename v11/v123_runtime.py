@@ -41,4 +41,9 @@ def activate():
     install_alternate_runlines()
     from .safe_singles_v1231 import install as install_value_selection
     install_value_selection()
+    # Calibration v2 is research/challenger infrastructure. It does not change
+    # production probabilities unless a Champion model has passed the existing
+    # holdout, walk-forward and live-evidence promotion gates.
+    from .calibration_v1232 import install as install_calibration_challenger
+    install_calibration_challenger()
     return True
