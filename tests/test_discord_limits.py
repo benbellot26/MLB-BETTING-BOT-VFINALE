@@ -1,23 +1,12 @@
 from __future__ import annotations
 
 import unittest
-from unittest.mock import patch
 
 from v11 import core
 from v11 import discord_limits as dl
 
 
 class DiscordLimitTests(unittest.TestCase):
-    def tearDown(self):
-        # Tests that install the wrapper restore the module-level marker so other
-        # suites do not inherit presentation monkey patches accidentally.
-        if hasattr(core, "_discord_original_send_embed"):
-            core.send_embed = core._discord_original_send_embed
-        for name in ("_discord_limits_installed", "_discord_original_send_embed"):
-            if hasattr(core, name):
-                delattr(core, name)
-        dl._INSTALLED = False
-
     def test_splits_oversized_market_field_without_losing_text(self):
         paragraphs = [f"Option {i}: " + ("x" * 360) for i in range(12)]
         source = "\n\n".join(paragraphs)
@@ -47,13 +36,32 @@ class DiscordLimitTests(unittest.TestCase):
     def test_installed_wrapper_sends_each_safe_page(self):
         oversized = [("Totals", "A" * 5000)]
         expected_pages = dl.build_pages("MLB game", oversized)
-        original = core.send_embed
-        with patch.object(core, "send_embed", return_value=True) as sender:
-            # Capture the patched mock as the original sender used by install().
+        real_sender = core.send_embed
+        calls = []
+
+        def fake_sender(title, fields, color=5763719, description=None):
+            calls.append((title, fields, color, description))
+            return True
+
+        try:
+            core.send_embed = fake_sender
+            for name in ("_discord_limits_installed", "_discord_original_send_embed"):
+                if hasattr(core, name):
+                    delattr(core, name)
+            dl._INSTALLED = False
             dl.install()
             self.assertTrue(core.send_embed("MLB game", oversized))
-            self.assertEqual(sender.call_count, len(expected_pages))
-        core.send_embed = original
+            self.assertEqual(len(calls), len(expected_pages))
+            for title, fields, color, description in calls:
+                self.assertTrue(dl.validate_page({
+                    "title": title, "fields": fields, "color": color, "description": description,
+                }))
+        finally:
+            core.send_embed = real_sender
+            for name in ("_discord_limits_installed", "_discord_original_send_embed"):
+                if hasattr(core, name):
+                    delattr(core, name)
+            dl._INSTALLED = False
 
 
 if __name__ == "__main__":
