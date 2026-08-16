@@ -9,6 +9,7 @@ from . import v13_rich_run_residual as rich
 
 OUT = Path("data/v13_rich_native_candidate.json")
 SCHEMA = "v13-rich-native-candidate-v2"
+TARGET_PHASE = "FINAL"
 MIN_GAMES = 300
 MIN_HOLDOUT = 100
 MIN_WF_GAMES = 180
@@ -31,6 +32,7 @@ def _native_rows(rows: list[dict[str,Any]]) -> list[dict[str,Any]]:
     best={}
     for r in rows:
         if r.get("result_status") != "FINAL" or r.get("home_score") is None or r.get("away_score") is None: continue
+        if str(r.get("phase") or "").upper() != TARGET_PHASE: continue
         if not r.get("point_in_time") or r.get("features_from_postgame") is True: continue
         mods=(r.get("shadow_v124") or {}).get("modules") or {}
         if not mods: continue
@@ -69,10 +71,10 @@ def _walk_forward(rows,selected,ridge):
 def build(rows: list[dict[str,Any]] | None = None) -> dict[str,Any]:
     native=_native_rows(journal.load_rows() if rows is None else rows)
     coverage={name:(sum(max(0.0,min(1.0,rich._num((r.get("modules") or {}).get(name,{}).get("coverage"),0.0))) for r in native)/len(native) if native else 0.0) for name in NATIVE_MODULES}
-    base={"schema":SCHEMA,"native_games":len(native),"minimum_games":MIN_GAMES,"active_for_production":False,"status":"COLLECTING",
+    base={"schema":SCHEMA,"target_phase":TARGET_PHASE,"native_games":len(native),"minimum_games":MIN_GAMES,"active_for_production":False,"status":"COLLECTING",
           "native_feature_coverage":coverage,"available_native_modules":list(NATIVE_MODULES),
           "safety":{"market_probability_used":False,"historical_reconstruction_used_for_promotion":False,"point_in_time_required":True,
-                    "selector_unchanged_until_promotion":True,"weather_requires_native_pregame_snapshot":True}}
+                    "phase_specific_training":True,"selector_unchanged_until_promotion":True,"weather_requires_native_pregame_snapshot":True}}
     if len(native)<MIN_GAMES:return base
     train,hold=_split_outer(native)
     if len(hold)<MIN_HOLDOUT:return base
@@ -91,7 +93,7 @@ def build(rows: list[dict[str,Any]] | None = None) -> dict[str,Any]:
     base.update({"status":"PROMOTION_ELIGIBLE" if passed else "OUTER_HOLDOUT_REJECTED","active_for_production":bool(passed),
                  "train_games":len(train),"holdout_games":len(hold),"selection":{"selected_modules":list(selected),"ridge":ridge,"walk_forward":wf},
                  "model":model,"outer_holdout":outer,
-                 "promotion_rule":">=300 exact point-in-time games; train-only walk-forward >=75% pass; >=100-game untouched outer holdout improves RMSE and NB NLL with MAE regression <=0.01"})
+                 "promotion_rule":"FINAL only; >=300 exact point-in-time games; train-only walk-forward >=75% pass; >=100-game untouched outer holdout improves RMSE and NB NLL with MAE regression <=0.01"})
     return base
 
 
