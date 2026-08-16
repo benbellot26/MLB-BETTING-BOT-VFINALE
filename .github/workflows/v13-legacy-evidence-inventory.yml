@@ -1,0 +1,47 @@
+name: V13 Legacy Evidence Inventory
+
+on:
+  push:
+    branches: [agent/v13-legacy-evidence-inventory]
+    paths:
+      - 'v11/v13_legacy_evidence_inventory.py'
+      - '.github/workflows/v13-legacy-evidence-inventory.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Download durable replay archive
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p runtime/v13_legacy_replays
+          gh release download v12-data-archive --dir runtime/v13_legacy_replays --pattern '*sources*.gz' || true
+      - name: Build inventory
+        run: python -m v11.v13_legacy_evidence_inventory
+      - name: Validate safety boundary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('data/v13_legacy_evidence_inventory.json').read_text())
+          assert r['sources']['mlb_backtest_2026.jsonl']['rows_by_grade']['A'] == 0
+          assert r['sources']['mlb_backtest_2026.jsonl']['rows_by_grade']['B'] == 0
+          assert r['exact_admissible_games'] >= 1
+          print(json.dumps(r,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v13-legacy-evidence-inventory
+          path: data/v13_legacy_evidence_inventory.json
