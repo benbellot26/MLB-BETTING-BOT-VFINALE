@@ -16,6 +16,40 @@ def _dt(value: Any):
         return None
 
 
+def _norm(value: Any) -> str:
+    return "".join(c.lower() for c in str(value or "") if c.isalnum())
+
+
+def _canonical_options(row: dict[str,Any]) -> list[dict[str,Any]]:
+    """Keep at most one independent calibration target per market and game phase.
+
+    Complementary sides and alternate lines carry the same game outcome and must
+    not inflate calibration sample size. Prefer the canonical/main line and a
+    deterministic side: home for ML/RUNLINE and Over for TOTAL.
+    """
+    options = [o for o in (row.get("options") or [])
+               if o.get("result") in {"WIN","LOSS"}
+               and (o.get("p_baseball_raw") is not None or o.get("p_learned") is not None)]
+    home = _norm(row.get("home"))
+    out: list[dict[str,Any]] = []
+    for market in ("ML","RUNLINE","TOTAL"):
+        candidates = [o for o in options if str(o.get("market") or "").upper() == market]
+        if not candidates:
+            continue
+        marked = [o for o in candidates if o.get("is_canonical_line")]
+        pool = marked or candidates
+        if market == "ML":
+            chosen = next((o for o in pool if _norm(o.get("name")) == home), pool[0])
+        elif market == "RUNLINE":
+            homes = [o for o in pool if _norm(o.get("name")) == home]
+            chosen = min(homes or pool, key=lambda o: abs(abs(float(o.get("point") or 0))-1.5))
+        else:
+            overs = [o for o in pool if str(o.get("name") or "").lower() == "over"]
+            chosen = (overs or pool)[0]
+        out.append(dict(chosen))
+    return out
+
+
 def eligible_probability_rows(rows: list[dict[str,Any]]) -> list[dict[str,Any]]:
     """Use only genuine pregame probability observations.
 
@@ -32,14 +66,16 @@ def eligible_probability_rows(rows: list[dict[str,Any]]) -> list[dict[str,Any]]:
             continue
         if row.get("home_score") is None or row.get("away_score") is None:
             continue
-        options = row.get("options") or []
-        if not any(o.get("p_baseball_raw") is not None or o.get("p_learned") is not None for o in options):
+        canonical = _canonical_options(row)
+        if not canonical:
             continue
         phase = str(row.get("phase") or "EARLY").upper()
         key = (str(row.get("game_pk") or ""), phase)
         rank = str(row.get("analyzed_at") or "")
+        clone = dict(row)
+        clone["options"] = canonical
         if key not in best or rank > best[key][0]:
-            best[key] = (rank,row)
+            best[key] = (rank,clone)
     return sorted((x[1] for x in best.values()), key=lambda r: (str(r.get("game_date") or ""), str(r.get("game_pk") or ""), str(r.get("phase") or "")))
 
 
@@ -54,6 +90,8 @@ def build() -> dict[str,Any]:
         "accepted_probability_fields": ["p_baseball_raw","p_learned"],
         "forbidden_probability_fields_as_baseball_evidence": ["p_effective","p_model","p_market","p_posterior"],
         "canonical_row": "latest pregame row per game_pk and phase",
+        "independent_target_policy": "max one canonical side per market/game/phase",
+        "alternate_lines_trainable_for_calibration": False,
     }
     model["source_rows_total"] = len(source)
     model["eligible_rows"] = len(rows)
