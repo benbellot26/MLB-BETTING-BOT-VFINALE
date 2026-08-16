@@ -4,6 +4,8 @@ import json
 import math
 from pathlib import Path
 
+from . import convergence_v124
+
 VERSION = "v12.4-research-monitor-v1"
 SCHEMA = "v12-4-research-monitor-v1"
 _INSTALLED = False
@@ -270,10 +272,11 @@ def _v115_summary(shadow):
 def build(report, previous_report=None, rows=None):
     predictive = report.get("predictive_v124") or {}
     optimizer = predictive.get("weight_optimizer") or {}
+    run_id = report.get("run_id")
     return {
         "schema": SCHEMA,
         "version": VERSION,
-        "run_id": report.get("run_id"),
+        "run_id": run_id,
         "analyzed_at": report.get("analyzed_at"),
         "target_date": report.get("target_date"),
         "research_only": True,
@@ -291,13 +294,15 @@ def build(report, previous_report=None, rows=None):
         },
         "v115": _v115_summary(report.get("shadow_challenger") or {}),
         "evolution": _evolution(predictive, previous_report),
-        "current_run_disagreements": _disagreements(rows or [], report.get("run_id")),
+        "current_run_disagreements": _disagreements(rows or [], run_id),
+        "convergence": convergence_v124.build(rows or [], run_id=run_id, limit=12),
         "guardrails": {
             "production_engine": (report.get("production") or {}).get("engine") or "V12.3.2",
             "selector_unchanged": True,
             "staking_unchanged": True,
             "discord_monitor_non_blocking": True,
             "automatic_promotion": False,
+            "convergence_research_only": True,
         },
     }
 
