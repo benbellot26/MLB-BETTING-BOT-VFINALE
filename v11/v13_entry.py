@@ -27,7 +27,8 @@ def self_test_v13():
     from . import probability_contract_v13 as contract
     from . import calibration_baseball_v13 as cal
     from . import extra_innings_v13
-    assert config.VERSION.startswith("13.0-")
+    from . import v13_distribution_prior
+    assert config.VERSION.startswith("13.1-")
     payload = contract.option_contract_payload(
         p_baseball_raw=.62,
         p_baseball_calibrated=.59,
@@ -47,7 +48,13 @@ def self_test_v13():
     joint = [[.10,.10],[.20,.60]]
     # 20% regulation home win + 70% tie * neutral 50% = 55%.
     assert abs(extra_innings_v13.home_win_probability(joint)-.55) < 1e-9
-    print("SELF-TEST V13 PROFESSIONAL PROBABILITY CONTRACT OK")
+    dist=v13_distribution_prior.load()
+    assert dist.get("active") and dist.get("variant") == "dispersion_only"
+    d,e,meta=v13_distribution_prior.apply(7.5,.08,"FINAL")
+    assert abs(d-2.835691107635618) < 1e-12 and abs(e-.08) < 1e-12 and meta.get("active")
+    d2,e2,meta2=v13_distribution_prior.apply(7.5,.08,"EARLY")
+    assert d2 == 7.5 and e2 == .08 and not meta2.get("active")
+    print("SELF-TEST V13.1 PROFESSIONAL PROBABILITY CONTRACT OK")
 
 
 runner._summary = _summary_v13
