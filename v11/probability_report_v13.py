@@ -17,7 +17,7 @@ def option_summary(opt: dict[str,Any]) -> dict[str,Any]:
         "point": opt.get("point"),
         "baseball_raw": opt.get("p_baseball_raw"),
         "baseball_calibrated": opt.get("p_baseball_calibrated"),
-        "market": opt.get("p_market"),
+        "sharp_probability": opt.get("p_market"),
         "posterior_forecast_only": opt.get("p_posterior"),
         "model_market_gap": opt.get("model_market_gap"),
         "interval_low": opt.get("probability_interval_low"),
