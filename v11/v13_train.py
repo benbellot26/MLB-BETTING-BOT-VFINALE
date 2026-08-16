@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from . import calibration_baseball_v13 as calibration
@@ -11,6 +12,7 @@ from . import journal
 STRICT_GLOBAL_N = 600
 STRICT_MARKET_N = 400
 STRICT_PHASE_MARKET_N = 300
+EXACT_BACKFILL = Path("data/v13_historical_backfill.jsonl")
 
 
 def _dt(value: Any):
@@ -24,13 +26,33 @@ def _norm(value: Any) -> str:
     return "".join(c.lower() for c in str(value or "") if c.isalnum())
 
 
-def _canonical_options(row: dict[str,Any]) -> list[dict[str,Any]]:
-    """Keep at most one independent calibration target per market and game phase.
+def _load_exact_backfill(path: Path = EXACT_BACKFILL) -> list[dict[str,Any]]:
+    if not path.exists():
+        return []
+    out=[]
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            row=json.loads(line)
+        except Exception:
+            continue
+        if not isinstance(row,dict):
+            continue
+        if not str(row.get("schema") or "").startswith("v13-point-in-time-backfill"):
+            continue
+        if row.get("point_in_time") is not True or row.get("features_from_postgame") is True:
+            continue
+        if row.get("home_score") is None or row.get("away_score") is None:
+            continue
+        row=dict(row)
+        row["v13_evidence_tier"]="A_EXACT_REPLAY"
+        out.append(row)
+    return out
 
-    Complementary sides and alternate lines carry the same game outcome and must
-    not inflate calibration sample size. Prefer the canonical/main line and a
-    deterministic side: home for ML/RUNLINE and Over for TOTAL.
-    """
+
+def _canonical_options(row: dict[str,Any]) -> list[dict[str,Any]]:
+    """Keep at most one independent calibration target per market and game phase."""
     options = [o for o in (row.get("options") or [])
                if o.get("result") in {"WIN","LOSS"}
                and (o.get("p_baseball_raw") is not None or o.get("p_learned") is not None)]
@@ -58,9 +80,9 @@ def eligible_probability_rows(rows: list[dict[str,Any]]) -> list[dict[str,Any]]:
     """Use only genuine pregame probability observations.
 
     Compatibility is based on the probability contract, not software version.
-    Legacy V12.3 rows are migratable for calibration when they carry p_learned,
-    because p_learned is the baseball-only probability saved before sharp blend.
-    No legacy p_effective/p_model value is accepted as baseball-only evidence.
+    Exact V13 replay-backfill rows are tier-A evidence. Legacy rows are accepted
+    only when they independently satisfy the same pregame/settled/baseball-only
+    contract. No p_effective/p_model market-blended value is accepted.
     """
     best: dict[tuple[str,str], tuple[str,dict[str,Any]]] = {}
     for row in rows:
@@ -69,6 +91,8 @@ def eligible_probability_rows(rows: list[dict[str,Any]]) -> list[dict[str,Any]]:
         if analyzed is None or game_time is None or analyzed >= game_time:
             continue
         if row.get("home_score") is None or row.get("away_score") is None:
+            continue
+        if row.get("features_from_postgame") is True:
             continue
         canonical = _canonical_options(row)
         if not canonical:
@@ -111,7 +135,9 @@ def enforce_strict_activation(model: dict[str,Any]) -> dict[str,Any]:
 
 
 def build() -> dict[str,Any]:
-    source = journal.load_rows()
+    live = journal.load_rows()
+    exact = _load_exact_backfill()
+    source = list(live) + list(exact)
     rows = eligible_probability_rows(source)
     model = enforce_strict_activation(calibration.build_model(rows))
     model["training_policy"] = {
@@ -124,10 +150,15 @@ def build() -> dict[str,Any]:
         "independent_target_policy": "max one canonical side per market/game/phase",
         "alternate_lines_trainable_for_calibration": False,
         "strict_volume_floor_after_internal_holdout": True,
+        "exact_v13_replay_backfill_allowed": True,
+        "legacy_reconstructed_1801_allowed_as_native_calibration": False,
     }
     model["source_rows_total"] = len(source)
+    model["source_rows_live"] = len(live)
+    model["source_rows_exact_replay"] = len(exact)
     model["eligible_rows"] = len(rows)
     model["eligible_games"] = len({str(r.get("game_pk")) for r in rows})
+    model["exact_replay_games"] = len({str(r.get("game_pk")) for r in exact})
     return model
 
 

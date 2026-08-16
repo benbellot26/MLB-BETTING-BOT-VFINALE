@@ -52,21 +52,16 @@ def _binary_metrics(examples: list[tuple[float, int]]) -> dict[str, Any]:
     return {"n": n, "brier": brier, "logloss": logloss, "ece": ece, "intercept": intercept, "slope": slope}
 
 
-def _fit_platt(examples: list[tuple[float, int]], iterations: int = 1200, lr: float = .02, l2: float = .025) -> tuple[float, float]:
+def _fit_platt(examples: list[tuple[float,int]], iterations: int = 1200, lr: float = .02, l2: float = .025) -> tuple[float, float]:
     a, b = 0.0, 1.0
     n = max(1, len(examples))
     for _ in range(iterations):
         ga = gb = 0.0
         for p, y in examples:
-            x = _logit(p)
-            q = _sigmoid(a + b*x)
-            e = q-y
-            ga += e
-            gb += e*x
-        a -= lr*(ga/n + l2*a)
-        b -= lr*(gb/n + l2*(b-1.0))
-        a = max(-5.0, min(5.0, a))
-        b = max(.05, min(5.0, b))
+            x = _logit(p); q = _sigmoid(a + b*x); e = q-y
+            ga += e; gb += e*x
+        a -= lr*(ga/n + l2*a); b -= lr*(gb/n + l2*(b-1.0))
+        a = max(-5.0, min(5.0, a)); b = max(.05, min(5.0, b))
     return a, b
 
 
@@ -76,14 +71,10 @@ def _fit_beta(examples: list[tuple[float, int]], iterations: int = 1500, lr: flo
     for _ in range(iterations):
         gc = ga = gb = 0.0
         for p, y in examples:
-            p = clip_probability(p)
-            x1, x2 = math.log(p), -math.log(1-p)
-            q = _sigmoid(c+a*x1+b*x2)
-            e = q-y
+            p = clip_probability(p); x1, x2 = math.log(p), -math.log(1-p)
+            q = _sigmoid(c+a*x1+b*x2); e = q-y
             gc += e; ga += e*x1; gb += e*x2
-        c -= lr*(gc/n+l2*c)
-        a -= lr*(ga/n+l2*(a-1.0))
-        b -= lr*(gb/n+l2*(b-1.0))
+        c -= lr*(gc/n+l2*c); a -= lr*(ga/n+l2*(a-1.0)); b -= lr*(gb/n+l2*(b-1.0))
         c = max(-5.0, min(5.0, c)); a = max(.05, min(5.0, a)); b = max(.05, min(5.0, b))
     return {"method": "beta", "c": c, "a": a, "b": b}
 
@@ -143,7 +134,6 @@ def fit_calibrator(examples: list[tuple[float,int]], minimum: int) -> dict[str, 
 
 
 def _option_probability(opt: dict[str,Any]) -> float | None:
-    # p_learned is the last clean baseball-only conditional probability in V12.3.
     for key in ("p_baseball_raw", "p_learned", "p_structural"):
         if opt.get(key) is not None:
             return clip_probability(opt.get(key))
@@ -154,21 +144,15 @@ def examples_from_rows(rows: list[dict[str,Any]]) -> dict[str, list[tuple[float,
     buckets: dict[str,list[tuple[float,int]]] = {"GLOBAL":[]}
     seen: set[tuple[str,str,str,str]] = set()
     for row in sorted(rows, key=lambda r: (str(r.get("game_date") or ""), str(r.get("analyzed_at") or ""))):
-        phase = str(row.get("phase") or "EARLY").upper()
-        game_pk = str(row.get("game_pk") or "")
+        phase = str(row.get("phase") or "EARLY").upper(); game_pk = str(row.get("game_pk") or "")
         for opt in row.get("options") or []:
             result = opt.get("result")
-            if result not in {"WIN","LOSS"}:
-                continue
+            if result not in {"WIN","LOSS"}: continue
             p = _option_probability(opt)
-            if p is None:
-                continue
-            market = str(opt.get("market") or "").upper()
-            name = str(opt.get("name") or "")
-            point = str(opt.get("point"))
+            if p is None: continue
+            market = str(opt.get("market") or "").upper(); name = str(opt.get("name") or ""); point = str(opt.get("point"))
             key = (game_pk, market, name, point)
-            if key in seen:
-                continue
+            if key in seen: continue
             seen.add(key)
             ex = (p, 1 if result == "WIN" else 0)
             buckets.setdefault("GLOBAL", []).append(ex)
@@ -178,25 +162,16 @@ def examples_from_rows(rows: list[dict[str,Any]]) -> dict[str, list[tuple[float,
 
 
 def build_model(rows: list[dict[str,Any]]) -> dict[str,Any]:
-    buckets = examples_from_rows(rows)
-    calibrators: dict[str,Any] = {}
+    buckets = examples_from_rows(rows); calibrators: dict[str,Any] = {}
     for key, examples in buckets.items():
         minimum = MIN_GLOBAL if key == "GLOBAL" else MIN_PHASE if key.startswith("PHASE:") else MIN_MARKET
         calibrators[key] = fit_calibrator(examples, minimum)
-    return {
-        "schema":"v13-baseball-calibration-model-v1",
-        "generated_at":datetime.now(timezone.utc).isoformat(),
-        "baseball_only":True,
-        "market_probability_used_as_feature":False,
-        "calibrators":calibrators,
-        "rows_seen":len(rows),
-    }
+    return {"schema":"v13-baseball-calibration-model-v1","generated_at":datetime.now(timezone.utc).isoformat(),"baseball_only":True,
+            "market_probability_used_as_feature":False,"calibrators":calibrators,"rows_seen":len(rows)}
 
 
 def save_model(model: dict[str,Any], path: Path = MODEL_FILE) -> dict[str,Any]:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(model, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
-    return model
+    path.parent.mkdir(parents=True, exist_ok=True); path.write_text(json.dumps(model, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8"); return model
 
 
 def load_model(path: Path = MODEL_FILE) -> dict[str,Any]:
@@ -213,11 +188,20 @@ def load_model(path: Path = MODEL_FILE) -> dict[str,Any]:
 
 def choose_calibrator(model: dict[str,Any], market: str, phase: str) -> tuple[dict[str,Any], str]:
     cals = model.get("calibrators") or {}
-    for key in (f"PHASE:{phase.upper()}:{market.upper()}", f"MARKET:{market.upper()}", "GLOBAL"):
+    phase_key=f"PHASE:{phase.upper()}:{market.upper()}"; market_key=f"MARKET:{market.upper()}"
+    for key in (phase_key, market_key, "GLOBAL"):
         cal = cals.get(key) or {}
         if cal.get("active"):
             return cal, key
-    return {"active":False,"method":"identity","n":0}, "identity"
+    # Identity calibration must remain identity while evidence is insufficient,
+    # but n should reflect real baseball-only observations instead of pretending
+    # that no evidence exists. Prefer market-specific evidence over mixed-market
+    # GLOBAL evidence; phase-specific n is retained as metadata but not allowed to
+    # reduce n when the same model/market has more exact observations in other phases.
+    phase_n=int((cals.get(phase_key) or {}).get("n") or 0)
+    market_n=int((cals.get(market_key) or {}).get("n") or 0)
+    evidence_n=max(phase_n, market_n)
+    return {"active":False,"method":"identity","n":evidence_n,"phase_n":phase_n,"market_n":market_n}, "identity"
 
 
 def calibrate(p: float, market: str, phase: str, model: dict[str,Any] | None = None) -> tuple[float,str,int]:
