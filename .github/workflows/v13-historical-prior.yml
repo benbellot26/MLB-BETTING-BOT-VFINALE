@@ -1,0 +1,41 @@
+name: V13 Historical Prior Validation
+
+on:
+  push:
+    branches: [agent/v13-reconstruct-1801]
+    paths:
+      - 'v11/v13_historical_prior.py'
+      - 'v11/v13_reconstruct_1801.py'
+      - '.github/workflows/v13-historical-prior.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-prior:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile
+        run: python -m py_compile v11/v13_historical_prior.py v11/v13_reconstruct_1801.py
+      - name: Build historical prior
+        run: python -m v11.v13_historical_prior
+      - name: Validate safety and outer holdout
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          m=json.loads(Path('data/v13_historical_prior.json').read_text())
+          assert m['warm_games'] >= 1600, m
+          assert m['split']['test_games'] >= 250, m
+          assert m['split']['grouped_by_day'] is True
+          assert m['safety']['historical_odds_used'] is False
+          assert m['safety']['market_probability_as_feature'] is False
+          assert m['safety']['historical_calibration_auto_promoted_to_live'] is False
+          assert m['safety']['exact_v13_transfer_gate_required'] is True
+          print(json.dumps(m, indent=2))
+          PY
