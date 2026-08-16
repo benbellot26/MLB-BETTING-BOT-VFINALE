@@ -12,6 +12,14 @@ from .probability_contract_v13 import attach_contract, assert_no_market_leakage
 VERSION = "13.0-professional-probability-v1"
 _INSTALLED = False
 
+V13_OPTION_FIELDS = (
+    "p_baseball_raw", "p_baseball_calibrated", "p_posterior", "model_market_gap",
+    "baseball_probability_source", "calibration_source_v13", "calibration_n_v13",
+    "probability_interval_low", "probability_interval_high", "probability_uncertainty_v13",
+    "p_legacy_market_blended", "probability_product", "edge_probability_field",
+    "posterior_allowed_for_edge", "v13_probability_error", "v13_probability_eligible",
+)
+
 
 def _num(x: Any, d: float = 0.0) -> float:
     try:
@@ -27,6 +35,10 @@ def _as_pipeline(value: ProbabilityPipelineV13 | dict[str,Any] | None) -> Probab
     if isinstance(value, dict):
         return ProbabilityPipelineV13(value)
     return ProbabilityPipelineV13.from_artifact()
+
+
+def _option_key(opt: dict[str,Any]) -> tuple[str,str,str]:
+    return (str(opt.get("market") or ""), str(opt.get("name") or ""), str(opt.get("point")))
 
 
 def upgrade_option(opt: dict[str,Any], phase: str, pipeline: ProbabilityPipelineV13 | dict[str,Any] | None = None) -> dict[str,Any]:
@@ -97,12 +109,19 @@ def install() -> bool:
 
     def row(result, run_id, at, snapshot=None, source_replay=None):
         payload = original_row(result, run_id, at, snapshot, source_replay)
+        live = {_option_key(o): o for o in result.get("options") or []}
+        for saved in payload.get("options") or []:
+            src = live.get(_option_key(saved)) or {}
+            for field in V13_OPTION_FIELDS:
+                saved[field] = src.get(field)
         attach_contract(payload)
         as_of = str(payload.get("analyzed_at") or at or datetime.now(timezone.utc).isoformat())
         # Production rows are backed by the run's current/replayed pregame HTTP
         # sources; historical reconstruction has its own stricter migration gate.
         pit.mark_live_snapshot(payload, as_of)
         payload["software_version"] = VERSION
+        payload["probability_contract_version"] = VERSION
+        payload["probability_product"] = "baseball-only-calibrated"
         payload["predictive_compatibility_independent_of_software_version"] = True
         return payload
 
