@@ -7,10 +7,11 @@ from typing import Any
 from . import point_in_time_v13 as pit
 from . import extra_innings_v13
 from . import v13_distribution_prior
+from . import v13_run_mean_runtime
 from .pipeline_v13 import ProbabilityPipelineV13
 from .probability_contract_v13 import attach_contract, assert_no_market_leakage
 
-VERSION = "13.1-professional-probability-v1"
+VERSION = "13.2-professional-probability-v1"
 _INSTALLED = False
 
 V13_OPTION_FIELDS = (
@@ -47,9 +48,6 @@ def upgrade_option(opt: dict[str,Any], phase: str, pipeline: ProbabilityPipeline
     legacy_effective = opt.get("p_effective")
     pipeline.transform_option(opt, phase)
     opt["p_legacy_market_blended"] = legacy_effective
-
-    # Downstream legacy selector/report code reads p_effective/p_win. In V13
-    # those aliases intentionally point to calibrated baseball-only probability.
     calibrated = float(opt["p_baseball_calibrated"])
     raw = float(opt["p_baseball_raw"])
     push = max(0.0, min(.35, _num(opt.get("p_push_model", opt.get("p_push")), 0.0)))
@@ -82,7 +80,7 @@ def upgrade_result(result: dict[str,Any], pipeline: ProbabilityPipelineV13 | dic
     result["probability_product"] = "baseball-only-calibrated"
     result["market_blend_allowed_for_edge"] = False
     result["market_blend_allowed_for_forecast_only"] = True
-    result["probability_pipeline"] = "PregameSnapshot->BaseballModel->ScoreDistribution->BaseballCalibration->MarketBenchmark"
+    result["probability_pipeline"] = "PregameSnapshot->BaseballModel->RunMeanPrior->ScoreDistribution->BaseballCalibration->MarketBenchmark"
     return result
 
 
@@ -101,31 +99,41 @@ def install() -> bool:
         joint = original_joint(home_mu, away_mu, dispersion=dispersion, env_sigma=env_sigma)
         return extra_innings_v13.home_win_probability(joint, extra_innings_home_prior=None)
 
-    # Remove the fixed 52% home split in extra innings until a separately
-    # validated extra-inning prior exists.
     engine_v12.prob_home_win = neutral_extra_innings_home_win
 
-    def validated_distribution_prior(structural_hmu, structural_amu, champ, phase):
+    def validated_historical_priors(structural_hmu, structural_amu, champ, phase):
         values = list(original_bootstrap_prior(structural_hmu, structural_amu, champ, phase))
-        # Tuple contract from engine_v12._bootstrap_prior:
+        # Tuple contract:
         # hmu, amu, run_meta, bootstrap, dispersion, dispersion_source,
         # env_sigma, env_source.
-        dispersion, env_sigma, meta = v13_distribution_prior.apply(values[4], values[6], phase)
-        if meta.get("active"):
+        phase_name = str(phase or "EARLY").upper()
+        phase_model = ((champ.get("phase_models") or {}).get(phase_name) or {})
+        native_residual_active = bool(champ.get("active") and (phase_model.get("residual") or {}).get("active"))
+        legacy_run_prior_active = bool((values[2] or {}).get("active"))
+
+        # Historical μ prior is a fallback only. It never stacks on top of a
+        # validated native residual or the legacy historical run bootstrap.
+        if phase_name == "FINAL" and not native_residual_active and not legacy_run_prior_active:
+            hmu, amu, mean_meta = v13_run_mean_runtime.apply_pair(values[0], values[1], phase_name)
+            if mean_meta.get("active"):
+                values[0], values[1] = hmu, amu
+                bootstrap = dict(values[3] or {})
+                bootstrap["v13_run_mean_prior"] = mean_meta
+                values[3] = bootstrap
+
+        dispersion, env_sigma, dist_meta = v13_distribution_prior.apply(values[4], values[6], phase_name)
+        if dist_meta.get("active"):
             values[4] = dispersion
-            values[5] = meta.get("source")
-            # The ablation selected dispersion-only. Keep the already validated
-            # environment sigma unchanged (currently 0.08) by contract.
+            values[5] = dist_meta.get("source")
             values[6] = env_sigma
             bootstrap = dict(values[3] or {})
-            bootstrap["v13_distribution_prior"] = meta
+            bootstrap["v13_distribution_prior"] = dist_meta
             values[3] = bootstrap
         return tuple(values)
 
-    # Activate the historical distribution prior only at the exact point where
-    # score-distribution parameters are selected. Probability calibration and
-    # sharp-market benchmarking remain completely separate.
-    engine_v12._bootstrap_prior = validated_distribution_prior
+    # Both historical priors are isolated at the pre-residual/base-distribution
+    # selection point. Probability calibration and market benchmarking remain separate.
+    engine_v12._bootstrap_prior = validated_historical_priors
 
     def analyze(game, event, as_of=None):
         result = original_analyze(game, event, as_of=as_of)
@@ -140,8 +148,6 @@ def install() -> bool:
                 saved[field] = src.get(field)
         attach_contract(payload)
         as_of = str(payload.get("analyzed_at") or at or datetime.now(timezone.utc).isoformat())
-        # Production rows are backed by the run's current/replayed pregame HTTP
-        # sources; historical reconstruction has its own stricter migration gate.
         pit.mark_live_snapshot(payload, as_of)
         payload["software_version"] = VERSION
         payload["probability_contract_version"] = VERSION

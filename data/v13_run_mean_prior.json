@@ -1,0 +1,49 @@
+{
+  "schema": "v13-run-mean-prior-v1",
+  "active": true,
+  "phase_scope": "FINAL",
+  "source": "1801-game leakage-safe reconstructed FINAL cohort",
+  "historical_games": 1724,
+  "split": {
+    "train": 1027,
+    "validation": 341,
+    "test": 356
+  },
+  "exact_games": 29,
+  "exact_phase_counts": {
+    "EARLY": 12,
+    "LATE": 12,
+    "FINAL": 5
+  },
+  "selected_variant": "side_bias_shared_slope",
+  "model": {
+    "home_bias": 1.7461393951673727,
+    "away_bias": 1.7889096574516503,
+    "slope_delta": -0.3978879088468419,
+    "ridge": 10.0,
+    "formula": "mu + side_bias + slope_delta*mu",
+    "max_adjustment": 0.75
+  },
+  "validation": {
+    "mae_gain": 0.0191348104880662,
+    "rmse_gain": 0.0024069232669621243,
+    "nll_gain": 0.0017597003304095082
+  },
+  "test": {
+    "mae_gain": 0.004545626855521068,
+    "rmse_gain": 0.00561564300469497,
+    "nll_gain": 0.0024821206487626313
+  },
+  "exact_transfer": {
+    "mae_gain": 0.010730872222734167,
+    "rmse_gain": 0.017192332263913812,
+    "nll_gain": 0.0036249046667955476
+  },
+  "activation_rule": "Historical validation, untouched chronological test and latest exact V13 transfer cohort all improve RMSE and Negative Binomial NLL; MAE does not regress.",
+  "safety": {
+    "historical_odds_used": false,
+    "market_probability_used": false,
+    "feature_vector_fabricated": false,
+    "applies_only_when_native_residual_and_legacy_run_bootstrap_are_inactive": true
+  }
+}

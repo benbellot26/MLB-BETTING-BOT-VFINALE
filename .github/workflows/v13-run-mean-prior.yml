@@ -1,0 +1,39 @@
+name: V13 Run Mean Prior
+
+on:
+  push:
+    branches:
+      - agent/v13-run-mean-prior
+    paths:
+      - 'v11/v13_run_mean_prior.py'
+      - 'v11/v13_run_mean_runtime.py'
+      - 'v11/v13_runtime.py'
+      - 'tests/test_v13_run_mean_prior.py'
+      - '.github/workflows/v13-run-mean-prior.yml'
+      - 'data/mlb_backtest_2026.jsonl'
+      - 'data/v13_historical_backfill.jsonl'
+      - 'data/v13_run_mean_prior.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile
+        run: python -m py_compile v11/v13_run_mean_prior.py v11/v13_run_mean_runtime.py v11/v13_runtime.py tests/test_v13_run_mean_prior.py
+      - name: Run prior isolation tests
+        run: python -m unittest -q tests.test_v13_run_mean_prior
+      - name: Rebuild and validate run-mean prior
+        run: python -m v11.v13_run_mean_prior
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: v13-run-mean-prior
+          path: data/v13_run_mean_prior.json
