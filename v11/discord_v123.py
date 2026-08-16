@@ -136,6 +136,37 @@ def _research_variant_line(label, metrics):
     )
 
 
+def _convergence_text(monitor):
+    convergence = monitor.get("convergence") or {}
+    labels = {
+        "model": "M",
+        "attack": "A",
+        "starter": "SP",
+        "bullpen": "BP",
+        "lineup": "LU",
+        "statcast": "SC",
+        "weather_park": "WX",
+        "sharp": "SH",
+    }
+    lines = []
+    for item in (convergence.get("top_options") or [])[:6]:
+        point = "" if item.get("point") is None else f" {core.num(item.get('point')):+g}"
+        support = [labels.get(name, name) for name, value in (item.get("signals") or {}).items() if value.get("state") == "SUPPORT"]
+        oppose = [labels.get(name, name) for name, value in (item.get("signals") or {}).items() if value.get("state") == "OPPOSE"]
+        unavailable = int(core.num(item.get("unavailable")))
+        signal_note = f"+{','.join(support) or '—'}"
+        if oppose:
+            signal_note += f" • -{','.join(oppose)}"
+        if unavailable:
+            signal_note += f" • {unavailable} N/A"
+        lines.append(
+            f"**{item.get('game')}** • {item.get('market')} {item.get('name')}{point} • "
+            f"**{int(core.num(item.get('score_8')))}/8** • net {int(core.num(item.get('net_support'))):+d} • "
+            f"**{item.get('grade') or '—'}** • p {_research_pct(item.get('p_effective'))}\n{signal_note}"
+        )
+    return "\n".join(lines) or "Convergence indisponible sur ce run."
+
+
 def send_research_monitor(monitor):
     progress = monitor.get("progress") or {}
     variants = monitor.get("variants") or {}
@@ -202,12 +233,13 @@ def send_research_monitor(monitor):
 
     fields = [
         ("🧪 Progression", head),
+        ("🧭 Convergence 8 signaux", _convergence_text(monitor)),
         ("📐 V12.3.2 vs V12.4", "\n".join(variant_lines)),
         ("🧩 Ablations / poids", "\n".join(ablation_lines)),
         ("📈 Évolution", evolution_text),
         ("⚡ Désaccords du run", disagreement_text),
         ("👻 V11.5 shadow", v115_text),
-        ("🔒 Garde-fou", "**RESEARCH ONLY** • selector/Kelly/staking/Discord picks inchangés • aucune promotion automatique."),
+        ("🔒 Garde-fou", "**RESEARCH ONLY** • convergence informative • selector/Kelly/staking/Discord picks inchangés • aucune promotion automatique."),
     ]
     return core.send_embed(
         "🧪 V12.4 RESEARCH MONITOR",
