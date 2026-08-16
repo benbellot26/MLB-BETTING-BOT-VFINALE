@@ -1,0 +1,84 @@
+name: V13 Historical Point-in-Time Backfill
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: v13-historical-backfill
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Compile V13 backfill
+        run: python -m py_compile v11/v13_historical_backfill.py v11/v13_entry.py
+
+      - name: Download durable pregame source replays
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p runtime/v13/replays
+          gh release download v12-data-archive --pattern '*_sources.json.gz' --dir runtime/v13/replays --clobber
+          count=$(find runtime/v13/replays -name '*_sources.json.gz' | wc -l)
+          echo "Downloaded $count source replays"
+          test "$count" -gt 0
+
+      - name: Reconstruct V13 probabilities point-in-time
+        run: |
+          python -m v11.v13_historical_backfill --dir runtime/v13/replays \
+            --output data/v13_historical_backfill.jsonl \
+            --report data/v13_historical_backfill_report.json
+
+      - name: Validate leakage boundary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report=json.loads(Path('data/v13_historical_backfill_report.json').read_text())
+          assert report['source_replays'] > 0, report
+          assert report['replay_pass'] > 0, report
+          rows=[]
+          p=Path('data/v13_historical_backfill.jsonl')
+          for line in p.read_text().splitlines():
+              if line.strip(): rows.append(json.loads(line))
+          for r in rows:
+              assert r['point_in_time'] is True
+              assert r['features_from_postgame'] is False
+              assert r['market_probability_used_as_baseball_feature'] is False
+              assert r['result_status'] == 'SETTLED'
+          print('V13 backfill rows=',len(rows),'games=',report['canonical_games'])
+          PY
+
+      - name: Upload backfill artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: v13-historical-backfill-${{ github.run_id }}
+          path: |
+            data/v13_historical_backfill.jsonl
+            data/v13_historical_backfill_report.json
+          retention-days: 90
+
+      - name: Persist backfill evidence
+        run: |
+          git config user.name 'MLB Betting Bot V13'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add data/v13_historical_backfill.jsonl data/v13_historical_backfill_report.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'data: persist V13 point-in-time historical backfill [skip ci]'
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
