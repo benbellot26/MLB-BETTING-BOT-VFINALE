@@ -6,6 +6,7 @@ from typing import Any
 
 from . import point_in_time_v13 as pit
 from . import extra_innings_v13
+from . import v13_historical_distribution_prior as historical_distribution_prior
 from .pipeline_v13 import ProbabilityPipelineV13
 from .probability_contract_v13 import attach_contract, assert_no_market_leakage
 
@@ -47,8 +48,6 @@ def upgrade_option(opt: dict[str,Any], phase: str, pipeline: ProbabilityPipeline
     pipeline.transform_option(opt, phase)
     opt["p_legacy_market_blended"] = legacy_effective
 
-    # Downstream legacy selector/report code reads p_effective/p_win. In V13
-    # those aliases intentionally point to calibrated baseball-only probability.
     calibrated = float(opt["p_baseball_calibrated"])
     raw = float(opt["p_baseball_raw"])
     push = max(0.0, min(.35, _num(opt.get("p_push_model", opt.get("p_push")), 0.0)))
@@ -94,14 +93,32 @@ def install() -> bool:
     original_analyze = engine_v12.analyze
     original_row = runner._row
     original_joint = engine_v12.joint_score_matrix
+    original_bootstrap_prior = engine_v12._bootstrap_prior
 
     def neutral_extra_innings_home_win(home_mu, away_mu, dispersion=None, env_sigma=None):
         joint = original_joint(home_mu, away_mu, dispersion=dispersion, env_sigma=env_sigma)
         return extra_innings_v13.home_win_probability(joint, extra_innings_home_prior=None)
 
-    # Remove the fixed 52% home split in extra innings until a separately
-    # validated extra-inning prior exists.
+    def v13_distribution_prior(structural_hmu, structural_amu, champ, phase):
+        values = list(original_bootstrap_prior(structural_hmu, structural_amu, champ, phase))
+        # Tuple: hmu, amu, bootstrap_run, bootstrap, dispersion,
+        # dispersion_source, env_sigma, env_source.
+        if str(phase or "").upper() != "FINAL":
+            return tuple(values)
+        defaults = historical_distribution_prior.validated_defaults()
+        if not defaults:
+            return tuple(values)
+        # The 1,724-game prior is a fallback only. A native validated champion or
+        # an already active historical bootstrap always has priority.
+        if values[5] == "fixed" and values[7] == "fixed":
+            values[4] = defaults["dispersion"]
+            values[5] = defaults["source"]
+            values[6] = defaults["environment_sigma"]
+            values[7] = defaults["source"]
+        return tuple(values)
+
     engine_v12.prob_home_win = neutral_extra_innings_home_win
+    engine_v12._bootstrap_prior = v13_distribution_prior
 
     def analyze(game, event, as_of=None):
         result = original_analyze(game, event, as_of=as_of)
@@ -116,8 +133,6 @@ def install() -> bool:
                 saved[field] = src.get(field)
         attach_contract(payload)
         as_of = str(payload.get("analyzed_at") or at or datetime.now(timezone.utc).isoformat())
-        # Production rows are backed by the run's current/replayed pregame HTTP
-        # sources; historical reconstruction has its own stricter migration gate.
         pit.mark_live_snapshot(payload, as_of)
         payload["software_version"] = VERSION
         payload["probability_contract_version"] = VERSION
