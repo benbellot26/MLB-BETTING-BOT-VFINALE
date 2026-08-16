@@ -8,6 +8,10 @@ from typing import Any
 from . import calibration_baseball_v13 as calibration
 from . import journal
 
+STRICT_GLOBAL_N = 600
+STRICT_MARKET_N = 400
+STRICT_PHASE_MARKET_N = 300
+
 
 def _dt(value: Any):
     try:
@@ -79,10 +83,37 @@ def eligible_probability_rows(rows: list[dict[str,Any]]) -> list[dict[str,Any]]:
     return sorted((x[1] for x in best.values()), key=lambda r: (str(r.get("game_date") or ""), str(r.get("game_pk") or ""), str(r.get("phase") or "")))
 
 
+def _strict_required_n(key: str) -> int:
+    if key == "GLOBAL":
+        return STRICT_GLOBAL_N
+    if key.startswith("PHASE:"):
+        return STRICT_PHASE_MARKET_N
+    if key.startswith("MARKET:"):
+        return STRICT_MARKET_N
+    return STRICT_GLOBAL_N
+
+
+def enforce_strict_activation(model: dict[str,Any]) -> dict[str,Any]:
+    for key, cal in (model.get("calibrators") or {}).items():
+        required = _strict_required_n(str(key))
+        cal["strict_required_n"] = required
+        cal["strict_volume_ready"] = int(cal.get("n") or 0) >= required
+        if cal.get("active") and not cal["strict_volume_ready"]:
+            cal["internal_candidate_active"] = True
+            cal["active"] = False
+            cal["status"] = "COLLECTING_STRICT_V13_VOLUME"
+    model["strict_activation_floors"] = {
+        "global":STRICT_GLOBAL_N,
+        "market":STRICT_MARKET_N,
+        "phase_market":STRICT_PHASE_MARKET_N,
+    }
+    return model
+
+
 def build() -> dict[str,Any]:
     source = journal.load_rows()
     rows = eligible_probability_rows(source)
-    model = calibration.build_model(rows)
+    model = enforce_strict_activation(calibration.build_model(rows))
     model["training_policy"] = {
         "software_version_required": False,
         "pregame_required": True,
@@ -92,6 +123,7 @@ def build() -> dict[str,Any]:
         "canonical_row": "latest pregame row per game_pk and phase",
         "independent_target_policy": "max one canonical side per market/game/phase",
         "alternate_lines_trainable_for_calibration": False,
+        "strict_volume_floor_after_internal_holdout": True,
     }
     model["source_rows_total"] = len(source)
     model["eligible_rows"] = len(rows)
