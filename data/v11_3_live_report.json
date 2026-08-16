@@ -1,1629 +1,321 @@
 {
-  "analyzed_at": "2026-08-16T07:49:21.507118+00:00",
+  "analyzed_at": "2026-08-16T14:23:28.295818+00:00",
   "calibration_health": {
     "by_phase": {
       "EARLY": {
         "ML": {
-          "confidence_bands": [
-            {
-              "avg_confidence": 0.5303572222222223,
-              "gap": 0.13630944444444437,
-              "hi": 0.55,
-              "hit_rate": 0.6666666666666666,
-              "lo": 0.5,
-              "n": 9
-            },
-            {
-              "avg_confidence": 0.557396,
-              "gap": -0.2240626666666667,
-              "hi": 0.6,
-              "hit_rate": 0.3333333333333333,
-              "lo": 0.55,
-              "n": 3
-            },
-            {
-              "avg_confidence": 0.631354,
-              "gap": 0.36864600000000003,
-              "hi": 0.65,
-              "hit_rate": 1.0,
-              "lo": 0.6,
-              "n": 1
-            }
-          ],
+          "confidence_bands": [],
           "observed_effective": {
-            "accuracy": 0.6153846153846154,
-            "brier": 0.23791772875330772,
+            "accuracy": null,
+            "brier": null,
             "calibration_intercept": null,
             "calibration_slope": null,
-            "ece": 0.19982638461538463,
-            "hit_rate": 0.38461538461538464,
-            "logloss": 0.6686364797962767,
-            "mce": 0.555323,
-            "mean_probability": 0.5097477692307693,
-            "n": 13,
-            "reliability_bins": [
-              {
-                "avg_probability": 0.4415675,
-                "gap": 0.0584325,
-                "hi": 0.45,
-                "hit_rate": 0.5,
-                "lo": 0.4,
-                "n": 2
-              },
-              {
-                "avg_probability": 0.463949,
-                "gap": 0.463949,
-                "hi": 0.5,
-                "hit_rate": 0.0,
-                "lo": 0.45,
-                "n": 3
-              },
-              {
-                "avg_probability": 0.5275103333333333,
-                "gap": 0.027510333333333303,
-                "hi": 0.55,
-                "hit_rate": 0.5,
-                "lo": 0.5,
-                "n": 6
-              },
-              {
-                "avg_probability": 0.555323,
-                "gap": 0.555323,
-                "hi": 0.6,
-                "hit_rate": 0.0,
-                "lo": 0.55,
-                "n": 1
-              },
-              {
-                "avg_probability": 0.631354,
-                "gap": 0.36864600000000003,
-                "hi": 0.65,
-                "hit_rate": 1.0,
-                "lo": 0.6,
-                "n": 1
-              }
-            ]
+            "ece": null,
+            "logloss": null,
+            "mce": null,
+            "n": 0,
+            "reliability_bins": []
           },
           "raw_model": {
-            "accuracy": 0.6153846153846154,
-            "brier": 0.23791772875330772,
+            "accuracy": null,
+            "brier": null,
             "calibration_intercept": null,
             "calibration_slope": null,
-            "ece": 0.19982638461538463,
-            "hit_rate": 0.38461538461538464,
-            "logloss": 0.6686364797962767,
-            "mce": 0.555323,
-            "mean_probability": 0.5097477692307693,
-            "n": 13,
-            "reliability_bins": [
-              {
-                "avg_probability": 0.4415675,
-                "gap": 0.0584325,
-                "hi": 0.45,
-                "hit_rate": 0.5,
-                "lo": 0.4,
-                "n": 2
-              },
-              {
-                "avg_probability": 0.463949,
-                "gap": 0.463949,
-                "hi": 0.5,
-                "hit_rate": 0.0,
-                "lo": 0.45,
-                "n": 3
-              },
-              {
-                "avg_probability": 0.5275103333333333,
-                "gap": 0.027510333333333303,
-                "hi": 0.55,
-                "hit_rate": 0.5,
-                "lo": 0.5,
-                "n": 6
-              },
-              {
-                "avg_probability": 0.555323,
-                "gap": 0.555323,
-                "hi": 0.6,
-                "hit_rate": 0.0,
-                "lo": 0.55,
-                "n": 1
-              },
-              {
-                "avg_probability": 0.631354,
-                "gap": 0.36864600000000003,
-                "hi": 0.65,
-                "hit_rate": 1.0,
-                "lo": 0.6,
-                "n": 1
-              }
-            ]
+            "ece": null,
+            "logloss": null,
+            "mce": null,
+            "n": 0,
+            "reliability_bins": []
           }
         },
         "RUNLINE": {
-          "confidence_bands": [
-            {
-              "avg_confidence": 0.535367,
-              "gap": -0.535367,
-              "hi": 0.55,
-              "hit_rate": 0.0,
-              "lo": 0.5,
-              "n": 1
-            },
-            {
-              "avg_confidence": 0.6250727272727272,
-              "gap": -0.07961818181818181,
-              "hi": 0.65,
-              "hit_rate": 0.5454545454545454,
-              "lo": 0.6,
-              "n": 11
-            },
-            {
-              "avg_confidence": 0.662268,
-              "gap": 0.33773200000000003,
-              "hi": 0.7,
-              "hit_rate": 1.0,
-              "lo": 0.65,
-              "n": 1
-            }
-          ],
+          "confidence_bands": [],
           "observed_effective": {
-            "accuracy": 0.5384615384615384,
-            "brier": 0.24123118423976922,
+            "accuracy": null,
+            "brier": null,
             "calibration_intercept": null,
             "calibration_slope": null,
-            "ece": 0.3177431538461538,
-            "hit_rate": 0.23076923076923078,
-            "logloss": 0.6748128509452355,
-            "mce": 0.5353669999999999,
-            "mean_probability": 0.4661482307692308,
-            "n": 13,
-            "reliability_bins": [
-              {
-                "avg_probability": 0.36123042857142856,
-                "gap": 0.21837328571428571,
-                "hi": 0.4,
-                "hit_rate": 0.14285714285714285,
-                "lo": 0.0,
-                "n": 7
-              },
-              {
-                "avg_probability": 0.464633,
-                "gap": 0.5353669999999999,
-                "hi": 0.5,
-                "hit_rate": 1.0,
-                "lo": 0.45,
-                "n": 1
-              },
-              {
-                "avg_probability": 0.6133362,
-                "gap": 0.4133362,
-                "hi": 0.65,
-                "hit_rate": 0.2,
-                "lo": 0.6,
-                "n": 5
-              }
-            ]
+            "ece": null,
+            "logloss": null,
+            "mce": null,
+            "n": 0,
+            "reliability_bins": []
           },
           "raw_model": {
-            "accuracy": 0.5384615384615384,
-            "brier": 0.24123118423976922,
+            "accuracy": null,
+            "brier": null,
             "calibration_intercept": null,
             "calibration_slope": null,
-            "ece": 0.3177431538461538,
-            "hit_rate": 0.23076923076923078,
-            "logloss": 0.6748128509452355,
-            "mce": 0.5353669999999999,
-            "mean_probability": 0.4661482307692308,
-            "n": 13,
-            "reliability_bins": [
-              {
-                "avg_probability": 0.36123042857142856,
-                "gap": 0.21837328571428571,
-                "hi": 0.4,
-                "hit_rate": 0.14285714285714285,
-                "lo": 0.0,
-                "n": 7
-              },
-              {
-                "avg_probability": 0.464633,
-                "gap": 0.5353669999999999,
-                "hi": 0.5,
-                "hit_rate": 1.0,
-                "lo": 0.45,
-                "n": 1
-              },
-              {
-                "avg_probability": 0.6133362,
-                "gap": 0.4133362,
-                "hi": 0.65,
-                "hit_rate": 0.2,
-                "lo": 0.6,
-                "n": 5
-              }
-            ]
+            "ece": null,
+            "logloss": null,
+            "mce": null,
+            "n": 0,
+            "reliability_bins": []
           }
         },
         "TOTAL": {
-          "confidence_bands": [
-            {
-              "avg_confidence": 0.52506125,
-              "gap": -0.025061250000000035,
-              "hi": 0.55,
-              "hit_rate": 0.5,
-              "lo": 0.5,
-              "n": 8
-            },
-            {
-              "avg_confidence": 0.569239,
-              "gap": -0.06923900000000005,
-              "hi": 0.6,
-              "hit_rate": 0.5,
-              "lo": 0.55,
-              "n": 2
-            },
-            {
-              "avg_confidence": 0.6094703333333333,
-              "gap": 0.057196333333333294,
-              "hi": 0.65,
-              "hit_rate": 0.6666666666666666,
-              "lo": 0.6,
-              "n": 3
-            }
-          ],
+          "confidence_bands": [],
           "observed_effective": {
-            "accuracy": 0.5384615384615384,
-            "brier": 0.24246357370592309,
+            "accuracy": null,
+            "brier": null,
             "calibration_intercept": null,
             "calibration_slope": null,
-            "ece": 0.26754269230769234,
-            "hit_rate": 0.46153846153846156,
-            "logloss": 0.677795154046778,
-            "mce": 0.600463,
-            "mean_probability": 0.517925,
-            "n": 13,
-            "reliability_bins": [
-              {
-                "avg_probability": 0.399537,
-                "gap": 0.600463,
-                "hi": 0.4,
-                "hit_rate": 1.0,
-                "lo": 0.0,
-                "n": 1
-              },
-              {
-                "avg_probability": 0.4708215,
-                "gap": 0.2208215,
-                "hi": 0.5,
-                "hit_rate": 0.25,
-                "lo": 0.45,
-                "n": 4
-              },
-              {
-                "avg_probability": 0.520944,
-                "gap": 0.27094399999999996,
-                "hi": 0.55,
-                "hit_rate": 0.25,
-                "lo": 0.5,
-                "n": 4
-              },
-              {
-                "avg_probability": 0.569239,
-                "gap": 0.06923900000000005,
-                "hi": 0.6,
-                "hit_rate": 0.5,
-                "lo": 0.55,
-                "n": 2
-              },
-              {
-                "avg_probability": 0.613974,
-                "gap": 0.386026,
-                "hi": 0.65,
-                "hit_rate": 1.0,
-                "lo": 0.6,
-                "n": 2
-              }
-            ]
+            "ece": null,
+            "logloss": null,
+            "mce": null,
+            "n": 0,
+            "reliability_bins": []
           },
           "raw_model": {
-            "accuracy": 0.5384615384615384,
-            "brier": 0.24246357370592309,
+            "accuracy": null,
+            "brier": null,
             "calibration_intercept": null,
             "calibration_slope": null,
-            "ece": 0.26754269230769234,
-            "hit_rate": 0.46153846153846156,
-            "logloss": 0.677795154046778,
-            "mce": 0.600463,
-            "mean_probability": 0.517925,
-            "n": 13,
-            "reliability_bins": [
-              {
-                "avg_probability": 0.399537,
-                "gap": 0.600463,
-                "hi": 0.4,
-                "hit_rate": 1.0,
-                "lo": 0.0,
-                "n": 1
-              },
-              {
-                "avg_probability": 0.4708215,
-                "gap": 0.2208215,
-                "hi": 0.5,
-                "hit_rate": 0.25,
-                "lo": 0.45,
-                "n": 4
-              },
-              {
-                "avg_probability": 0.520944,
-                "gap": 0.27094399999999996,
-                "hi": 0.55,
-                "hit_rate": 0.25,
-                "lo": 0.5,
-                "n": 4
-              },
-              {
-                "avg_probability": 0.569239,
-                "gap": 0.06923900000000005,
-                "hi": 0.6,
-                "hit_rate": 0.5,
-                "lo": 0.55,
-                "n": 2
-              },
-              {
-                "avg_probability": 0.613974,
-                "gap": 0.386026,
-                "hi": 0.65,
-                "hit_rate": 1.0,
-                "lo": 0.6,
-                "n": 2
-              }
-            ]
+            "ece": null,
+            "logloss": null,
+            "mce": null,
+            "n": 0,
+            "reliability_bins": []
           }
         }
       },
       "FINAL": {
         "ML": {
-          "confidence_bands": [
-            {
-              "avg_confidence": 0.5254272857142858,
-              "gap": 0.046001285714285634,
-              "hi": 0.55,
-              "hit_rate": 0.5714285714285714,
-              "lo": 0.5,
-              "n": 7
-            },
-            {
-              "avg_confidence": 0.56785275,
-              "gap": -0.31785275,
-              "hi": 0.6,
-              "hit_rate": 0.25,
-              "lo": 0.55,
-              "n": 4
-            },
-            {
-              "avg_confidence": 0.6206375,
-              "gap": -0.12063749999999995,
-              "hi": 0.65,
-              "hit_rate": 0.5,
-              "lo": 0.6,
-              "n": 2
-            }
-          ],
+          "confidence_bands": [],
           "observed_effective": {
-            "accuracy": 0.46153846153846156,
-            "brier": 0.26181332836915383,
+            "accuracy": null,
+            "brier": null,
             "calibration_intercept": null,
             "calibration_slope": null,
-            "ece": 0.2349122307692308,
-            "hit_rate": 0.3076923076923077,
-            "logloss": 0.7170072857327852,
-            "mce": 0.5733055,
-            "mean_probability": 0.5234045384615384,
-            "n": 13,
-            "reliability_bins": [
-              {
-                "avg_probability": 0.4376,
-                "gap": 0.06240000000000001,
-                "hi": 0.45,
-                "hit_rate": 0.5,
-                "lo": 0.4,
-                "n": 2
-              },
-              {
-                "avg_probability": 0.46579550000000003,
-                "gap": 0.46579550000000003,
-                "hi": 0.5,
-                "hit_rate": 0.0,
-                "lo": 0.45,
-                "n": 2
-              },
-              {
-                "avg_probability": 0.5219164000000001,
-                "gap": 0.12191640000000004,
-                "hi": 0.55,
-                "hit_rate": 0.4,
-                "lo": 0.5,
-                "n": 5
-              },
-              {
-                "avg_probability": 0.5733055,
-                "gap": 0.5733055,
-                "hi": 0.6,
-                "hit_rate": 0.0,
-                "lo": 0.55,
-                "n": 2
-              },
-              {
-                "avg_probability": 0.6206375,
-                "gap": 0.12063749999999995,
-                "hi": 0.65,
-                "hit_rate": 0.5,
-                "lo": 0.6,
-                "n": 2
-              }
-            ]
+            "ece": null,
+            "logloss": null,
+            "mce": null,
+            "n": 0,
+            "reliability_bins": []
           },
           "raw_model": {
-            "accuracy": 0.46153846153846156,
-            "brier": 0.26181332836915383,
+            "accuracy": null,
+            "brier": null,
             "calibration_intercept": null,
             "calibration_slope": null,
-            "ece": 0.2349122307692308,
-            "hit_rate": 0.3076923076923077,
-            "logloss": 0.7170072857327852,
-            "mce": 0.5733055,
-            "mean_probability": 0.5234045384615384,
-            "n": 13,
-            "reliability_bins": [
-              {
-                "avg_probability": 0.4376,
-                "gap": 0.06240000000000001,
-                "hi": 0.45,
-                "hit_rate": 0.5,
-                "lo": 0.4,
-                "n": 2
-              },
-              {
-                "avg_probability": 0.46579550000000003,
-                "gap": 0.46579550000000003,
-                "hi": 0.5,
-                "hit_rate": 0.0,
-                "lo": 0.45,
-                "n": 2
-              },
-              {
-                "avg_probability": 0.5219164000000001,
-                "gap": 0.12191640000000004,
-                "hi": 0.55,
-                "hit_rate": 0.4,
-                "lo": 0.5,
-                "n": 5
-              },
-              {
-                "avg_probability": 0.5733055,
-                "gap": 0.5733055,
-                "hi": 0.6,
-                "hit_rate": 0.0,
-                "lo": 0.55,
-                "n": 2
-              },
-              {
-                "avg_probability": 0.6206375,
-                "gap": 0.12063749999999995,
-                "hi": 0.65,
-                "hit_rate": 0.5,
-                "lo": 0.6,
-                "n": 2
-              }
-            ]
+            "ece": null,
+            "logloss": null,
+            "mce": null,
+            "n": 0,
+            "reliability_bins": []
           }
         },
         "RUNLINE": {
-          "confidence_bands": [
-            {
-              "avg_confidence": 0.538017,
-              "gap": -0.538017,
-              "hi": 0.55,
-              "hit_rate": 0.0,
-              "lo": 0.5,
-              "n": 1
-            },
-            {
-              "avg_confidence": 0.575597,
-              "gap": 0.424403,
-              "hi": 0.6,
-              "hit_rate": 1.0,
-              "lo": 0.55,
-              "n": 2
-            },
-            {
-              "avg_confidence": 0.6226970000000001,
-              "gap": 0.002302999999999944,
-              "hi": 0.65,
-              "hit_rate": 0.625,
-              "lo": 0.6,
-              "n": 8
-            },
-            {
-              "avg_confidence": 0.6632365,
-              "gap": -0.1632365,
-              "hi": 0.7,
-              "hit_rate": 0.5,
-              "lo": 0.65,
-              "n": 2
-            }
-          ],
+          "confidence_bands": [],
           "observed_effective": {
-            "accuracy": 0.6153846153846154,
-            "brier": 0.23488313869923078,
+            "accuracy": null,
+            "brier": null,
             "calibration_intercept": null,
             "calibration_slope": null,
-            "ece": 0.3069792307692307,
-            "hit_rate": 0.23076923076923078,
-            "logloss": 0.662831174090152,
-            "mce": 0.538017,
-            "mean_probability": 0.4549766153846154,
-            "n": 13,
-            "reliability_bins": [
-              {
-                "avg_probability": 0.35798816666666666,
-                "gap": 0.1913215,
-                "hi": 0.4,
-                "hit_rate": 0.16666666666666666,
-                "lo": 0.0,
-                "n": 6
-              },
-              {
-                "avg_probability": 0.424403,
-                "gap": 0.424403,
-                "hi": 0.45,
-                "hit_rate": 0.0,
-                "lo": 0.4,
-                "n": 2
-              },
-              {
-                "avg_probability": 0.461983,
-                "gap": 0.538017,
-                "hi": 0.5,
-                "hit_rate": 1.0,
-                "lo": 0.45,
-                "n": 1
-              },
-              {
-                "avg_probability": 0.6139945,
-                "gap": 0.3639945,
-                "hi": 0.65,
-                "hit_rate": 0.25,
-                "lo": 0.6,
-                "n": 4
-              }
-            ]
+            "ece": null,
+            "logloss": null,
+            "mce": null,
+            "n": 0,
+            "reliability_bins": []
           },
           "raw_model": {
-            "accuracy": 0.6153846153846154,
-            "brier": 0.23488313869923078,
+            "accuracy": null,
+            "brier": null,
             "calibration_intercept": null,
             "calibration_slope": null,
-            "ece": 0.3069792307692307,
-            "hit_rate": 0.23076923076923078,
-            "logloss": 0.662831174090152,
-            "mce": 0.538017,
-            "mean_probability": 0.4549766153846154,
-            "n": 13,
-            "reliability_bins": [
-              {
-                "avg_probability": 0.35798816666666666,
-                "gap": 0.1913215,
-                "hi": 0.4,
-                "hit_rate": 0.16666666666666666,
-                "lo": 0.0,
-                "n": 6
-              },
-              {
-                "avg_probability": 0.424403,
-                "gap": 0.424403,
-                "hi": 0.45,
-                "hit_rate": 0.0,
-                "lo": 0.4,
-                "n": 2
-              },
-              {
-                "avg_probability": 0.461983,
-                "gap": 0.538017,
-                "hi": 0.5,
-                "hit_rate": 1.0,
-                "lo": 0.45,
-                "n": 1
-              },
-              {
-                "avg_probability": 0.6139945,
-                "gap": 0.3639945,
-                "hi": 0.65,
-                "hit_rate": 0.25,
-                "lo": 0.6,
-                "n": 4
-              }
-            ]
+            "ece": null,
+            "logloss": null,
+            "mce": null,
+            "n": 0,
+            "reliability_bins": []
           }
         },
         "TOTAL": {
-          "confidence_bands": [
-            {
-              "avg_confidence": 0.533203,
-              "gap": -0.19986966666666667,
-              "hi": 0.55,
-              "hit_rate": 0.3333333333333333,
-              "lo": 0.5,
-              "n": 6
-            },
-            {
-              "avg_confidence": 0.5699484,
-              "gap": 0.030051599999999956,
-              "hi": 0.6,
-              "hit_rate": 0.6,
-              "lo": 0.55,
-              "n": 5
-            },
-            {
-              "avg_confidence": 0.612822,
-              "gap": 0.387178,
-              "hi": 0.65,
-              "hit_rate": 1.0,
-              "lo": 0.6,
-              "n": 2
-            }
-          ],
+          "confidence_bands": [],
           "observed_effective": {
-            "accuracy": 0.5384615384615384,
-            "brier": 0.24003735344692306,
+            "accuracy": null,
+            "brier": null,
             "calibration_intercept": null,
             "calibration_slope": null,
-            "ece": 0.3391358461538462,
-            "hit_rate": 0.5384615384615384,
-            "logloss": 0.6729023002308684,
-            "mce": 0.5421583333333334,
-            "mean_probability": 0.5152844615384615,
-            "n": 13,
-            "reliability_bins": [
-              {
-                "avg_probability": 0.4282633333333334,
-                "gap": 0.23840333333333324,
-                "hi": 0.45,
-                "hit_rate": 0.6666666666666666,
-                "lo": 0.4,
-                "n": 3
-              },
-              {
-                "avg_probability": 0.47575233333333333,
-                "gap": 0.14241900000000002,
-                "hi": 0.5,
-                "hit_rate": 0.3333333333333333,
-                "lo": 0.45,
-                "n": 3
-              },
-              {
-                "avg_probability": 0.5421583333333334,
-                "gap": 0.5421583333333334,
-                "hi": 0.55,
-                "hit_rate": 0.0,
-                "lo": 0.5,
-                "n": 3
-              },
-              {
-                "avg_probability": 0.567266,
-                "gap": 0.43273399999999995,
-                "hi": 0.6,
-                "hit_rate": 1.0,
-                "lo": 0.55,
-                "n": 2
-              },
-              {
-                "avg_probability": 0.612822,
-                "gap": 0.387178,
-                "hi": 0.65,
-                "hit_rate": 1.0,
-                "lo": 0.6,
-                "n": 2
-              }
-            ]
+            "ece": null,
+            "logloss": null,
+            "mce": null,
+            "n": 0,
+            "reliability_bins": []
           },
           "raw_model": {
-            "accuracy": 0.5384615384615384,
-            "brier": 0.24003735344692306,
+            "accuracy": null,
+            "brier": null,
             "calibration_intercept": null,
             "calibration_slope": null,
-            "ece": 0.3391358461538462,
-            "hit_rate": 0.5384615384615384,
-            "logloss": 0.6729023002308684,
-            "mce": 0.5421583333333334,
-            "mean_probability": 0.5152844615384615,
-            "n": 13,
-            "reliability_bins": [
-              {
-                "avg_probability": 0.4282633333333334,
-                "gap": 0.23840333333333324,
-                "hi": 0.45,
-                "hit_rate": 0.6666666666666666,
-                "lo": 0.4,
-                "n": 3
-              },
-              {
-                "avg_probability": 0.47575233333333333,
-                "gap": 0.14241900000000002,
-                "hi": 0.5,
-                "hit_rate": 0.3333333333333333,
-                "lo": 0.45,
-                "n": 3
-              },
-              {
-                "avg_probability": 0.5421583333333334,
-                "gap": 0.5421583333333334,
-                "hi": 0.55,
-                "hit_rate": 0.0,
-                "lo": 0.5,
-                "n": 3
-              },
-              {
-                "avg_probability": 0.567266,
-                "gap": 0.43273399999999995,
-                "hi": 0.6,
-                "hit_rate": 1.0,
-                "lo": 0.55,
-                "n": 2
-              },
-              {
-                "avg_probability": 0.612822,
-                "gap": 0.387178,
-                "hi": 0.65,
-                "hit_rate": 1.0,
-                "lo": 0.6,
-                "n": 2
-              }
-            ]
+            "ece": null,
+            "logloss": null,
+            "mce": null,
+            "n": 0,
+            "reliability_bins": []
           }
         }
       },
       "LATE": {
         "ML": {
-          "confidence_bands": [
-            {
-              "avg_confidence": 0.5271062222222223,
-              "gap": 0.13956044444444438,
-              "hi": 0.55,
-              "hit_rate": 0.6666666666666666,
-              "lo": 0.5,
-              "n": 9
-            },
-            {
-              "avg_confidence": 0.5670135,
-              "gap": -0.31701349999999995,
-              "hi": 0.6,
-              "hit_rate": 0.25,
-              "lo": 0.55,
-              "n": 4
-            },
-            {
-              "avg_confidence": 0.6176094999999999,
-              "gap": -0.11760949999999992,
-              "hi": 0.65,
-              "hit_rate": 0.5,
-              "lo": 0.6,
-              "n": 2
-            }
-          ],
+          "confidence_bands": [],
           "observed_effective": {
-            "accuracy": 0.5333333333333333,
-            "brier": 0.25568029572740003,
+            "accuracy": null,
+            "brier": null,
             "calibration_intercept": null,
             "calibration_slope": null,
-            "ece": 0.2011728666666667,
-            "hit_rate": 0.3333333333333333,
-            "logloss": 0.7046702242093275,
-            "mce": 0.5720905000000001,
-            "mean_probability": 0.5179898000000001,
-            "n": 15,
-            "reliability_bins": [
-              {
-                "avg_probability": 0.4380635,
-                "gap": 0.061936500000000005,
-                "hi": 0.45,
-                "hit_rate": 0.5,
-                "lo": 0.4,
-                "n": 2
-              },
-              {
-                "avg_probability": 0.4617273333333333,
-                "gap": 0.4617273333333333,
-                "hi": 0.5,
-                "hit_rate": 0.0,
-                "lo": 0.45,
-                "n": 3
-              },
-              {
-                "avg_probability": 0.5215230000000001,
-                "gap": 0.02152300000000007,
-                "hi": 0.55,
-                "hit_rate": 0.5,
-                "lo": 0.5,
-                "n": 6
-              },
-              {
-                "avg_probability": 0.5720905000000001,
-                "gap": 0.5720905000000001,
-                "hi": 0.6,
-                "hit_rate": 0.0,
-                "lo": 0.55,
-                "n": 2
-              },
-              {
-                "avg_probability": 0.6176094999999999,
-                "gap": 0.11760949999999992,
-                "hi": 0.65,
-                "hit_rate": 0.5,
-                "lo": 0.6,
-                "n": 2
-              }
-            ]
+            "ece": null,
+            "logloss": null,
+            "mce": null,
+            "n": 0,
+            "reliability_bins": []
           },
           "raw_model": {
-            "accuracy": 0.5333333333333333,
-            "brier": 0.25568029572740003,
+            "accuracy": null,
+            "brier": null,
             "calibration_intercept": null,
             "calibration_slope": null,
-            "ece": 0.2011728666666667,
-            "hit_rate": 0.3333333333333333,
-            "logloss": 0.7046702242093275,
-            "mce": 0.5720905000000001,
-            "mean_probability": 0.5179898000000001,
-            "n": 15,
-            "reliability_bins": [
-              {
-                "avg_probability": 0.4380635,
-                "gap": 0.061936500000000005,
-                "hi": 0.45,
-                "hit_rate": 0.5,
-                "lo": 0.4,
-                "n": 2
-              },
-              {
-                "avg_probability": 0.4617273333333333,
-                "gap": 0.4617273333333333,
-                "hi": 0.5,
-                "hit_rate": 0.0,
-                "lo": 0.45,
-                "n": 3
-              },
-              {
-                "avg_probability": 0.5215230000000001,
-                "gap": 0.02152300000000007,
-                "hi": 0.55,
-                "hit_rate": 0.5,
-                "lo": 0.5,
-                "n": 6
-              },
-              {
-                "avg_probability": 0.5720905000000001,
-                "gap": 0.5720905000000001,
-                "hi": 0.6,
-                "hit_rate": 0.0,
-                "lo": 0.55,
-                "n": 2
-              },
-              {
-                "avg_probability": 0.6176094999999999,
-                "gap": 0.11760949999999992,
-                "hi": 0.65,
-                "hit_rate": 0.5,
-                "lo": 0.6,
-                "n": 2
-              }
-            ]
+            "ece": null,
+            "logloss": null,
+            "mce": null,
+            "n": 0,
+            "reliability_bins": []
           }
         },
         "RUNLINE": {
-          "confidence_bands": [
-            {
-              "avg_confidence": 0.540675,
-              "gap": -0.540675,
-              "hi": 0.55,
-              "hit_rate": 0.0,
-              "lo": 0.5,
-              "n": 1
-            },
-            {
-              "avg_confidence": 0.5835453333333334,
-              "gap": 0.08312133333333327,
-              "hi": 0.6,
-              "hit_rate": 0.6666666666666666,
-              "lo": 0.55,
-              "n": 3
-            },
-            {
-              "avg_confidence": 0.622889375,
-              "gap": 0.0021106250000000326,
-              "hi": 0.65,
-              "hit_rate": 0.625,
-              "lo": 0.6,
-              "n": 8
-            },
-            {
-              "avg_confidence": 0.6583789999999999,
-              "gap": 0.008287666666666693,
-              "hi": 0.7,
-              "hit_rate": 0.6666666666666666,
-              "lo": 0.65,
-              "n": 3
-            }
-          ],
+          "confidence_bands": [],
           "observed_effective": {
-            "accuracy": 0.6,
-            "brier": 0.23528003805019998,
+            "accuracy": null,
+            "brier": null,
             "calibration_intercept": null,
             "calibration_slope": null,
-            "ece": 0.32907353333333333,
-            "hit_rate": 0.2,
-            "logloss": 0.6632915473861265,
-            "mce": 0.595469,
-            "mean_probability": 0.4569835333333333,
-            "n": 15,
-            "reliability_bins": [
-              {
-                "avg_probability": 0.35691957142857145,
-                "gap": 0.2140624285714286,
-                "hi": 0.4,
-                "hit_rate": 0.14285714285714285,
-                "lo": 0.0,
-                "n": 7
-              },
-              {
-                "avg_probability": 0.4224165,
-                "gap": 0.4224165,
-                "hi": 0.45,
-                "hit_rate": 0.0,
-                "lo": 0.4,
-                "n": 2
-              },
-              {
-                "avg_probability": 0.459325,
-                "gap": 0.540675,
-                "hi": 0.5,
-                "hit_rate": 1.0,
-                "lo": 0.45,
-                "n": 1
-              },
-              {
-                "avg_probability": 0.595469,
-                "gap": 0.595469,
-                "hi": 0.6,
-                "hit_rate": 0.0,
-                "lo": 0.55,
-                "n": 1
-              },
-              {
-                "avg_probability": 0.61417225,
-                "gap": 0.36417225,
-                "hi": 0.65,
-                "hit_rate": 0.25,
-                "lo": 0.6,
-                "n": 4
-              }
-            ]
+            "ece": null,
+            "logloss": null,
+            "mce": null,
+            "n": 0,
+            "reliability_bins": []
           },
           "raw_model": {
-            "accuracy": 0.6,
-            "brier": 0.23528003805019998,
+            "accuracy": null,
+            "brier": null,
             "calibration_intercept": null,
             "calibration_slope": null,
-            "ece": 0.32907353333333333,
-            "hit_rate": 0.2,
-            "logloss": 0.6632915473861265,
-            "mce": 0.595469,
-            "mean_probability": 0.4569835333333333,
-            "n": 15,
-            "reliability_bins": [
-              {
-                "avg_probability": 0.35691957142857145,
-                "gap": 0.2140624285714286,
-                "hi": 0.4,
-                "hit_rate": 0.14285714285714285,
-                "lo": 0.0,
-                "n": 7
-              },
-              {
-                "avg_probability": 0.4224165,
-                "gap": 0.4224165,
-                "hi": 0.45,
-                "hit_rate": 0.0,
-                "lo": 0.4,
-                "n": 2
-              },
-              {
-                "avg_probability": 0.459325,
-                "gap": 0.540675,
-                "hi": 0.5,
-                "hit_rate": 1.0,
-                "lo": 0.45,
-                "n": 1
-              },
-              {
-                "avg_probability": 0.595469,
-                "gap": 0.595469,
-                "hi": 0.6,
-                "hit_rate": 0.0,
-                "lo": 0.55,
-                "n": 1
-              },
-              {
-                "avg_probability": 0.61417225,
-                "gap": 0.36417225,
-                "hi": 0.65,
-                "hit_rate": 0.25,
-                "lo": 0.6,
-                "n": 4
-              }
-            ]
+            "ece": null,
+            "logloss": null,
+            "mce": null,
+            "n": 0,
+            "reliability_bins": []
           }
         },
         "TOTAL": {
-          "confidence_bands": [
-            {
-              "avg_confidence": 0.528137,
-              "gap": -0.24242271428571427,
-              "hi": 0.55,
-              "hit_rate": 0.2857142857142857,
-              "lo": 0.5,
-              "n": 7
-            },
-            {
-              "avg_confidence": 0.5713406666666666,
-              "gap": -0.07134066666666661,
-              "hi": 0.6,
-              "hit_rate": 0.5,
-              "lo": 0.55,
-              "n": 6
-            },
-            {
-              "avg_confidence": 0.6138,
-              "gap": 0.3862,
-              "hi": 0.65,
-              "hit_rate": 1.0,
-              "lo": 0.6,
-              "n": 2
-            }
-          ],
+          "confidence_bands": [],
           "observed_effective": {
-            "accuracy": 0.4666666666666667,
-            "brier": 0.24584516392539998,
+            "accuracy": null,
+            "brier": null,
             "calibration_intercept": null,
             "calibration_slope": null,
-            "ece": 0.2891246,
-            "hit_rate": 0.4666666666666667,
-            "logloss": 0.6846099311989329,
-            "mce": 0.5308625,
-            "mean_probability": 0.5175341999999999,
-            "n": 15,
-            "reliability_bins": [
-              {
-                "avg_probability": 0.42623799999999995,
-                "gap": 0.24042866666666668,
-                "hi": 0.45,
-                "hit_rate": 0.6666666666666666,
-                "lo": 0.4,
-                "n": 3
-              },
-              {
-                "avg_probability": 0.475497,
-                "gap": 0.1421636666666667,
-                "hi": 0.5,
-                "hit_rate": 0.3333333333333333,
-                "lo": 0.45,
-                "n": 3
-              },
-              {
-                "avg_probability": 0.5308625,
-                "gap": 0.5308625,
-                "hi": 0.55,
-                "hit_rate": 0.0,
-                "lo": 0.5,
-                "n": 4
-              },
-              {
-                "avg_probability": 0.5689193333333333,
-                "gap": 0.0977473333333333,
-                "hi": 0.6,
-                "hit_rate": 0.6666666666666666,
-                "lo": 0.55,
-                "n": 3
-              },
-              {
-                "avg_probability": 0.6138,
-                "gap": 0.3862,
-                "hi": 0.65,
-                "hit_rate": 1.0,
-                "lo": 0.6,
-                "n": 2
-              }
-            ]
+            "ece": null,
+            "logloss": null,
+            "mce": null,
+            "n": 0,
+            "reliability_bins": []
           },
           "raw_model": {
-            "accuracy": 0.4666666666666667,
-            "brier": 0.24584516392539998,
+            "accuracy": null,
+            "brier": null,
             "calibration_intercept": null,
             "calibration_slope": null,
-            "ece": 0.2891246,
-            "hit_rate": 0.4666666666666667,
-            "logloss": 0.6846099311989329,
-            "mce": 0.5308625,
-            "mean_probability": 0.5175341999999999,
-            "n": 15,
-            "reliability_bins": [
-              {
-                "avg_probability": 0.42623799999999995,
-                "gap": 0.24042866666666668,
-                "hi": 0.45,
-                "hit_rate": 0.6666666666666666,
-                "lo": 0.4,
-                "n": 3
-              },
-              {
-                "avg_probability": 0.475497,
-                "gap": 0.1421636666666667,
-                "hi": 0.5,
-                "hit_rate": 0.3333333333333333,
-                "lo": 0.45,
-                "n": 3
-              },
-              {
-                "avg_probability": 0.5308625,
-                "gap": 0.5308625,
-                "hi": 0.55,
-                "hit_rate": 0.0,
-                "lo": 0.5,
-                "n": 4
-              },
-              {
-                "avg_probability": 0.5689193333333333,
-                "gap": 0.0977473333333333,
-                "hi": 0.6,
-                "hit_rate": 0.6666666666666666,
-                "lo": 0.55,
-                "n": 3
-              },
-              {
-                "avg_probability": 0.6138,
-                "gap": 0.3862,
-                "hi": 0.65,
-                "hit_rate": 1.0,
-                "lo": 0.6,
-                "n": 2
-              }
-            ]
+            "ece": null,
+            "logloss": null,
+            "mce": null,
+            "n": 0,
+            "reliability_bins": []
           }
         }
       }
     },
     "champion_active": false,
-    "compatible_games": 15,
+    "compatible_games": 0,
     "generation": "hierarchical identity-vs-platt-vs-beta challenger",
     "global": {
       "ML": {
-        "confidence_bands": [
-          {
-            "avg_confidence": 0.5269275555555555,
-            "gap": 0.13973911111111115,
-            "hi": 0.55,
-            "hit_rate": 0.6666666666666666,
-            "lo": 0.5,
-            "n": 9
-          },
-          {
-            "avg_confidence": 0.56785275,
-            "gap": -0.31785275,
-            "hi": 0.6,
-            "hit_rate": 0.25,
-            "lo": 0.55,
-            "n": 4
-          },
-          {
-            "avg_confidence": 0.6206375,
-            "gap": -0.12063749999999995,
-            "hi": 0.65,
-            "hit_rate": 0.5,
-            "lo": 0.6,
-            "n": 2
-          }
-        ],
+        "confidence_bands": [],
         "observed_effective": {
-          "accuracy": 0.5333333333333333,
-          "brier": 0.2561134773176,
+          "accuracy": null,
+          "brier": null,
           "calibration_intercept": null,
           "calibration_slope": null,
-          "ece": 0.20167,
-          "hit_rate": 0.3333333333333333,
-          "logloss": 0.7055586831476319,
-          "mce": 0.5733055,
-          "mean_probability": 0.5183633333333334,
-          "n": 15,
-          "reliability_bins": [
-            {
-              "avg_probability": 0.4376,
-              "gap": 0.06240000000000001,
-              "hi": 0.45,
-              "hit_rate": 0.5,
-              "lo": 0.4,
-              "n": 2
-            },
-            {
-              "avg_probability": 0.4616693333333333,
-              "gap": 0.4616693333333333,
-              "hi": 0.5,
-              "hit_rate": 0.0,
-              "lo": 0.45,
-              "n": 3
-            },
-            {
-              "avg_probability": 0.521226,
-              "gap": 0.021225999999999967,
-              "hi": 0.55,
-              "hit_rate": 0.5,
-              "lo": 0.5,
-              "n": 6
-            },
-            {
-              "avg_probability": 0.5733055,
-              "gap": 0.5733055,
-              "hi": 0.6,
-              "hit_rate": 0.0,
-              "lo": 0.55,
-              "n": 2
-            },
-            {
-              "avg_probability": 0.6206375,
-              "gap": 0.12063749999999995,
-              "hi": 0.65,
-              "hit_rate": 0.5,
-              "lo": 0.6,
-              "n": 2
-            }
-          ]
+          "ece": null,
+          "logloss": null,
+          "mce": null,
+          "n": 0,
+          "reliability_bins": []
         },
         "raw_model": {
-          "accuracy": 0.5333333333333333,
-          "brier": 0.2561134773176,
+          "accuracy": null,
+          "brier": null,
           "calibration_intercept": null,
           "calibration_slope": null,
-          "ece": 0.20167,
-          "hit_rate": 0.3333333333333333,
-          "logloss": 0.7055586831476319,
-          "mce": 0.5733055,
-          "mean_probability": 0.5183633333333334,
-          "n": 15,
-          "reliability_bins": [
-            {
-              "avg_probability": 0.4376,
-              "gap": 0.06240000000000001,
-              "hi": 0.45,
-              "hit_rate": 0.5,
-              "lo": 0.4,
-              "n": 2
-            },
-            {
-              "avg_probability": 0.4616693333333333,
-              "gap": 0.4616693333333333,
-              "hi": 0.5,
-              "hit_rate": 0.0,
-              "lo": 0.45,
-              "n": 3
-            },
-            {
-              "avg_probability": 0.521226,
-              "gap": 0.021225999999999967,
-              "hi": 0.55,
-              "hit_rate": 0.5,
-              "lo": 0.5,
-              "n": 6
-            },
-            {
-              "avg_probability": 0.5733055,
-              "gap": 0.5733055,
-              "hi": 0.6,
-              "hit_rate": 0.0,
-              "lo": 0.55,
-              "n": 2
-            },
-            {
-              "avg_probability": 0.6206375,
-              "gap": 0.12063749999999995,
-              "hi": 0.65,
-              "hit_rate": 0.5,
-              "lo": 0.6,
-              "n": 2
-            }
-          ]
+          "ece": null,
+          "logloss": null,
+          "mce": null,
+          "n": 0,
+          "reliability_bins": []
         }
       },
       "RUNLINE": {
-        "confidence_bands": [
-          {
-            "avg_confidence": 0.538017,
-            "gap": -0.538017,
-            "hi": 0.55,
-            "hit_rate": 0.0,
-            "lo": 0.5,
-            "n": 1
-          },
-          {
-            "avg_confidence": 0.582221,
-            "gap": 0.08444566666666664,
-            "hi": 0.6,
-            "hit_rate": 0.6666666666666666,
-            "lo": 0.55,
-            "n": 3
-          },
-          {
-            "avg_confidence": 0.6226970000000001,
-            "gap": 0.002302999999999944,
-            "hi": 0.65,
-            "hit_rate": 0.625,
-            "lo": 0.6,
-            "n": 8
-          },
-          {
-            "avg_confidence": 0.6589343333333333,
-            "gap": 0.007732333333333341,
-            "hi": 0.7,
-            "hit_rate": 0.6666666666666666,
-            "lo": 0.65,
-            "n": 3
-          }
-        ],
+        "confidence_bands": [],
         "observed_effective": {
-          "accuracy": 0.6,
-          "brier": 0.23535554946339998,
+          "accuracy": null,
+          "brier": null,
           "calibration_intercept": null,
           "calibration_slope": null,
-          "ece": 0.3290579333333334,
-          "hit_rate": 0.2,
-          "logloss": 0.6634738348923012,
-          "mce": 0.595469,
-          "mean_probability": 0.45732233333333333,
-          "n": 15,
-          "reliability_bins": [
-            {
-              "avg_probability": 0.35679985714285717,
-              "gap": 0.21394271428571432,
-              "hi": 0.4,
-              "hit_rate": 0.14285714285714285,
-              "lo": 0.0,
-              "n": 7
-            },
-            {
-              "avg_probability": 0.424403,
-              "gap": 0.424403,
-              "hi": 0.45,
-              "hit_rate": 0.0,
-              "lo": 0.4,
-              "n": 2
-            },
-            {
-              "avg_probability": 0.461983,
-              "gap": 0.538017,
-              "hi": 0.5,
-              "hit_rate": 1.0,
-              "lo": 0.45,
-              "n": 1
-            },
-            {
-              "avg_probability": 0.595469,
-              "gap": 0.595469,
-              "hi": 0.6,
-              "hit_rate": 0.0,
-              "lo": 0.55,
-              "n": 1
-            },
-            {
-              "avg_probability": 0.6139945,
-              "gap": 0.3639945,
-              "hi": 0.65,
-              "hit_rate": 0.25,
-              "lo": 0.6,
-              "n": 4
-            }
-          ]
+          "ece": null,
+          "logloss": null,
+          "mce": null,
+          "n": 0,
+          "reliability_bins": []
         },
         "raw_model": {
-          "accuracy": 0.6,
-          "brier": 0.23535554946339998,
+          "accuracy": null,
+          "brier": null,
           "calibration_intercept": null,
           "calibration_slope": null,
-          "ece": 0.3290579333333334,
-          "hit_rate": 0.2,
-          "logloss": 0.6634738348923012,
-          "mce": 0.595469,
-          "mean_probability": 0.45732233333333333,
-          "n": 15,
-          "reliability_bins": [
-            {
-              "avg_probability": 0.35679985714285717,
-              "gap": 0.21394271428571432,
-              "hi": 0.4,
-              "hit_rate": 0.14285714285714285,
-              "lo": 0.0,
-              "n": 7
-            },
-            {
-              "avg_probability": 0.424403,
-              "gap": 0.424403,
-              "hi": 0.45,
-              "hit_rate": 0.0,
-              "lo": 0.4,
-              "n": 2
-            },
-            {
-              "avg_probability": 0.461983,
-              "gap": 0.538017,
-              "hi": 0.5,
-              "hit_rate": 1.0,
-              "lo": 0.45,
-              "n": 1
-            },
-            {
-              "avg_probability": 0.595469,
-              "gap": 0.595469,
-              "hi": 0.6,
-              "hit_rate": 0.0,
-              "lo": 0.55,
-              "n": 1
-            },
-            {
-              "avg_probability": 0.6139945,
-              "gap": 0.3639945,
-              "hi": 0.65,
-              "hit_rate": 0.25,
-              "lo": 0.6,
-              "n": 4
-            }
-          ]
+          "ece": null,
+          "logloss": null,
+          "mce": null,
+          "n": 0,
+          "reliability_bins": []
         }
       },
       "TOTAL": {
-        "confidence_bands": [
-          {
-            "avg_confidence": 0.5292074285714286,
-            "gap": -0.24349314285714285,
-            "hi": 0.55,
-            "hit_rate": 0.2857142857142857,
-            "lo": 0.5,
-            "n": 7
-          },
-          {
-            "avg_confidence": 0.5701406666666666,
-            "gap": -0.07014066666666663,
-            "hi": 0.6,
-            "hit_rate": 0.5,
-            "lo": 0.55,
-            "n": 6
-          },
-          {
-            "avg_confidence": 0.612822,
-            "gap": 0.387178,
-            "hi": 0.65,
-            "hit_rate": 1.0,
-            "lo": 0.6,
-            "n": 2
-          }
-        ],
+        "confidence_bands": [],
         "observed_effective": {
-          "accuracy": 0.4666666666666667,
-          "brier": 0.24679363226466666,
+          "accuracy": null,
+          "brier": null,
           "calibration_intercept": null,
           "calibration_slope": null,
-          "ece": 0.28952653333333334,
-          "hit_rate": 0.4666666666666667,
-          "logloss": 0.6865290939346687,
-          "mce": 0.53292725,
-          "mean_probability": 0.5183356,
-          "n": 15,
-          "reliability_bins": [
-            {
-              "avg_probability": 0.4282633333333334,
-              "gap": 0.23840333333333324,
-              "hi": 0.45,
-              "hit_rate": 0.6666666666666666,
-              "lo": 0.4,
-              "n": 3
-            },
-            {
-              "avg_probability": 0.47575233333333333,
-              "gap": 0.14241900000000002,
-              "hi": 0.5,
-              "hit_rate": 0.3333333333333333,
-              "lo": 0.45,
-              "n": 3
-            },
-            {
-              "avg_probability": 0.53292725,
-              "gap": 0.53292725,
-              "hi": 0.55,
-              "hit_rate": 0.0,
-              "lo": 0.5,
-              "n": 4
-            },
-            {
-              "avg_probability": 0.5685446666666666,
-              "gap": 0.09812200000000004,
-              "hi": 0.6,
-              "hit_rate": 0.6666666666666666,
-              "lo": 0.55,
-              "n": 3
-            },
-            {
-              "avg_probability": 0.612822,
-              "gap": 0.387178,
-              "hi": 0.65,
-              "hit_rate": 1.0,
-              "lo": 0.6,
-              "n": 2
-            }
-          ]
+          "ece": null,
+          "logloss": null,
+          "mce": null,
+          "n": 0,
+          "reliability_bins": []
         },
         "raw_model": {
-          "accuracy": 0.4666666666666667,
-          "brier": 0.24679363226466666,
+          "accuracy": null,
+          "brier": null,
           "calibration_intercept": null,
           "calibration_slope": null,
-          "ece": 0.28952653333333334,
-          "hit_rate": 0.4666666666666667,
-          "logloss": 0.6865290939346687,
-          "mce": 0.53292725,
-          "mean_probability": 0.5183356,
-          "n": 15,
-          "reliability_bins": [
-            {
-              "avg_probability": 0.4282633333333334,
-              "gap": 0.23840333333333324,
-              "hi": 0.45,
-              "hit_rate": 0.6666666666666666,
-              "lo": 0.4,
-              "n": 3
-            },
-            {
-              "avg_probability": 0.47575233333333333,
-              "gap": 0.14241900000000002,
-              "hi": 0.5,
-              "hit_rate": 0.3333333333333333,
-              "lo": 0.45,
-              "n": 3
-            },
-            {
-              "avg_probability": 0.53292725,
-              "gap": 0.53292725,
-              "hi": 0.55,
-              "hit_rate": 0.0,
-              "lo": 0.5,
-              "n": 4
-            },
-            {
-              "avg_probability": 0.5685446666666666,
-              "gap": 0.09812200000000004,
-              "hi": 0.6,
-              "hit_rate": 0.6666666666666666,
-              "lo": 0.55,
-              "n": 3
-            },
-            {
-              "avg_probability": 0.612822,
-              "gap": 0.387178,
-              "hi": 0.65,
-              "hit_rate": 1.0,
-              "lo": 0.6,
-              "n": 2
-            }
-          ]
+          "ece": null,
+          "logloss": null,
+          "mce": null,
+          "n": 0,
+          "reliability_bins": []
         }
       }
     },
     "global_calibration": {},
-    "latest_games": 15,
+    "latest_games": 0,
     "policy": {
       "alternate_runlines_trainable": false,
       "global_market_fallback": true,
@@ -1638,7 +330,7 @@
     "confirmed_lineups": 0,
     "confirmed_starters": 15,
     "matched_events": 15,
-    "mean_data_quality": 0.7802,
+    "mean_data_quality": 0.7857,
     "scheduled_games": 15,
     "sharp_coverage": {
       "ML": 15,
@@ -1707,14 +399,14 @@
     "generation": "V12.3.2 value-selection-v1 + V12.4 predictive shadow",
     "historical_evidence": "legacy V10 1,801-game data are diagnostic only until a V12.3 structural baseline exists",
     "ledger": "PROPOSED -> PUBLISHED -> CONFIRMED_PLACED -> SETTLED",
-    "raw_archive": "runtime/v11/snapshots/2026-08-16_f754265a5e744967.json.gz",
+    "raw_archive": "runtime/v11/snapshots/2026-08-16_fea78e0df09d90bf.json.gz",
     "runs_model": "immutable structural baseline + validated FINAL historical prior fallback + phase-specific live residual",
     "selection": "informational recommendations use model confidence + conservative EV/edge + DQ + uncertainty + Kelly; Winamax never decides eligibility",
     "selection_confidence": "RL >= 55%; ML/TOTAL >= 58%",
     "selection_price_floor": "reference decimal odds >= 1.40",
     "selection_reference_price": "fresh configured sharp books; exact side/point; second-best effective quote when >=2 books, otherwise single fresh sharp quote",
     "sharp_disagreement": "large model-vs-sharp disagreement reduces selection score but is not a hard directional veto",
-    "source_replay": "runtime/v11/source_replays/2026-08-16_f754265a5e744967_sources.json.gz",
+    "source_replay": "runtime/v11/source_replays/2026-08-16_fea78e0df09d90bf_sources.json.gz",
     "staking": "bankroll-aware fractional Kelly; official combos disabled",
     "starter_model": "current season + N-1/N-2 prior affects structural run means",
     "uncertainty": "empirical phase/market reliability bins + market disagreement + DQ penalty",
@@ -2582,6 +1274,7 @@
       "status": "COLLECTING",
       "version": "v12.4-weight-optimizer-v1",
       "walk_forward": {
+        "boundary": "calendar_day",
         "status": "COLLECTING",
         "test_games": 0,
         "windows": 0
@@ -2754,6 +1447,7 @@
       "status": "COLLECTING",
       "version": "v12.4-weight-optimizer-v1",
       "walk_forward": {
+        "boundary": "calendar_day",
         "status": "COLLECTING",
         "test_games": 0,
         "windows": 0
@@ -3080,47 +1774,1086 @@
       }
     },
     "affects_v12_selection": false,
-    "analyzed_at": "2026-08-16T07:49:21.507118+00:00",
+    "analyzed_at": "2026-08-16T14:23:28.295818+00:00",
     "canonicalization": "latest settled pre-game snapshot per game_pk",
+    "convergence": {
+      "affects_v12_selection": false,
+      "guardrail": "diagnostic only; never changes probability, selector, Kelly, staking or Discord picks",
+      "method": "unweighted directional agreement; missing/neutral signals never become artificial support",
+      "research_only": true,
+      "schema": "v12-4-convergence-score-v1",
+      "signal_count": 8,
+      "signals": [
+        "model",
+        "attack",
+        "starter",
+        "bullpen",
+        "lineup",
+        "statcast",
+        "weather_park",
+        "sharp"
+      ],
+      "top_options": [
+        {
+          "affects_v12_selection": false,
+          "available": 8,
+          "directional": 5,
+          "game": "Arizona Diamondbacks @ Atlanta Braves",
+          "game_pk": 824880,
+          "grade": "GOOD",
+          "market": "RUNLINE",
+          "name": "Arizona Diamondbacks",
+          "net_support": 5,
+          "neutral": 3,
+          "normalized_support": 0.625,
+          "oppose": 0,
+          "p_effective": 0.657459,
+          "p_market": 0.629116,
+          "point": 1.5,
+          "research_only": true,
+          "schema": "v12-4-convergence-score-v1",
+          "score_8": 5,
+          "signals": {
+            "attack": {
+              "detail": {
+                "projected_margin": 0.014438891096907547,
+                "required_margin": -1.5
+              },
+              "state": "SUPPORT",
+              "value": 1.5144388910969075
+            },
+            "bullpen": {
+              "detail": {
+                "opponent_factor": 0.9596818267543088,
+                "own_factor": 0.9810627734427462
+              },
+              "state": "SUPPORT",
+              "value": 0.02227920347387302
+            },
+            "lineup": {
+              "detail": {
+                "opponent_factor": 1.0,
+                "own_factor": 1.0
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            },
+            "model": {
+              "detail": {
+                "p": 0.657459
+              },
+              "state": "SUPPORT",
+              "value": 0.15745900000000002
+            },
+            "sharp": {
+              "detail": {
+                "p_market": 0.629116
+              },
+              "state": "SUPPORT",
+              "value": 0.129116
+            },
+            "starter": {
+              "detail": {
+                "opponent_factor": 1.0001087618378386,
+                "own_factor": 1.0052480088320426
+              },
+              "state": "SUPPORT",
+              "value": 0.0051386881010420105
+            },
+            "statcast": {
+              "detail": {
+                "opponent_factor": 1.0,
+                "own_factor": 1.0
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            },
+            "weather_park": {
+              "detail": {
+                "opponent_factor": 1.0298807826019614,
+                "own_factor": 1.0298807826019614
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            }
+          },
+          "support": 5,
+          "unavailable": 0,
+          "version": "v12.4-convergence-score-v1"
+        },
+        {
+          "affects_v12_selection": false,
+          "available": 8,
+          "directional": 5,
+          "game": "Colorado Rockies @ San Francisco Giants",
+          "game_pk": 823182,
+          "grade": "GOOD",
+          "market": "RUNLINE",
+          "name": "Colorado Rockies",
+          "net_support": 5,
+          "neutral": 3,
+          "normalized_support": 0.625,
+          "oppose": 0,
+          "p_effective": 0.621115,
+          "p_market": 0.630025,
+          "point": 1.5,
+          "research_only": true,
+          "schema": "v12-4-convergence-score-v1",
+          "score_8": 5,
+          "signals": {
+            "attack": {
+              "detail": {
+                "projected_margin": -0.38184125375054734,
+                "required_margin": -1.5
+              },
+              "state": "SUPPORT",
+              "value": 1.1181587462494527
+            },
+            "bullpen": {
+              "detail": {
+                "opponent_factor": 0.9893763620412774,
+                "own_factor": 1.0009686143923116
+              },
+              "state": "SUPPORT",
+              "value": 0.011716726612627903
+            },
+            "lineup": {
+              "detail": {
+                "opponent_factor": 1.0,
+                "own_factor": 1.0
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            },
+            "model": {
+              "detail": {
+                "p": 0.621115
+              },
+              "state": "SUPPORT",
+              "value": 0.12111499999999997
+            },
+            "sharp": {
+              "detail": {
+                "p_market": 0.630025
+              },
+              "state": "SUPPORT",
+              "value": 0.13002499999999995
+            },
+            "starter": {
+              "detail": {
+                "opponent_factor": 1.000663645111437,
+                "own_factor": 1.0219820170563654
+              },
+              "state": "SUPPORT",
+              "value": 0.021304233494516822
+            },
+            "statcast": {
+              "detail": {
+                "opponent_factor": 1.0,
+                "own_factor": 1.0
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            },
+            "weather_park": {
+              "detail": {
+                "opponent_factor": 0.9984138528359332,
+                "own_factor": 0.9984138528359332
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            }
+          },
+          "support": 5,
+          "unavailable": 0,
+          "version": "v12.4-convergence-score-v1"
+        },
+        {
+          "affects_v12_selection": false,
+          "available": 8,
+          "directional": 6,
+          "game": "Baltimore Orioles @ Tampa Bay Rays",
+          "game_pk": 822940,
+          "grade": "GOOD",
+          "market": "RUNLINE",
+          "name": "Tampa Bay Rays",
+          "net_support": 4,
+          "neutral": 2,
+          "normalized_support": 0.625,
+          "oppose": 1,
+          "p_effective": 0.69082,
+          "p_market": 0.685393,
+          "point": 1.5,
+          "research_only": true,
+          "schema": "v12-4-convergence-score-v1",
+          "score_8": 5,
+          "signals": {
+            "attack": {
+              "detail": {
+                "projected_margin": 0.25690842296312777,
+                "required_margin": -1.5
+              },
+              "state": "SUPPORT",
+              "value": 1.7569084229631278
+            },
+            "bullpen": {
+              "detail": {
+                "opponent_factor": 0.9663854004876735,
+                "own_factor": 0.99213143950419
+              },
+              "state": "SUPPORT",
+              "value": 0.026641585234549403
+            },
+            "lineup": {
+              "detail": {
+                "opponent_factor": 1.0,
+                "own_factor": 1.0046237380903802
+              },
+              "state": "SUPPORT",
+              "value": 0.004623738090380192
+            },
+            "model": {
+              "detail": {
+                "p": 0.69082
+              },
+              "state": "SUPPORT",
+              "value": 0.19082
+            },
+            "sharp": {
+              "detail": {
+                "p_market": 0.685393
+              },
+              "state": "SUPPORT",
+              "value": 0.18539300000000003
+            },
+            "starter": {
+              "detail": {
+                "opponent_factor": 1.0003757175591417,
+                "own_factor": 0.999211870223412
+              },
+              "state": "NEUTRAL",
+              "value": -0.001163410222080774
+            },
+            "statcast": {
+              "detail": {
+                "opponent_factor": 1.0,
+                "own_factor": 0.9936555343511451
+              },
+              "state": "OPPOSE",
+              "value": -0.006344465648854936
+            },
+            "weather_park": {
+              "detail": {
+                "opponent_factor": 1.0142314655452231,
+                "own_factor": 1.0142314655452231
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            }
+          },
+          "support": 5,
+          "unavailable": 0,
+          "version": "v12.4-convergence-score-v1"
+        },
+        {
+          "affects_v12_selection": false,
+          "available": 8,
+          "directional": 6,
+          "game": "Boston Red Sox @ Pittsburgh Pirates",
+          "game_pk": 823344,
+          "grade": "GOOD",
+          "market": "RUNLINE",
+          "name": "Boston Red Sox",
+          "net_support": 4,
+          "neutral": 2,
+          "normalized_support": 0.625,
+          "oppose": 1,
+          "p_effective": 0.658257,
+          "p_market": 0.680272,
+          "point": 1.5,
+          "research_only": true,
+          "schema": "v12-4-convergence-score-v1",
+          "score_8": 5,
+          "signals": {
+            "attack": {
+              "detail": {
+                "projected_margin": -0.1346213614341556,
+                "required_margin": -1.5
+              },
+              "state": "SUPPORT",
+              "value": 1.3653786385658444
+            },
+            "bullpen": {
+              "detail": {
+                "opponent_factor": 0.9623022039869794,
+                "own_factor": 0.9912458496255478
+              },
+              "state": "SUPPORT",
+              "value": 0.030077501141169583
+            },
+            "lineup": {
+              "detail": {
+                "opponent_factor": 1.0,
+                "own_factor": 1.0014538280936738
+              },
+              "state": "NEUTRAL",
+              "value": 0.0014538280936737813
+            },
+            "model": {
+              "detail": {
+                "p": 0.658257
+              },
+              "state": "SUPPORT",
+              "value": 0.15825699999999998
+            },
+            "sharp": {
+              "detail": {
+                "p_market": 0.680272
+              },
+              "state": "SUPPORT",
+              "value": 0.180272
+            },
+            "starter": {
+              "detail": {
+                "opponent_factor": 0.999501525048517,
+                "own_factor": 1.0057225522113895
+              },
+              "state": "SUPPORT",
+              "value": 0.00622412973564046
+            },
+            "statcast": {
+              "detail": {
+                "opponent_factor": 1.0,
+                "own_factor": 0.9921832061068703
+              },
+              "state": "OPPOSE",
+              "value": -0.007816793893129725
+            },
+            "weather_park": {
+              "detail": {
+                "opponent_factor": 1.0367449394103327,
+                "own_factor": 1.0367449394103327
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            }
+          },
+          "support": 5,
+          "unavailable": 0,
+          "version": "v12.4-convergence-score-v1"
+        },
+        {
+          "affects_v12_selection": false,
+          "available": 8,
+          "directional": 6,
+          "game": "Baltimore Orioles @ Tampa Bay Rays",
+          "game_pk": 822940,
+          "grade": "GOOD",
+          "market": "ML",
+          "name": "Tampa Bay Rays",
+          "net_support": 4,
+          "neutral": 2,
+          "normalized_support": 0.625,
+          "oppose": 1,
+          "p_effective": 0.54198,
+          "p_market": 0.5722,
+          "point": null,
+          "research_only": true,
+          "schema": "v12-4-convergence-score-v1",
+          "score_8": 5,
+          "signals": {
+            "attack": {
+              "detail": {
+                "projected_margin": 0.25690842296312777,
+                "required_margin": 0.0
+              },
+              "state": "SUPPORT",
+              "value": 0.25690842296312777
+            },
+            "bullpen": {
+              "detail": {
+                "opponent_factor": 0.9663854004876735,
+                "own_factor": 0.99213143950419
+              },
+              "state": "SUPPORT",
+              "value": 0.026641585234549403
+            },
+            "lineup": {
+              "detail": {
+                "opponent_factor": 1.0,
+                "own_factor": 1.0046237380903802
+              },
+              "state": "SUPPORT",
+              "value": 0.004623738090380192
+            },
+            "model": {
+              "detail": {
+                "p": 0.54198
+              },
+              "state": "SUPPORT",
+              "value": 0.04198000000000002
+            },
+            "sharp": {
+              "detail": {
+                "p_market": 0.5722
+              },
+              "state": "SUPPORT",
+              "value": 0.07220000000000004
+            },
+            "starter": {
+              "detail": {
+                "opponent_factor": 1.0003757175591417,
+                "own_factor": 0.999211870223412
+              },
+              "state": "NEUTRAL",
+              "value": -0.001163410222080774
+            },
+            "statcast": {
+              "detail": {
+                "opponent_factor": 1.0,
+                "own_factor": 0.9936555343511451
+              },
+              "state": "OPPOSE",
+              "value": -0.006344465648854936
+            },
+            "weather_park": {
+              "detail": {
+                "opponent_factor": 1.0142314655452231,
+                "own_factor": 1.0142314655452231
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            }
+          },
+          "support": 5,
+          "unavailable": 0,
+          "version": "v12.4-convergence-score-v1"
+        },
+        {
+          "affects_v12_selection": false,
+          "available": 8,
+          "directional": 4,
+          "game": "Texas Rangers @ Athletics",
+          "game_pk": 824965,
+          "grade": "MIXED",
+          "market": "RUNLINE",
+          "name": "Texas Rangers",
+          "net_support": 4,
+          "neutral": 4,
+          "normalized_support": 0.5,
+          "oppose": 0,
+          "p_effective": 0.739481,
+          "p_market": 0.696903,
+          "point": 1.5,
+          "research_only": true,
+          "schema": "v12-4-convergence-score-v1",
+          "score_8": 4,
+          "signals": {
+            "attack": {
+              "detail": {
+                "projected_margin": 1.143378293407043,
+                "required_margin": -1.5
+              },
+              "state": "SUPPORT",
+              "value": 2.643378293407043
+            },
+            "bullpen": {
+              "detail": {
+                "opponent_factor": 0.9829360257191255,
+                "own_factor": 0.9988028575829596
+              },
+              "state": "SUPPORT",
+              "value": 0.01614228337213075
+            },
+            "lineup": {
+              "detail": {
+                "opponent_factor": 1.0,
+                "own_factor": 1.0
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            },
+            "model": {
+              "detail": {
+                "p": 0.739481
+              },
+              "state": "SUPPORT",
+              "value": 0.23948100000000005
+            },
+            "sharp": {
+              "detail": {
+                "p_market": 0.696903
+              },
+              "state": "SUPPORT",
+              "value": 0.19690300000000005
+            },
+            "starter": {
+              "detail": {
+                "opponent_factor": 0.9994704098524414,
+                "own_factor": 1.0001971142628117
+              },
+              "state": "NEUTRAL",
+              "value": 0.0007270894697899433
+            },
+            "statcast": {
+              "detail": {
+                "opponent_factor": 1.0,
+                "own_factor": 1.0
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            },
+            "weather_park": {
+              "detail": {
+                "opponent_factor": 1.013289311376651,
+                "own_factor": 1.013289311376651
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            }
+          },
+          "support": 4,
+          "unavailable": 0,
+          "version": "v12.4-convergence-score-v1"
+        },
+        {
+          "affects_v12_selection": false,
+          "available": 8,
+          "directional": 4,
+          "game": "St. Louis Cardinals @ Chicago Cubs",
+          "game_pk": 824642,
+          "grade": "MIXED",
+          "market": "RUNLINE",
+          "name": "Chicago Cubs",
+          "net_support": 4,
+          "neutral": 4,
+          "normalized_support": 0.5,
+          "oppose": 0,
+          "p_effective": 0.675479,
+          "p_market": 0.713062,
+          "point": 1.5,
+          "research_only": true,
+          "schema": "v12-4-convergence-score-v1",
+          "score_8": 4,
+          "signals": {
+            "attack": {
+              "detail": {
+                "projected_margin": 0.07564425806006891,
+                "required_margin": -1.5
+              },
+              "state": "SUPPORT",
+              "value": 1.575644258060069
+            },
+            "bullpen": {
+              "detail": {
+                "opponent_factor": 0.9816269458128786,
+                "own_factor": 0.9901561255374225
+              },
+              "state": "SUPPORT",
+              "value": 0.008688819883077903
+            },
+            "lineup": {
+              "detail": {
+                "opponent_factor": 1.0,
+                "own_factor": 1.0
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            },
+            "model": {
+              "detail": {
+                "p": 0.675479
+              },
+              "state": "SUPPORT",
+              "value": 0.17547900000000005
+            },
+            "sharp": {
+              "detail": {
+                "p_market": 0.713062
+              },
+              "state": "SUPPORT",
+              "value": 0.21306199999999997
+            },
+            "starter": {
+              "detail": {
+                "opponent_factor": 1.0003475590582962,
+                "own_factor": 0.9978227597589533
+              },
+              "state": "NEUTRAL",
+              "value": -0.002523922087358965
+            },
+            "statcast": {
+              "detail": {
+                "opponent_factor": 1.0,
+                "own_factor": 1.0
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            },
+            "weather_park": {
+              "detail": {
+                "opponent_factor": 1.0191304695763812,
+                "own_factor": 1.0191304695763812
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            }
+          },
+          "support": 4,
+          "unavailable": 0,
+          "version": "v12.4-convergence-score-v1"
+        },
+        {
+          "affects_v12_selection": false,
+          "available": 8,
+          "directional": 4,
+          "game": "Chicago White Sox @ Detroit Tigers",
+          "game_pk": 824236,
+          "grade": "MIXED",
+          "market": "RUNLINE",
+          "name": "Chicago White Sox",
+          "net_support": 4,
+          "neutral": 4,
+          "normalized_support": 0.5,
+          "oppose": 0,
+          "p_effective": 0.659203,
+          "p_market": 0.662165,
+          "point": 1.5,
+          "research_only": true,
+          "schema": "v12-4-convergence-score-v1",
+          "score_8": 4,
+          "signals": {
+            "attack": {
+              "detail": {
+                "projected_margin": -0.1599633050977265,
+                "required_margin": -1.5
+              },
+              "state": "SUPPORT",
+              "value": 1.3400366949022735
+            },
+            "bullpen": {
+              "detail": {
+                "opponent_factor": 0.987144088614265,
+                "own_factor": 0.9860283275521885
+              },
+              "state": "NEUTRAL",
+              "value": -0.001130291995814603
+            },
+            "lineup": {
+              "detail": {
+                "opponent_factor": 1.0,
+                "own_factor": 1.0
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            },
+            "model": {
+              "detail": {
+                "p": 0.659203
+              },
+              "state": "SUPPORT",
+              "value": 0.15920299999999998
+            },
+            "sharp": {
+              "detail": {
+                "p_market": 0.662165
+              },
+              "state": "SUPPORT",
+              "value": 0.162165
+            },
+            "starter": {
+              "detail": {
+                "opponent_factor": 0.9978728138677411,
+                "own_factor": 1.006398623165094
+              },
+              "state": "SUPPORT",
+              "value": 0.008543983941507571
+            },
+            "statcast": {
+              "detail": {
+                "opponent_factor": 1.0,
+                "own_factor": 1.0
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            },
+            "weather_park": {
+              "detail": {
+                "opponent_factor": 1.0181548176100343,
+                "own_factor": 1.0181548176100343
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            }
+          },
+          "support": 4,
+          "unavailable": 0,
+          "version": "v12.4-convergence-score-v1"
+        },
+        {
+          "affects_v12_selection": false,
+          "available": 8,
+          "directional": 4,
+          "game": "San Diego Padres @ Cleveland Guardians",
+          "game_pk": 824397,
+          "grade": "MIXED",
+          "market": "RUNLINE",
+          "name": "San Diego Padres",
+          "net_support": 4,
+          "neutral": 4,
+          "normalized_support": 0.5,
+          "oppose": 0,
+          "p_effective": 0.648288,
+          "p_market": 0.673563,
+          "point": 1.5,
+          "research_only": true,
+          "schema": "v12-4-convergence-score-v1",
+          "score_8": 4,
+          "signals": {
+            "attack": {
+              "detail": {
+                "projected_margin": -0.303036445849064,
+                "required_margin": -1.5
+              },
+              "state": "SUPPORT",
+              "value": 1.196963554150936
+            },
+            "bullpen": {
+              "detail": {
+                "opponent_factor": 0.9788805990578928,
+                "own_factor": 0.9899610967829994
+              },
+              "state": "SUPPORT",
+              "value": 0.011319560052340139
+            },
+            "lineup": {
+              "detail": {
+                "opponent_factor": 1.0,
+                "own_factor": 1.0
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            },
+            "model": {
+              "detail": {
+                "p": 0.648288
+              },
+              "state": "SUPPORT",
+              "value": 0.14828799999999998
+            },
+            "sharp": {
+              "detail": {
+                "p_market": 0.673563
+              },
+              "state": "SUPPORT",
+              "value": 0.17356300000000002
+            },
+            "starter": {
+              "detail": {
+                "opponent_factor": 0.998398013710672,
+                "own_factor": 1.0007397966388791
+              },
+              "state": "NEUTRAL",
+              "value": 0.0023455404518519796
+            },
+            "statcast": {
+              "detail": {
+                "opponent_factor": 1.0,
+                "own_factor": 1.0
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            },
+            "weather_park": {
+              "detail": {
+                "opponent_factor": 1.0202965096043624,
+                "own_factor": 1.0202965096043624
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            }
+          },
+          "support": 4,
+          "unavailable": 0,
+          "version": "v12.4-convergence-score-v1"
+        },
+        {
+          "affects_v12_selection": false,
+          "available": 8,
+          "directional": 4,
+          "game": "Philadelphia Phillies @ Minnesota Twins",
+          "game_pk": 823670,
+          "grade": "MIXED",
+          "market": "RUNLINE",
+          "name": "Philadelphia Phillies",
+          "net_support": 4,
+          "neutral": 4,
+          "normalized_support": 0.5,
+          "oppose": 0,
+          "p_effective": 0.627448,
+          "p_market": 0.661215,
+          "point": 1.5,
+          "research_only": true,
+          "schema": "v12-4-convergence-score-v1",
+          "score_8": 4,
+          "signals": {
+            "attack": {
+              "detail": {
+                "projected_margin": -0.36051949852585086,
+                "required_margin": -1.5
+              },
+              "state": "SUPPORT",
+              "value": 1.1394805014741491
+            },
+            "bullpen": {
+              "detail": {
+                "opponent_factor": 0.9656416210686901,
+                "own_factor": 0.9859479869214401
+              },
+              "state": "SUPPORT",
+              "value": 0.021028884225471334
+            },
+            "lineup": {
+              "detail": {
+                "opponent_factor": 1.0,
+                "own_factor": 1.0
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            },
+            "model": {
+              "detail": {
+                "p": 0.627448
+              },
+              "state": "SUPPORT",
+              "value": 0.127448
+            },
+            "sharp": {
+              "detail": {
+                "p_market": 0.661215
+              },
+              "state": "SUPPORT",
+              "value": 0.161215
+            },
+            "starter": {
+              "detail": {
+                "opponent_factor": 1.0043134568179748,
+                "own_factor": 1.0011472086407853
+              },
+              "state": "NEUTRAL",
+              "value": -0.0031526493603115657
+            },
+            "statcast": {
+              "detail": {
+                "opponent_factor": 1.0,
+                "own_factor": 1.0
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            },
+            "weather_park": {
+              "detail": {
+                "opponent_factor": 1.0179972639160186,
+                "own_factor": 1.0179972639160186
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            }
+          },
+          "support": 4,
+          "unavailable": 0,
+          "version": "v12.4-convergence-score-v1"
+        },
+        {
+          "affects_v12_selection": false,
+          "available": 8,
+          "directional": 4,
+          "game": "Texas Rangers @ Athletics",
+          "game_pk": 824965,
+          "grade": "MIXED",
+          "market": "ML",
+          "name": "Texas Rangers",
+          "net_support": 4,
+          "neutral": 4,
+          "normalized_support": 0.5,
+          "oppose": 0,
+          "p_effective": 0.588838,
+          "p_market": 0.55098,
+          "point": null,
+          "research_only": true,
+          "schema": "v12-4-convergence-score-v1",
+          "score_8": 4,
+          "signals": {
+            "attack": {
+              "detail": {
+                "projected_margin": 1.143378293407043,
+                "required_margin": 0.0
+              },
+              "state": "SUPPORT",
+              "value": 1.143378293407043
+            },
+            "bullpen": {
+              "detail": {
+                "opponent_factor": 0.9829360257191255,
+                "own_factor": 0.9988028575829596
+              },
+              "state": "SUPPORT",
+              "value": 0.01614228337213075
+            },
+            "lineup": {
+              "detail": {
+                "opponent_factor": 1.0,
+                "own_factor": 1.0
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            },
+            "model": {
+              "detail": {
+                "p": 0.588838
+              },
+              "state": "SUPPORT",
+              "value": 0.08883799999999997
+            },
+            "sharp": {
+              "detail": {
+                "p_market": 0.55098
+              },
+              "state": "SUPPORT",
+              "value": 0.050980000000000025
+            },
+            "starter": {
+              "detail": {
+                "opponent_factor": 0.9994704098524414,
+                "own_factor": 1.0001971142628117
+              },
+              "state": "NEUTRAL",
+              "value": 0.0007270894697899433
+            },
+            "statcast": {
+              "detail": {
+                "opponent_factor": 1.0,
+                "own_factor": 1.0
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            },
+            "weather_park": {
+              "detail": {
+                "opponent_factor": 1.013289311376651,
+                "own_factor": 1.013289311376651
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            }
+          },
+          "support": 4,
+          "unavailable": 0,
+          "version": "v12.4-convergence-score-v1"
+        },
+        {
+          "affects_v12_selection": false,
+          "available": 8,
+          "directional": 4,
+          "game": "Kansas City Royals @ Los Angeles Angels",
+          "game_pk": 823991,
+          "grade": "MIXED",
+          "market": "TOTAL",
+          "name": "Over",
+          "net_support": 4,
+          "neutral": 4,
+          "normalized_support": 0.5,
+          "oppose": 0,
+          "p_effective": 0.580129,
+          "p_market": 0.522502,
+          "point": 8.5,
+          "research_only": true,
+          "schema": "v12-4-convergence-score-v1",
+          "score_8": 4,
+          "signals": {
+            "attack": {
+              "detail": {
+                "line": 8.5,
+                "projected_total": 9.883424510499848
+              },
+              "state": "SUPPORT",
+              "value": 1.3834245104998484
+            },
+            "bullpen": {
+              "detail": {
+                "away_factor": 0.9960862902577047,
+                "home_factor": 0.9996286487651276
+              },
+              "state": "NEUTRAL",
+              "value": -0.002142530488583816
+            },
+            "lineup": {
+              "detail": {
+                "away_factor": 1.0,
+                "home_factor": 1.0
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            },
+            "model": {
+              "detail": {
+                "p": 0.580129
+              },
+              "state": "SUPPORT",
+              "value": 0.080129
+            },
+            "sharp": {
+              "detail": {
+                "p_market": 0.522502
+              },
+              "state": "SUPPORT",
+              "value": 0.022502000000000022
+            },
+            "starter": {
+              "detail": {
+                "away_factor": 0.9981673858395519,
+                "home_factor": 0.9950868888212017
+              },
+              "state": "NEUTRAL",
+              "value": -0.0033728626696232222
+            },
+            "statcast": {
+              "detail": {
+                "away_factor": 1.0,
+                "home_factor": 1.0
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            },
+            "weather_park": {
+              "detail": {
+                "away_factor": 1.013709297346717,
+                "home_factor": 1.013709297346717
+              },
+              "state": "SUPPORT",
+              "value": 0.013709297346716998
+            }
+          },
+          "support": 4,
+          "unavailable": 0,
+          "version": "v12.4-convergence-score-v1"
+        }
+      ],
+      "version": "v12.4-convergence-score-v1"
+    },
     "current_run_disagreements": [
       {
-        "abs_gap": 0.012202999999999964,
-        "baseline_p": 0.559643,
-        "challenger": "all_core",
-        "crosses_55": true,
-        "game": "Texas Rangers @ Athletics",
-        "game_pk": 824965,
-        "gap": -0.012202999999999964,
-        "market": "TOTAL",
-        "name": "Under",
-        "point": 10.5,
-        "v124_p": 0.54744
-      },
-      {
-        "abs_gap": 0.005750000000000033,
-        "baseline_p": 0.552717,
+        "abs_gap": 0.005908000000000024,
+        "baseline_p": 0.553779,
         "challenger": "all_core",
         "crosses_55": true,
         "game": "Milwaukee Brewers @ Los Angeles Dodgers",
         "game_pk": 823912,
-        "gap": -0.005750000000000033,
+        "gap": -0.005908000000000024,
         "market": "ML",
         "name": "Los Angeles Dodgers",
         "point": null,
-        "v124_p": 0.546967
-      },
-      {
-        "abs_gap": 0.00013300000000004975,
-        "baseline_p": 0.550006,
-        "challenger": "all_core",
-        "crosses_55": true,
-        "game": "Milwaukee Brewers @ Los Angeles Dodgers",
-        "game_pk": 823912,
-        "gap": -0.00013300000000004975,
-        "market": "TOTAL",
-        "name": "Under",
-        "point": 7.5,
-        "v124_p": 0.549873
+        "v124_p": 0.547871
       }
     ],
     "evolution": {
@@ -3155,6 +2888,7 @@
     },
     "guardrails": {
       "automatic_promotion": false,
+      "convergence_research_only": true,
       "discord_monitor_non_blocking": true,
       "production_engine": "V12.3.2",
       "selector_unchanged": true,
@@ -3231,6 +2965,7 @@
       "stage": "COLLECT",
       "status": "COLLECTING",
       "walk_forward": {
+        "boundary": "calendar_day",
         "status": "COLLECTING",
         "test_games": 0,
         "windows": 0
@@ -3261,7 +2996,7 @@
       "weight_source": "NO_ELIGIBLE_WARM_START"
     },
     "research_only": true,
-    "run_id": "f754265a5e744967",
+    "run_id": "fea78e0df09d90bf",
     "schema": "v12-4-research-monitor-v1",
     "target_date": "2026-08-16",
     "v115": {
@@ -3378,7 +3113,7 @@
     },
     "version": "v12.4-research-monitor-v1"
   },
-  "run_id": "f754265a5e744967",
+  "run_id": "fea78e0df09d90bf",
   "scheduled_games": 15,
   "schema": "v12-3-professional-v1",
   "shadow_challenger": {
@@ -3515,5 +3250,5 @@
     "version": "11.5-standalone-all-markets-v3-shadow"
   },
   "target_date": "2026-08-16",
-  "version": "12.3.2-value-selection-v1"
+  "version": "12.3.2-audit-hardening-v1"
 }
