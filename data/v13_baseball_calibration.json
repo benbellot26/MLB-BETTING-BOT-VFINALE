@@ -68,11 +68,14 @@
   },
   "eligible_games": 29,
   "eligible_rows": 81,
-  "generated_at": "2026-08-16T15:59:32.681317+00:00",
+  "exact_replay_games": 29,
+  "generated_at": "2026-08-16T18:41:37.967535+00:00",
   "market_probability_used_as_feature": false,
   "rows_seen": 81,
   "schema": "v13-baseball-calibration-model-v1",
-  "source_rows_total": 485,
+  "source_rows_exact_replay": 49,
+  "source_rows_live": 506,
+  "source_rows_total": 555,
   "strict_activation_floors": {
     "global": 600,
     "market": 400,
@@ -85,6 +88,7 @@
     ],
     "alternate_lines_trainable_for_calibration": false,
     "canonical_row": "latest pregame row per game_pk and phase",
+    "exact_v13_replay_backfill_allowed": true,
     "forbidden_probability_fields_as_baseball_evidence": [
       "p_effective",
       "p_model",
@@ -92,6 +96,7 @@
       "p_posterior"
     ],
     "independent_target_policy": "max one canonical side per market/game/phase",
+    "legacy_reconstructed_1801_allowed_as_native_calibration": false,
     "pregame_required": true,
     "settled_result_required": true,
     "software_version_required": false,
