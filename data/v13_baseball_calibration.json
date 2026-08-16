@@ -1,0 +1,100 @@
+{
+  "baseball_only": true,
+  "calibrators": {
+    "GLOBAL": {
+      "active": false,
+      "method": "identity",
+      "n": 92,
+      "status": "COLLECTING",
+      "strict_required_n": 600,
+      "strict_volume_ready": false
+    },
+    "MARKET:ML": {
+      "active": false,
+      "method": "identity",
+      "n": 29,
+      "status": "COLLECTING",
+      "strict_required_n": 400,
+      "strict_volume_ready": false
+    },
+    "MARKET:RUNLINE": {
+      "active": false,
+      "method": "identity",
+      "n": 29,
+      "status": "COLLECTING",
+      "strict_required_n": 400,
+      "strict_volume_ready": false
+    },
+    "MARKET:TOTAL": {
+      "active": false,
+      "method": "identity",
+      "n": 34,
+      "status": "COLLECTING",
+      "strict_required_n": 400,
+      "strict_volume_ready": false
+    },
+    "PHASE:EARLY:ML": {
+      "active": false,
+      "method": "identity",
+      "n": 29,
+      "status": "COLLECTING",
+      "strict_required_n": 300,
+      "strict_volume_ready": false
+    },
+    "PHASE:EARLY:RUNLINE": {
+      "active": false,
+      "method": "identity",
+      "n": 29,
+      "status": "COLLECTING",
+      "strict_required_n": 300,
+      "strict_volume_ready": false
+    },
+    "PHASE:EARLY:TOTAL": {
+      "active": false,
+      "method": "identity",
+      "n": 29,
+      "status": "COLLECTING",
+      "strict_required_n": 300,
+      "strict_volume_ready": false
+    },
+    "PHASE:LATE:TOTAL": {
+      "active": false,
+      "method": "identity",
+      "n": 5,
+      "status": "COLLECTING",
+      "strict_required_n": 300,
+      "strict_volume_ready": false
+    }
+  },
+  "eligible_games": 29,
+  "eligible_rows": 81,
+  "generated_at": "2026-08-16T15:58:06.719108+00:00",
+  "market_probability_used_as_feature": false,
+  "rows_seen": 81,
+  "schema": "v13-baseball-calibration-model-v1",
+  "source_rows_total": 470,
+  "strict_activation_floors": {
+    "global": 600,
+    "market": 400,
+    "phase_market": 300
+  },
+  "training_policy": {
+    "accepted_probability_fields": [
+      "p_baseball_raw",
+      "p_learned"
+    ],
+    "alternate_lines_trainable_for_calibration": false,
+    "canonical_row": "latest pregame row per game_pk and phase",
+    "forbidden_probability_fields_as_baseball_evidence": [
+      "p_effective",
+      "p_model",
+      "p_market",
+      "p_posterior"
+    ],
+    "independent_target_policy": "max one canonical side per market/game/phase",
+    "pregame_required": true,
+    "settled_result_required": true,
+    "software_version_required": false,
+    "strict_volume_floor_after_internal_holdout": true
+  }
+}
