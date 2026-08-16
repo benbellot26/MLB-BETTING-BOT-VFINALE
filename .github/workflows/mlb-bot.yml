@@ -29,11 +29,12 @@ jobs:
 
       - name: Validation V12.3.2 + shadows
         run: |
-          python -m py_compile v11/*.py tests/test_v11.py tests/test_historical_bootstrap.py tests/test_v123.py tests/test_v1231_runlines.py tests/test_safe_singles_v1231.py tests/test_shadow_v115.py tests/test_calibration_v1232.py tests/test_predictive_v124.py tests/test_v124_statcast_provider.py
+          python -m py_compile v11/*.py tests/test_v11.py tests/test_historical_bootstrap.py tests/test_v123.py tests/test_v1231_runlines.py tests/test_safe_singles_v1231.py tests/test_v1233_audit_hardening.py tests/test_shadow_v115.py tests/test_calibration_v1232.py tests/test_predictive_v124.py tests/test_v124_statcast_provider.py
           python -m unittest tests.test_v11 tests.test_historical_bootstrap
           python -m unittest tests.test_v123
           python -m unittest tests.test_v1231_runlines
           python -m unittest tests.test_safe_singles_v1231
+          python -m unittest tests.test_v1233_audit_hardening
           python -m unittest tests.test_shadow_v115
           python -m unittest tests.test_calibration_v1232
           python -m unittest tests.test_predictive_v124 tests.test_v124_statcast_provider
@@ -137,6 +138,18 @@ jobs:
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: python -m v11.v123_entry --send-persisted
+
+      - name: Persist Discord delivery checkpoint
+        if: always()
+        run: |
+          git config user.name 'MLB Betting Bot V12.3.2'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          [ -f data/v11_discord_delivery.json ] && git add -f data/v11_discord_delivery.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'data: persist Discord delivery checkpoint [skip ci]'
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
 
       - name: Persist PUBLISHED lifecycle state
         run: |
