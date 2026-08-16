@@ -4,7 +4,7 @@ from collections import defaultdict
 
 from . import v124_historical_reconstruction as base
 
-VERSION = "v12.4-historical-daily-freeze-v1"
+VERSION = "v12.4-historical-daily-freeze-v2"
 
 
 def _starter_name(box, side, starter_id):
@@ -33,6 +33,7 @@ def reconstruct(source_rows, boxes, use_statcast=True):
     from . import core
     from .v124_statcast_provider import install as install_statcast
     from .v124_starter_ip_v2 import install as install_starter_ip_v2
+    from .v1233_audit_hardening import neutralize_posthoc_identity_modules
 
     install_statcast()
     install_starter_ip_v2()
@@ -58,6 +59,9 @@ def reconstruct(source_rows, boxes, use_statcast=True):
                 base_h = max(1.6, min(8.0, base._num((row.get("v10") or {}).get("home_struct"), 4.4)))
                 base_a = max(1.6, min(8.0, base._num((row.get("v10") or {}).get("away_struct"), 4.2)))
                 modules = base._modules(result, row, state, use_statcast=use_statcast)
+                # Starting-lineup identities come from the final boxscore. They remain
+                # useful diagnostics but can no longer train lineup/platoon weights.
+                modules = neutralize_posthoc_identity_modules(modules)
                 variants = {
                     "baseline_historical_proxy": {
                         "home_mu": base_h, "away_mu": base_a,
@@ -94,10 +98,11 @@ def reconstruct(source_rows, boxes, use_statcast=True):
                         "market_scope": ["ML", "RUNLINE"],
                         "historical_odds_used": False,
                         "roi_trainable": False,
-                        "lineup_identity": "posthoc starting-lineup identity for FINAL-phase counterfactual",
+                        "lineup_identity": "posthoc starting-lineup identity; lineup/platoon coverage forced to zero for fitting",
                         "starter_identity": "boxscore starter id/name used only for identity; performance state is strict J-1",
                         "player_stats": "strict J-1 state; current calendar date applied only after every game on that date is predicted",
                         "same_day_results_visible": False,
+                        "posthoc_identity_trainable": False,
                         "starter_ip_version": "v2-duration-quality-decoupled",
                         "weather": "excluded: no archived pregame forecast",
                         "statcast": "Baseball Savant point-in-time cutoff" if use_statcast else "disabled",
@@ -117,11 +122,16 @@ def reconstruct(source_rows, boxes, use_statcast=True):
 
 def main(argv=None):
     original = base.reconstruct
+    from . import v124_weight_optimizer as opt
+    from .v1233_audit_hardening import day_block_walk_forward
+    original_wf = opt.walk_forward
     try:
         base.reconstruct = reconstruct
+        opt.walk_forward = lambda exs: day_block_walk_forward(exs, opt)
         return base.main(argv)
     finally:
         base.reconstruct = original
+        opt.walk_forward = original_wf
 
 
 if __name__ == "__main__":
