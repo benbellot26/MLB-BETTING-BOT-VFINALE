@@ -6,8 +6,11 @@ on:
       - agent/v13-reconstruct-1801-redo
     paths:
       - 'v11/v13_historical_distribution_prior.py'
+      - 'v11/v13_runtime.py'
+      - 'tests/test_v13_historical_distribution_prior.py'
       - '.github/workflows/v13-historical-distribution-prior.yml'
       - 'data/mlb_backtest_2026.jsonl'
+      - 'data/v13_historical_distribution_prior.json'
   workflow_dispatch:
 
 permissions:
@@ -21,6 +24,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Compile changed Python modules
+        run: python -m py_compile v11/v13_historical_distribution_prior.py v11/v13_history_bridge.py v11/v13_runtime.py tests/test_v13_historical_distribution_prior.py
+      - name: Run historical prior regression tests
+        run: python -m pytest -q tests/test_v13_historical_distribution_prior.py
       - name: Build and validate historical distribution prior
         run: python -m v11.v13_historical_distribution_prior
       - name: Upload report
