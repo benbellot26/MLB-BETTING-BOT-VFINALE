@@ -24,6 +24,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Install test dependency
+        run: python -m pip install pytest
       - name: Compile changed Python modules
         run: python -m py_compile v11/v13_historical_distribution_prior.py v11/v13_history_bridge.py v11/v13_runtime.py tests/test_v13_historical_distribution_prior.py
       - name: Run historical prior regression tests
