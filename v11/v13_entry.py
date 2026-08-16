@@ -8,12 +8,17 @@ from .v13_runtime import install
 
 install()
 
-from . import config, runner
+from . import config, runner, discord_v13
+
+# V13 changes the user-facing product to probability-first reporting while
+# retaining the mature Discord transport and delivery checkpoints.
+runner.discord = discord_v13
 
 
 def self_test_v13():
     from . import probability_contract_v13 as contract
     from . import calibration_baseball_v13 as cal
+    from . import extra_innings_v13
     assert config.VERSION.startswith("13.0-")
     payload = contract.option_contract_payload(
         p_baseball_raw=.62,
@@ -31,6 +36,9 @@ def self_test_v13():
     model = {"calibrators": {}}
     p, source, n = cal.calibrate(.61, "ML", "FINAL", model)
     assert abs(p-.61) < 1e-9 and source == "identity" and n == 0
+    joint = [[.20,.10],[.10,.60]]
+    # 20% regulation home win + 70% tie * neutral 50% = 55%.
+    assert abs(extra_innings_v13.home_win_probability(joint)-.55) < 1e-9
     print("SELF-TEST V13 PROFESSIONAL PROBABILITY CONTRACT OK")
 
 
