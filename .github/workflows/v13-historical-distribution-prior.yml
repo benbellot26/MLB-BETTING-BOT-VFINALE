@@ -1,0 +1,30 @@
+name: V13 Historical Distribution Prior
+
+on:
+  push:
+    branches:
+      - agent/v13-reconstruct-1801-redo
+    paths:
+      - 'v11/v13_historical_distribution_prior.py'
+      - '.github/workflows/v13-historical-distribution-prior.yml'
+      - 'data/mlb_backtest_2026.jsonl'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build and validate historical distribution prior
+        run: python -m v11.v13_historical_distribution_prior
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: v13-historical-distribution-prior
+          path: data/v13_historical_distribution_prior.json
