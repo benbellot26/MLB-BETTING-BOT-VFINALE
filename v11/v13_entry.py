@@ -8,11 +8,19 @@ from .v13_runtime import install
 
 install()
 
-from . import config, runner, discord_v13
+from . import config, runner, discord_v13, core
 
 # V13 changes the user-facing product to probability-first reporting while
 # retaining the mature Discord transport and delivery checkpoints.
 runner.discord = discord_v13
+
+
+def _summary_v13(report):
+    if int(report.get("ledger_settled_this_run") or 0) <= 0:
+        return True
+    fin = report.get("finance") or {}
+    return core.send_embed("📊 BILAN V13", [("Ledger confirmé",
+        f"{fin.get('wins',0)}V-{fin.get('losses',0)}D-{fin.get('pushes',0)}P • P/L **{core.num(fin.get('profit_units')):+.2f}u** • ROI **{core.pct(fin.get('roi'))}**")], 5763719)
 
 
 def self_test_v13():
@@ -42,6 +50,7 @@ def self_test_v13():
     print("SELF-TEST V13 PROFESSIONAL PROBABILITY CONTRACT OK")
 
 
+runner._summary = _summary_v13
 runner.self_test = self_test_v13
 
 
