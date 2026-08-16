@@ -71,4 +71,8 @@ def activate():
     # expose per-market metrics, and keep monitoring completely production-isolated.
     from .v124_research_monitor import install as install_v124_monitor
     install_v124_monitor()
+    # V12.3.3 audit hardening: sharp-only DQ, reference-depth/gap gates,
+    # portfolio risk haircut, day-boundary walk-forward and idempotent Discord checkpoints.
+    from .v1233_audit_hardening import install as install_audit_hardening
+    install_audit_hardening()
     return True
