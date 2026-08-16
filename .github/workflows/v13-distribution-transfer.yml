@@ -1,0 +1,33 @@
+name: V13 Distribution Transfer
+
+on:
+  push:
+    branches: [agent/v13-reconstruct-1801]
+    paths:
+      - 'v11/v13_distribution_transfer.py'
+      - '.github/workflows/v13-distribution-transfer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  transfer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate transfer
+        run: python -m v11.v13_distribution_transfer
+      - name: Gate
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('data/v13_distribution_transfer_report.json').read_text())
+          assert r['exact_replay_games'] >= 20, r
+          assert r['historical_outer_holdout_validated'], r
+          print(json.dumps(r,indent=2))
+          PY

@@ -6,10 +6,11 @@ from typing import Any
 
 from . import point_in_time_v13 as pit
 from . import extra_innings_v13
+from . import v13_distribution_prior
 from .pipeline_v13 import ProbabilityPipelineV13
 from .probability_contract_v13 import attach_contract, assert_no_market_leakage
 
-VERSION = "13.0-professional-probability-v1"
+VERSION = "13.1-professional-probability-v1"
 _INSTALLED = False
 
 V13_OPTION_FIELDS = (
@@ -94,6 +95,7 @@ def install() -> bool:
     original_analyze = engine_v12.analyze
     original_row = runner._row
     original_joint = engine_v12.joint_score_matrix
+    original_bootstrap_prior = engine_v12._bootstrap_prior
 
     def neutral_extra_innings_home_win(home_mu, away_mu, dispersion=None, env_sigma=None):
         joint = original_joint(home_mu, away_mu, dispersion=dispersion, env_sigma=env_sigma)
@@ -102,6 +104,28 @@ def install() -> bool:
     # Remove the fixed 52% home split in extra innings until a separately
     # validated extra-inning prior exists.
     engine_v12.prob_home_win = neutral_extra_innings_home_win
+
+    def validated_distribution_prior(structural_hmu, structural_amu, champ, phase):
+        values = list(original_bootstrap_prior(structural_hmu, structural_amu, champ, phase))
+        # Tuple contract from engine_v12._bootstrap_prior:
+        # hmu, amu, run_meta, bootstrap, dispersion, dispersion_source,
+        # env_sigma, env_source.
+        dispersion, env_sigma, meta = v13_distribution_prior.apply(values[4], values[6], phase)
+        if meta.get("active"):
+            values[4] = dispersion
+            values[5] = meta.get("source")
+            # The ablation selected dispersion-only. Keep the already validated
+            # environment sigma unchanged (currently 0.08) by contract.
+            values[6] = env_sigma
+            bootstrap = dict(values[3] or {})
+            bootstrap["v13_distribution_prior"] = meta
+            values[3] = bootstrap
+        return tuple(values)
+
+    # Activate the historical distribution prior only at the exact point where
+    # score-distribution parameters are selected. Probability calibration and
+    # sharp-market benchmarking remain completely separate.
+    engine_v12._bootstrap_prior = validated_distribution_prior
 
     def analyze(game, event, as_of=None):
         result = original_analyze(game, event, as_of=as_of)

@@ -1,0 +1,21 @@
+{
+  "schema": "v13-distribution-prior-v1",
+  "active": true,
+  "phase_scope": "FINAL",
+  "variant": "dispersion_only",
+  "dispersion": 2.835691107635618,
+  "environment_sigma": 0.08,
+  "source_games": 1801,
+  "warm_games": 1724,
+  "validation_games": 341,
+  "test_games": 356,
+  "exact_replay_games": 29,
+  "validation_nll_gain": 0.056771002736314635,
+  "test_nll_gain": 0.06059977835222963,
+  "exact_replay_nll_gain": 0.05000676869249698,
+  "market_data_used": false,
+  "historical_odds_used": false,
+  "calibration_effect": "none",
+  "selection_rule": "Least-complexity distribution variant improving chronological validation, untouched future test, and exact replay transfer cohort.",
+  "evidence_boundary": "Applies only to the score-distribution dispersion in FINAL phase. Does not activate any historical ML/RUNLINE/TOTAL probability calibrator."
+}

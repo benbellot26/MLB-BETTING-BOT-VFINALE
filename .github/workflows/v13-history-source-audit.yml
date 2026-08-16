@@ -1,0 +1,23 @@
+name: V13 Historical Source Audit
+
+on:
+  push:
+    branches: [agent/v13-reconstruct-1801]
+    paths:
+      - 'v11/v13_history_source_audit.py'
+      - '.github/workflows/v13-history-source-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Audit historical source
+        run: python -m v11.v13_history_source_audit
