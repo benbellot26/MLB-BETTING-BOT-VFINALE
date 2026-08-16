@@ -1,5 +1,5 @@
 {
-  "analyzed_at": "2026-08-16T15:55:37.282777+00:00",
+  "analyzed_at": "2026-08-16T15:58:08.337138+00:00",
   "calibration_health": {
     "by_phase": {
       "EARLY": {
@@ -330,7 +330,7 @@
     "confirmed_lineups": 9,
     "confirmed_starters": 15,
     "matched_events": 15,
-    "mean_data_quality": 0.9065,
+    "mean_data_quality": 0.906,
     "scheduled_games": 15,
     "sharp_coverage": {
       "ML": 15,
@@ -399,14 +399,14 @@
     "generation": "V12.3.2 value-selection-v1 + V12.4 predictive shadow",
     "historical_evidence": "legacy V10 1,801-game data are diagnostic only until a V12.3 structural baseline exists",
     "ledger": "PROPOSED -> PUBLISHED -> CONFIRMED_PLACED -> SETTLED",
-    "raw_archive": "runtime/v11/snapshots/2026-08-16_3e3b6a25b9e37a73.json.gz",
+    "raw_archive": "runtime/v11/snapshots/2026-08-16_94b442c580a78943.json.gz",
     "runs_model": "immutable structural baseline + validated FINAL historical prior fallback + phase-specific live residual",
     "selection": "informational recommendations use model confidence + conservative EV/edge + DQ + uncertainty + Kelly; Winamax never decides eligibility",
     "selection_confidence": "RL >= 55%; ML/TOTAL >= 58%",
     "selection_price_floor": "reference decimal odds >= 1.40",
     "selection_reference_price": "fresh configured sharp books; exact side/point; second-best effective quote when >=2 books, otherwise single fresh sharp quote",
     "sharp_disagreement": "large model-vs-sharp disagreement reduces selection score but is not a hard directional veto",
-    "source_replay": "runtime/v11/source_replays/2026-08-16_3e3b6a25b9e37a73_sources.json.gz",
+    "source_replay": "runtime/v11/source_replays/2026-08-16_94b442c580a78943_sources.json.gz",
     "staking": "bankroll-aware fractional Kelly; official combos disabled",
     "starter_model": "current season + N-1/N-2 prior affects structural run means",
     "uncertainty": "empirical phase/market reliability bins + market disagreement + DQ penalty",
@@ -1774,7 +1774,7 @@
       }
     },
     "affects_v12_selection": false,
-    "analyzed_at": "2026-08-16T15:55:37.282777+00:00",
+    "analyzed_at": "2026-08-16T15:58:08.337138+00:00",
     "canonicalization": "latest settled pre-game snapshot per game_pk",
     "convergence": {
       "affects_v12_selection": false,
@@ -1807,8 +1807,8 @@
           "neutral": 1,
           "normalized_support": 0.75,
           "oppose": 1,
-          "p_effective": 0.678154,
-          "p_market": 0.655846,
+          "p_effective": 0.678158,
+          "p_market": 0.655845,
           "point": 1.5,
           "research_only": true,
           "schema": "v12-4-convergence-score-v1",
@@ -1840,17 +1840,17 @@
             },
             "model": {
               "detail": {
-                "p": 0.678154
+                "p": 0.678158
               },
               "state": "SUPPORT",
-              "value": 0.17815400000000003
+              "value": 0.17815800000000004
             },
             "sharp": {
               "detail": {
-                "p_market": 0.655846
+                "p_market": 0.655845
               },
               "state": "SUPPORT",
-              "value": 0.15584600000000004
+              "value": 0.155845
             },
             "starter": {
               "detail": {
@@ -1895,7 +1895,7 @@
           "normalized_support": 0.75,
           "oppose": 1,
           "p_effective": 0.570678,
-          "p_market": 0.574282,
+          "p_market": 0.574283,
           "point": 1.5,
           "research_only": true,
           "schema": "v12-4-convergence-score-v1",
@@ -1934,10 +1934,10 @@
             },
             "sharp": {
               "detail": {
-                "p_market": 0.574282
+                "p_market": 0.574283
               },
               "state": "SUPPORT",
-              "value": 0.07428199999999996
+              "value": 0.07428299999999999
             },
             "starter": {
               "detail": {
@@ -2068,7 +2068,7 @@
           "neutral": 3,
           "normalized_support": 0.625,
           "oppose": 0,
-          "p_effective": 0.620851,
+          "p_effective": 0.62085,
           "p_market": 0.628989,
           "point": 1.5,
           "research_only": true,
@@ -2101,10 +2101,10 @@
             },
             "model": {
               "detail": {
-                "p": 0.620851
+                "p": 0.62085
               },
               "state": "SUPPORT",
-              "value": 0.12085100000000004
+              "value": 0.12085000000000001
             },
             "sharp": {
               "detail": {
@@ -2155,8 +2155,8 @@
           "neutral": 3,
           "normalized_support": 0.625,
           "oppose": 0,
-          "p_effective": 0.554718,
-          "p_market": 0.517581,
+          "p_effective": 0.554722,
+          "p_market": 0.517572,
           "point": 8.5,
           "research_only": true,
           "schema": "v12-4-convergence-score-v1",
@@ -2188,17 +2188,17 @@
             },
             "model": {
               "detail": {
-                "p": 0.554718
+                "p": 0.554722
               },
               "state": "SUPPORT",
-              "value": 0.054718000000000044
+              "value": 0.05472200000000005
             },
             "sharp": {
               "detail": {
-                "p_market": 0.517581
+                "p_market": 0.517572
               },
               "state": "SUPPORT",
-              "value": 0.017580999999999958
+              "value": 0.017572000000000032
             },
             "starter": {
               "detail": {
@@ -2416,8 +2416,8 @@
           "neutral": 2,
           "normalized_support": 0.625,
           "oppose": 1,
-          "p_effective": 0.657146,
-          "p_market": 0.627858,
+          "p_effective": 0.657148,
+          "p_market": 0.627848,
           "point": 1.5,
           "research_only": true,
           "schema": "v12-4-convergence-score-v1",
@@ -2449,17 +2449,17 @@
             },
             "model": {
               "detail": {
-                "p": 0.657146
+                "p": 0.657148
               },
               "state": "SUPPORT",
-              "value": 0.157146
+              "value": 0.15714799999999995
             },
             "sharp": {
               "detail": {
-                "p_market": 0.627858
+                "p_market": 0.627848
               },
               "state": "SUPPORT",
-              "value": 0.12785800000000003
+              "value": 0.12784799999999996
             },
             "starter": {
               "detail": {
@@ -2503,8 +2503,8 @@
           "neutral": 2,
           "normalized_support": 0.625,
           "oppose": 1,
-          "p_effective": 0.541276,
-          "p_market": 0.567914,
+          "p_effective": 0.539638,
+          "p_market": 0.567904,
           "point": null,
           "research_only": true,
           "schema": "v12-4-convergence-score-v1",
@@ -2536,17 +2536,17 @@
             },
             "model": {
               "detail": {
-                "p": 0.541276
+                "p": 0.539638
               },
               "state": "SUPPORT",
-              "value": 0.04127599999999998
+              "value": 0.03963799999999995
             },
             "sharp": {
               "detail": {
-                "p_market": 0.567914
+                "p_market": 0.567904
               },
               "state": "SUPPORT",
-              "value": 0.06791400000000003
+              "value": 0.06790399999999996
             },
             "starter": {
               "detail": {
@@ -2843,30 +2843,43 @@
     },
     "current_run_disagreements": [
       {
-        "abs_gap": 0.010118999999999989,
-        "baseline_p": 0.552843,
+        "abs_gap": 0.010120000000000018,
+        "baseline_p": 0.552853,
         "challenger": "all_core",
         "crosses_55": true,
         "game": "Arizona Diamondbacks @ Atlanta Braves",
         "game_pk": 824880,
-        "gap": -0.010118999999999989,
+        "gap": -0.010120000000000018,
         "market": "TOTAL",
         "name": "Under",
         "point": 9.0,
-        "v124_p": 0.542724
+        "v124_p": 0.542733
       },
       {
-        "abs_gap": 0.00592400000000004,
-        "baseline_p": 0.55423,
+        "abs_gap": 0.005685999999999969,
+        "baseline_p": 0.552408,
         "challenger": "all_core",
         "crosses_55": true,
         "game": "Milwaukee Brewers @ Los Angeles Dodgers",
         "game_pk": 823912,
-        "gap": -0.00592400000000004,
+        "gap": -0.005685999999999969,
         "market": "ML",
         "name": "Los Angeles Dodgers",
         "point": null,
-        "v124_p": 0.548306
+        "v124_p": 0.546722
+      },
+      {
+        "abs_gap": 0.0013339999999999463,
+        "baseline_p": 0.54917,
+        "challenger": "all_core",
+        "crosses_55": true,
+        "game": "Miami Marlins @ Cincinnati Reds",
+        "game_pk": 824477,
+        "gap": 0.0013339999999999463,
+        "market": "ML",
+        "name": "Miami Marlins",
+        "point": null,
+        "v124_p": 0.550504
       }
     ],
     "evolution": {
@@ -3009,7 +3022,7 @@
       "weight_source": "NO_ELIGIBLE_WARM_START"
     },
     "research_only": true,
-    "run_id": "3e3b6a25b9e37a73",
+    "run_id": "94b442c580a78943",
     "schema": "v12-4-research-monitor-v1",
     "target_date": "2026-08-16",
     "v115": {
@@ -3126,7 +3139,7 @@
     },
     "version": "v12.4-research-monitor-v1"
   },
-  "run_id": "3e3b6a25b9e37a73",
+  "run_id": "94b442c580a78943",
   "scheduled_games": 15,
   "schema": "v12-3-professional-v1",
   "shadow_challenger": {
@@ -3263,5 +3276,5 @@
     "version": "11.5-standalone-all-markets-v3-shadow"
   },
   "target_date": "2026-08-16",
-  "version": "12.3.2-audit-hardening-v1"
+  "version": "13.3-professional-probability-v1"
 }
