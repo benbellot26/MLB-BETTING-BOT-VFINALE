@@ -17,13 +17,9 @@ def selection_score_price_symmetric(rec, gate, dq):
     push = max(0.0, min(.95, _num(gate.get("p_push"), 0)))
     pwin = max(0.0, min(1-push, _num(gate.get("p_win"), 0)))
     breakeven = (1-push)/price if price > 1 else 1.0
-    # Relative edge is invariant to favorite/underdog price scale for equal EV.
     relative_edge = max(0.0, min(.30, pwin/max(1e-9, breakeven)-1.0)) if price > 1 else 0.0
     unc = max(0.0, _num(gate.get("uncertainty"), config.FALLBACK_MODEL_UNCERTAINTY))
     base = 45+155*max(0.0, ev)+35*relative_edge+18*(dq["score"]-.65)-80*unc
-
-    # Sharp disagreement is a score penalty, not a direction veto. The model can
-    # disagree with the market, but a large gap needs stronger EV/DQ to survive.
     sharp_gap = gate.get("sharp_disagreement")
     penalty = 0.0
     if sharp_gap is not None:
@@ -41,38 +37,25 @@ def activate():
     install_alternate_runlines()
     from .safe_singles_v1231 import install as install_value_selection
     install_value_selection()
-    # Discord is presentation-only. Enforce Discord embed limits centrally so an
-    # oversized game/research message cannot block the recommendation lifecycle.
     from .discord_limits import install as install_discord_limits
     install_discord_limits()
-    # Calibration v2 is research/challenger infrastructure. It does not change
-    # production probabilities unless a Champion model has passed the existing
-    # holdout, walk-forward and live-evidence promotion gates.
     from .calibration_v1232 import install as install_calibration_challenger
     install_calibration_challenger()
-    # V12.4 remains shadow-only. External providers are bounded/point-in-time and
-    # cannot change official V12.3.2 selections.
     from .v124_statcast_provider import install as install_v124_statcast
     install_v124_statcast()
     from .v124_weather import install as install_v124_weather
     install_v124_weather()
-    # Starter IP v2 changes only the V12.4 shadow module: duration is decoupled
-    # from pitcher quality and the marginal IP effect uses a true reliever pool.
     from .v124_starter_ip_v2 import install as install_v124_starter_ip_v2
     install_v124_starter_ip_v2()
-    # Native optimizer still learns only from settled V12.4 rows.
     from .v124_weight_optimizer import install as install_v124_optimizer
     install_v124_optimizer()
-    # A separately validated historical reconstruction may warm-start only the
-    # V12.4 optimized shadow. The native 0/75 counter and production gates remain untouched.
     from .v124_historical_warmstart import install as install_v124_historical_warmstart
     install_v124_historical_warmstart()
-    # Canonicalize research evidence to one latest pre-game snapshot per gamePk,
-    # expose per-market metrics, and keep monitoring completely production-isolated.
     from .v124_research_monitor import install as install_v124_monitor
     install_v124_monitor()
-    # V12.3.3 audit hardening: sharp-only DQ, reference-depth/gap gates,
-    # portfolio risk haircut, day-boundary walk-forward and idempotent Discord checkpoints.
     from .v1233_audit_hardening import install as install_audit_hardening
     install_audit_hardening()
+    # This is a corrective hardening of the current Champion, not a new predictive model.
+    from . import config
+    config.VERSION = "12.3.2-audit-hardening-v1"
     return True
