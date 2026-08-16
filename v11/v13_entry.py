@@ -36,7 +36,7 @@ def self_test_v13():
     model = {"calibrators": {}}
     p, source, n = cal.calibrate(.61, "ML", "FINAL", model)
     assert abs(p-.61) < 1e-9 and source == "identity" and n == 0
-    joint = [[.20,.10],[.10,.60]]
+    joint = [[.10,.10],[.20,.60]]
     # 20% regulation home win + 70% tie * neutral 50% = 55%.
     assert abs(extra_innings_v13.home_win_probability(joint)-.55) < 1e-9
     print("SELF-TEST V13 PROFESSIONAL PROBABILITY CONTRACT OK")
