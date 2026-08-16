@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import math
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -35,20 +36,21 @@ def _hist_rows() -> list[dict[str,Any]]:
             if min(int(r.get("pregame_games_home") or 0),int(r.get("pregame_games_away") or 0)) < MIN_WARM: continue
             hm=v.get("home_mu"); am=v.get("away_mu")
             if hm is None or am is None or r.get("home_score") is None or r.get("away_score") is None: continue
-            out.append({"game_pk":r.get("game_pk"),"game_date":r.get("game_date"),
+            out.append({"game_pk":r.get("game_pk"),"game_date":r.get("game_date"),"phase":"FINAL_RECONSTRUCTED",
                         "home_mu":_num(hm),"away_mu":_num(am),
                         "home_score":int(_num(r.get("home_score"))),"away_score":int(_num(r.get("away_score")))})
     return sorted(out,key=lambda r:(str(r["game_date"]),str(r["game_pk"])))
 
 
 def _exact_rows() -> list[dict[str,Any]]:
+    # Same transfer cohort contract as V13.1 score-distribution validation:
+    # latest exact pregame HTTP replay per game, regardless of EARLY/LATE/FINAL.
     if not EXACT.exists(): return []
     best={}
     with EXACT.open("r",encoding="utf-8") as fh:
         for line in fh:
             if not line.strip(): continue
             r=json.loads(line)
-            if str(r.get("phase") or "").upper() != "FINAL": continue
             if r.get("home_score") is None or r.get("away_score") is None: continue
             hm=r.get("projected_home_runs"); am=r.get("projected_away_runs")
             if hm is None or am is None: continue
@@ -56,7 +58,7 @@ def _exact_rows() -> list[dict[str,Any]]:
             if k not in best or rank > best[k][0]: best[k]=(rank,r)
     out=[]
     for _,r in best.values():
-        out.append({"game_pk":r.get("game_pk"),"game_date":r.get("game_date"),
+        out.append({"game_pk":r.get("game_pk"),"game_date":r.get("game_date"),"phase":str(r.get("phase") or "").upper(),
                     "home_mu":_num(r.get("projected_home_runs")),"away_mu":_num(r.get("projected_away_runs")),
                     "home_score":int(_num(r.get("home_score"))),"away_score":int(_num(r.get("away_score")))})
     return sorted(out,key=lambda r:(str(r["game_date"]),str(r["game_pk"])))
@@ -82,7 +84,6 @@ def _solve3(a,b):
 
 
 def _fit(rows, ridge: float, affine: bool=True):
-    # residual y-mu = home_bias*I(home) + away_bias*I(away) + slope_delta*mu
     ata=[[0.0]*3 for _ in range(3)]; aty=[0.0]*3
     for r in rows:
         for side in ("home","away"):
@@ -142,7 +143,6 @@ def build():
     if not variants:
         return {"schema":"v13-run-mean-prior-v1","active":False,"reason":"no validation-passing candidate",
                 "historical_games":len(rows),"exact_games":len(exact)}
-    # Prefer the simpler bias-only form when its validation NLL is within 0.001 of the best affine form.
     variants.sort(reverse=True,key=lambda z:(z[0],z[1]))
     best=variants[0]
     simple=[z for z in variants if z[2]=="side_bias" and z[0]>=best[0]-.001]
@@ -153,9 +153,11 @@ def build():
     active=_passes(val_ev,100) and _passes(test_ev,100) and _passes(exact_ev,20)
     return {"schema":"v13-run-mean-prior-v1","active":bool(active),"phase_scope":"FINAL",
             "source":"1801-game leakage-safe reconstructed FINAL cohort",
-            "historical_games":len(rows),"split":{"train":len(train),"validation":len(val),"test":len(test)},"exact_games":len(exact),
+            "historical_games":len(rows),"split":{"train":len(train),"validation":len(val),"test":len(test)},
+            "exact_games":len(exact),"exact_phase_counts":dict(Counter(r.get("phase") for r in exact)),
             "selected_variant":name,"model":final,"validation":val_ev,"test":test_ev,"exact_transfer":exact_ev,
-            "activation_rule":"validation + untouched chronological test + exact V13 replay transfer must all improve RMSE and NB NLL; MAE may not regress by >0.01",
+            "activation_rule":"historical validation + untouched future test + latest exact V13 transfer cohort must improve RMSE and NB NLL; MAE may not regress by >0.01",
+            "transfer_caveat":"Exact transfer uses latest pregame replay per game across phases, matching V13.1 distribution-transfer evidence. Production scope remains FINAL-only.",
             "safety":{"historical_odds_used":False,"market_probability_used":False,"feature_vector_fabricated":False,
                       "applies_only_when_native_residual_and_legacy_run_bootstrap_are_inactive":True}}
 
