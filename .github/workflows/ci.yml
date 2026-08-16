@@ -22,15 +22,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-
       - name: Compile
         run: python -m py_compile v11/*.py tests/*.py
-
       - name: V12 regression suite
         run: |
           python -m unittest tests.test_v11 tests.test_historical_bootstrap
@@ -45,15 +42,15 @@ jobs:
           python -m unittest tests.test_v124_weight_optimizer tests.test_v124_research_monitor
           python -m unittest tests.test_v124_historical_reconstruction tests.test_v124_historical_daily_reconstruction tests.test_v124_historical_warmstart
           python -m unittest tests.test_discord_limits
-
       - name: V13 probability contract tests
         run: |
           python -m unittest tests.test_v13_probability_contract
           python -m unittest tests.test_v13_historical_migration
           python -m unittest tests.test_v13_probability_invariants
+          python -m unittest tests.test_v13_rich_run_residual tests.test_v13_rich_native_train
           python -m v11.v13_entry --self-test
           python -m v11.v13_train --dry-run >/tmp/v13_calibration_candidate.json
-
+          python -m v11.v13_rich_native_train >/tmp/v13_rich_native_candidate.json
       - name: Historical source cohort smoke test
         run: |
           python -m v11.v124_historical_reconstruction --offline-dry-run > /tmp/v124_hist_source.json
@@ -63,7 +60,6 @@ jobs:
           assert p['source_games'] >= 1700, p
           print(p)
           PY
-
       - name: V12.4 optimizer persisted-journal smoke test
         run: |
           python - <<'PY'
@@ -73,9 +69,7 @@ jobs:
           from v11.v124_research_monitor import canonical_rows
           from v11.v124_weight_optimizer import build_model, current_model
           from v11 import predictive_v124 as v124
-          rows = journal.load_rows()
-          native = build_model(rows)
-          composed = current_model()
+          rows = journal.load_rows(); native = build_model(rows); composed = current_model()
           assert composed['affects_v12_selection'] is False
           assert composed['research_only'] is True
           assert native['settled_games'] == len(canonical_rows(rows))
@@ -85,12 +79,9 @@ jobs:
           assert (native.get('walk_forward') or {}).get('boundary') in {None, 'calendar_day'}
           print('native=', native['settled_games'], 'source=', composed.get('weight_source'), 'weights=', composed['weights'])
           PY
-
       - name: V12.3 baseline-safe bootstrap validation
         run: python -m v11.v123_bootstrap --dry-run >/tmp/v12_3_bootstrap.json
-
       - name: V12.3 Champion Challenger dry-run
         run: python -m v11.v123_train --dry-run >/tmp/v12_3_candidate.json
-
       - name: V12.3 point-in-time evaluation smoke test
         run: python -m v11.v123_backtest >/tmp/v12_3_backtest.json

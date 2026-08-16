@@ -1,0 +1,48 @@
+name: V13 Rich Run Residual
+
+on:
+  push:
+    branches: [agent/v13-rich-run-residual]
+    paths:
+      - 'v11/v13_rich_run_residual.py'
+      - 'v11/v13_rich_run_shadow.py'
+      - 'tests/test_v13_rich_run_residual.py'
+      - '.github/workflows/v13-rich-run-residual.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile and isolation tests
+        run: |
+          python -m py_compile v11/v13_rich_run_residual.py v11/v13_rich_run_shadow.py tests/test_v13_rich_run_residual.py
+          python -m unittest -q tests.test_v13_rich_run_residual
+      - name: Reconstruct J-1 rich features and fit challenger
+        run: python -m v11.v13_rich_run_residual
+      - name: Evidence gate
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('data/v13_rich_run_residual.json').read_text())
+          assert r['historical_games'] >= 1200, r
+          assert r['split']['validation'] >= 250, r
+          assert r['split']['test'] >= 250, r
+          assert r['safety']['historical_odds_used'] is False
+          assert r['safety']['market_probability_used'] is False
+          assert r['active_for_production'] is False
+          print(json.dumps(r,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v13-rich-run-residual
+          path: data/v13_rich_run_residual.json
