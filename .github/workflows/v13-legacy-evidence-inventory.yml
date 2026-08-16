@@ -5,6 +5,9 @@ on:
     branches: [agent/v13-legacy-evidence-inventory]
     paths:
       - 'v11/v13_legacy_evidence_inventory.py'
+      - 'v11/v13_train.py'
+      - 'v11/calibration_baseball_v13.py'
+      - 'tests/test_v13_legacy_evidence.py'
       - '.github/workflows/v13-legacy-evidence-inventory.yml'
   workflow_dispatch:
 
@@ -40,6 +43,19 @@ jobs:
           assert r['sources']['mlb_backtest_2026.jsonl']['rows_by_grade']['B'] == 0
           assert r['exact_admissible_games'] >= 1
           print(json.dumps(r,indent=2))
+          PY
+      - name: Validate recovered evidence in calibration
+        run: |
+          python -m unittest -q tests.test_v13_legacy_evidence
+          python -m v11.v13_train --dry-run > /tmp/v13_recovered_calibration.json
+          python - <<'PY'
+          import json
+          r=json.load(open('/tmp/v13_recovered_calibration.json'))
+          assert r['exact_replay_games'] >= 29, r
+          ml=(r.get('calibrators') or {}).get('MARKET:ML') or {}
+          assert int(ml.get('n') or 0) >= 29, ml
+          assert ml.get('active') is False
+          print(json.dumps({'exact_replay_games':r['exact_replay_games'],'market_ml_n':ml.get('n'),'market_ml_active':ml.get('active')},indent=2))
           PY
       - uses: actions/upload-artifact@v4
         with:
