@@ -152,6 +152,35 @@ def build():
     }
 
 
+def load(path: Path = OUT):
+    try:
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
+    except Exception:
+        return {"schema": "v13-historical-distribution-prior-v1", "eligible_as_distribution_prior": False}
+    if data.get("schema") != "v13-historical-distribution-prior-v1":
+        return {"schema": "v13-historical-distribution-prior-v1", "eligible_as_distribution_prior": False}
+    return data
+
+
+def validated_defaults(path: Path = OUT):
+    data = load(path)
+    if not data.get("eligible_as_distribution_prior"):
+        return None
+    candidate = data.get("candidate") or {}
+    dispersion = _num(candidate.get("dispersion"), None)
+    sigma = _num(candidate.get("environment_sigma"), None)
+    if dispersion is None or sigma is None:
+        return None
+    return {
+        "dispersion": dispersion,
+        "environment_sigma": sigma,
+        "source": "v13-historical-distribution-prior",
+        "warm_games": int(data.get("warm_games") or 0),
+        "validation_nll_gain": _num((data.get("validation") or {}).get("nll_gain")),
+        "test_nll_gain": _num((data.get("test") or {}).get("nll_gain")),
+    }
+
+
 def main():
     report = build()
     OUT.parent.mkdir(parents=True, exist_ok=True)
