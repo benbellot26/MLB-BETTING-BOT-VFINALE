@@ -21,7 +21,16 @@ def _num(x: Any, d: float = 0.0) -> float:
         return d
 
 
-def upgrade_option(opt: dict[str,Any], phase: str, pipeline: ProbabilityPipelineV13) -> dict[str,Any]:
+def _as_pipeline(value: ProbabilityPipelineV13 | dict[str,Any] | None) -> ProbabilityPipelineV13:
+    if isinstance(value, ProbabilityPipelineV13):
+        return value
+    if isinstance(value, dict):
+        return ProbabilityPipelineV13(value)
+    return ProbabilityPipelineV13.from_artifact()
+
+
+def upgrade_option(opt: dict[str,Any], phase: str, pipeline: ProbabilityPipelineV13 | dict[str,Any] | None = None) -> dict[str,Any]:
+    pipeline = _as_pipeline(pipeline)
     legacy_effective = opt.get("p_effective")
     pipeline.transform_option(opt, phase)
     opt["p_legacy_market_blended"] = legacy_effective
@@ -42,8 +51,8 @@ def upgrade_option(opt: dict[str,Any], phase: str, pipeline: ProbabilityPipeline
     return opt
 
 
-def upgrade_result(result: dict[str,Any], pipeline: ProbabilityPipelineV13 | None = None) -> dict[str,Any]:
-    pipeline = ProbabilityPipelineV13.from_artifact() if pipeline is None else pipeline
+def upgrade_result(result: dict[str,Any], pipeline: ProbabilityPipelineV13 | dict[str,Any] | None = None) -> dict[str,Any]:
+    pipeline = _as_pipeline(pipeline)
     phase = str(result.get("phase") or "EARLY").upper()
     for opt in result.get("options") or []:
         try:
