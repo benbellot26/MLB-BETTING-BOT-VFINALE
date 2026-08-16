@@ -1,5 +1,5 @@
 {
-  "analyzed_at": "2026-08-16T05:48:00.434293+00:00",
+  "analyzed_at": "2026-08-16T07:49:21.507118+00:00",
   "calibration_health": {
     "by_phase": {
       "EARLY": {
@@ -1638,7 +1638,7 @@
     "confirmed_lineups": 0,
     "confirmed_starters": 15,
     "matched_events": 15,
-    "mean_data_quality": 0.7798,
+    "mean_data_quality": 0.7802,
     "scheduled_games": 15,
     "sharp_coverage": {
       "ML": 15,
@@ -1707,14 +1707,14 @@
     "generation": "V12.3.2 value-selection-v1 + V12.4 predictive shadow",
     "historical_evidence": "legacy V10 1,801-game data are diagnostic only until a V12.3 structural baseline exists",
     "ledger": "PROPOSED -> PUBLISHED -> CONFIRMED_PLACED -> SETTLED",
-    "raw_archive": "runtime/v11/snapshots/2026-08-16_398f4ff7fbe805c6.json.gz",
+    "raw_archive": "runtime/v11/snapshots/2026-08-16_f754265a5e744967.json.gz",
     "runs_model": "immutable structural baseline + validated FINAL historical prior fallback + phase-specific live residual",
     "selection": "informational recommendations use model confidence + conservative EV/edge + DQ + uncertainty + Kelly; Winamax never decides eligibility",
     "selection_confidence": "RL >= 55%; ML/TOTAL >= 58%",
     "selection_price_floor": "reference decimal odds >= 1.40",
     "selection_reference_price": "fresh configured sharp books; exact side/point; second-best effective quote when >=2 books, otherwise single fresh sharp quote",
     "sharp_disagreement": "large model-vs-sharp disagreement reduces selection score but is not a hard directional veto",
-    "source_replay": "runtime/v11/source_replays/2026-08-16_398f4ff7fbe805c6_sources.json.gz",
+    "source_replay": "runtime/v11/source_replays/2026-08-16_f754265a5e744967_sources.json.gz",
     "staking": "bankroll-aware fractional Kelly; official combos disabled",
     "starter_model": "current season + N-1/N-2 prior affects structural run means",
     "uncertainty": "empirical phase/market reliability bins + market disagreement + DQ penalty",
@@ -3080,76 +3080,76 @@
       }
     },
     "affects_v12_selection": false,
-    "analyzed_at": "2026-08-16T05:48:00.434293+00:00",
+    "analyzed_at": "2026-08-16T07:49:21.507118+00:00",
     "canonicalization": "latest settled pre-game snapshot per game_pk",
     "current_run_disagreements": [
       {
-        "abs_gap": 0.012104999999999921,
-        "baseline_p": 0.557951,
+        "abs_gap": 0.012202999999999964,
+        "baseline_p": 0.559643,
         "challenger": "all_core",
         "crosses_55": true,
         "game": "Texas Rangers @ Athletics",
         "game_pk": 824965,
-        "gap": -0.012104999999999921,
+        "gap": -0.012202999999999964,
         "market": "TOTAL",
         "name": "Under",
         "point": 10.5,
-        "v124_p": 0.545846
+        "v124_p": 0.54744
       },
       {
-        "abs_gap": 0.005489999999999995,
-        "baseline_p": 0.550906,
+        "abs_gap": 0.005750000000000033,
+        "baseline_p": 0.552717,
         "challenger": "all_core",
         "crosses_55": true,
         "game": "Milwaukee Brewers @ Los Angeles Dodgers",
         "game_pk": 823912,
-        "gap": -0.005489999999999995,
+        "gap": -0.005750000000000033,
         "market": "ML",
         "name": "Los Angeles Dodgers",
         "point": null,
-        "v124_p": 0.545416
+        "v124_p": 0.546967
       },
       {
-        "abs_gap": 0.005418999999999952,
-        "baseline_p": 0.551438,
+        "abs_gap": 0.00013300000000004975,
+        "baseline_p": 0.550006,
         "challenger": "all_core",
         "crosses_55": true,
-        "game": "Miami Marlins @ Cincinnati Reds",
-        "game_pk": 824477,
-        "gap": -0.005418999999999952,
-        "market": "ML",
-        "name": "Miami Marlins",
-        "point": null,
-        "v124_p": 0.546019
+        "game": "Milwaukee Brewers @ Los Angeles Dodgers",
+        "game_pk": 823912,
+        "gap": -0.00013300000000004975,
+        "market": "TOTAL",
+        "name": "Under",
+        "point": 7.5,
+        "v124_p": 0.549873
       }
     ],
     "evolution": {
       "has_previous": true,
-      "settled_games_delta": 2,
+      "settled_games_delta": 0,
       "variants": {
         "all_core": {
           "accuracy": 0.0,
-          "brier": -4.2646135679752506e-05,
-          "gt55_hit_rate": -0.02020202020202022,
-          "gt55_n": 3,
-          "logloss": -0.00023200358663399978,
-          "n": 12
+          "brier": 0.0,
+          "gt55_hit_rate": 0.0,
+          "gt55_n": 0,
+          "logloss": 0.0,
+          "n": 0
         },
         "baseline_v1232": {
           "accuracy": 0.0,
-          "brier": 0.00019570115720982106,
-          "gt55_hit_rate": -0.022321428571428603,
-          "gt55_n": 3,
-          "logloss": 0.0002759963414601385,
-          "n": 12
+          "brier": 0.0,
+          "gt55_hit_rate": 0.0,
+          "gt55_n": 0,
+          "logloss": 0.0,
+          "n": 0
         },
         "ensemble": {
           "accuracy": 0.0,
-          "brier": -0.0008284402618537468,
-          "gt55_hit_rate": -0.010449320794148287,
-          "gt55_n": 4,
-          "logloss": -0.0018039948850183674,
-          "n": 12
+          "brier": 0.0,
+          "gt55_hit_rate": 0.0,
+          "gt55_n": 0,
+          "logloss": 0.0,
+          "n": 0
         }
       }
     },
@@ -3261,7 +3261,7 @@
       "weight_source": "NO_ELIGIBLE_WARM_START"
     },
     "research_only": true,
-    "run_id": "398f4ff7fbe805c6",
+    "run_id": "f754265a5e744967",
     "schema": "v12-4-research-monitor-v1",
     "target_date": "2026-08-16",
     "v115": {
@@ -3378,7 +3378,7 @@
     },
     "version": "v12.4-research-monitor-v1"
   },
-  "run_id": "398f4ff7fbe805c6",
+  "run_id": "f754265a5e744967",
   "scheduled_games": 15,
   "schema": "v12-3-professional-v1",
   "shadow_challenger": {
