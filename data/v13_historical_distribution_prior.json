@@ -1,0 +1,51 @@
+{
+  "activation_policy": "distribution parameters only; live V13 point-in-time evidence may supersede this prior",
+  "baseline": {
+    "dispersion": 7.5,
+    "environment_sigma": 0.08
+  },
+  "candidate": {
+    "dispersion": 3.5,
+    "environment_sigma": 0.0,
+    "train_nll": 4.953021575014155
+  },
+  "eligible_as_distribution_prior": true,
+  "eligible_for_market_edge_training": false,
+  "eligible_for_probability_calibration": false,
+  "schema": "v13-historical-distribution-prior-v1",
+  "source": "data/mlb_backtest_2026.jsonl",
+  "source_contract": {
+    "current_game_stats_used_in_features": false,
+    "historical_odds_used": false,
+    "market_probability_used": false,
+    "phase": "FINAL_INFORMATION_RECONSTRUCTION",
+    "point_in_time_baseball_features": true
+  },
+  "split": {
+    "test": 345,
+    "train": 1034,
+    "validation": 345
+  },
+  "test": {
+    "baseline_nll": 4.931090245821751,
+    "candidate_nll": 4.872730717534565,
+    "games": 345,
+    "nll_gain": 0.058359528287185825
+  },
+  "validation": {
+    "baseline_nll": 5.048412060685444,
+    "candidate_nll": 4.976699669577866,
+    "games": 345,
+    "nll_gain": 0.0717123911075781
+  },
+  "walk_forward": {
+    "pass_rate": 1.0,
+    "passes": true,
+    "windows": [
+      {"train_games": 600, "candidate": {"dispersion": 3.5, "environment_sigma": 0.05, "train_nll": 4.925634361444072}, "future": {"games": 229, "baseline_nll": 5.091566862510109, "candidate_nll": 4.99812922541082, "nll_gain": 0.09343763709928865}, "passes": true},
+      {"train_games": 829, "candidate": {"dispersion": 3.0, "environment_sigma": 0.0, "train_nll": 4.944473434929228}, "future": {"games": 229, "baseline_nll": 5.044121849960314, "candidate_nll": 5.00163916489042, "nll_gain": 0.04248268506989383}, "passes": true},
+      {"train_games": 1058, "candidate": {"dispersion": 3.5, "environment_sigma": 0.0, "train_nll": 4.95639451428827}, "future": {"games": 229, "baseline_nll": 5.08921447218918, "candidate_nll": 5.016131002868201, "nll_gain": 0.07308346932097898}, "passes": true}
+    ]
+  },
+  "warm_games": 1724
+}
