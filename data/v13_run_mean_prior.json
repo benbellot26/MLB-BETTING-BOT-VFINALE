@@ -4,7 +4,7 @@
   "historical_candidate_active": true,
   "phase_scope": "FINAL",
   "source": "1801-game leakage-safe reconstructed FINAL cohort",
-  "model_generation": "v13.5.2-gen-structural-nb-finalgate-v1",
+  "model_generation": "v13.5.2-gen-structural-nb-independent-transfer-v2",
   "historical_games": 1724,
   "split": {
     "train": 1027,
@@ -37,21 +37,23 @@
   },
   "exact_transfer": {
     "games": 0,
-    "status": "COLLECTING_FINAL_ONLY",
+    "baseline": {},
+    "candidate": {},
     "mae_gain": null,
     "rmse_gain": null,
     "nll_gain": null
   },
   "exact_transfer_status": "COLLECTING_FINAL_ONLY",
   "exact_transfer_required_games": 20,
-  "activation_rule": "Historical chronological validation/test must pass AND >=20 current-generation genuine FINAL V13 transfer games must pass RMSE/NB-NLL with MAE regression <=0.01.",
-  "transfer_caveat": "The historical V10-derived run-mean model is candidate-only until current-generation native FINAL transfer is independently validated.",
+  "activation_rule": "historical chronological validation/test must pass AND >=20 current-generation genuine FINAL V13 transfer games, evaluated from an independent pre-prior baseline, must pass RMSE/NB-NLL with MAE regression <=0.01",
+  "transfer_caveat": "The historical model is only a candidate until current-generation native FINAL transfer is independently validated from a baseline captured before the candidate layer.",
   "safety": {
     "historical_odds_used": false,
     "market_probability_used": false,
     "feature_vector_fabricated": false,
     "exact_transfer_required_for_activation": true,
     "exact_transfer_generation_locked": true,
+    "independent_pre_candidate_baseline_required": true,
     "applies_only_when_native_residual_and_legacy_run_bootstrap_are_inactive": true
   }
 }
