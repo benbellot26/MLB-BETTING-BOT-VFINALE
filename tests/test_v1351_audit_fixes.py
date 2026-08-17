@@ -7,6 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from v11 import pipeline_v13
+from v11 import probability_contract_v13 as contract
 from v11 import v13_daily_tracking as tracking
 from v11 import v13_daily_postmortem as postmortem
 from v11 import v13_tracking_sync
@@ -77,6 +78,7 @@ class V1351AuditFixesTest(unittest.TestCase):
             {"game_pk":1,"game_date":"2026-08-17T20:00:00Z","phase":"FINAL","analyzed_at":"2026-08-17T19:00:00Z","projected_home_runs":4.4,"projected_away_runs":4.1,"home_score":5,"away_score":4},
             {"game_pk":2,"game_date":"2026-08-17T21:00:00Z","phase":"LATE","analyzed_at":"2026-08-17T19:00:00Z","projected_home_runs":4.0,"projected_away_runs":3.9,"home_score":3,"away_score":2},
         ]
+        contract.attach_contract(rows[1])
         with tempfile.TemporaryDirectory() as td:
             path=Path(td)/"exact.jsonl"
             path.write_text("\n".join(json.dumps(r) for r in rows)+"\n",encoding="utf-8")
@@ -91,7 +93,6 @@ class V1351AuditFixesTest(unittest.TestCase):
 
     def test_stale_calibration_guard_fails_closed(self):
         from v11 import v13_entry
-        from v11 import probability_contract_v13 as contract
         with patch.object(v13_entry.calibration_v13,"load_model",return_value={"schema":"v13-baseball-calibration-model-v1","baseball_only":True}):
             with self.assertRaises(SystemExit):
                 v13_entry._assert_v135_calibration_artifact()
