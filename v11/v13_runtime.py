@@ -93,11 +93,31 @@ def install() -> bool:
     from . import config, engine_v12, runner
     original_analyze = engine_v12.analyze; original_row = runner._row
     original_joint = engine_v12.joint_score_matrix; original_bootstrap_prior = engine_v12._bootstrap_prior
+    original_analysis_points = engine_v12._analysis_points
 
     def neutral_extra_innings_home_win(home_mu, away_mu, dispersion=None, env_sigma=None):
         joint = original_joint(home_mu, away_mu, dispersion=dispersion, env_sigma=env_sigma)
         return extra_innings_v13.home_win_probability(joint, extra_innings_home_prior=None)
     engine_v12.prob_home_win = neutral_extra_innings_home_win
+
+    def v13_analysis_points(event, key, home=None, as_of=None):
+        """Keep the standard +/-1.5 RL surface visible for both teams.
+
+        The core engine creates complementary pairs from each home-team point.  By
+        ensuring both -1.5 and +1.5 are present, every game exposes home -1.5,
+        away +1.5, home +1.5 and away -1.5.  Missing execution prices remain
+        missing and therefore cannot bypass the selector's execution/value gates.
+        """
+        points, source = original_analysis_points(event, key, home, as_of)
+        if key != "spreads":
+            return points, source
+        merged = {round(_num(p), 2) for p in (points or [])}
+        before = set(merged)
+        merged.update({-1.5, 1.5})
+        if merged != before:
+            source = f"{source}+v13-standard-1.5" if source and source != "none" else "v13-standard-1.5"
+        return sorted(merged), source
+    engine_v12._analysis_points = v13_analysis_points
 
     def validated_historical_priors(structural_hmu, structural_amu, champ, phase):
         values = list(original_bootstrap_prior(structural_hmu, structural_amu, champ, phase))
