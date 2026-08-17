@@ -44,9 +44,9 @@ def _read():
 def fold(events=None):
     """Fold event-sourced state per immutable model observation.
 
-    Since V13.5.1, MODEL_SNAPSHOT tracking keys include phase + run/as-of. Market
-    updates and settlement events therefore enrich one exact forecast instead of
-    overwriting another EARLY/LATE/FINAL forecast for the same bet line.
+    Since V13.5.1, MODEL_SNAPSHOT tracking keys include phase + analysis as-of.
+    Market updates and settlement events therefore enrich one exact forecast
+    instead of overwriting another EARLY/LATE/FINAL forecast for the same line.
     Legacy pre-V13.5.1 keys remain readable for backward compatibility.
     """
     state={}
@@ -62,9 +62,11 @@ def _market_key(r,o):
 
 def _observation_token(r):
     phase=str(r.get("phase") or "UNKNOWN").upper()
-    run=str(r.get("run_id") or "")
     at=str(r.get("as_of") or r.get("analyzed_at") or "")
-    token=run or at
+    run=str(r.get("run_id") or "")
+    # as_of/analyzed_at is shared by the live result and its persisted journal
+    # row; run_id is only a fallback for older payloads without a timestamp.
+    token=at or run
     return phase, token
 
 
@@ -94,9 +96,11 @@ def capture_results(results, analyzed_at=None, target_date=None):
         game_date=(r.get("game") or {}).get("gameDate") or (r.get("event") or {}).get("commence_time")
         observation_at=str(r.get("as_of") or at)
         phase=str(r.get("phase") or "EARLY").upper()
+        key_ctx=dict(r)
+        key_ctx.setdefault("analyzed_at",observation_at)
         for o in r.get("options") or []:
             price=_price(o); e=o.get("winamax_eval") or {}; gate=e.get("v11_price_gate") or {}
-            rows.append({"schema":"v13-market-tracking-v3","event_type":"MODEL_SNAPSHOT","tracking_key":_key(r,o),
+            rows.append({"schema":"v13-market-tracking-v3","event_type":"MODEL_SNAPSHOT","tracking_key":_key(key_ctx,o),
                 "market_key":_market_key(r,o),"observation_at":observation_at,"observation_phase":phase,
                 "observed_at":at,"target_date":target_date or core.TARGET_DATE,"game_pk":r.get("game_pk"),"game_date":game_date,
                 "home":(r.get("ctx") or {}).get("home"),"away":(r.get("ctx") or {}).get("away"),"phase":r.get("phase"),
@@ -234,7 +238,11 @@ def write_report():
             d["n"]+=1; d["wins"]+=x.get("settled_result")=="WIN"; d["losses"]+=x.get("settled_result")=="LOSS"; d["pushes"]+=x.get("settled_result")=="PUSH"; d["pnl_1u"]+=_num(x.get("flat_1u_pnl"),0) or 0
         for d in bands.values():d["pnl_1u"]=round(d["pnl_1u"],4); d["roi_1u"]=round(d["pnl_1u"]/max(1,d["n"]-d["pushes"]),4)
         by_edge[market_name]=bands
-    report={"schema":"v13-market-tracking-report-v3","generated_at":datetime.now(timezone.utc).isoformat(),"tracked_observations":len(xs),"settled_observations":len(settled),"by_market":by_market,"by_nominal_ev_band":by_edge,"methodology":{"observation_identity":"immutable game/market/side/line + phase + run/as-of; later phases never overwrite earlier forecasts","unit_pnl":"descriptive flat 1u; complementary displayed sides are not a betting portfolio","closing":"last valid eligible pregame observation inside configured closing window; missing API fields never erase a valid close","missing_price":"never imputed; absent Winamax RL/TOTAL prices remain unpriced and are still tracked against sharp probability"}}
+    report={"schema":"v13-market-tracking-report-v3","generated_at":datetime.now(timezone.utc).isoformat(),
+            "tracked_observations":len(xs),"settled_observations":len(settled),
+            "tracked_options":len(xs),"settled_options":len(settled),
+            "by_market":by_market,"by_nominal_ev_band":by_edge,
+            "methodology":{"observation_identity":"immutable game/market/side/line + phase + analysis as-of; later phases never overwrite earlier forecasts","unit_pnl":"descriptive flat 1u; complementary displayed sides are not a betting portfolio","closing":"last valid eligible pregame observation inside configured closing window; missing API fields never erase a valid close","missing_price":"never imputed; absent Winamax RL/TOTAL prices remain unpriced and are still tracked against sharp probability"}}
     REPORT_FILE.parent.mkdir(parents=True,exist_ok=True); REPORT_FILE.write_text(json.dumps(report,indent=2,sort_keys=True),encoding="utf-8"); return report
 
 
