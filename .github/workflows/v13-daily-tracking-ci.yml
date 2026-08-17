@@ -1,0 +1,25 @@
+name: V13 Daily Market Tracking CI
+
+on:
+  push:
+    branches:
+      - 'agent/v134-daily-tracking'
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tracking:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile
+        run: python -m py_compile v11/v13_daily_tracking.py v11/v13_entry.py tests/test_v13_daily_tracking.py
+      - name: Tracking lifecycle tests
+        run: python -m unittest tests.test_v13_daily_tracking
+      - name: V13 self test
+        run: python -m v11.v13_entry --self-test
