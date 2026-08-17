@@ -1,113 +1,24 @@
 {
+  "schema": "v13-baseball-calibration-model-v2",
+  "generated_at": "2026-08-17T14:24:00+00:00",
   "baseball_only": true,
-  "calibrators": {
-    "GLOBAL": {
-      "active": false,
-      "method": "identity",
-      "n": 117,
-      "status": "COLLECTING",
-      "strict_required_n": 600,
-      "strict_volume_ready": false
-    },
-    "MARKET:ML": {
-      "active": false,
-      "method": "identity",
-      "n": 36,
-      "status": "COLLECTING",
-      "strict_required_n": 400,
-      "strict_volume_ready": false
-    },
-    "MARKET:RUNLINE": {
-      "active": false,
-      "method": "identity",
-      "n": 36,
-      "status": "COLLECTING",
-      "strict_required_n": 400,
-      "strict_volume_ready": false
-    },
-    "MARKET:TOTAL": {
-      "active": false,
-      "method": "identity",
-      "n": 45,
-      "status": "COLLECTING",
-      "strict_required_n": 400,
-      "strict_volume_ready": false
-    },
-    "PHASE:EARLY:ML": {
-      "active": false,
-      "method": "identity",
-      "n": 36,
-      "status": "COLLECTING",
-      "strict_required_n": 300,
-      "strict_volume_ready": false
-    },
-    "PHASE:EARLY:RUNLINE": {
-      "active": false,
-      "method": "identity",
-      "n": 36,
-      "status": "COLLECTING",
-      "strict_required_n": 300,
-      "strict_volume_ready": false
-    },
-    "PHASE:EARLY:TOTAL": {
-      "active": false,
-      "method": "identity",
-      "n": 36,
-      "status": "COLLECTING",
-      "strict_required_n": 300,
-      "strict_volume_ready": false
-    },
-    "PHASE:FINAL:TOTAL": {
-      "active": false,
-      "method": "identity",
-      "n": 1,
-      "status": "COLLECTING",
-      "strict_required_n": 300,
-      "strict_volume_ready": false
-    },
-    "PHASE:LATE:TOTAL": {
-      "active": false,
-      "method": "identity",
-      "n": 8,
-      "status": "COLLECTING",
-      "strict_required_n": 300,
-      "strict_volume_ready": false
-    }
-  },
-  "eligible_games": 36,
-  "eligible_rows": 102,
-  "exact_replay_games": 29,
-  "generated_at": "2026-08-16T21:34:32.239107+00:00",
   "market_probability_used_as_feature": false,
-  "rows_seen": 102,
-  "schema": "v13-baseball-calibration-model-v1",
-  "source_rows_exact_replay": 49,
-  "source_rows_live": 525,
-  "source_rows_total": 574,
-  "strict_activation_floors": {
-    "global": 600,
-    "market": 400,
-    "phase_market": 300
-  },
+  "runtime_global_fallback_allowed": false,
+  "model_generation": "v13.5.2-gen-structural-nb-finalgate-v1",
+  "status": "EMPTY_NATIVE_BASELINE",
+  "calibrators": {},
+  "rows_seen": 0,
+  "eligible_rows": 0,
+  "eligible_games": 0,
+  "source_rows_total": 0,
+  "source_rows_live": 0,
+  "source_rows_exact_replay_used_for_calibration": 0,
   "training_policy": {
-    "accepted_probability_fields": [
-      "p_baseball_raw",
-      "p_learned"
-    ],
-    "alternate_lines_trainable_for_calibration": false,
-    "canonical_row": "latest pregame row per game_pk and phase",
-    "exact_v13_replay_backfill_allowed": true,
-    "forbidden_probability_fields_as_baseball_evidence": [
-      "p_effective",
-      "p_model",
-      "p_market",
-      "p_posterior"
-    ],
-    "independent_target_policy": "max one canonical side per market/game/phase",
-    "legacy_reconstructed_1801_allowed_as_native_calibration": false,
-    "pregame_required": true,
-    "settled_result_required": true,
-    "software_version_required": false,
-    "strict_volume_floor_after_internal_holdout": true
+    "native_predictive_contract_required": true,
+    "exact_model_generation_required": "v13.5.2-gen-structural-nb-finalgate-v1",
+    "exact_v13_replay_backfill_allowed": false,
+    "exact_replays_diagnostic_only": true,
+    "runtime_global_cross_market_fallback_allowed": false,
+    "activation_validation": "expanding walk-forward method selection + untouched chronological final holdout"
   }
 }
