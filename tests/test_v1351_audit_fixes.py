@@ -91,10 +91,14 @@ class V1351AuditFixesTest(unittest.TestCase):
 
     def test_stale_calibration_guard_fails_closed(self):
         from v11 import v13_entry
+        from v11 import probability_contract_v13 as contract
         with patch.object(v13_entry.calibration_v13,"load_model",return_value={"schema":"v13-baseball-calibration-model-v1","baseball_only":True}):
             with self.assertRaises(SystemExit):
                 v13_entry._assert_v135_calibration_artifact()
-        with patch.object(v13_entry.calibration_v13,"load_model",return_value={"schema":"v13-baseball-calibration-model-v2","baseball_only":True}):
+        with patch.object(v13_entry.calibration_v13,"load_model",return_value={"schema":"v13-baseball-calibration-model-v2","baseball_only":True,"model_generation":"older"}):
+            with self.assertRaises(SystemExit):
+                v13_entry._assert_v135_calibration_artifact()
+        with patch.object(v13_entry.calibration_v13,"load_model",return_value={"schema":"v13-baseball-calibration-model-v2","baseball_only":True,"model_generation":contract.MODEL_GENERATION_FINGERPRINT,"status":"EMPTY_NATIVE_BASELINE"}):
             v13_entry._assert_v135_calibration_artifact()
 
 
