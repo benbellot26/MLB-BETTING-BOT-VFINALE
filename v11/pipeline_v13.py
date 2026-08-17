@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any
 
 from . import calibration_baseball_v13 as calibration
 from . import uncertainty_v13
@@ -31,13 +31,17 @@ class ProbabilityPipelineV13:
 
     def transform_option(self, option: dict[str,Any], phase: str, data_quality: float = 1.0) -> dict[str,Any]:
         raw = self.baseball_raw(option)
+        market_name = str(option.get("market") or "ML")
         calibrated, source, n = self.calibrate(option, phase)
+        evidence = calibration.evidence_counts(self.calibration_model, market_name, phase)
         market = option.get("p_market")
         market_weight = max(0.0,min(.35,float(option.get("sharp_weight") or 0.0)))
         posterior = None if market is None else (1-market_weight)*calibrated+market_weight*float(market)
         interval = uncertainty_v13.empirical_interval(
             calibrated,
             calibration_n=n,
+            phase_n=evidence["phase_n"],
+            market_n=evidence["market_n"],
             sharp_dispersion=option.get("sharp_dispersion"),
             data_quality=data_quality,
         )
@@ -51,6 +55,8 @@ class ProbabilityPipelineV13:
             interval_low=interval["low"],
             interval_high=interval["high"],
         ))
+        option["calibration_phase_n_v13"] = evidence["phase_n"]
+        option["calibration_market_n_v13"] = evidence["market_n"]
         option["probability_uncertainty_v13"] = interval
         return option
 
