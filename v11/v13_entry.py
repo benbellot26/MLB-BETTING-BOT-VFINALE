@@ -88,15 +88,30 @@ def self_test_v13():
     dist=v13_distribution_prior.load(); assert dist.get("active") and dist.get("variant") == "dispersion_only"
     d,e,meta=v13_distribution_prior.apply(7.5,.08,"FINAL"); assert abs(d-2.835691107635618)<1e-12 and abs(e-.08)<1e-12 and meta.get("active")
     d2,e2,meta2=v13_distribution_prior.apply(7.5,.08,"EARLY"); assert d2==7.5 and e2==.08 and not meta2.get("active")
-    mean_prior=v13_run_mean_runtime.load(); assert not mean_prior.get("active") and mean_prior.get("historical_candidate_active")
-    h,a,m=v13_run_mean_runtime.apply_pair(5.0,4.0,"FINAL",mean_prior); assert not m.get("active") and h==5.0 and a==4.0
-    assert "COLLECTING" in str(m.get("reason") or "")
+
+    mean_prior=v13_run_mean_runtime.load()
+    required=int(mean_prior.get("exact_transfer_required_games") or 20)
+    observed=int(mean_prior.get("exact_final_games") or mean_prior.get("exact_games") or 0)
+    status=str(mean_prior.get("exact_transfer_status") or "")
+    assert mean_prior.get("model_generation") == contract.MODEL_GENERATION_FINGERPRINT
+    assert str(mean_prior.get("phase_scope") or "FINAL").upper() == "FINAL"
+    if mean_prior.get("active"):
+        assert mean_prior.get("historical_candidate_active") is True
+        assert observed >= required
+        assert status == "PASS_FINAL_ONLY"
+        h,a,m=v13_run_mean_runtime.apply_pair(5.0,4.0,"FINAL",mean_prior)
+        assert m.get("active") and (h,a) != (5.0,4.0)
+    else:
+        h,a,m=v13_run_mean_runtime.apply_pair(5.0,4.0,"FINAL",mean_prior)
+        assert not m.get("active") and h==5.0 and a==4.0
+        assert observed < required or status != "PASS_FINAL_ONLY" or mean_prior.get("historical_candidate_active") is not True
     h2,a2,m2=v13_run_mean_runtime.apply_pair(5.0,4.0,"LATE",mean_prior); assert h2==5.0 and a2==4.0 and not m2.get("active")
+
     rich=v13_rich_run_shadow.load(); assert rich.get("active_for_production") is not True
     assert v13_daily_tracking._band(.004) == "0-1%" and v13_daily_tracking._band(.12) == ">=10%"
     rec={"p_effective":.60,"probability_interval_low":.52,"model_uncertainty":.01}
     assert abs(selector.conservative_probability(rec)-.52)<1e-12
-    print("SELF-TEST V13.5.2 GENERATION-FINGERPRINT + NATIVE CALIBRATION + TRANSFER-GATED PRIOR OK")
+    print("SELF-TEST V13.5.2 GENERATION-FINGERPRINT + NATIVE CALIBRATION + PROMOTION-AWARE PRIOR OK")
 
 
 runner._summary = _summary_v13
