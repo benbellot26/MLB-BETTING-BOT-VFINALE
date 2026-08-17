@@ -12,7 +12,7 @@ from . import v13_rich_run_shadow
 from .pipeline_v13 import ProbabilityPipelineV13
 from .probability_contract_v13 import attach_contract, assert_no_market_leakage
 
-VERSION = "13.5-professional-probability-v1"
+VERSION = "13.5.2-professional-probability-v1"
 _INSTALLED = False
 
 V13_OPTION_FIELDS = (
@@ -109,8 +109,6 @@ def install() -> bool:
     engine_v12._bootstrap_prior = validated_historical_priors
 
     def analyze(game, event, as_of=None):
-        # original_analyze is the already-composed V12.3/V12.4 wrapper captured
-        # at install time. This preserves shadow_v124 before V13 rich shadow runs.
         result = original_analyze(game, event, as_of=as_of)
         before = bool((result.get("shadow_v124") or {}).get("modules"))
         v13_rich_run_shadow.attach(result)
