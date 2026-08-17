@@ -1,4 +1,4 @@
-name: MLB Betting Bot V13 Professional Probability Production
+name: MLB Betting Bot V13.5 Professional Probability Production
 
 on:
   workflow_dispatch:
@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   run-bot:
-    name: Exécution du Bot V13
+    name: Exécution du Bot V13.5
     runs-on: ubuntu-latest
     timeout-minutes: 55
     steps:
@@ -27,7 +27,7 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Validation V13 + V12 shadows
+      - name: Validation V13.5 + V12 shadows
         run: |
           python -m py_compile v11/*.py tests/*.py
           python -m unittest tests.test_v11 tests.test_historical_bootstrap
@@ -35,10 +35,12 @@ jobs:
           python -m unittest tests.test_v1233_audit_hardening tests.test_shadow_v115 tests.test_calibration_v1232
           python -m unittest tests.test_predictive_v124 tests.test_v124_statcast_provider
           python -m unittest tests.test_v13_probability_contract tests.test_v13_historical_migration tests.test_v13_probability_invariants
+          python -m unittest tests.test_v13_rich_run_residual tests.test_v13_rich_native_train tests.test_v135_professional_audit
           python -m v11.v13_entry --self-test
           python -m v11.v123_bootstrap --dry-run >/tmp/v12_3_historical_bootstrap.json
           python -m v11.v123_train --dry-run >/tmp/v12_3_candidate.json
           python -m v11.v13_train --dry-run >/tmp/v13_calibration_candidate.json
+          python -m v11.v13_rich_native_train >/tmp/v13_rich_native_candidate.json
 
       - name: Ensure baseline-safe historical reference
         run: |
@@ -68,22 +70,22 @@ jobs:
           }, indent=2, sort_keys=True))
           PY
 
-      - name: Build V13 baseball-only calibration artifact
+      - name: Build V13.5 baseball-only calibration artifact
         run: python -m v11.v13_train
 
       - name: Persist pre-run predictive artifacts
         run: |
-          git config user.name 'MLB Betting Bot V13'
+          git config user.name 'MLB Betting Bot V13.5'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           [ -f data/v12_3_historical_bootstrap_model.json ] && git add data/v12_3_historical_bootstrap_model.json
           [ -f data/v13_baseball_calibration.json ] && git add -f data/v13_baseball_calibration.json
           if ! git diff --cached --quiet; then
-            git commit -m 'data: persist V13 predictive artifacts [skip ci]'
+            git commit -m 'data: persist V13.5 predictive artifacts [skip ci]'
             git pull --rebase origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
 
-      - name: Run V13 without Discord
+      - name: Run V13.5 without Discord
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
@@ -103,7 +105,7 @@ jobs:
           mkdir -p data runtime/v11
           python -m v11.v13_entry
 
-      - name: Validate proposed V13 probability state
+      - name: Validate proposed V13.5 probability state
         run: |
           python - <<'PY'
           import json
@@ -127,19 +129,25 @@ jobs:
           for result in results:
               c=check_result(result)
               if not c['passes']: bad.append(c)
+              chain=result.get('v13_shadow_chain') or {}
+              rich=result.get('shadow_v13_rich_runs') or {}
+              if rich.get('affects_v13_probability') is not False:
+                  bad.append({'game_pk':result.get('game_pk'),'reason':'rich shadow affected probability'})
+              if chain.get('affects_probability') is not False:
+                  bad.append({'game_pk':result.get('game_pk'),'reason':'shadow chain affected probability'})
           if bad:
-              raise SystemExit(f'V13 probability invariant failure: {bad[:3]}')
+              raise SystemExit(f'V13.5 probability invariant failure: {bad[:3]}')
           PY
 
       - name: Persist PROPOSED recommendations and probability journal
         run: |
-          git config user.name 'MLB Betting Bot V13'
+          git config user.name 'MLB Betting Bot V13.5'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           [ -f data/v11_3_live.jsonl ] && git add data/v11_3_live.jsonl
           [ -f data/v11_3_live_report.json ] && git add data/v11_3_live_report.json
           [ -f data/v11_bet_ledger.jsonl ] && git add -f data/v11_bet_ledger.jsonl
           if ! git diff --cached --quiet; then
-            git commit -m 'data: persist V13 probability observations [skip ci]'
+            git commit -m 'data: persist V13.5 probability observations [skip ci]'
             git pull --rebase origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
@@ -152,7 +160,7 @@ jobs:
       - name: Persist Discord delivery checkpoint
         if: always()
         run: |
-          git config user.name 'MLB Betting Bot V13'
+          git config user.name 'MLB Betting Bot V13.5'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           [ -f data/v11_discord_delivery.json ] && git add -f data/v11_discord_delivery.json
           if ! git diff --cached --quiet; then
@@ -163,11 +171,11 @@ jobs:
 
       - name: Persist PUBLISHED lifecycle state
         run: |
-          git config user.name 'MLB Betting Bot V13'
+          git config user.name 'MLB Betting Bot V13.5'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           [ -f data/v11_bet_ledger.jsonl ] && git add -f data/v11_bet_ledger.jsonl
           if ! git diff --cached --quiet; then
-            git commit -m 'data: mark V13 recommendations published [skip ci]'
+            git commit -m 'data: mark V13.5 recommendations published [skip ci]'
             git pull --rebase origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
@@ -177,15 +185,21 @@ jobs:
           python -m v11.v123_train
           python -m v11.v123_backtest
           python -m v11.v13_train
+          python -m v11.v13_rich_native_train
 
       - name: Validate research artifacts
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
-          for name in ('data/v12_3_historical_bootstrap_model.json','data/v11_candidate_model.json','data/v11_point_in_time_backtest.json','data/v13_baseball_calibration.json'):
+          for name in ('data/v12_3_historical_bootstrap_model.json','data/v11_candidate_model.json','data/v11_point_in_time_backtest.json','data/v13_baseball_calibration.json','data/v13_rich_native_candidate.json'):
               p=Path(name)
               if p.exists(): json.loads(p.read_text(encoding='utf-8'))
+          native=Path('data/v13_rich_native_candidate.json')
+          if native.exists():
+              d=json.loads(native.read_text(encoding='utf-8'))
+              if d.get('active_for_production') and int(d.get('native_games') or 0) < 300:
+                  raise SystemExit('rich challenger cannot promote below native volume floor')
           PY
 
       - name: Prepare market archive
@@ -221,14 +235,15 @@ jobs:
       - name: Persist research evidence
         if: success()
         run: |
-          git config user.name 'MLB Betting Bot V13'
+          git config user.name 'MLB Betting Bot V13.5'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           [ -f data/v12_3_historical_bootstrap_model.json ] && git add data/v12_3_historical_bootstrap_model.json
           [ -f data/v11_candidate_model.json ] && git add data/v11_candidate_model.json
           [ -f data/v11_point_in_time_backtest.json ] && git add data/v11_point_in_time_backtest.json
           [ -f data/v13_baseball_calibration.json ] && git add -f data/v13_baseball_calibration.json
+          [ -f data/v13_rich_native_candidate.json ] && git add -f data/v13_rich_native_candidate.json
           if ! git diff --cached --quiet; then
-            git commit -m 'data: update V13 research evidence [skip ci]'
+            git commit -m 'data: update V13.5 research evidence [skip ci]'
             git pull --rebase origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi

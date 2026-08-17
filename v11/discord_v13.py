@@ -3,7 +3,7 @@ from __future__ import annotations
 from . import core
 from . import discord_v123 as base
 
-VERSION_LABEL = "V13"
+VERSION_LABEL = "V13.5"
 base.VERSION_LABEL = VERSION_LABEL
 
 
@@ -32,20 +32,25 @@ def _line(r):
     push_txt = "" if not push else f" • push **{core.pct(push)}**"
     ref_price = g.get("price")
     winamax_price = g.get("winamax_price") or e.get("price")
+    cal_source = str(r.get("calibration_source_v13") or "identity")
+    prob_label = "Baseball estimé" if cal_source == "identity" else "Baseball calibré"
+    phase_n = int(core.num(r.get("calibration_phase_n_v13")))
+    market_n = int(core.num(r.get("calibration_market_n_v13")))
+    unc = r.get("probability_uncertainty_v13") or {}
+    market_disp = unc.get("market_disagreement_sigma")
+    market_disp_txt = "—" if market_disp is None else f"{100*core.num(market_disp):.1f} pp"
     return (
         f"{state} • **{_label(r)}**\n"
-        f"Baseball calibré **{core.pct(r.get('p_baseball_calibrated'))}** • brut **{core.pct(r.get('p_baseball_raw'))}**"
-        f" • intervalle 90% **{interval}**{push_txt}\n"
-        f"Sharp **{core.pct(r.get('p_market'))}** • gap modèle/marché **{gap_txt}** • "
-        f"calibration **{r.get('calibration_source_v13') or 'identity'}** (n={int(core.num(r.get('calibration_n_v13')))})\n"
-        f"Posterior forecast-only **{core.pct(r.get('p_posterior'))}** • DQ **{100*core.num(dq.get('score')):.0f}/100**\n"
+        f"{prob_label} **{core.pct(r.get('p_baseball_calibrated'))}** • brut **{core.pct(r.get('p_baseball_raw'))}**"
+        f" • intervalle modèle 90% **{interval}**{push_txt}\n"
+        f"Sharp **{core.pct(r.get('p_market'))}** • gap modèle/marché **{gap_txt}** • désaccord books **{market_disp_txt}**\n"
+        f"Calibration **{cal_source}** • n phase **{phase_n}** • n marché **{market_n}**\n"
+        f"Posterior forecast-only **{core.pct(r.get('p_posterior'))}** • DQ modèle **{100*core.num(dq.get('model_input_score')):.0f}/100** • DQ exécution **{100*core.num(dq.get('score')):.0f}/100**\n"
         f"Cote réf. **{_price_text(ref_price)}** • Winamax **{_price_text(winamax_price)}**"
         +(f" • EV prudent **{100*core.num(g.get('ev_at_price')):+.1f}%**" if g.get("ev_at_price") is not None else "")
     )
 
 
-# Replace the formatter used by inherited send_game/send_top without duplicating
-# the mature Discord transport/limit handling.
 base._line = _line
 base._label = _label
 base._price_text = _price_text

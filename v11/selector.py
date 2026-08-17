@@ -14,6 +14,12 @@ def _num(x, d=0.0):
 
 def conservative_probability(rec):
     p = max(.001, min(.999, _num(rec.get("p_effective", rec.get("p_model")), .5)))
+    # V13.5 uses the same lower bound shown to the user for prudent EV. This
+    # removes the previous contradiction where Discord could show a wide 90%
+    # interval while the selector used a much narrower legacy uncertainty.
+    low = rec.get("probability_interval_low")
+    if low is not None:
+        return max(.001, min(p, _num(low, p)))
     unc = max(0.0, _num(rec.get("model_uncertainty"), config.FALLBACK_MODEL_UNCERTAINTY))
     return max(.001, p-config.UNCERTAINTY_EDGE_MULTIPLIER*unc)
 
@@ -45,7 +51,8 @@ def value_gate(rec):
     return {"ok": price > 1 and price+1e-12 >= minimum, "price": price if price > 1 else None,
             "required_price": round(minimum, 4), "ev_at_price": round(ev, 6) if ev is not None else None,
             "p_win": round(pwin, 6), "p_push": round(push, 6), "p_conservative": round(p_cons, 6),
-            "uncertainty": round(_num(rec.get("model_uncertainty"), config.FALLBACK_MODEL_UNCERTAINTY), 6)}
+            "uncertainty": round(_num(rec.get("model_uncertainty"), config.FALLBACK_MODEL_UNCERTAINTY), 6),
+            "conservative_source": "v13_interval_low" if rec.get("probability_interval_low") is not None else "legacy_sigma"}
 
 
 def full_kelly(rec, gate=None):
@@ -99,6 +106,17 @@ def _same_slate(v, target_date):
     return not target_date or not td or td == str(target_date)
 
 
+def _selector_uncertainty(rec, market, phase, dq, champ):
+    v13 = rec.get("probability_uncertainty_v13") or {}
+    sigma = v13.get("sigma")
+    if sigma is not None:
+        rec["selector_uncertainty_source"] = "v13_probability_interval"
+        return max(0.0, _num(sigma, config.FALLBACK_MODEL_UNCERTAINTY))
+    rec["selector_uncertainty_source"] = "legacy_fallback"
+    return pro_model.model_uncertainty(market, _num(rec.get("p_effective"), .5), phase,
+                                       rec.get("sharp_dispersion"), dq.get("model_input_score", dq.get("score")), champ)
+
+
 def allocate(results, unit_eur=.5, bankroll_eur=10.0, existing=None, target_date=None):
     existing = storage.open_recommendations() if existing is None else existing
     daily = [v for v in existing.values() if v.get("status") in storage.OPEN_RECOMMENDATION_STATUSES and _same_slate(v, target_date)]
@@ -118,19 +136,19 @@ def allocate(results, unit_eur=.5, bankroll_eur=10.0, existing=None, target_date
     champ = pro_model.load_model()
     pool = []
     for r in results:
+        phase = str(r.get("phase") or "EARLY").upper()
         for rec in r.get("options") or []:
             e = rec.setdefault("winamax_eval", {})
             dq = data_quality.assess(r, rec)
             rec["data_quality"] = dq
-            rec["model_uncertainty"] = round(pro_model.model_uncertainty(
-                str(rec.get("market") or "ML"), _num(rec.get("p_effective"), .5), str(r.get("phase") or "EARLY"),
-                rec.get("sharp_dispersion"), dq.get("score"), champ), 6)
+            market_name = str(rec.get("market") or "ML")
+            rec["model_uncertainty"] = round(_selector_uncertainty(rec, market_name, phase, dq, champ), 6)
             gate = value_gate(rec)
             score = _score(rec, gate, dq)
             key = storage.bet_key(r.get("game_pk"), rec.get("market"), rec.get("name"), rec.get("point"))
             duplicate = key in existing_keys or str(r.get("game_pk")) in existing_game_ids
             e.update({"v11_price_gate": gate, "official_selected": False, "official_units": 0, "selected": False,
-                      "units": 0.0, "stake_eur": 0.0, "official_reason": "non retenu par V12.2", "bet_key": key})
+                      "units": 0.0, "stake_eur": 0.0, "official_reason": "non retenu par V13.5", "bet_key": key})
             rec["selection_score"] = round(score, 2)
             if gate["ok"] and dq["eligible"] and not duplicate:
                 pool.append({"result": r, "rec": rec, "score": score, "gate": gate, "dq": dq,
@@ -161,7 +179,7 @@ def allocate(results, unit_eur=.5, bankroll_eur=10.0, existing=None, target_date
         e.update({"official_selected": True, "official_units": units, "selected": True, "units": units,
                   "stake_eur": round(units*unit_eur, 2), "kelly_full": round(kelly, 6),
                   "kelly_fraction": config.FRACTIONAL_KELLY, "kelly_raw_units": round(raw_units, 4),
-                  "official_reason": f"V12.2 value: score {c['score']:.1f}/100, DQ {c['dq']['score']:.2f}, EV prudent {100*_num(c['gate'].get('ev_at_price')):+.1f}%"})
+                  "official_reason": f"V13.5 value: score {c['score']:.1f}/100, DQ {c['dq']['score']:.2f}, EV prudent {100*_num(c['gate'].get('ev_at_price')):+.1f}%"})
         chosen.append(c); used_games.add(gid); profiles[c["profile"]] = profiles.get(c["profile"], 0)+1; used_units += units
 
     combo_candidates = [c for c in pool if str(c["result"].get("game_pk")) not in used_games and c["score"] >= 72 and _num(c["gate"].get("ev_at_price")) >= config.MIN_EV]
@@ -178,7 +196,7 @@ def allocate(results, unit_eur=.5, bankroll_eur=10.0, existing=None, target_date
         combo.update(_combo_math(legs))
         combo["winamax_price"] = combo.get("display_price")
         if config.ENABLE_OFFICIAL_COMBOS:
-            combo["reason"] = "activation manuelle refusée: modèle de dépendance non certifié en V12.2"
+            combo["reason"] = "activation manuelle refusée: modèle de dépendance non certifié en V13.5"
 
     new_units = sum(_num((c["rec"].get("winamax_eval") or {}).get("official_units")) for c in chosen)
     total_units = existing_units+new_units
@@ -188,5 +206,5 @@ def allocate(results, unit_eur=.5, bankroll_eur=10.0, existing=None, target_date
                  "official_count": existing_singles+len(chosen), "new_official_count": len(chosen),
                  "official_units": total_units, "new_official_units": new_units, "combo_official": False,
                  "combo_units": 0.0, "bankroll_eur": bankroll_eur, "staking": f"{config.FRACTIONAL_KELLY:g} Kelly fraction",
-                 "selector_version": "V12.2-professional-portfolio-v3"}
+                 "selector_version": "V13.5-professional-portfolio-v1"}
     return portfolio, chosen, combo, pool

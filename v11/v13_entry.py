@@ -48,18 +48,21 @@ def self_test_v13():
     from . import probability_contract_v13 as contract
     from . import calibration_baseball_v13 as cal
     from . import extra_innings_v13, v13_distribution_prior, v13_run_mean_runtime, v13_rich_run_shadow, uncertainty_v13
-    assert config.VERSION.startswith("13.4-")
+    assert config.VERSION.startswith("13.5-")
     payload = contract.option_contract_payload(p_baseball_raw=.62,p_baseball_calibrated=.59,p_market=.56,p_posterior=.58,
         calibration_source="test",calibration_n=500,interval_low=.54,interval_high=.64)
     assert payload["p_baseball_calibrated"] == .59 and abs(payload["model_market_gap"]-.03) < 1e-9
     contract.assert_no_market_leakage(payload)
     p, source, n = cal.calibrate(.61, "ML", "FINAL", {"calibrators": {}})
     assert abs(p-.61) < 1e-9 and source == "identity" and n == 0
-    c={"calibrators":{"MARKET:ML":{"n":40},"PHASE:EARLY:ML":{"n":30},"PHASE:FINAL:ML":{"n":7}}}
-    assert cal.calibrate(.61,"ML","FINAL",c)[2] == 7
-    u_hi=uncertainty_v13.empirical_interval(.55,calibration_n=30,phase_n=30,market_n=40,data_quality=.95)
-    u_lo=uncertainty_v13.empirical_interval(.55,calibration_n=30,phase_n=30,market_n=40,data_quality=.60)
+    c={"calibrators":{"GLOBAL":{"active":True,"method":"platt","a":0,"b":.5,"n":999},
+                      "MARKET:ML":{"n":40},"PHASE:EARLY:ML":{"n":30},"PHASE:FINAL:ML":{"n":7}}}
+    # GLOBAL must never calibrate ML/TOTAL across market families.
+    assert cal.calibrate(.61,"ML","FINAL",c)[0] == .61 and cal.calibrate(.61,"ML","FINAL",c)[2] == 7
+    u_hi=uncertainty_v13.empirical_interval(.55,calibration_n=30,phase_n=30,market_n=40,data_quality=.95,sharp_dispersion=.01)
+    u_lo=uncertainty_v13.empirical_interval(.55,calibration_n=30,phase_n=30,market_n=40,data_quality=.60,sharp_dispersion=.20)
     assert u_lo["sigma"] >= u_hi["sigma"] and u_hi["phase_n"] == 30
+    assert u_hi["market_disagreement_affects_baseball_interval"] is False
     joint = [[.10,.10],[.20,.60]]; assert abs(extra_innings_v13.home_win_probability(joint)-.55) < 1e-9
     dist=v13_distribution_prior.load(); assert dist.get("active") and dist.get("variant") == "dispersion_only"
     d,e,meta=v13_distribution_prior.apply(7.5,.08,"FINAL"); assert abs(d-2.835691107635618)<1e-12 and abs(e-.08)<1e-12 and meta.get("active")
@@ -69,7 +72,9 @@ def self_test_v13():
     h2,a2,m2=v13_run_mean_runtime.apply_pair(5.0,4.0,"LATE",mean_prior); assert h2==5.0 and a2==4.0 and not m2.get("active")
     rich=v13_rich_run_shadow.load(); assert rich.get("active_for_production") is not True
     assert v13_daily_tracking._band(.004) == "0-1%" and v13_daily_tracking._band(.12) == ">=10%"
-    print("SELF-TEST V13.4 PHASE-AWARE CALIBRATION + DATA-QUALITY UNCERTAINTY + TRACKING OK")
+    rec={"p_effective":.60,"probability_interval_low":.52,"model_uncertainty":.01}
+    assert abs(selector.conservative_probability(rec)-.52)<1e-12
+    print("SELF-TEST V13.5 CONTRACT-STRICT CALIBRATION + UNIFIED UNCERTAINTY + TRACKING OK")
 
 
 runner._summary = _summary_v13

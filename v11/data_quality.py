@@ -11,6 +11,15 @@ def _num(x, d=0.0):
         return d
 
 
+def decision_sharp_age_limit(phase):
+    phase = str(phase or "EARLY").upper()
+    if phase == "FINAL":
+        return config.MAX_SHARP_AGE_FINAL_MIN
+    if phase == "LATE":
+        return config.MAX_SHARP_AGE_LATE_MIN
+    return config.MAX_SHARP_AGE_EARLY_MIN
+
+
 def assess(result, rec=None):
     ctx = result.get("ctx") or {}
     phase = str(result.get("phase") or "EARLY").upper()
@@ -57,10 +66,11 @@ def assess(result, rec=None):
         max_age = rec.get("sharp_max_age_min")
         price = (rec.get("winamax_eval") or {}).get("price")
     components["sharp_coverage"] = min(1.0, refs/3.0) if refs else 0.0
+    broad_age_limit = max(1.0, config.MAX_SHARP_AGE_MIN)
     if max_age is None:
         components["sharp_recency"] = 0.0 if refs else .15
     else:
-        components["sharp_recency"] = max(0.0, 1-max(0.0, _num(max_age))/max(1.0, config.MAX_SHARP_AGE_MIN))
+        components["sharp_recency"] = max(0.0, 1-max(0.0, _num(max_age))/broad_age_limit)
     if rec is not None:
         components["execution_price"] = 1.0 if _num(price) > 1.0 else 0.0
 
@@ -97,8 +107,10 @@ def assess(result, rec=None):
     if rec is not None:
         if refs < config.MIN_SHARP_REFS:
             blockers.append("sharp_reference_missing")
-        if components["sharp_recency"] <= 0:
+        if max_age is None:
             blockers.append("sharp_timestamp_missing_or_stale")
+        elif _num(max_age, 9999) > decision_sharp_age_limit(phase):
+            blockers.append(f"sharp_stale_for_{phase.lower()}")
         if components["execution_price"] <= 0:
             blockers.append("execution_price_missing")
 
@@ -108,7 +120,7 @@ def assess(result, rec=None):
             "eligible": score >= config.MIN_DATA_QUALITY and not blockers,
             "lineup_players": lineup_count, "usable_lineup_stats": usable_lineup,
             "usable_home_lineup_stats": usable_home, "usable_away_lineup_stats": usable_away,
-            "phase": phase}
+            "phase": phase, "decision_sharp_age_limit_min": decision_sharp_age_limit(phase)}
 
 
 def health_report(results, scheduled_games=None, matched_events=None):

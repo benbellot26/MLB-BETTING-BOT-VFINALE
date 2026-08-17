@@ -1,8 +1,8 @@
-name: MLB V12.3 Phase Research Collector
+name: MLB V13 Phase Research Collector
 
 on:
   schedule:
-    # Hourly across the normal MLB game window; captures EARLY/LATE/FINAL without publishing picks.
+    # Hourly across the normal MLB game window; captures native V13 EARLY/LATE/FINAL without publishing picks.
     - cron: '23 0-6,14-23 * * *'
   workflow_dispatch:
 
@@ -27,7 +27,7 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Collect point-in-time research snapshot
+      - name: Collect native V13 point-in-time research snapshot
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           BANKROLL: ${{ vars.BANKROLL }}
@@ -36,15 +36,19 @@ jobs:
           MIN_EDGE: ${{ vars.MIN_EDGE }}
           V123_RESEARCH_ONLY: '1'
           V12_DEFER_DISCORD: '1'
+          V1231_ENABLE_ALT_RUNLINES: '1'
+          V1232_ENABLE_V115_SHADOW: '1'
+          V124_ENABLE_SHADOW: '1'
         run: |
           mkdir -p data runtime/v11
-          python -m v11.v123_entry
+          python -m v11.v13_entry
 
       - name: Assert no research recommendation was created
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
+          from v11.probability_contract_v13 import row_is_predictively_compatible
           p = Path('runtime/v11/discord_payload.json')
           if not p.exists():
               raise SystemExit('research payload missing')
@@ -53,35 +57,45 @@ jobs:
               raise SystemExit('research-only run produced chosen recommendations')
           if (d.get('combo') or {}).get('official'):
               raise SystemExit('research-only run produced an official combo')
-          print('research-only safety gate OK')
+          rows=[]
+          live=Path('data/v11_3_live.jsonl')
+          if live.exists():
+              for line in live.read_text(encoding='utf-8').splitlines()[-100:]:
+                  if line.strip():
+                      try: rows.append(json.loads(line))
+                      except Exception: pass
+          recent=[r for r in rows if str(r.get('software_version') or '').startswith('13.5-')]
+          if recent and not all(row_is_predictively_compatible(r) for r in recent):
+              raise SystemExit('native V13 research row missing predictive contract')
+          print('V13 research-only safety + predictive contract OK')
           PY
 
-      - name: Persist V12.3 phase observations
+      - name: Persist V13 phase observations
         run: |
-          git config user.name 'MLB Betting Bot V12.3 Research'
+          git config user.name 'MLB Betting Bot V13 Research'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           [ -f data/v11_3_live.jsonl ] && git add data/v11_3_live.jsonl
           [ -f data/v11_3_live_report.json ] && git add data/v11_3_live_report.json
           [ -f data/v11_bet_ledger.jsonl ] && git add -f data/v11_bet_ledger.jsonl
           if ! git diff --cached --quiet; then
-            git commit -m 'data: collect V12.3 phase snapshot [skip ci]'
+            git commit -m 'data: collect native V13 phase snapshot [skip ci]'
             git pull --rebase origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
 
-      - name: Prepare point-in-time archive
+      - name: Prepare V13 point-in-time archive
         if: always()
         run: |
           mkdir -p runtime/v11/snapshots
           if [ -f data/v11_market_snapshots.jsonl ]; then
-            gzip -9 -c data/v11_market_snapshots.jsonl > "runtime/v11/snapshots/research_market_${GITHUB_RUN_ID}.jsonl.gz"
+            gzip -9 -c data/v11_market_snapshots.jsonl > "runtime/v11/snapshots/v13_research_market_${GITHUB_RUN_ID}.jsonl.gz"
           fi
 
-      - name: Archive research sources
+      - name: Archive V13 research sources
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v12-3-research-${{ github.run_id }}
+          name: v13-phase-research-${{ github.run_id }}
           path: |
             runtime/v11/snapshots/
             runtime/v11/source_replays/

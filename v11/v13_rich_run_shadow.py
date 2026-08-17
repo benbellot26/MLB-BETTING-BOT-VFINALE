@@ -37,23 +37,40 @@ def _variant_options(result: dict[str,Any], hmu: float, amu: float) -> list[dict
     return out
 
 
+def _base_means(result: dict[str,Any]) -> tuple[float | None,float | None,str]:
+    # Current V13 engine exposes hmu/amu. Historical replay payloads may expose
+    # projected_* names, so support both without silently inventing values.
+    hm=result.get("hmu")
+    am=result.get("amu")
+    if hm is not None and am is not None:
+        return _num(hm),_num(am),"v13_hmu_amu"
+    hm=result.get("projected_home_runs")
+    am=result.get("projected_away_runs")
+    if hm is not None and am is not None:
+        return _num(hm),_num(am),"legacy_projected_runs"
+    return None,None,"missing"
+
+
 def attach(result: dict[str,Any], artifact: dict[str,Any] | None = None) -> dict[str,Any]:
     artifact=load() if artifact is None else artifact
     phase=str(result.get("phase") or "EARLY").upper()
     shadow=result.get("shadow_v124") or {}; modules=shadow.get("modules") or {}
-    payload={"schema":SCHEMA,"status":"UNAVAILABLE","research_only":True,"affects_v13_probability":False,"affects_selector":False,"affects_staking":False}
+    payload={"schema":SCHEMA,"status":"UNAVAILABLE","research_only":True,"affects_v13_probability":False,
+             "affects_selector":False,"affects_staking":False,"v124_shadow_present":bool(shadow),
+             "v124_modules_present":bool(modules)}
     if not artifact.get("shadow_enabled"):
         payload["status"]="MODEL_NOT_VALIDATED"; result["shadow_v13_rich_runs"]=payload; return result
     if phase != "FINAL":
         payload["status"]="FINAL_ONLY"; result["shadow_v13_rich_runs"]=payload; return result
     if not modules:
         payload["status"]="MISSING_V124_FEATURES"; result["shadow_v13_rich_runs"]=payload; return result
-    hm=result.get("projected_home_runs"); am=result.get("projected_away_runs")
+    hm,am,mean_source=_base_means(result)
     if hm is None or am is None:
         payload["status"]="MISSING_BASE_MEANS"; result["shadow_v13_rich_runs"]=payload; return result
     model=artifact.get("model") or {}
-    h,hd=_apply(_num(hm),"home",modules,model); a,ad=_apply(_num(am),"away",modules,model)
+    h,hd=_apply(hm,"home",modules,model); a,ad=_apply(am,"away",modules,model)
     payload.update({"status":"ACTIVE_SHADOW","home_mu":h,"away_mu":a,"home_delta":hd,"away_delta":ad,
+                    "base_home_mu":hm,"base_away_mu":am,"base_mean_source":mean_source,
                     "options":_variant_options(result,h,a),"modules":list(MODULES),"model_status":artifact.get("status"),
                     "historical_games":artifact.get("historical_games"),"exact_games":artifact.get("exact_games")})
     result["shadow_v13_rich_runs"]=payload
