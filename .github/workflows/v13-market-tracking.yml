@@ -1,0 +1,43 @@
+name: V13 Market Tracking
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mlb-betting-bot-state
+  cancel-in-progress: false
+
+jobs:
+  track:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile tracking
+        run: python -m py_compile v11/v13_daily_tracking.py v11/v13_tracking_sync.py
+      - name: Sync journal, poll closing market when useful, settle finals
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: python -m v11.v13_tracking_sync
+      - name: Persist tracking state
+        run: |
+          git config user.name 'MLB Betting Bot V13 Tracking'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          [ -f data/v13_market_tracking.jsonl ] && git add -f data/v13_market_tracking.jsonl
+          [ -f data/v13_market_tracking_report.json ] && git add -f data/v13_market_tracking_report.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'data: update V13 exhaustive market tracking [skip ci]'
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
