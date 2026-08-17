@@ -1,0 +1,33 @@
+{
+  "active_for_production": false,
+  "available_native_modules": [
+    "starter_ip",
+    "platoon",
+    "statcast",
+    "bullpen_player",
+    "lineup_player",
+    "weather_park"
+  ],
+  "minimum_games": 300,
+  "native_feature_coverage": {
+    "bullpen_player": 0.0,
+    "lineup_player": 0.0,
+    "platoon": 0.0,
+    "starter_ip": 0.0,
+    "statcast": 0.0,
+    "weather_park": 0.0
+  },
+  "native_games": 0,
+  "safety": {
+    "historical_reconstruction_used_for_promotion": false,
+    "market_probability_used": false,
+    "native_predictive_contract_required": true,
+    "phase_specific_training": true,
+    "point_in_time_required": true,
+    "selector_unchanged_until_promotion": true,
+    "weather_requires_native_pregame_snapshot": true
+  },
+  "schema": "v13-rich-native-candidate-v3",
+  "status": "COLLECTING",
+  "target_phase": "FINAL"
+}

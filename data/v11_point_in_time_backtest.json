@@ -27,13 +27,13 @@
       "status": "COLLECTING"
     },
     "stack_validation": null,
-    "training_games": 7,
+    "training_games": 15,
     "version": "v12-professional-challenger-3",
     "walk_forward_gate": null
   },
-  "compatible_games": 7,
+  "compatible_games": 15,
   "engine": "12.3.2-audit-hardening-v1",
-  "generated_at": "2026-08-16T21:34:31.913894+00:00",
+  "generated_at": "2026-08-17T21:03:44.993553+00:00",
   "methodology": {
     "claim_limit": "Only V12.2 rows with matching feature schema train/calibrate the challenger.",
     "end_to_end_stack_gate": true,
@@ -48,19 +48,25 @@
   },
   "phases": {
     "EARLY": {
-      "games": 0,
+      "games": 5,
       "markets": {
         "ML": {
           "model": {
-            "n": 0
+            "multiclass_brier": 0.5744605469211999,
+            "multiclass_logloss": 0.7681696907189753,
+            "n": 5
           },
-          "n": 0,
+          "n": 5,
           "precalibration": {
-            "n": 0
+            "multiclass_brier": 0.5744605469211999,
+            "multiclass_logloss": 0.7681696907189753,
+            "n": 5
           },
           "selection": "fixed canonical execution line; pushes retained as third outcome",
           "sharp_with_model_push": {
-            "n": 0
+            "multiclass_brier": 0.6056003822248,
+            "multiclass_logloss": 0.8001409256845939,
+            "n": 5
           }
         },
         "RUNLINE": {
@@ -92,25 +98,25 @@
       }
     },
     "FINAL": {
-      "games": 7,
+      "games": 14,
       "markets": {
         "ML": {
           "model": {
-            "multiclass_brier": 0.48518049646,
-            "multiclass_logloss": 0.6780334438448182,
-            "n": 7
+            "multiclass_brier": 0.5251727305708571,
+            "multiclass_logloss": 0.7183804281519267,
+            "n": 14
           },
-          "n": 7,
+          "n": 14,
           "precalibration": {
-            "multiclass_brier": 0.48518049646,
-            "multiclass_logloss": 0.6780334438448182,
-            "n": 7
+            "multiclass_brier": 0.5251727305708571,
+            "multiclass_logloss": 0.7183804281519267,
+            "n": 14
           },
           "selection": "fixed canonical execution line; pushes retained as third outcome",
           "sharp_with_model_push": {
-            "multiclass_brier": 0.4886303837468572,
-            "multiclass_logloss": 0.6815355709372307,
-            "n": 7
+            "multiclass_brier": 0.5448223893912857,
+            "multiclass_logloss": 0.7389166436716471,
+            "n": 14
           }
         },
         "RUNLINE": {
@@ -142,25 +148,25 @@
       }
     },
     "LATE": {
-      "games": 7,
+      "games": 15,
       "markets": {
         "ML": {
           "model": {
-            "multiclass_brier": 0.48536571836142856,
-            "multiclass_logloss": 0.678218961942258,
-            "n": 7
+            "multiclass_brier": 0.5256896685761333,
+            "multiclass_logloss": 0.7188969288593582,
+            "n": 15
           },
-          "n": 7,
+          "n": 15,
           "precalibration": {
-            "multiclass_brier": 0.48536571836142856,
-            "multiclass_logloss": 0.678218961942258,
-            "n": 7
+            "multiclass_brier": 0.5256896685761333,
+            "multiclass_logloss": 0.7188969288593582,
+            "n": 15
           },
           "selection": "fixed canonical execution line; pushes retained as third outcome",
           "sharp_with_model_push": {
-            "multiclass_brier": 0.489774778588,
-            "multiclass_logloss": 0.6826965973155655,
-            "n": 7
+            "multiclass_brier": 0.549735083738,
+            "multiclass_logloss": 0.7437199389997894,
+            "n": 15
           }
         },
         "RUNLINE": {
@@ -241,17 +247,17 @@
     {
       "engine_version": "12.3.2-value-selection-v1",
       "feature_schema": "v12-3-features-v1",
-      "rows": 184
+      "rows": 200
     },
     {
       "engine_version": "12.3.2-audit-hardening-v1",
       "feature_schema": "v12-3-features-v1",
-      "rows": 28
+      "rows": 78
     },
     {
       "engine_version": "13.3-professional-probability-v1",
       "feature_schema": "v12-3-features-v1",
-      "rows": 7
+      "rows": 22
     }
   ]
 }
