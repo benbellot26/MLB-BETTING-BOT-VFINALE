@@ -5,6 +5,8 @@ import math
 from pathlib import Path
 from typing import Any
 
+from . import probability_contract_v13 as contract
+
 MODEL_FILE = Path("data/v13_run_mean_prior.json")
 SCHEMA = "v13-run-mean-prior-v1"
 
@@ -30,6 +32,11 @@ def load(path: Path = MODEL_FILE) -> dict[str,Any]:
 
 
 def _transfer_gate(artifact: dict[str,Any]) -> tuple[bool,str]:
+    generation=str(artifact.get("model_generation") or "")
+    if generation != contract.MODEL_GENERATION_FINGERPRINT:
+        return False,"FINAL_TRANSFER_MODEL_GENERATION_MISMATCH"
+    if not artifact.get("historical_candidate_active"):
+        return False,"FINAL_TRANSFER_HISTORICAL_CANDIDATE_NOT_VALIDATED"
     required=int(artifact.get("exact_transfer_required_games") or 20)
     n=int(artifact.get("exact_final_games") or artifact.get("exact_games") or 0)
     status=str(artifact.get("exact_transfer_status") or "")
@@ -49,6 +56,8 @@ def apply_pair(home_mu: float, away_mu: float, phase: str, artifact: dict[str,An
     if not artifact.get("active") or not gate_ok:
         return home_mu,away_mu,{"active":False,"source":"none","reason":gate_reason,
                 "historical_candidate_active":bool(artifact.get("historical_candidate_active")),
+                "model_generation":artifact.get("model_generation"),
+                "expected_model_generation":contract.MODEL_GENERATION_FINGERPRINT,
                 "exact_transfer_games":artifact.get("exact_final_games",artifact.get("exact_games")),
                 "exact_transfer_required_games":artifact.get("exact_transfer_required_games",20)}
     model=artifact.get("model") or {}
@@ -61,5 +70,6 @@ def apply_pair(home_mu: float, away_mu: float, phase: str, artifact: dict[str,An
     h,hd=one(home_mu,"home"); a,ad=one(away_mu,"away")
     return h,a,{"active":True,"source":"v13-historical-run-mean-prior","home_delta":hd,"away_delta":ad,
                 "variant":artifact.get("selected_variant"),"historical_games":artifact.get("historical_games"),
+                "model_generation":artifact.get("model_generation"),
                 "exact_transfer_games":artifact.get("exact_final_games",artifact.get("exact_games")),
                 "exact_transfer_status":artifact.get("exact_transfer_status")}
