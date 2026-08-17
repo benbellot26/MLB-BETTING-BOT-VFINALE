@@ -9,7 +9,7 @@ from v11 import v13_daily_tracking as tracking
 
 
 class V13PrecisionHardeningTests(unittest.TestCase):
-    def test_phase_is_part_of_calibration_observation_identity(self):
+    def test_phase_is_preserved_without_inflating_market_sample(self):
         rows=[
             {"game_pk":"1","phase":"EARLY","game_date":"2026-06-01T20:00:00Z","analyzed_at":"2026-06-01T10:00:00Z",
              "options":[{"market":"ML","name":"Home","point":None,"p_baseball_raw":.55,"result":"WIN"}]},
@@ -17,7 +17,8 @@ class V13PrecisionHardeningTests(unittest.TestCase):
              "options":[{"market":"ML","name":"Home","point":None,"p_baseball_raw":.61,"result":"WIN"}]},
         ]
         buckets=cal.examples_from_rows(rows)
-        self.assertEqual(len(buckets["MARKET:ML"]),2)
+        self.assertEqual(len(buckets["MARKET:ML"]),1)
+        self.assertAlmostEqual(buckets["MARKET:ML"][0][0],.61)
         self.assertEqual(len(buckets["PHASE:EARLY:ML"]),1)
         self.assertEqual(len(buckets["PHASE:FINAL:ML"]),1)
 
