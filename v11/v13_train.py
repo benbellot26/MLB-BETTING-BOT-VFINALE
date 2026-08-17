@@ -53,9 +53,15 @@ def _load_exact_backfill(path: Path = EXACT_BACKFILL) -> list[dict[str,Any]]:
 
 
 def _canonical_options(row: dict[str,Any]) -> list[dict[str,Any]]:
-    """Keep at most one independent baseball-only calibration target per market/phase."""
+    """Keep at most one independent baseball-only calibration target per market/phase.
+
+    p_learned remains a valid raw baseball probability only after the enclosing
+    row has passed the V13 predictive-contract gate (or is an audited exact
+    replay). Legacy rows without that contract are rejected before this helper.
+    """
     options = [o for o in (row.get("options") or [])
-               if o.get("result") in {"WIN","LOSS"} and o.get("p_baseball_raw") is not None]
+               if o.get("result") in {"WIN","LOSS"}
+               and (o.get("p_baseball_raw") is not None or o.get("p_learned") is not None)]
     home = _norm(row.get("home"))
     out: list[dict[str,Any]] = []
     for market in ("ML","RUNLINE","TOTAL"):
@@ -87,8 +93,8 @@ def eligible_probability_rows(rows: list[dict[str,Any]]) -> list[dict[str,Any]]:
 
     Native live evidence must carry the V13 predictive contract. Exact replay
     backfill remains allowed because its point-in-time provenance was separately
-    reconstructed and audited. Legacy V12/V11 p_learned observations are not
-    native V13 calibration evidence, even when they are pregame.
+    reconstructed and audited. Software-version strings do not define model
+    compatibility; the explicit probability contract does.
     """
     best: dict[tuple[str,str], tuple[str,dict[str,Any]]] = {}
     for row in rows:
@@ -152,8 +158,9 @@ def build() -> dict[str,Any]:
         "native_predictive_contract_required": True,
         "pregame_required": True,
         "settled_result_required": True,
-        "accepted_probability_fields": ["p_baseball_raw"],
-        "forbidden_probability_fields_as_baseball_evidence": ["p_learned","p_effective","p_model","p_market","p_posterior"],
+        "accepted_probability_fields": ["p_baseball_raw","p_learned"],
+        "p_learned_requires_v13_predictive_contract": True,
+        "forbidden_probability_fields_as_baseball_evidence": ["p_effective","p_model","p_market","p_posterior"],
         "canonical_row": "latest pregame row per game_pk and phase",
         "independent_target_policy": "max one canonical side per market/game/phase",
         "alternate_lines_trainable_for_calibration": False,
