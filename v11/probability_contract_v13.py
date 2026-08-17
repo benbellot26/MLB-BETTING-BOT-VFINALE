@@ -8,7 +8,7 @@ PREDICTIVE_CONTRACT_VERSION = "v13-predictive-contract-v2"
 FEATURE_CONTRACT_VERSION = "v13-baseball-features-v1"
 TARGET_CONTRACT_VERSION = "v13-market-targets-v1"
 CALIBRATION_CONTRACT_VERSION = "v13-baseball-calibration-v2"
-MODEL_GENERATION_FINGERPRINT = "v13.5.2-gen-structural-nb-finalgate-v1"
+MODEL_GENERATION_FINGERPRINT = "v13.5.2-gen-structural-nb-independent-transfer-v2"
 
 
 def _num(x: Any, default: float = 0.0) -> float:

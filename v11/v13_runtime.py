@@ -103,7 +103,21 @@ def install() -> bool:
         values = list(original_bootstrap_prior(structural_hmu, structural_amu, champ, phase))
         phase_name = str(phase or "EARLY").upper(); phase_model = ((champ.get("phase_models") or {}).get(phase_name) or {})
         native_residual_active = bool(champ.get("active") and (phase_model.get("residual") or {}).get("active"))
-        legacy_run_prior_active = bool((values[2] or {}).get("active"))
+
+        # Freeze the baseline before either V13 historical layer is applied.
+        # These values are persisted in replay evidence so transfer tests always
+        # compare baseline -> candidate, never candidate -> candidate squared.
+        validation_meta = dict(values[2] or {})
+        validation_meta.update({
+            "v13_validation_baseline_home_mu": values[0],
+            "v13_validation_baseline_away_mu": values[1],
+            "v13_validation_baseline_dispersion": values[4],
+            "v13_validation_baseline_environment_sigma": values[6],
+            "v13_validation_model_generation": MODEL_GENERATION_FINGERPRINT,
+        })
+        values[2] = validation_meta
+        legacy_run_prior_active = bool(validation_meta.get("active"))
+
         if phase_name == "FINAL" and not native_residual_active and not legacy_run_prior_active:
             hmu, amu, mean_meta = v13_run_mean_runtime.apply_pair(values[0], values[1], phase_name)
             if mean_meta.get("active"):

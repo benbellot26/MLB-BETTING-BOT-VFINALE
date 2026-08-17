@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   schedule:
     # 10:30 UTC during the MLB season: late enough for the previous US slate
-    # to be final while keeping the transfer artifact fresh before daytime runs.
+    # to be final while keeping the transfer artifacts fresh before daytime runs.
     - cron: '30 10 * 3-11 *'
 
 permissions:
@@ -29,7 +29,7 @@ jobs:
           python-version: '3.12'
 
       - name: Compile V13 backfill
-        run: python -m py_compile v11/v13_historical_backfill.py v11/v13_run_mean_prior.py v11/v13_entry.py
+        run: python -m py_compile v11/v13_historical_backfill.py v11/v13_run_mean_prior.py v11/v13_distribution_prior.py v11/v13_entry.py
 
       - name: Download durable pregame source replays
         env:
@@ -50,7 +50,10 @@ jobs:
       - name: Rebuild current-generation FINAL run-mean candidate
         run: python -m v11.v13_run_mean_prior
 
-      - name: Validate leakage boundary and run-mean transfer state
+      - name: Rebuild current-generation FINAL distribution transfer
+        run: python -m v11.v13_distribution_prior
+
+      - name: Validate leakage boundary and historical transfer states
         run: |
           python - <<'PY'
           import json
@@ -71,17 +74,35 @@ jobs:
               assert r['market_probability_used_as_baseball_feature'] is False
               assert r['result_status'] == 'SETTLED'
               assert contract.row_is_predictively_compatible(r), r.get('game_pk')
+              assert r.get('validation_baseline_model_generation') == contract.MODEL_GENERATION_FINGERPRINT, r.get('game_pk')
+              assert r.get('validation_baseline_home_runs') is not None, r.get('game_pk')
+              assert r.get('validation_baseline_away_runs') is not None, r.get('game_pk')
+              assert r.get('validation_baseline_dispersion') is not None, r.get('game_pk')
+
+          final_games=len({str(r.get('game_pk')) for r in rows if str(r.get('phase') or '').upper() == 'FINAL'})
 
           prior=json.loads(Path('data/v13_run_mean_prior.json').read_text())
           assert prior['model_generation'] == contract.MODEL_GENERATION_FINGERPRINT, prior
-          assert int(prior.get('exact_final_games') or 0) <= len({str(r.get('game_pk')) for r in rows if str(r.get('phase') or '').upper() == 'FINAL'})
+          assert int(prior.get('exact_final_games') or 0) <= final_games
+          assert (prior.get('safety') or {}).get('independent_pre_candidate_baseline_required') is True
           if prior.get('active'):
               assert prior.get('historical_candidate_active') is True, prior
               assert int(prior.get('exact_final_games') or 0) >= int(prior.get('exact_transfer_required_games') or 20), prior
               assert prior.get('exact_transfer_status') == 'PASS_FINAL_ONLY', prior
+
+          dist=json.loads(Path('data/v13_distribution_prior.json').read_text())
+          assert dist['model_generation'] == contract.MODEL_GENERATION_FINGERPRINT, dist
+          assert dist.get('historical_candidate_active') is True, dist
+          assert dist.get('independent_pre_candidate_baseline_required') is True, dist
+          assert int(dist.get('exact_final_games') or 0) <= final_games
+          if dist.get('active'):
+              assert int(dist.get('exact_final_games') or 0) >= int(dist.get('exact_transfer_required_games') or 20), dist
+              assert dist.get('exact_transfer_status') == 'PASS_FINAL_ONLY', dist
+              assert float((dist.get('current_generation_transfer') or {}).get('nll_gain') or 0) > 0, dist
+
           print('V13 backfill rows=',len(rows),'games=',report['canonical_games'],
-                'final_transfer=',prior.get('exact_final_games'), '/', prior.get('exact_transfer_required_games'),
-                'status=',prior.get('exact_transfer_status'),'active=',prior.get('active'))
+                'run_mean=',prior.get('exact_final_games'),'/',prior.get('exact_transfer_required_games'),prior.get('exact_transfer_status'),prior.get('active'),
+                'distribution=',dist.get('exact_final_games'),'/',dist.get('exact_transfer_required_games'),dist.get('exact_transfer_status'),dist.get('active'))
           PY
 
       - name: Upload backfill artifact
@@ -92,15 +113,16 @@ jobs:
             data/v13_historical_backfill.jsonl
             data/v13_historical_backfill_report.json
             data/v13_run_mean_prior.json
+            data/v13_distribution_prior.json
           retention-days: 90
 
-      - name: Persist backfill evidence and rebuilt run-mean prior
+      - name: Persist backfill evidence and rebuilt transfer artifacts
         run: |
           git config user.name 'MLB Betting Bot V13.5.2'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add data/v13_historical_backfill.jsonl data/v13_historical_backfill_report.json data/v13_run_mean_prior.json
+          git add data/v13_historical_backfill.jsonl data/v13_historical_backfill_report.json data/v13_run_mean_prior.json data/v13_distribution_prior.json
           if ! git diff --cached --quiet; then
-            git commit -m 'data: persist V13.5.2 point-in-time backfill and run-mean transfer [skip ci]'
+            git commit -m 'data: persist V13.5.2 independent historical transfer evidence [skip ci]'
             git pull --rebase origin main
             git push origin HEAD:main
           fi

@@ -133,6 +133,7 @@ def replay_one(path: Path, score_cache: dict[str, dict[str, tuple[int, int]]]) -
             hs, aws = scores[gid]
             ctx = result.get("ctx") or {}
             options = [_option_row(o, str(ctx.get("home") or ""), hs, aws) for o in result.get("options") or []]
+            run_prior_meta = ((((result.get("features") or {}).get("historical_bootstrap") or {}).get("run_prior")) or {})
             row = {
                 "schema": SCHEMA,
                 "source_replay_schema": payload.get("schema"),
@@ -148,6 +149,11 @@ def replay_one(path: Path, score_cache: dict[str, dict[str, tuple[int, int]]]) -
                 "projected_away_runs": result.get("amu"),
                 "structural_home_runs": result.get("structural_hmu"),
                 "structural_away_runs": result.get("structural_amu"),
+                "validation_baseline_home_runs": run_prior_meta.get("v13_validation_baseline_home_mu"),
+                "validation_baseline_away_runs": run_prior_meta.get("v13_validation_baseline_away_mu"),
+                "validation_baseline_dispersion": run_prior_meta.get("v13_validation_baseline_dispersion"),
+                "validation_baseline_environment_sigma": run_prior_meta.get("v13_validation_baseline_environment_sigma"),
+                "validation_baseline_model_generation": run_prior_meta.get("v13_validation_model_generation"),
                 "home_score": hs, "away_score": aws,
                 "result_status": "SETTLED",
                 "point_in_time": True,
@@ -193,6 +199,7 @@ def build(paths: list[Path]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     canonical = _canonical(all_rows)
     phase_counts = Counter(str(r.get("phase") or "UNKNOWN") for r in canonical)
     market_counts = Counter()
+    validation_baselines = sum(1 for r in canonical if r.get("validation_baseline_home_runs") is not None and r.get("validation_baseline_away_runs") is not None and r.get("validation_baseline_dispersion") is not None)
     for row in canonical:
         for opt in row.get("options") or []:
             if opt.get("result") in {"WIN", "LOSS", "PUSH"}:
@@ -207,10 +214,11 @@ def build(paths: list[Path]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
         "raw_rows": len(all_rows),
         "canonical_rows": len(canonical),
         "canonical_games": len({str(r.get("game_pk")) for r in canonical}),
+        "validation_baseline_rows": validation_baselines,
         "phase_counts": dict(phase_counts),
         "settled_options_by_market": dict(market_counts),
         "diagnostics": diagnostics,
-        "evidence_boundary": "All features come exclusively from recorded pregame HTTP replays. Final MLB scores are fetched after replay and used only as labels. Every output row is stamped with the exact predictive model generation used for reconstruction.",
+        "evidence_boundary": "All features come exclusively from recorded pregame HTTP replays. Final MLB scores are fetched after replay and used only as labels. Every output row is stamped with the exact predictive model generation used for reconstruction. V13 historical transfer tests use an explicitly persisted pre-candidate baseline so candidates are never evaluated on their own output.",
     }
     return canonical, report
 

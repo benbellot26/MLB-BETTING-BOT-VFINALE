@@ -46,7 +46,7 @@ def _hist_rows() -> list[dict[str,Any]]:
 
 
 def _exact_rows() -> list[dict[str,Any]]:
-    """Only current-generation exact FINAL replays count as transfer evidence."""
+    """Only current-generation FINAL replays with an independent pre-prior baseline count."""
     if not EXACT.exists(): return []
     best={}
     with EXACT.open("r",encoding="utf-8") as fh:
@@ -56,14 +56,17 @@ def _exact_rows() -> list[dict[str,Any]]:
             if str(r.get("phase") or "").upper() != "FINAL": continue
             if not contract.row_is_predictively_compatible(r): continue
             if r.get("home_score") is None or r.get("away_score") is None: continue
-            hm=r.get("projected_home_runs"); am=r.get("projected_away_runs")
-            if hm is None or am is None: continue
+            hm=r.get("validation_baseline_home_runs"); am=r.get("validation_baseline_away_runs")
+            dispersion=r.get("validation_baseline_dispersion")
+            if hm is None or am is None or dispersion is None: continue
+            if r.get("validation_baseline_model_generation") != contract.MODEL_GENERATION_FINGERPRINT: continue
             k=str(r.get("game_pk")); rank=str(r.get("analyzed_at") or "")
             if k not in best or rank > best[k][0]: best[k]=(rank,r)
     out=[]
     for _,r in best.values():
         out.append({"game_pk":r.get("game_pk"),"game_date":r.get("game_date"),"phase":"FINAL",
-                    "home_mu":_num(r.get("projected_home_runs")),"away_mu":_num(r.get("projected_away_runs")),
+                    "home_mu":_num(r.get("validation_baseline_home_runs")),"away_mu":_num(r.get("validation_baseline_away_runs")),
+                    "dispersion":_num(r.get("validation_baseline_dispersion"),DISPERSION),
                     "home_score":int(_num(r.get("home_score"))),"away_score":int(_num(r.get("away_score")))})
     return sorted(out,key=lambda r:(str(r["game_date"]),str(r["game_pk"])))
 
@@ -110,17 +113,18 @@ def apply(mu: float, side: str, model: dict[str,Any]) -> float:
     return max(1.4,mu+adj)
 
 
-def _nb_nll(mu,y):
-    r=DISPERSION; mu=max(.01,mu); y=max(0,int(y)); p=r/(r+mu)
+def _nb_nll(mu,y,dispersion=DISPERSION):
+    r=max(.5,_num(dispersion,DISPERSION)); mu=max(.01,mu); y=max(0,int(y)); p=r/(r+mu)
     return -(math.lgamma(y+r)-math.lgamma(r)-math.lgamma(y+1)+r*math.log(p)+y*math.log1p(-p))
 
 
 def _metrics(rows,model=None):
     ae=[]; se=[]; nl=[]
     for r in rows:
+        dispersion=_num(r.get("dispersion"),DISPERSION)
         for side in ("home","away"):
             base=max(.1,_num(r[f"{side}_mu"])); mu=apply(base,side,model) if model else base; y=_num(r[f"{side}_score"])
-            ae.append(abs(mu-y)); se.append((mu-y)**2); nl.append(_nb_nll(mu,y))
+            ae.append(abs(mu-y)); se.append((mu-y)**2); nl.append(_nb_nll(mu,y,dispersion))
     n=len(ae)
     return {"team_observations":n,"mae":sum(ae)/n if n else None,
             "rmse":math.sqrt(sum(se)/n) if n else None,"nb_nll":sum(nl)/n if n else None}
@@ -149,7 +153,7 @@ def build():
             if _passes(v,100): variants.append((v["nll_gain"],v["rmse_gain"],name,ridge,m,v))
     if not variants:
         return {"schema":"v13-run-mean-prior-v1","active":False,"reason":"no validation-passing candidate",
-                "historical_games":len(rows),"exact_final_games":len(exact)}
+                "historical_games":len(rows),"exact_final_games":len(exact),"model_generation":contract.MODEL_GENERATION_FINGERPRINT}
     variants.sort(reverse=True,key=lambda z:(z[0],z[1]))
     best=variants[0]
     simple=[z for z in variants if z[2]=="side_bias" and z[0]>=best[0]-.001]
@@ -170,10 +174,11 @@ def build():
             "exact_games":len(exact),"exact_final_games":len(exact),"exact_phase_counts":{"FINAL":len(exact)},
             "selected_variant":name,"model":final,"validation":val_ev,"test":test_ev,"exact_transfer":exact_ev,
             "exact_transfer_status":exact_status,"exact_transfer_required_games":MIN_EXACT_FINAL,
-            "activation_rule":"historical chronological validation/test must pass AND >=20 current-generation genuine FINAL V13 transfer games must pass RMSE/NB-NLL with MAE regression <=0.01",
-            "transfer_caveat":"The historical model is only a candidate until current-generation native FINAL transfer is independently validated.",
+            "activation_rule":"historical chronological validation/test must pass AND >=20 current-generation genuine FINAL V13 transfer games, evaluated from an independent pre-prior mean baseline and its actual baseline dispersion, must pass RMSE/NB-NLL with MAE regression <=0.01",
+            "transfer_caveat":"The historical model is only a candidate until current-generation native FINAL transfer is independently validated from a baseline captured before the candidate layer.",
             "safety":{"historical_odds_used":False,"market_probability_used":False,"feature_vector_fabricated":False,
                       "exact_transfer_required_for_activation":True,"exact_transfer_generation_locked":True,
+                      "independent_pre_candidate_baseline_required":True,"exact_transfer_uses_baseline_dispersion":True,
                       "applies_only_when_native_residual_and_legacy_run_bootstrap_are_inactive":True}}
 
 

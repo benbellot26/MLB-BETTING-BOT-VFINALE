@@ -1,6 +1,7 @@
 {
   "schema": "v13-distribution-prior-v1",
-  "active": true,
+  "active": false,
+  "historical_candidate_active": true,
   "phase_scope": "FINAL",
   "variant": "dispersion_only",
   "dispersion": 2.835691107635618,
@@ -16,6 +17,22 @@
   "market_data_used": false,
   "historical_odds_used": false,
   "calibration_effect": "none",
-  "selection_rule": "Least-complexity distribution variant improving chronological validation, untouched future test, and exact replay transfer cohort.",
-  "evidence_boundary": "Applies only to the score-distribution dispersion in FINAL phase. Does not activate any historical ML/RUNLINE/TOTAL probability calibrator."
+  "model_generation": "v13.5.2-gen-structural-nb-independent-transfer-v2",
+  "exact_final_games": 0,
+  "exact_transfer_required_games": 20,
+  "exact_transfer_status": "COLLECTING_FINAL_ONLY",
+  "current_generation_transfer": {
+    "games": 0,
+    "team_observations": 0,
+    "baseline_nb_nll": null,
+    "candidate_nb_nll": null,
+    "nll_gain": null,
+    "baseline_source": "persisted pre-distribution-candidate dispersion"
+  },
+  "selection_rule": "Least-complexity distribution variant improving chronological validation, untouched future test, and historical exact replay transfer cohort.",
+  "activation_rule": "historical validation/test candidate must remain valid AND >=20 current-generation genuine FINAL replays, evaluated from a persisted pre-candidate dispersion baseline, must improve NB NLL",
+  "transfer_caveat": "The historical dispersion is a candidate until it independently transfers to the exact current predictive generation.",
+  "generation_gate": true,
+  "independent_pre_candidate_baseline_required": true,
+  "evidence_boundary": "Applies only to score-distribution dispersion in FINAL phase. Historical evidence establishes candidacy; production activation additionally requires independent current-generation FINAL transfer."
 }
