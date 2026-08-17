@@ -64,8 +64,6 @@ def _observation_token(r):
     phase=str(r.get("phase") or "UNKNOWN").upper()
     at=str(r.get("as_of") or r.get("analyzed_at") or "")
     run=str(r.get("run_id") or "")
-    # as_of/analyzed_at is shared by the live result and its persisted journal
-    # row; run_id is only a fallback for older payloads without a timestamp.
     token=at or run
     return phase, token
 
@@ -96,8 +94,7 @@ def capture_results(results, analyzed_at=None, target_date=None):
         game_date=(r.get("game") or {}).get("gameDate") or (r.get("event") or {}).get("commence_time")
         observation_at=str(r.get("as_of") or at)
         phase=str(r.get("phase") or "EARLY").upper()
-        key_ctx=dict(r)
-        key_ctx.setdefault("analyzed_at",observation_at)
+        key_ctx=dict(r); key_ctx.setdefault("analyzed_at",observation_at)
         for o in r.get("options") or []:
             price=_price(o); e=o.get("winamax_eval") or {}; gate=e.get("v11_price_gate") or {}
             rows.append({"schema":"v13-market-tracking-v3","event_type":"MODEL_SNAPSHOT","tracking_key":_key(key_ctx,o),
@@ -133,13 +130,22 @@ def _market_update(k, known, at, mins, price, sharp):
     return row
 
 
+def _matching_observation_keys(known, r, o):
+    direct=_key(r,o)
+    if direct in known:return [direct]
+    base=_market_key(r,o); phase=str(r.get("phase") or "").upper()
+    matches=[k for k,s in known.items() if (s.get("market_key") or k.split("|obs:",1)[0])==base
+             and (not phase or str(s.get("phase") or s.get("observation_phase") or "").upper()==phase)]
+    return matches
+
+
 def observe_closing(results, analyzed_at=None):
     at=analyzed_at or datetime.now(timezone.utc).isoformat(); now=_dt(at) or datetime.now(timezone.utc); known=fold(); rows=[]
     for r in results or []:
         start=_dt((r.get("game") or {}).get("gameDate") or (r.get("event") or {}).get("commence_time")); mins=(start-now).total_seconds()/60 if start else None
         for o in r.get("options") or []:
-            k=_key(r,o)
-            if k in known:rows.append(_market_update(k,known[k],at,mins,_price(o),o.get("p_market")))
+            for k in _matching_observation_keys(known,r,o):
+                rows.append(_market_update(k,known[k],at,mins,_price(o),o.get("p_market")))
     return _append(rows)
 
 
@@ -239,8 +245,7 @@ def write_report():
         for d in bands.values():d["pnl_1u"]=round(d["pnl_1u"],4); d["roi_1u"]=round(d["pnl_1u"]/max(1,d["n"]-d["pushes"]),4)
         by_edge[market_name]=bands
     report={"schema":"v13-market-tracking-report-v3","generated_at":datetime.now(timezone.utc).isoformat(),
-            "tracked_observations":len(xs),"settled_observations":len(settled),
-            "tracked_options":len(xs),"settled_options":len(settled),
+            "tracked_observations":len(xs),"settled_observations":len(settled),"tracked_options":len(xs),"settled_options":len(settled),
             "by_market":by_market,"by_nominal_ev_band":by_edge,
             "methodology":{"observation_identity":"immutable game/market/side/line + phase + analysis as-of; later phases never overwrite earlier forecasts","unit_pnl":"descriptive flat 1u; complementary displayed sides are not a betting portfolio","closing":"last valid eligible pregame observation inside configured closing window; missing API fields never erase a valid close","missing_price":"never imputed; absent Winamax RL/TOTAL prices remain unpriced and are still tracked against sharp probability"}}
     REPORT_FILE.parent.mkdir(parents=True,exist_ok=True); REPORT_FILE.write_text(json.dumps(report,indent=2,sort_keys=True),encoding="utf-8"); return report
