@@ -202,7 +202,7 @@ def allocate(results, unit_eur=.5, bankroll_eur=10.0, existing=None, target_date
     total_units = existing_units+new_units
     portfolio = {"daily_cap": round(config.MAX_DAILY_UNITS*unit_eur, 2), "existing_allocated": round(existing_units*unit_eur, 2),
                  "new_allocated": round(new_units*unit_eur, 2), "allocated": round(total_units*unit_eur, 2),
-                 "remaining": round(max(0, (config.MAX_DAILY_UNITS-total_units)*unit_eur, 2)),
+                 "remaining": round(max(0, (config.MAX_DAILY_UNITS-total_units)*unit_eur), 2),
                  "official_count": existing_singles+len(chosen), "new_official_count": len(chosen),
                  "official_units": total_units, "new_official_units": new_units, "combo_official": False,
                  "combo_units": 0.0, "bankroll_eur": bankroll_eur, "staking": f"{config.FRACTIONAL_KELLY:g} Kelly fraction",
