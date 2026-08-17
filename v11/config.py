@@ -70,7 +70,9 @@ MIN_WALK_FORWARD_PASS_RATE = float(os.getenv("V11_MIN_WALK_FORWARD_PASS_RATE", "
 MIN_PROD_SETTLED_BETS = int(os.getenv("V11_MIN_PROD_SETTLED_BETS", "100") or 100)
 MIN_PROD_CLV_OBSERVATIONS = int(os.getenv("V11_MIN_PROD_CLV_OBSERVATIONS", "50") or 50)
 
-CLOSING_CANDIDATE_WINDOW_MIN = float(os.getenv("V11_CLOSING_CANDIDATE_WINDOW_MIN", "10") or 10)
+# Tracking runs every 15 minutes. A 20-minute closing window guarantees at least
+# one scheduled observation opportunity while retaining the exact timestamp.
+CLOSING_CANDIDATE_WINDOW_MIN = float(os.getenv("V11_CLOSING_CANDIDATE_WINDOW_MIN", "20") or 20)
 T60_WINDOW_MIN = float(os.getenv("V11_T60_WINDOW_MIN", "60") or 60)
 T15_WINDOW_MIN = float(os.getenv("V11_T15_WINDOW_MIN", "15") or 15)
 
