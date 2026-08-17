@@ -6,9 +6,10 @@ from typing import Any
 
 from . import journal
 from . import v13_rich_run_residual as rich
+from .probability_contract_v13 import row_is_predictively_compatible
 
 OUT = Path("data/v13_rich_native_candidate.json")
-SCHEMA = "v13-rich-native-candidate-v2"
+SCHEMA = "v13-rich-native-candidate-v3"
 TARGET_PHASE = "FINAL"
 MIN_GAMES = 300
 MIN_HOLDOUT = 100
@@ -28,22 +29,31 @@ def _day(r: dict[str,Any]) -> str:
     return str(r.get("game_date") or "")[:10]
 
 
+def _means(r: dict[str,Any]):
+    hm,am=r.get("hmu"),r.get("amu")
+    if hm is not None and am is not None:return rich._num(hm),rich._num(am),"v13_hmu_amu"
+    hm,am=r.get("projected_home_runs"),r.get("projected_away_runs")
+    if hm is not None and am is not None:return rich._num(hm),rich._num(am),"legacy_projected_runs"
+    return None,None,"missing"
+
+
 def _native_rows(rows: list[dict[str,Any]]) -> list[dict[str,Any]]:
     best={}
     for r in rows:
+        if not row_is_predictively_compatible(r): continue
         if r.get("result_status") != "FINAL" or r.get("home_score") is None or r.get("away_score") is None: continue
         if str(r.get("phase") or "").upper() != TARGET_PHASE: continue
         if not r.get("point_in_time") or r.get("features_from_postgame") is True: continue
         mods=(r.get("shadow_v124") or {}).get("modules") or {}
         if not mods: continue
-        hm=r.get("projected_home_runs");am=r.get("projected_away_runs")
+        hm,am,source=_means(r)
         if hm is None or am is None: continue
         gid=str(r.get("game_pk") or "");rank=str(r.get("analyzed_at") or "")
-        if gid and (gid not in best or rank>best[gid][0]):best[gid]=(rank,r)
+        if gid and (gid not in best or rank>best[gid][0]):best[gid]=(rank,r,hm,am,source)
     out=[]
-    for _,r in best.values():
+    for _,r,hm,am,source in best.values():
         out.append({"game_pk":r.get("game_pk"),"game_date":r.get("game_date"),
-                    "home_mu":rich._num(r.get("projected_home_runs")),"away_mu":rich._num(r.get("projected_away_runs")),
+                    "home_mu":hm,"away_mu":am,"mean_source":source,
                     "home_score":r.get("home_score"),"away_score":r.get("away_score"),
                     "modules":(r.get("shadow_v124") or {}).get("modules") or {}})
     return sorted(out,key=lambda r:(_day(r),str(r.get("game_pk"))))
@@ -74,7 +84,8 @@ def build(rows: list[dict[str,Any]] | None = None) -> dict[str,Any]:
     base={"schema":SCHEMA,"target_phase":TARGET_PHASE,"native_games":len(native),"minimum_games":MIN_GAMES,"active_for_production":False,"status":"COLLECTING",
           "native_feature_coverage":coverage,"available_native_modules":list(NATIVE_MODULES),
           "safety":{"market_probability_used":False,"historical_reconstruction_used_for_promotion":False,"point_in_time_required":True,
-                    "phase_specific_training":True,"selector_unchanged_until_promotion":True,"weather_requires_native_pregame_snapshot":True}}
+                    "native_predictive_contract_required":True,"phase_specific_training":True,"selector_unchanged_until_promotion":True,
+                    "weather_requires_native_pregame_snapshot":True}}
     if len(native)<MIN_GAMES:return base
     train,hold=_split_outer(native)
     if len(hold)<MIN_HOLDOUT:return base
@@ -93,7 +104,7 @@ def build(rows: list[dict[str,Any]] | None = None) -> dict[str,Any]:
     base.update({"status":"PROMOTION_ELIGIBLE" if passed else "OUTER_HOLDOUT_REJECTED","active_for_production":bool(passed),
                  "train_games":len(train),"holdout_games":len(hold),"selection":{"selected_modules":list(selected),"ridge":ridge,"walk_forward":wf},
                  "model":model,"outer_holdout":outer,
-                 "promotion_rule":"FINAL only; >=300 exact point-in-time games; train-only walk-forward >=75% pass; >=100-game untouched outer holdout improves RMSE and NB NLL with MAE regression <=0.01"})
+                 "promotion_rule":"FINAL only; >=300 exact point-in-time V13-contract games; train-only walk-forward >=75% pass; >=100-game untouched outer holdout improves RMSE and NB NLL with MAE regression <=0.01"})
     return base
 
 
