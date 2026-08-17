@@ -2,8 +2,10 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from v11 import v13_daily_tracking as t
+from v11 import v13_tracking_sync as sync
 
 
 class TestV13DailyTracking(unittest.TestCase):
@@ -38,6 +40,24 @@ class TestV13DailyTracking(unittest.TestCase):
             self.assertEqual(rep["by_market"]["ML"]["priced"],1)
             self.assertEqual(rep["by_nominal_ev_band"]["ML"][">=10%"]["wins"],1)
             self.assertEqual(rep["by_market"]["TOTAL"]["priced"],0)
+
+    def test_sync_from_persisted_journal_is_deduplicated(self):
+        with tempfile.TemporaryDirectory() as td:
+            t.TRACK_FILE = Path(td) / "track.jsonl"
+            t.REPORT_FILE = Path(td) / "report.json"
+            rows=[{
+                "run_id":"abc","game_pk":2,"game_date":"2026-08-17T21:00:00+00:00","analyzed_at":"2026-08-17T19:00:00+00:00",
+                "target_date":"2026-08-17","home":"Home","away":"Away","phase":"FINAL",
+                "options":[{"market":"ML","name":"Away","point":None,"p_baseball_calibrated":.53,"p_market":.50,"p_win":.53,"p_push":0,
+                            "winamax_eval":{"price":2.02,"v11_price_gate":{"ev_at_price":.04,"required_price":1.95}}}]
+            }]
+            with patch.object(sync.journal,"load_rows",return_value=rows):
+                self.assertEqual(sync.sync_from_journal(),1)
+                self.assertEqual(sync.sync_from_journal(),0)
+            state=t.fold(); self.assertEqual(len(state),1)
+            item=next(iter(state.values()))
+            self.assertEqual(item["source_run_id"],"abc")
+            self.assertAlmostEqual(item["nominal_ev"],.0706,places=4)
 
     def test_band_boundaries(self):
         self.assertEqual(t._band(-.001),"<0%")
