@@ -87,15 +87,22 @@ def capture_results(results, analyzed_at=None, target_date=None):
 
 def _market_update(k, known, at, mins, price, sharp):
     row={"schema":"v13-market-tracking-v2","event_type":"MARKET_UPDATE","tracking_key":k,
-         "last_market_observed_at":at,"latest_winamax_price":price,"latest_sharp_fair":sharp,
-         "minutes_to_start":round(mins,2) if mins is not None else None}
-    close_window=float(getattr(config,"CLOSING_CANDIDATE_WINDOW_MIN",90) or 90)
-    if mins is not None and 0 < mins <= close_window:
-        row.update({"close_price":price,"close_sharp_fair":sharp,"close_observed_at":at,"close_minutes_to_start":round(mins,2)})
-        base=_num(known.get("winamax_price"))
-        if base and price:row["price_clv_pct"]=round(base/price-1,6)
-        pm=_num(known.get("p_market")); ps=_num(sharp)
-        if pm is not None and ps is not None:row["sharp_probability_move"]=round(ps-pm,6)
+         "last_market_observed_at":at,"minutes_to_start":round(mins,2) if mins is not None else None}
+    # Never overwrite a previously valid observation with None when a bookmaker
+    # temporarily omits a market from an API response.
+    if price is not None: row["latest_winamax_price"] = price
+    if sharp is not None: row["latest_sharp_fair"] = sharp
+    close_window=float(getattr(config,"CLOSING_CANDIDATE_WINDOW_MIN",20) or 20)
+    if mins is not None and 0 < mins <= close_window and (price is not None or sharp is not None):
+        row["close_observed_at"]=at; row["close_minutes_to_start"]=round(mins,2)
+        if price is not None:
+            row["close_price"]=price
+            base=_num(known.get("winamax_price"))
+            if base:row["price_clv_pct"]=round(base/price-1,6)
+        if sharp is not None:
+            row["close_sharp_fair"]=sharp
+            pm=_num(known.get("p_market")); ps=_num(sharp)
+            if pm is not None and ps is not None:row["sharp_probability_move"]=round(ps-pm,6)
     return row
 
 
@@ -155,7 +162,7 @@ def snapshot_market(analyzed_at=None):
         if not e:continue
         price=_winamax_price_from_event(e,s); sharp=None
         try:
-            sharp=(market.sharp_consensus(e,str(s.get("market") or ""),s.get("pick"),s.get("point"),as_of=at) or {}).get("fair")
+            sharp=(market.sharp_consensus(e,str(s.get("market") or ""),s.get("pick"),s.get("point"),as_of=at) or {}).get("p")
         except Exception:sharp=None
         rows.append(_market_update(k,s,at,mins,price,sharp))
     n=_append(rows); write_report(); return n
@@ -204,7 +211,7 @@ def write_report():
             d["n"]+=1; d["wins"]+=x.get("settled_result")=="WIN"; d["losses"]+=x.get("settled_result")=="LOSS"; d["pushes"]+=x.get("settled_result")=="PUSH"; d["pnl_1u"]+=_num(x.get("flat_1u_pnl"),0) or 0
         for d in bands.values():d["pnl_1u"]=round(d["pnl_1u"],4); d["roi_1u"]=round(d["pnl_1u"]/max(1,d["n"]-d["pushes"]),4)
         by_edge[market_name]=bands
-    report={"schema":"v13-market-tracking-report-v2","generated_at":datetime.now(timezone.utc).isoformat(),"tracked_options":len(xs),"settled_options":len(settled),"by_market":by_market,"by_nominal_ev_band":by_edge,"methodology":{"unit_pnl":"descriptive flat 1u; complementary displayed sides are not a betting portfolio","closing":"last eligible pregame observation inside configured closing window; scheduled raw market polls do not recompute model probabilities","missing_price":"never imputed; absent Winamax RL/TOTAL prices remain unpriced and are still tracked against sharp probability"}}
+    report={"schema":"v13-market-tracking-report-v2","generated_at":datetime.now(timezone.utc).isoformat(),"tracked_options":len(xs),"settled_options":len(settled),"by_market":by_market,"by_nominal_ev_band":by_edge,"methodology":{"unit_pnl":"descriptive flat 1u; complementary displayed sides are not a betting portfolio","closing":"last valid eligible pregame observation inside configured closing window; missing API fields never erase a valid close","missing_price":"never imputed; absent Winamax RL/TOTAL prices remain unpriced and are still tracked against sharp probability"}}
     REPORT_FILE.parent.mkdir(parents=True,exist_ok=True); REPORT_FILE.write_text(json.dumps(report,indent=2,sort_keys=True),encoding="utf-8"); return report
 
 
