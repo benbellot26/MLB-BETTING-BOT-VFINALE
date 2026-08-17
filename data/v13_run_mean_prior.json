@@ -9,10 +9,9 @@
     "validation": 341,
     "test": 356
   },
-  "exact_games": 29,
+  "exact_games": 5,
+  "exact_final_games": 5,
   "exact_phase_counts": {
-    "EARLY": 12,
-    "LATE": 12,
     "FINAL": 5
   },
   "selected_variant": "side_bias_shared_slope",
@@ -35,15 +34,21 @@
     "nll_gain": 0.0024821206487626313
   },
   "exact_transfer": {
-    "mae_gain": 0.010730872222734167,
-    "rmse_gain": 0.017192332263913812,
-    "nll_gain": 0.0036249046667955476
+    "games": 5,
+    "status": "COLLECTING_FINAL_ONLY",
+    "mae_gain": null,
+    "rmse_gain": null,
+    "nll_gain": null
   },
-  "activation_rule": "Historical validation, untouched chronological test and latest exact V13 transfer cohort all improve RMSE and Negative Binomial NLL; MAE does not regress.",
+  "exact_transfer_status": "COLLECTING_FINAL_ONLY",
+  "exact_transfer_required_games": 20,
+  "activation_rule": "Historical chronological validation and untouched future test improve RMSE and Negative Binomial NLL without material MAE regression. Exact V13 FINAL transfer is monitored independently until at least 20 genuine FINAL replays are available.",
+  "transfer_caveat": "Only genuine FINAL exact replays count as V13 transfer evidence for this FINAL-only prior. EARLY/LATE exact replays are excluded.",
   "safety": {
     "historical_odds_used": false,
     "market_probability_used": false,
     "feature_vector_fabricated": false,
+    "exact_transfer_used_for_activation": false,
     "applies_only_when_native_residual_and_legacy_run_bootstrap_are_inactive": true
   }
 }
