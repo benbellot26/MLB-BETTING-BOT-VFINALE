@@ -142,7 +142,10 @@ def _option_probability(opt: dict[str,Any]) -> float | None:
 
 def examples_from_rows(rows: list[dict[str,Any]]) -> dict[str, list[tuple[float,int]]]:
     buckets: dict[str,list[tuple[float,int]]] = {"GLOBAL":[]}
-    seen: set[tuple[str,str,str,str]] = set()
+    # Phase belongs to the identity of a calibration observation. A FINAL replay
+    # must never be discarded merely because an EARLY snapshot exists for the
+    # same game/market/side/line.
+    seen: set[tuple[str,str,str,str,str]] = set()
     for row in sorted(rows, key=lambda r: (str(r.get("game_date") or ""), str(r.get("analyzed_at") or ""))):
         phase = str(row.get("phase") or "EARLY").upper(); game_pk = str(row.get("game_pk") or "")
         for opt in row.get("options") or []:
@@ -151,7 +154,7 @@ def examples_from_rows(rows: list[dict[str,Any]]) -> dict[str, list[tuple[float,
             p = _option_probability(opt)
             if p is None: continue
             market = str(opt.get("market") or "").upper(); name = str(opt.get("name") or ""); point = str(opt.get("point"))
-            key = (game_pk, market, name, point)
+            key = (game_pk, phase, market, name, point)
             if key in seen: continue
             seen.add(key)
             ex = (p, 1 if result == "WIN" else 0)
@@ -186,22 +189,30 @@ def load_model(path: Path = MODEL_FILE) -> dict[str,Any]:
         return {"schema":"v13-baseball-calibration-model-v1","calibrators":{},"status":"INVALID","error":type(exc).__name__,"baseball_only":True}
 
 
+def evidence_counts(model: dict[str,Any], market: str, phase: str) -> dict[str,int]:
+    cals = model.get("calibrators") or {}
+    phase_key=f"PHASE:{phase.upper()}:{market.upper()}"; market_key=f"MARKET:{market.upper()}"
+    return {
+        "phase_n": int((cals.get(phase_key) or {}).get("n") or 0),
+        "market_n": int((cals.get(market_key) or {}).get("n") or 0),
+        "global_n": int((cals.get("GLOBAL") or {}).get("n") or 0),
+    }
+
+
 def choose_calibrator(model: dict[str,Any], market: str, phase: str) -> tuple[dict[str,Any], str]:
     cals = model.get("calibrators") or {}
     phase_key=f"PHASE:{phase.upper()}:{market.upper()}"; market_key=f"MARKET:{market.upper()}"
+    counts = evidence_counts(model, market, phase)
     for key in (phase_key, market_key, "GLOBAL"):
         cal = cals.get(key) or {}
         if cal.get("active"):
-            return cal, key
-    # Identity calibration must remain identity while evidence is insufficient,
-    # but n should reflect real baseball-only observations instead of pretending
-    # that no evidence exists. Prefer market-specific evidence over mixed-market
-    # GLOBAL evidence; phase-specific n is retained as metadata but not allowed to
-    # reduce n when the same model/market has more exact observations in other phases.
-    phase_n=int((cals.get(phase_key) or {}).get("n") or 0)
-    market_n=int((cals.get(market_key) or {}).get("n") or 0)
-    evidence_n=max(phase_n, market_n)
-    return {"active":False,"method":"identity","n":evidence_n,"phase_n":phase_n,"market_n":market_n}, "identity"
+            out=dict(cal); out.update(counts)
+            return out, key
+    # Identity remains identity until a challenger wins its holdout. For an
+    # interval tied to a specific phase, report/use the phase sample whenever it
+    # exists; only fall back to market-level n when this phase has no evidence.
+    evidence_n = counts["phase_n"] if counts["phase_n"] > 0 else counts["market_n"]
+    return {"active":False,"method":"identity","n":evidence_n,**counts}, "identity"
 
 
 def calibrate(p: float, market: str, phase: str, model: dict[str,Any] | None = None) -> tuple[float,str,int]:
