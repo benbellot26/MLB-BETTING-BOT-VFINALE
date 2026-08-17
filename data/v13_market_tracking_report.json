@@ -3,11 +3,11 @@
     "ML": {
       "closing_price_observed": 0,
       "closing_sharp_observed": 0,
-      "positive_ev_pnl_1u": -2.9,
-      "positive_ev_wins": 6,
-      "positive_nominal_ev": 17,
-      "priced": 88,
-      "settled": 88
+      "positive_ev_pnl_1u": -8.45,
+      "positive_ev_wins": 21,
+      "positive_nominal_ev": 58,
+      "priced": 338,
+      "settled": 338
     },
     "RUNLINE": {
       "closing_price_observed": 0,
@@ -16,7 +16,7 @@
       "positive_ev_wins": 0,
       "positive_nominal_ev": 0,
       "priced": 0,
-      "settled": 136
+      "settled": 524
     },
     "TOTAL": {
       "closing_price_observed": 0,
@@ -25,70 +25,73 @@
       "positive_ev_wins": 0,
       "positive_nominal_ev": 0,
       "priced": 0,
-      "settled": 88
+      "settled": 338
     }
   },
   "by_nominal_ev_band": {
     "ML": {
       "0-1%": {
-        "losses": 6,
-        "n": 6,
-        "pnl_1u": -6.0,
+        "losses": 18,
+        "n": 19,
+        "pnl_1u": -16.6,
         "pushes": 0,
-        "roi_1u": -1.0,
-        "wins": 0
+        "roi_1u": -0.8737,
+        "wins": 1
       },
       "1-3%": {
-        "losses": 2,
-        "n": 4,
-        "pnl_1u": 0.15,
+        "losses": 7,
+        "n": 14,
+        "pnl_1u": 0.95,
         "pushes": 0,
-        "roi_1u": 0.0375,
-        "wins": 2
+        "roi_1u": 0.0679,
+        "wins": 7
       },
       "3-5%": {
-        "losses": 1,
-        "n": 2,
-        "pnl_1u": 0.5,
+        "losses": 4,
+        "n": 7,
+        "pnl_1u": 0.4,
         "pushes": 0,
-        "roi_1u": 0.25,
-        "wins": 1
+        "roi_1u": 0.0571,
+        "wins": 3
       },
       "5-10%": {
-        "losses": 1,
-        "n": 2,
-        "pnl_1u": 0.5,
+        "losses": 6,
+        "n": 10,
+        "pnl_1u": -0.05,
         "pushes": 0,
-        "roi_1u": 0.25,
-        "wins": 1
+        "roi_1u": -0.005,
+        "wins": 4
       },
       "<0%": {
-        "losses": 33,
-        "n": 71,
-        "pnl_1u": 0.71,
+        "losses": 132,
+        "n": 280,
+        "pnl_1u": 0.49,
         "pushes": 0,
-        "roi_1u": 0.01,
-        "wins": 38
+        "roi_1u": 0.0018,
+        "wins": 148
       },
       ">=10%": {
-        "losses": 1,
-        "n": 3,
-        "pnl_1u": 1.95,
+        "losses": 2,
+        "n": 8,
+        "pnl_1u": 6.85,
         "pushes": 0,
-        "roi_1u": 0.65,
-        "wins": 2
+        "roi_1u": 0.8562,
+        "wins": 6
       }
     },
     "RUNLINE": {},
     "TOTAL": {}
   },
-  "generated_at": "2026-08-17T11:58:55.244246+00:00",
+  "generated_at": "2026-08-17T13:57:25.599889+00:00",
   "methodology": {
     "closing": "last valid eligible pregame observation inside configured closing window; missing API fields never erase a valid close",
     "missing_price": "never imputed; absent Winamax RL/TOTAL prices remain unpriced and are still tracked against sharp probability",
+    "observation_identity": "immutable game/market/side/line + phase + analysis as-of; later phases never overwrite earlier forecasts",
     "unit_pnl": "descriptive flat 1u; complementary displayed sides are not a betting portfolio"
   },
-  "schema": "v13-market-tracking-report-v2",
-  "settled_options": 312,
-  "tracked_options": 312
+  "schema": "v13-market-tracking-report-v3",
+  "settled_observations": 1200,
+  "settled_options": 1200,
+  "tracked_observations": 1200,
+  "tracked_options": 1200
 }
