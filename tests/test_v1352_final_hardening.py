@@ -130,6 +130,12 @@ class V1352FinalHardeningTests(unittest.TestCase):
         self.assertIn('if dist.get("active"):', text)
         self.assertIn('MODEL_GENERATION_FINGERPRINT', text)
 
+    def test_runtime_restores_both_standard_runline_pairs(self):
+        text=Path("v11/v13_runtime.py").read_text(encoding="utf-8")
+        self.assertIn('merged.update({-1.5, 1.5})', text)
+        self.assertIn('engine_v12._analysis_points = v13_analysis_points', text)
+        self.assertIn('cannot bypass the selector', text)
+
 
 if __name__ == "__main__":
     unittest.main()
