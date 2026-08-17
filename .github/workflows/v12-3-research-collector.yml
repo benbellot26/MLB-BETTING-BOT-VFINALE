@@ -27,6 +27,11 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Build contract-strict V13 calibration artifact
+        run: |
+          mkdir -p data runtime/v11
+          python -m v11.v13_train
+
       - name: Collect native V13 point-in-time research snapshot
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
@@ -40,7 +45,6 @@ jobs:
           V1232_ENABLE_V115_SHADOW: '1'
           V124_ENABLE_SHADOW: '1'
         run: |
-          mkdir -p data runtime/v11
           python -m v11.v13_entry
 
       - name: Assert no research recommendation was created
@@ -77,6 +81,7 @@ jobs:
           [ -f data/v11_3_live.jsonl ] && git add data/v11_3_live.jsonl
           [ -f data/v11_3_live_report.json ] && git add data/v11_3_live_report.json
           [ -f data/v11_bet_ledger.jsonl ] && git add -f data/v11_bet_ledger.jsonl
+          [ -f data/v13_baseball_calibration.json ] && git add -f data/v13_baseball_calibration.json
           if ! git diff --cached --quiet; then
             git commit -m 'data: collect native V13 phase snapshot [skip ci]'
             git pull --rebase origin "$GITHUB_REF_NAME"
