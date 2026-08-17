@@ -15,6 +15,9 @@ MIN_MARKET = int(os.getenv("V13_CAL_MIN_MARKET", "180") or 180)
 MIN_PHASE = int(os.getenv("V13_CAL_MIN_PHASE", "140") or 140)
 HOLDOUT_MIN = int(os.getenv("V13_CAL_HOLDOUT_MIN", "80") or 80)
 MAX_ECE_REGRESSION = float(os.getenv("V13_CAL_MAX_ECE_REGRESSION", "0.002") or .002)
+MIN_WF_WINDOWS = int(os.getenv("V13_CAL_MIN_WF_WINDOWS", "3") or 3)
+MIN_WF_PASS_RATE = float(os.getenv("V13_CAL_MIN_WF_PASS_RATE", "0.67") or .67)
+RELIABILITY_EDGES = (0.0, .40, .45, .50, .55, .60, .65, .70, 1.001)
 
 
 def _num(x: Any, d: float = 0.0) -> float:
@@ -40,9 +43,8 @@ def _binary_metrics(examples: list[tuple[float, int]]) -> dict[str, Any]:
     n = len(examples)
     brier = sum((p-y)**2 for p, y in examples) / n
     logloss = sum(-(y*math.log(max(.001, p)) + (1-y)*math.log(max(.001, 1-p))) for p, y in examples) / n
-    bins = [(0,.45),(.45,.50),(.50,.55),(.55,.60),(.60,.65),(.65,.70),(.70,1.001)]
     ece = 0.0
-    for lo, hi in bins:
+    for lo, hi in zip(RELIABILITY_EDGES[:-1], RELIABILITY_EDGES[1:]):
         z = [(p,y) for p,y in examples if lo <= p < hi]
         if z:
             ece += len(z)/n * abs(sum(p for p,_ in z)/len(z) - sum(y for _,y in z)/len(z))
@@ -50,6 +52,23 @@ def _binary_metrics(examples: list[tuple[float, int]]) -> dict[str, Any]:
     if n >= 40 and 0 < sum(y for _,y in examples) < n:
         intercept, slope = _fit_platt(examples)
     return {"n": n, "brier": brier, "logloss": logloss, "ece": ece, "intercept": intercept, "slope": slope}
+
+
+def _reliability_bins(examples: list[tuple[float,int]]) -> list[dict[str,Any]]:
+    bins=[]
+    for lo,hi in zip(RELIABILITY_EDGES[:-1], RELIABILITY_EDGES[1:]):
+        z=[(p,y) for p,y in examples if lo <= p < hi]
+        if not z:
+            continue
+        n=len(z); avgp=sum(p for p,_ in z)/n; hit=sum(y for _,y in z)/n
+        gap=abs(hit-avgp)
+        se=math.sqrt(max(.01,hit*(1-hit))/n)
+        # This is an empirical reliability uncertainty, not outcome variance.
+        # Small bins stay wide; persistent miscalibration also widens the band.
+        sigma=max(.02,min(.14,gap+se))
+        bins.append({"lo":lo,"hi":hi,"n":n,"avg_probability":avgp,"hit_rate":hit,
+                     "calibration_gap":gap,"sampling_se":se,"sigma":sigma})
+    return bins
 
 
 def _fit_platt(examples: list[tuple[float,int]], iterations: int = 1200, lr: float = .02, l2: float = .025) -> tuple[float, float]:
@@ -79,6 +98,14 @@ def _fit_beta(examples: list[tuple[float, int]], iterations: int = 1500, lr: flo
     return {"method": "beta", "c": c, "a": a, "b": b}
 
 
+def _params(method: str, train: list[tuple[float,int]]) -> dict[str,Any]:
+    if method == "platt":
+        a,b=_fit_platt(train); return {"method":"platt","a":a,"b":b}
+    if method == "beta":
+        return _fit_beta(train)
+    return {"method":"identity"}
+
+
 def _apply(params: dict[str, Any], p: float) -> float:
     p = clip_probability(p)
     method = str(params.get("method") or "identity")
@@ -91,45 +118,72 @@ def _apply(params: dict[str, Any], p: float) -> float:
 
 
 def _candidate(method: str, train: list[tuple[float,int]], hold: list[tuple[float,int]]) -> dict[str, Any]:
-    if method == "platt":
-        a,b = _fit_platt(train); params = {"method":"platt","a":a,"b":b}
-    elif method == "beta":
-        params = _fit_beta(train)
-    else:
-        params = {"method":"identity"}
+    params = _params(method, train)
     transformed = [(_apply(params,p),y) for p,y in hold]
     metrics = _binary_metrics(transformed)
     return {"params": params, "metrics": metrics}
 
 
+def _gain(candidate: dict[str,Any], baseline: dict[str,Any]) -> dict[str,Any]:
+    m=candidate.get("metrics") or {}
+    gain_b=_num(baseline.get("brier"),9)-_num(m.get("brier"),9)
+    gain_l=_num(baseline.get("logloss"),9)-_num(m.get("logloss"),9)
+    ece_ok=_num(m.get("ece"),9) <= _num(baseline.get("ece"),9)+MAX_ECE_REGRESSION
+    return {"brier_gain":gain_b,"logloss_gain":gain_l,"ece_ok":ece_ok,
+            "passes":gain_b>0 and gain_l>=0 and ece_ok}
+
+
+def _walk_forward(method: str, discovery: list[tuple[float,int]], minimum: int) -> dict[str,Any]:
+    windows=[]
+    n=len(discovery)
+    for frac in (.50,.62,.74,.84):
+        cut=int(n*frac)
+        width=max(24,int(n*.12))
+        end=min(n,cut+width)
+        if cut < max(40, minimum//2) or end-cut < 20:
+            continue
+        train=discovery[:cut]; hold=discovery[cut:end]
+        if len({y for _,y in train})<2 or len({y for _,y in hold})<2:
+            continue
+        baseline=_binary_metrics(hold)
+        cand=_candidate(method,train,hold)
+        g=_gain(cand,baseline)
+        windows.append({"train_n":len(train),"holdout_n":len(hold),"baseline":baseline,
+                        "candidate":cand["metrics"],**g})
+    rate=sum(1 for w in windows if w["passes"])/len(windows) if windows else 0.0
+    avg_b=sum(_num(w.get("brier_gain")) for w in windows)/len(windows) if windows else -9.0
+    avg_l=sum(_num(w.get("logloss_gain")) for w in windows)/len(windows) if windows else -9.0
+    return {"windows":windows,"pass_rate":rate,"avg_brier_gain":avg_b,"avg_logloss_gain":avg_l,
+            "passes":len(windows)>=MIN_WF_WINDOWS and rate>=MIN_WF_PASS_RATE and avg_b>0 and avg_l>=0}
+
+
 def fit_calibrator(examples: list[tuple[float,int]], minimum: int) -> dict[str, Any]:
     examples = [(clip_probability(p), int(bool(y))) for p,y in examples]
-    out = {"active": False, "method": "identity", "n": len(examples), "status": "COLLECTING"}
+    out = {"active": False, "method": "identity", "n": len(examples), "status": "COLLECTING",
+           "reliability_bins": _reliability_bins(examples)}
     if len(examples) < minimum + HOLDOUT_MIN:
         return out
-    cut = max(minimum, len(examples)-max(HOLDOUT_MIN, int(len(examples)*.25)))
-    if cut >= len(examples):
-        return out
-    train, hold = examples[:cut], examples[cut:]
-    if len({y for _,y in train}) < 2 or len({y for _,y in hold}) < 2:
-        out["status"] = "COLLECTING_CLASSES"; return out
-    baseline = _binary_metrics(hold)
-    candidates = {m: _candidate(m, train, hold) for m in ("identity","platt","beta")}
-    eligible = []
-    for name, cand in candidates.items():
-        m = cand["metrics"]
-        gain_b = _num(baseline.get("brier"),9)-_num(m.get("brier"),9)
-        gain_l = _num(baseline.get("logloss"),9)-_num(m.get("logloss"),9)
-        ece_ok = _num(m.get("ece"),9) <= _num(baseline.get("ece"),9)+MAX_ECE_REGRESSION
-        cand.update({"brier_gain":gain_b,"logloss_gain":gain_l,"ece_ok":ece_ok})
-        if name != "identity" and gain_b > 0 and gain_l >= 0 and ece_ok:
-            eligible.append((name,cand))
+    final_n=max(HOLDOUT_MIN,int(len(examples)*.20))
+    discovery, final_hold = examples[:-final_n], examples[-final_n:]
+    if len(discovery) < minimum or len({y for _,y in discovery})<2 or len({y for _,y in final_hold})<2:
+        out["status"]="COLLECTING_CLASSES"; return out
+
+    wf={m:_walk_forward(m,discovery,minimum) for m in ("platt","beta")}
+    stable=[m for m in ("platt","beta") if wf[m].get("passes")]
+    baseline=_binary_metrics(final_hold)
+    candidates={"identity":{"params":{"method":"identity"},"metrics":baseline}}
+    for method in stable:
+        cand=_candidate(method,discovery,final_hold)
+        cand.update(_gain(cand,baseline)); candidates[method]=cand
+    eligible=[(m,c) for m,c in candidates.items() if m!="identity" and c.get("passes")]
     if eligible:
-        name,best = min(eligible, key=lambda x: (_num(x[1]["metrics"].get("brier"),9), _num(x[1]["metrics"].get("logloss"),9)))
-        out.update(best["params"]); out.update({"active":True,"method":name,"status":"PASS"})
+        name,best=min(eligible,key=lambda x:(_num(x[1]["metrics"].get("brier"),9),_num(x[1]["metrics"].get("logloss"),9)))
+        out.update(best["params"]); out.update({"active":True,"method":name,"status":"PASS_NESTED_WALK_FORWARD"})
     else:
-        out.update({"active":False,"method":"identity","status":"IDENTITY_BEST"})
-    out.update({"train_n":len(train),"holdout_n":len(hold),"baseline":baseline,"candidates":candidates})
+        out.update({"active":False,"method":"identity","status":"IDENTITY_BEST_OR_UNSTABLE"})
+    out.update({"discovery_n":len(discovery),"final_holdout_n":len(final_hold),"baseline":baseline,
+                "walk_forward":wf,"candidates":candidates,
+                "validation_protocol":"train-only expanding walk-forward selects method; untouched chronological final holdout decides activation"})
     return out
 
 
@@ -146,6 +200,7 @@ def examples_from_rows(rows: list[dict[str,Any]]) -> dict[str, list[tuple[float,
     Phase buckets keep one forecast per game/phase/market. Market buckets keep
     only one forecast per game/market, using the latest pregame phase available,
     so repeated EARLY/LATE/FINAL snapshots cannot inflate effective sample size.
+    GLOBAL is retained for diagnostics only and is never a runtime fallback.
     """
     buckets: dict[str,list[tuple[float,int]]] = {"GLOBAL":[]}
     phase_seen: set[tuple[str,str,str]] = set()
@@ -178,8 +233,9 @@ def build_model(rows: list[dict[str,Any]]) -> dict[str,Any]:
     for key, examples in buckets.items():
         minimum = MIN_GLOBAL if key == "GLOBAL" else MIN_PHASE if key.startswith("PHASE:") else MIN_MARKET
         calibrators[key] = fit_calibrator(examples, minimum)
-    return {"schema":"v13-baseball-calibration-model-v1","generated_at":datetime.now(timezone.utc).isoformat(),"baseball_only":True,
-            "market_probability_used_as_feature":False,"calibrators":calibrators,"rows_seen":len(rows)}
+    return {"schema":"v13-baseball-calibration-model-v2","generated_at":datetime.now(timezone.utc).isoformat(),"baseball_only":True,
+            "market_probability_used_as_feature":False,"calibrators":calibrators,"rows_seen":len(rows),
+            "runtime_global_fallback_allowed":False}
 
 
 def save_model(model: dict[str,Any], path: Path = MODEL_FILE) -> dict[str,Any]:
@@ -188,37 +244,45 @@ def save_model(model: dict[str,Any], path: Path = MODEL_FILE) -> dict[str,Any]:
 
 def load_model(path: Path = MODEL_FILE) -> dict[str,Any]:
     if not path.exists():
-        return {"schema":"v13-baseball-calibration-model-v1","calibrators":{},"status":"ABSENT","baseball_only":True}
+        return {"schema":"v13-baseball-calibration-model-v2","calibrators":{},"status":"ABSENT","baseball_only":True}
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
-        if data.get("schema") != "v13-baseball-calibration-model-v1" or data.get("baseball_only") is not True:
-            return {"schema":"v13-baseball-calibration-model-v1","calibrators":{},"status":"INCOMPATIBLE","baseball_only":True}
+        if data.get("schema") not in {"v13-baseball-calibration-model-v1","v13-baseball-calibration-model-v2"} or data.get("baseball_only") is not True:
+            return {"schema":"v13-baseball-calibration-model-v2","calibrators":{},"status":"INCOMPATIBLE","baseball_only":True}
         return data
     except Exception as exc:
-        return {"schema":"v13-baseball-calibration-model-v1","calibrators":{},"status":"INVALID","error":type(exc).__name__,"baseball_only":True}
+        return {"schema":"v13-baseball-calibration-model-v2","calibrators":{},"status":"INVALID","error":type(exc).__name__,"baseball_only":True}
 
 
 def evidence_counts(model: dict[str,Any], market: str, phase: str) -> dict[str,int]:
     cals = model.get("calibrators") or {}
     phase_key=f"PHASE:{phase.upper()}:{market.upper()}"; market_key=f"MARKET:{market.upper()}"
-    return {
-        "phase_n": int((cals.get(phase_key) or {}).get("n") or 0),
-        "market_n": int((cals.get(market_key) or {}).get("n") or 0),
-        "global_n": int((cals.get("GLOBAL") or {}).get("n") or 0),
-    }
+    return {"phase_n":int((cals.get(phase_key) or {}).get("n") or 0),
+            "market_n":int((cals.get(market_key) or {}).get("n") or 0),
+            "global_n":int((cals.get("GLOBAL") or {}).get("n") or 0)}
 
 
 def choose_calibrator(model: dict[str,Any], market: str, phase: str) -> tuple[dict[str,Any], str]:
     cals = model.get("calibrators") or {}
     phase_key=f"PHASE:{phase.upper()}:{market.upper()}"; market_key=f"MARKET:{market.upper()}"
     counts = evidence_counts(model, market, phase)
-    for key in (phase_key, market_key, "GLOBAL"):
+    # Never calibrate one market from another market's GLOBAL bucket.
+    for key in (phase_key, market_key):
         cal = cals.get(key) or {}
         if cal.get("active"):
-            out=dict(cal); out.update(counts)
-            return out, key
+            out=dict(cal); out.update(counts); return out,key
     evidence_n = counts["phase_n"] if counts["phase_n"] > 0 else counts["market_n"]
     return {"active":False,"method":"identity","n":evidence_n,**counts}, "identity"
+
+
+def reliability_sigma(model: dict[str,Any], market: str, phase: str, p: float) -> tuple[float | None,str]:
+    cals=model.get("calibrators") or {}
+    for key in (f"PHASE:{phase.upper()}:{market.upper()}",f"MARKET:{market.upper()}"):
+        bins=(cals.get(key) or {}).get("reliability_bins") or []
+        for b in bins:
+            if _num(b.get("lo")) <= p < _num(b.get("hi"),1.001):
+                return _num(b.get("sigma"),0.0) or None,key
+    return None,"none"
 
 
 def calibrate(p: float, market: str, phase: str, model: dict[str,Any] | None = None) -> tuple[float,str,int]:
