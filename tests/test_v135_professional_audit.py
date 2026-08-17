@@ -37,11 +37,11 @@ class V135ProfessionalAuditTests(unittest.TestCase):
         rows = v13_train.eligible_probability_rows([legacy, accepted])
         self.assertEqual([r["game_pk"] for r in rows], [2])
 
-    def test_exact_replay_tier_a_can_bypass_live_contract(self):
+    def test_exact_replay_tier_cannot_bypass_current_contract(self):
         exact = self._row(contract=False)
         exact["v13_evidence_tier"] = "A_EXACT_REPLAY"
         rows = v13_train.eligible_probability_rows([exact])
-        self.assertEqual(len(rows), 1)
+        self.assertEqual(len(rows), 0)
 
     def test_global_calibrator_is_never_runtime_fallback(self):
         model = {"calibrators": {
@@ -110,6 +110,17 @@ class V135ProfessionalAuditTests(unittest.TestCase):
         self.assertIn("python -m v11.v13_entry", text)
         self.assertNotIn("python -m v11.v123_entry", text)
         self.assertIn("predictive contract", text.lower())
+
+
+def load_tests(loader, tests, pattern):
+    """Production already runs this audit module; aggregate every hardening layer here."""
+    from tests.test_v1351_audit_fixes import V1351AuditFixesTest
+    from tests.test_v1352_final_hardening import V1352FinalHardeningTests
+    suite=unittest.TestSuite()
+    suite.addTests(tests)
+    suite.addTests(loader.loadTestsFromTestCase(V1351AuditFixesTest))
+    suite.addTests(loader.loadTestsFromTestCase(V1352FinalHardeningTests))
+    return suite
 
 
 if __name__ == "__main__":
