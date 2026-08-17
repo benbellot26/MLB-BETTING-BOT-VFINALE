@@ -5,8 +5,36 @@ from .v13_runtime import install
 
 install()
 
-from . import config, runner, discord_v13, core
+from . import config, runner, discord_v13, core, selector, storage, journal, v13_daily_tracking
 runner.discord = discord_v13
+
+# Observation-only hooks. They never alter probabilities, gates, stakes or picks.
+_original_allocate = selector.allocate
+_original_update_clv = storage.update_clv
+_original_settle_rows = journal.settle_rows
+
+
+def _tracked_allocate(results, *args, **kwargs):
+    out = _original_allocate(results, *args, **kwargs)
+    v13_daily_tracking.capture_results(results, target_date=core.TARGET_DATE)
+    return out
+
+
+def _tracked_update_clv(results, analyzed_at=None):
+    n = _original_update_clv(results, analyzed_at)
+    v13_daily_tracking.observe_closing(results, analyzed_at)
+    return n
+
+
+def _tracked_settle_rows(rows):
+    n = _original_settle_rows(rows)
+    v13_daily_tracking.settle_from_journal(rows)
+    return n
+
+
+selector.allocate = _tracked_allocate
+storage.update_clv = _tracked_update_clv
+journal.settle_rows = _tracked_settle_rows
 
 
 def _summary_v13(report):
@@ -35,7 +63,8 @@ def self_test_v13():
     h,a,m=v13_run_mean_runtime.apply_pair(5.0,4.0,"FINAL",mean_prior); assert m.get("active") and abs(h-5.0)<=.75 and abs(a-4.0)<=.75
     h2,a2,m2=v13_run_mean_runtime.apply_pair(5.0,4.0,"LATE",mean_prior); assert h2==5.0 and a2==4.0 and not m2.get("active")
     rich=v13_rich_run_shadow.load(); assert rich.get("active_for_production") is not True
-    print("SELF-TEST V13.3 PROFESSIONAL PROBABILITY + RICH RUN SHADOW OK")
+    assert v13_daily_tracking._band(.004) == "0-1%" and v13_daily_tracking._band(.12) == ">=10%"
+    print("SELF-TEST V13.3 PROFESSIONAL PROBABILITY + RICH RUN SHADOW + DAILY TRACKING OK")
 
 
 runner._summary = _summary_v13
