@@ -12,6 +12,7 @@ OUT = Path("data/v13_run_mean_prior.json")
 DISPERSION = 2.835691107635618
 MAX_ADJ = 0.75
 MIN_WARM = 5
+MIN_EXACT_FINAL = 20
 RIDGES = (0.0, 10.0, 25.0, 50.0, 100.0, 200.0, 400.0, 800.0)
 
 
@@ -43,14 +44,18 @@ def _hist_rows() -> list[dict[str,Any]]:
 
 
 def _exact_rows() -> list[dict[str,Any]]:
-    # Same transfer cohort contract as V13.1 score-distribution validation:
-    # latest exact pregame HTTP replay per game, regardless of EARLY/LATE/FINAL.
+    """Use only genuine exact FINAL V13 replays for transfer monitoring.
+
+    The prior is FINAL-only. EARLY/LATE exact replays may be useful elsewhere,
+    but they must not be presented as exact transfer evidence for this layer.
+    """
     if not EXACT.exists(): return []
     best={}
     with EXACT.open("r",encoding="utf-8") as fh:
         for line in fh:
             if not line.strip(): continue
             r=json.loads(line)
+            if str(r.get("phase") or "").upper() != "FINAL": continue
             if r.get("home_score") is None or r.get("away_score") is None: continue
             hm=r.get("projected_home_runs"); am=r.get("projected_away_runs")
             if hm is None or am is None: continue
@@ -58,7 +63,7 @@ def _exact_rows() -> list[dict[str,Any]]:
             if k not in best or rank > best[k][0]: best[k]=(rank,r)
     out=[]
     for _,r in best.values():
-        out.append({"game_pk":r.get("game_pk"),"game_date":r.get("game_date"),"phase":str(r.get("phase") or "").upper(),
+        out.append({"game_pk":r.get("game_pk"),"game_date":r.get("game_date"),"phase":"FINAL",
                     "home_mu":_num(r.get("projected_home_runs")),"away_mu":_num(r.get("projected_away_runs")),
                     "home_score":int(_num(r.get("home_score"))),"away_score":int(_num(r.get("away_score")))})
     return sorted(out,key=lambda r:(str(r["game_date"]),str(r["game_pk"])))
@@ -125,11 +130,14 @@ def _metrics(rows,model=None):
 def _gain(rows,model):
     b=_metrics(rows); c=_metrics(rows,model)
     return {"games":len(rows),"baseline":b,"candidate":c,
-            "mae_gain":b["mae"]-c["mae"],"rmse_gain":b["rmse"]-c["rmse"],"nll_gain":b["nb_nll"]-c["nb_nll"]}
+            "mae_gain":b["mae"]-c["mae"] if b["mae"] is not None else None,
+            "rmse_gain":b["rmse"]-c["rmse"] if b["rmse"] is not None else None,
+            "nll_gain":b["nb_nll"]-c["nb_nll"] if b["nb_nll"] is not None else None}
 
 
 def _passes(ev,min_games=20):
-    return (ev["games"]>=min_games and ev["rmse_gain"]>0 and ev["nll_gain"]>0 and ev["mae_gain"]>=-0.01)
+    return (ev["games"]>=min_games and ev["rmse_gain"] is not None and ev["nll_gain"] is not None and ev["mae_gain"] is not None
+            and ev["rmse_gain"]>0 and ev["nll_gain"]>0 and ev["mae_gain"]>=-0.01)
 
 
 def build():
@@ -142,24 +150,29 @@ def build():
             if _passes(v,100): variants.append((v["nll_gain"],v["rmse_gain"],name,ridge,m,v))
     if not variants:
         return {"schema":"v13-run-mean-prior-v1","active":False,"reason":"no validation-passing candidate",
-                "historical_games":len(rows),"exact_games":len(exact)}
+                "historical_games":len(rows),"exact_final_games":len(exact)}
     variants.sort(reverse=True,key=lambda z:(z[0],z[1]))
     best=variants[0]
     simple=[z for z in variants if z[2]=="side_bias" and z[0]>=best[0]-.001]
     chosen=max(simple,key=lambda z:(z[0],z[1])) if simple else best
     _,_,name,ridge,_,val_ev=chosen
     final=_fit(train+val,ridge,name!="side_bias")
-    test_ev=_gain(test,final); exact_ev=_gain(exact,final)
-    active=_passes(val_ev,100) and _passes(test_ev,100) and _passes(exact_ev,20)
-    return {"schema":"v13-run-mean-prior-v1","active":bool(active),"phase_scope":"FINAL",
+    test_ev=_gain(test,final)
+    historical_active=_passes(val_ev,100) and _passes(test_ev,100)
+    exact_ready=len(exact)>=MIN_EXACT_FINAL
+    exact_ev=_gain(exact,final) if exact else {"games":0,"baseline":{},"candidate":{},"mae_gain":None,"rmse_gain":None,"nll_gain":None}
+    exact_passes=_passes(exact_ev,MIN_EXACT_FINAL) if exact_ready else False
+    exact_status="PASS_FINAL_ONLY" if exact_ready and exact_passes else "FAIL_FINAL_ONLY" if exact_ready else "COLLECTING_FINAL_ONLY"
+    return {"schema":"v13-run-mean-prior-v1","active":bool(historical_active),"phase_scope":"FINAL",
             "source":"1801-game leakage-safe reconstructed FINAL cohort",
             "historical_games":len(rows),"split":{"train":len(train),"validation":len(val),"test":len(test)},
-            "exact_games":len(exact),"exact_phase_counts":dict(Counter(r.get("phase") for r in exact)),
+            "exact_games":len(exact),"exact_final_games":len(exact),"exact_phase_counts":{"FINAL":len(exact)},
             "selected_variant":name,"model":final,"validation":val_ev,"test":test_ev,"exact_transfer":exact_ev,
-            "activation_rule":"historical validation + untouched future test + latest exact V13 transfer cohort must improve RMSE and NB NLL; MAE may not regress by >0.01",
-            "transfer_caveat":"Exact transfer uses latest pregame replay per game across phases, matching V13.1 distribution-transfer evidence. Production scope remains FINAL-only.",
+            "exact_transfer_status":exact_status,"exact_transfer_required_games":MIN_EXACT_FINAL,
+            "activation_rule":"historical chronological validation and untouched future test must improve RMSE and NB NLL; MAE may not regress by >0.01. Exact V13 FINAL transfer is monitored independently until >=20 genuine FINAL replays.",
+            "transfer_caveat":"Exact transfer is FINAL-only and is not used to activate the historical prior while its FINAL sample is below the monitoring floor.",
             "safety":{"historical_odds_used":False,"market_probability_used":False,"feature_vector_fabricated":False,
-                      "applies_only_when_native_residual_and_legacy_run_bootstrap_are_inactive":True}}
+                      "exact_transfer_used_for_activation":False,"applies_only_when_native_residual_and_legacy_run_bootstrap_are_inactive":True}}
 
 
 def main():

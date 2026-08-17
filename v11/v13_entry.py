@@ -6,12 +6,14 @@ from .v13_runtime import install
 install()
 
 from . import config, runner, discord_v13, core, selector, storage, journal, v13_daily_tracking
+from . import calibration_baseball_v13 as calibration_v13
 runner.discord = discord_v13
 
 # Observation-only hooks. They never alter probabilities, gates, stakes or picks.
 _original_allocate = selector.allocate
 _original_update_clv = storage.update_clv
 _original_settle_rows = journal.settle_rows
+_original_run = runner.run
 
 
 def _tracked_allocate(results, *args, **kwargs):
@@ -32,9 +34,28 @@ def _tracked_settle_rows(rows):
     return n
 
 
+def _assert_v135_calibration_artifact():
+    """Fail closed for real V13 runs when a stale calibration artifact is present.
+
+    CI self-tests may exercise calibration functions directly, but a production
+    or research analysis must consume the V13.5 v2 artifact built from the
+    contract-strict training pipeline. This prevents a clean clone from silently
+    running against the legacy v1 artifact committed before V13.5.
+    """
+    model=calibration_v13.load_model()
+    if model.get("schema") != "v13-baseball-calibration-model-v2" or model.get("baseball_only") is not True:
+        raise SystemExit("V13.5 calibration artifact stale/incompatible: run `python -m v11.v13_train` before analysis")
+
+
+def _run_v135(*args, **kwargs):
+    _assert_v135_calibration_artifact()
+    return _original_run(*args, **kwargs)
+
+
 selector.allocate = _tracked_allocate
 storage.update_clv = _tracked_update_clv
 journal.settle_rows = _tracked_settle_rows
+runner.run = _run_v135
 
 
 def _summary_v13(report):
@@ -57,7 +78,6 @@ def self_test_v13():
     assert abs(p-.61) < 1e-9 and source == "identity" and n == 0
     c={"calibrators":{"GLOBAL":{"active":True,"method":"platt","a":0,"b":.5,"n":999},
                       "MARKET:ML":{"n":40},"PHASE:EARLY:ML":{"n":30},"PHASE:FINAL:ML":{"n":7}}}
-    # GLOBAL must never calibrate ML/TOTAL across market families.
     assert cal.calibrate(.61,"ML","FINAL",c)[0] == .61 and cal.calibrate(.61,"ML","FINAL",c)[2] == 7
     u_hi=uncertainty_v13.empirical_interval(.55,calibration_n=30,phase_n=30,market_n=40,data_quality=.95,sharp_dispersion=.01)
     u_lo=uncertainty_v13.empirical_interval(.55,calibration_n=30,phase_n=30,market_n=40,data_quality=.60,sharp_dispersion=.20)
@@ -67,14 +87,14 @@ def self_test_v13():
     dist=v13_distribution_prior.load(); assert dist.get("active") and dist.get("variant") == "dispersion_only"
     d,e,meta=v13_distribution_prior.apply(7.5,.08,"FINAL"); assert abs(d-2.835691107635618)<1e-12 and abs(e-.08)<1e-12 and meta.get("active")
     d2,e2,meta2=v13_distribution_prior.apply(7.5,.08,"EARLY"); assert d2==7.5 and e2==.08 and not meta2.get("active")
-    mean_prior=v13_run_mean_runtime.load(); assert mean_prior.get("active") and mean_prior.get("exact_games",0)>=20
+    mean_prior=v13_run_mean_runtime.load(); assert mean_prior.get("active") and mean_prior.get("historical_games",0)>=1000
     h,a,m=v13_run_mean_runtime.apply_pair(5.0,4.0,"FINAL",mean_prior); assert m.get("active") and abs(h-5.0)<=.75 and abs(a-4.0)<=.75
     h2,a2,m2=v13_run_mean_runtime.apply_pair(5.0,4.0,"LATE",mean_prior); assert h2==5.0 and a2==4.0 and not m2.get("active")
     rich=v13_rich_run_shadow.load(); assert rich.get("active_for_production") is not True
     assert v13_daily_tracking._band(.004) == "0-1%" and v13_daily_tracking._band(.12) == ">=10%"
     rec={"p_effective":.60,"probability_interval_low":.52,"model_uncertainty":.01}
     assert abs(selector.conservative_probability(rec)-.52)<1e-12
-    print("SELF-TEST V13.5 CONTRACT-STRICT CALIBRATION + UNIFIED UNCERTAINTY + TRACKING OK")
+    print("SELF-TEST V13.5 CONTRACT-STRICT CALIBRATION + UNIFIED UNCERTAINTY + IMMUTABLE TRACKING OK")
 
 
 runner._summary = _summary_v13

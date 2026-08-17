@@ -34,8 +34,11 @@ class ProbabilityPipelineV13:
         market_name = str(option.get("market") or "ML")
         calibrated, source, n = self.calibrate(option, phase)
         evidence = calibration.evidence_counts(self.calibration_model, market_name, phase)
+        # Reliability bins are fitted in raw-probability space. Query them with
+        # the raw probability even after a Platt/Beta calibrator becomes active;
+        # otherwise a transformed probability could be matched to the wrong bin.
         empirical_sigma, reliability_source = calibration.reliability_sigma(
-            self.calibration_model, market_name, phase, calibrated
+            self.calibration_model, market_name, phase, raw
         )
         market = option.get("p_market")
         market_weight = max(0.0,min(.35,float(option.get("sharp_weight") or 0.0)))

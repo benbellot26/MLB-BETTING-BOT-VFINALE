@@ -19,8 +19,8 @@ jobs:
         with:
           python-version: '3.12'
       - name: Compile
-        run: python -m py_compile v11/v13_daily_tracking.py v11/v13_tracking_sync.py v11/v13_daily_postmortem.py v11/v13_entry.py tests/test_v13_daily_tracking.py tests/test_v13_precision_hardening.py tests/test_v13_daily_postmortem.py tests/test_v135_professional_audit.py
+        run: python -m py_compile v11/v13_daily_tracking.py v11/v13_tracking_sync.py v11/v13_daily_postmortem.py v11/v13_entry.py tests/test_v13_daily_tracking.py tests/test_v13_precision_hardening.py tests/test_v13_daily_postmortem.py tests/test_v135_professional_audit.py tests/test_v1351_audit_fixes.py
       - name: Tracking, postmortem and probability precision tests
-        run: python -m unittest tests.test_v13_daily_tracking tests.test_v13_precision_hardening tests.test_v13_daily_postmortem tests.test_v135_professional_audit
+        run: python -m unittest tests.test_v13_daily_tracking tests.test_v13_precision_hardening tests.test_v13_daily_postmortem tests.test_v135_professional_audit tests.test_v1351_audit_fixes
       - name: V13 self test
         run: python -m v11.v13_entry --self-test

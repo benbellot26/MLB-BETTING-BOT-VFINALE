@@ -48,7 +48,7 @@ jobs:
           python -m unittest tests.test_v13_historical_migration
           python -m unittest tests.test_v13_probability_invariants
           python -m unittest tests.test_v13_rich_run_residual tests.test_v13_rich_native_train
-          python -m unittest tests.test_v135_professional_audit
+          python -m unittest tests.test_v135_professional_audit tests.test_v1351_audit_fixes
           python -m v11.v13_entry --self-test
           python -m v11.v13_train --dry-run >/tmp/v13_calibration_candidate.json
           python -m v11.v13_rich_native_train >/tmp/v13_rich_native_candidate.json

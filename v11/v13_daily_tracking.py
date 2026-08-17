@@ -42,6 +42,13 @@ def _read():
 
 
 def fold(events=None):
+    """Fold event-sourced state per immutable model observation.
+
+    Since V13.5.1, MODEL_SNAPSHOT tracking keys include phase + analysis as-of.
+    Market updates and settlement events therefore enrich one exact forecast
+    instead of overwriting another EARLY/LATE/FINAL forecast for the same line.
+    Legacy pre-V13.5.1 keys remain readable for backward compatibility.
+    """
     state={}
     for e in (_read() if events is None else events):
         k=e.get("tracking_key")
@@ -49,7 +56,22 @@ def fold(events=None):
     return state
 
 
-def _key(r,o):return storage.bet_key(r.get("game_pk"),o.get("market"),o.get("name"),o.get("point"))
+def _market_key(r,o):
+    return storage.bet_key(r.get("game_pk"),o.get("market"),o.get("name"),o.get("point"))
+
+
+def _observation_token(r):
+    phase=str(r.get("phase") or "UNKNOWN").upper()
+    at=str(r.get("as_of") or r.get("analyzed_at") or "")
+    run=str(r.get("run_id") or "")
+    token=at or run
+    return phase, token
+
+
+def _key(r,o):
+    base=_market_key(r,o)
+    phase,token=_observation_token(r)
+    return f"{base}|obs:{phase}:{token}" if token else base
 
 
 def _price(o):
@@ -70,9 +92,13 @@ def capture_results(results, analyzed_at=None, target_date=None):
     at=analyzed_at or datetime.now(timezone.utc).isoformat(); rows=[]
     for r in results or []:
         game_date=(r.get("game") or {}).get("gameDate") or (r.get("event") or {}).get("commence_time")
+        observation_at=str(r.get("as_of") or at)
+        phase=str(r.get("phase") or "EARLY").upper()
+        key_ctx=dict(r); key_ctx.setdefault("analyzed_at",observation_at)
         for o in r.get("options") or []:
             price=_price(o); e=o.get("winamax_eval") or {}; gate=e.get("v11_price_gate") or {}
-            rows.append({"schema":"v13-market-tracking-v2","event_type":"MODEL_SNAPSHOT","tracking_key":_key(r,o),
+            rows.append({"schema":"v13-market-tracking-v3","event_type":"MODEL_SNAPSHOT","tracking_key":_key(key_ctx,o),
+                "market_key":_market_key(r,o),"observation_at":observation_at,"observation_phase":phase,
                 "observed_at":at,"target_date":target_date or core.TARGET_DATE,"game_pk":r.get("game_pk"),"game_date":game_date,
                 "home":(r.get("ctx") or {}).get("home"),"away":(r.get("ctx") or {}).get("away"),"phase":r.get("phase"),
                 "market":o.get("market"),"pick":o.get("name"),"point":o.get("point"),"canonical":bool(o.get("is_canonical_line")),
@@ -86,10 +112,8 @@ def capture_results(results, analyzed_at=None, target_date=None):
 
 
 def _market_update(k, known, at, mins, price, sharp):
-    row={"schema":"v13-market-tracking-v2","event_type":"MARKET_UPDATE","tracking_key":k,
+    row={"schema":"v13-market-tracking-v3","event_type":"MARKET_UPDATE","tracking_key":k,
          "last_market_observed_at":at,"minutes_to_start":round(mins,2) if mins is not None else None}
-    # Never overwrite a previously valid observation with None when a bookmaker
-    # temporarily omits a market from an API response.
     if price is not None: row["latest_winamax_price"] = price
     if sharp is not None: row["latest_sharp_fair"] = sharp
     close_window=float(getattr(config,"CLOSING_CANDIDATE_WINDOW_MIN",20) or 20)
@@ -106,13 +130,22 @@ def _market_update(k, known, at, mins, price, sharp):
     return row
 
 
+def _matching_observation_keys(known, r, o):
+    direct=_key(r,o)
+    if direct in known:return [direct]
+    base=_market_key(r,o); phase=str(r.get("phase") or "").upper()
+    matches=[k for k,s in known.items() if (s.get("market_key") or k.split("|obs:",1)[0])==base
+             and (not phase or str(s.get("phase") or s.get("observation_phase") or "").upper()==phase)]
+    return matches
+
+
 def observe_closing(results, analyzed_at=None):
     at=analyzed_at or datetime.now(timezone.utc).isoformat(); now=_dt(at) or datetime.now(timezone.utc); known=fold(); rows=[]
     for r in results or []:
         start=_dt((r.get("game") or {}).get("gameDate") or (r.get("event") or {}).get("commence_time")); mins=(start-now).total_seconds()/60 if start else None
         for o in r.get("options") or []:
-            k=_key(r,o)
-            if k in known:rows.append(_market_update(k,known[k],at,mins,_price(o),o.get("p_market")))
+            for k in _matching_observation_keys(known,r,o):
+                rows.append(_market_update(k,known[k],at,mins,_price(o),o.get("p_market")))
     return _append(rows)
 
 
@@ -183,7 +216,7 @@ def settle_from_journal(journal_rows, settled_at=None):
         o={"market":s.get("market"),"name":s.get("pick"),"point":s.get("point"),"p_effective":s.get("p_model")}; journal.settle_option(o,r); res=o.get("result")
         if res not in {"WIN","LOSS","PUSH"}:continue
         price=_num(s.get("winamax_price")); pnl=(price-1 if res=="WIN" else -1.0 if res=="LOSS" else 0.0) if price and price>1 else None
-        out.append({"schema":"v13-market-tracking-v2","event_type":"SETTLED","tracking_key":k,"settled_at":at,
+        out.append({"schema":"v13-market-tracking-v3","event_type":"SETTLED","tracking_key":k,"settled_at":at,
                     "settled_result":res,"flat_1u_pnl":pnl,"home_score":r.get("home_score"),"away_score":r.get("away_score")})
     n=_append(out); write_report(); return n
 
@@ -211,7 +244,10 @@ def write_report():
             d["n"]+=1; d["wins"]+=x.get("settled_result")=="WIN"; d["losses"]+=x.get("settled_result")=="LOSS"; d["pushes"]+=x.get("settled_result")=="PUSH"; d["pnl_1u"]+=_num(x.get("flat_1u_pnl"),0) or 0
         for d in bands.values():d["pnl_1u"]=round(d["pnl_1u"],4); d["roi_1u"]=round(d["pnl_1u"]/max(1,d["n"]-d["pushes"]),4)
         by_edge[market_name]=bands
-    report={"schema":"v13-market-tracking-report-v2","generated_at":datetime.now(timezone.utc).isoformat(),"tracked_options":len(xs),"settled_options":len(settled),"by_market":by_market,"by_nominal_ev_band":by_edge,"methodology":{"unit_pnl":"descriptive flat 1u; complementary displayed sides are not a betting portfolio","closing":"last valid eligible pregame observation inside configured closing window; missing API fields never erase a valid close","missing_price":"never imputed; absent Winamax RL/TOTAL prices remain unpriced and are still tracked against sharp probability"}}
+    report={"schema":"v13-market-tracking-report-v3","generated_at":datetime.now(timezone.utc).isoformat(),
+            "tracked_observations":len(xs),"settled_observations":len(settled),"tracked_options":len(xs),"settled_options":len(settled),
+            "by_market":by_market,"by_nominal_ev_band":by_edge,
+            "methodology":{"observation_identity":"immutable game/market/side/line + phase + analysis as-of; later phases never overwrite earlier forecasts","unit_pnl":"descriptive flat 1u; complementary displayed sides are not a betting portfolio","closing":"last valid eligible pregame observation inside configured closing window; missing API fields never erase a valid close","missing_price":"never imputed; absent Winamax RL/TOTAL prices remain unpriced and are still tracked against sharp probability"}}
     REPORT_FILE.parent.mkdir(parents=True,exist_ok=True); REPORT_FILE.write_text(json.dumps(report,indent=2,sort_keys=True),encoding="utf-8"); return report
 
 

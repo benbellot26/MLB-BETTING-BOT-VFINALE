@@ -7,25 +7,34 @@ from . import v13_daily_tracking as tracking
 
 
 def _latest_pregame_rows():
+    """Return latest immutable pregame row per game and phase.
+
+    EARLY/LATE/FINAL must remain separate evidence streams. The pre-V13.5.1
+    implementation kept only the latest row per game and silently discarded
+    earlier phases during sync.
+    """
     best={}
     for r in journal.load_rows():
         if not r.get("game_pk") or not r.get("options"):continue
         an=tracking._dt(r.get("analyzed_at")); start=tracking._dt(r.get("game_date"))
         if not an or not start or an>=start:continue
-        gid=str(r.get("game_pk")); rank=str(r.get("analyzed_at") or "")
-        if gid not in best or rank>best[gid][0]:best[gid]=(rank,r)
+        phase=str(r.get("phase") or "EARLY").upper()
+        key=(str(r.get("game_pk")),phase); rank=str(r.get("analyzed_at") or "")
+        if key not in best or rank>best[key][0]:best[key]=(rank,r)
     return [x[1] for x in best.values()]
 
 
 def sync_from_journal():
     state=tracking.fold(); rows=[]
     for r in _latest_pregame_rows():
+        phase=str(r.get("phase") or "EARLY").upper()
         for o in r.get("options") or []:
-            k=tracking.storage.bet_key(r.get("game_pk"),o.get("market"),o.get("name"),o.get("point"))
-            if (state.get(k) or {}).get("source_run_id")==r.get("run_id"):continue
+            k=tracking._key(r,o)
+            if k in state:continue
             e=o.get("winamax_eval") or {}; gate=e.get("v11_price_gate") or {}
             price=tracking._num(e.get("price")); price=price if price and price>1 else None
-            rows.append({"schema":"v13-market-tracking-v2","event_type":"MODEL_SNAPSHOT","tracking_key":k,
+            rows.append({"schema":"v13-market-tracking-v3","event_type":"MODEL_SNAPSHOT","tracking_key":k,
+                "market_key":tracking._market_key(r,o),"observation_at":r.get("analyzed_at"),"observation_phase":phase,
                 "source":"persisted-v13-journal","source_run_id":r.get("run_id"),"observed_at":r.get("analyzed_at"),
                 "target_date":r.get("target_date"),"game_pk":r.get("game_pk"),"game_date":r.get("game_date"),
                 "home":r.get("home"),"away":r.get("away"),"phase":r.get("phase"),"market":o.get("market"),
@@ -65,7 +74,7 @@ def main():
         try:polled=tracking.snapshot_market()
         except Exception as exc:core.logging.warning("V13 tracking market poll failed: %s",exc)
     settled=settle_live_results(); report=tracking.write_report()
-    print(json.dumps({"synced_model_options":synced,"market_updates":polled,"settled":settled,"tracked_options":report.get("tracked_options"),"settled_options":report.get("settled_options")},indent=2))
+    print(json.dumps({"synced_model_options":synced,"market_updates":polled,"settled":settled,"tracked_observations":report.get("tracked_observations"),"settled_observations":report.get("settled_observations")},indent=2))
 
 
 if __name__=="__main__":main()
