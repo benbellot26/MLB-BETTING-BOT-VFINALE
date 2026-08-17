@@ -8,6 +8,7 @@ from typing import Any
 
 from . import calibration_baseball_v13 as calibration
 from . import journal
+from . import probability_contract_v13 as contract
 
 STRICT_GLOBAL_N = 600
 STRICT_MARKET_N = 400
@@ -52,10 +53,9 @@ def _load_exact_backfill(path: Path = EXACT_BACKFILL) -> list[dict[str,Any]]:
 
 
 def _canonical_options(row: dict[str,Any]) -> list[dict[str,Any]]:
-    """Keep at most one independent calibration target per market and game phase."""
+    """Keep at most one independent baseball-only calibration target per market/phase."""
     options = [o for o in (row.get("options") or [])
-               if o.get("result") in {"WIN","LOSS"}
-               and (o.get("p_baseball_raw") is not None or o.get("p_learned") is not None)]
+               if o.get("result") in {"WIN","LOSS"} and o.get("p_baseball_raw") is not None]
     home = _norm(row.get("home"))
     out: list[dict[str,Any]] = []
     for market in ("ML","RUNLINE","TOTAL"):
@@ -76,13 +76,19 @@ def _canonical_options(row: dict[str,Any]) -> list[dict[str,Any]]:
     return out
 
 
-def eligible_probability_rows(rows: list[dict[str,Any]]) -> list[dict[str,Any]]:
-    """Use only genuine pregame probability observations.
+def _native_contract_ok(row: dict[str,Any]) -> bool:
+    if row.get("v13_evidence_tier") == "A_EXACT_REPLAY":
+        return True
+    return contract.row_is_predictively_compatible(row)
 
-    Compatibility is based on the probability contract, not software version.
-    Exact V13 replay-backfill rows are tier-A evidence. Legacy rows are accepted
-    only when they independently satisfy the same pregame/settled/baseball-only
-    contract. No p_effective/p_model market-blended value is accepted.
+
+def eligible_probability_rows(rows: list[dict[str,Any]]) -> list[dict[str,Any]]:
+    """Use only genuine V13 pregame probability observations.
+
+    Native live evidence must carry the V13 predictive contract. Exact replay
+    backfill remains allowed because its point-in-time provenance was separately
+    reconstructed and audited. Legacy V12/V11 p_learned observations are not
+    native V13 calibration evidence, even when they are pregame.
     """
     best: dict[tuple[str,str], tuple[str,dict[str,Any]]] = {}
     for row in rows:
@@ -93,6 +99,8 @@ def eligible_probability_rows(rows: list[dict[str,Any]]) -> list[dict[str,Any]]:
         if row.get("home_score") is None or row.get("away_score") is None:
             continue
         if row.get("features_from_postgame") is True:
+            continue
+        if not _native_contract_ok(row):
             continue
         canonical = _canonical_options(row)
         if not canonical:
@@ -141,17 +149,19 @@ def build() -> dict[str,Any]:
     rows = eligible_probability_rows(source)
     model = enforce_strict_activation(calibration.build_model(rows))
     model["training_policy"] = {
-        "software_version_required": False,
+        "native_predictive_contract_required": True,
         "pregame_required": True,
         "settled_result_required": True,
-        "accepted_probability_fields": ["p_baseball_raw","p_learned"],
-        "forbidden_probability_fields_as_baseball_evidence": ["p_effective","p_model","p_market","p_posterior"],
+        "accepted_probability_fields": ["p_baseball_raw"],
+        "forbidden_probability_fields_as_baseball_evidence": ["p_learned","p_effective","p_model","p_market","p_posterior"],
         "canonical_row": "latest pregame row per game_pk and phase",
         "independent_target_policy": "max one canonical side per market/game/phase",
         "alternate_lines_trainable_for_calibration": False,
         "strict_volume_floor_after_internal_holdout": True,
         "exact_v13_replay_backfill_allowed": True,
         "legacy_reconstructed_1801_allowed_as_native_calibration": False,
+        "runtime_global_cross_market_fallback_allowed": False,
+        "activation_validation": "expanding walk-forward method selection + untouched chronological final holdout",
     }
     model["source_rows_total"] = len(source)
     model["source_rows_live"] = len(live)
@@ -159,6 +169,7 @@ def build() -> dict[str,Any]:
     model["eligible_rows"] = len(rows)
     model["eligible_games"] = len({str(r.get("game_pk")) for r in rows})
     model["exact_replay_games"] = len({str(r.get("game_pk")) for r in exact})
+    model["rejected_non_v13_contract_rows"] = sum(1 for r in live if not contract.row_is_predictively_compatible(r))
     return model
 
 
