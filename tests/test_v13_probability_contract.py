@@ -37,13 +37,15 @@ class V13ProbabilityContractTests(unittest.TestCase):
     def test_training_compatibility_is_independent_of_software_version(self):
         rows = []
         for version in ("12.3.1-old", "12.3.2-new"):
-            rows.append({
+            row={
                 "game_pk":version, "phase":"FINAL",
                 "analyzed_at":"2026-06-01T16:00:00+00:00",
                 "game_date":"2026-06-01T20:00:00+00:00",
                 "home_score":5, "away_score":3, "engine_version":version,
                 "options":[{"market":"ML","name":"A","p_learned":.60,"result":"WIN"}],
-            })
+            }
+            contract.attach_contract(row)
+            rows.append(row)
         eligible = v13_train.eligible_probability_rows(rows)
         self.assertEqual(len(eligible), 2)
 
