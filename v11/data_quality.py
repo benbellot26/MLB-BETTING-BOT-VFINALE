@@ -64,6 +64,15 @@ def assess(result, rec=None):
     if rec is not None:
         components["execution_price"] = 1.0 if _num(price) > 1.0 else 0.0
 
+    # This score is allowed to influence the baseball probability interval. It
+    # deliberately excludes sharp-market and execution-price information so
+    # epistemic model uncertainty cannot improve merely because more books are
+    # available.
+    model_weights = {"starter_identity": .12, "starter_stats": .19, "lineup_identity": .10,
+                     "lineup_stats": .19, "team_stats": .15, "weather": .09, "bullpen": .16}
+    model_denom = sum(model_weights.values()) or 1.0
+    model_input_score = sum(model_weights[k]*components.get(k,0.0) for k in model_weights)/model_denom
+
     weights = {"starter_identity": .09, "starter_stats": .14, "lineup_identity": .08, "lineup_stats": .14,
                "team_stats": .11, "weather": .06, "bullpen": .11, "sharp_coverage": .13,
                "sharp_recency": .08, "execution_price": .06}
@@ -94,6 +103,7 @@ def assess(result, rec=None):
             blockers.append("execution_price_missing")
 
     return {"score": round(max(0.0, min(1.0, score)), 4),
+            "model_input_score": round(max(0.0, min(1.0, model_input_score)), 4),
             "components": {k: round(v, 4) for k, v in components.items()}, "blockers": blockers,
             "eligible": score >= config.MIN_DATA_QUALITY and not blockers,
             "lineup_players": lineup_count, "usable_lineup_stats": usable_lineup,
