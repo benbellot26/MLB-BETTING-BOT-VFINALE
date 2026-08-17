@@ -61,13 +61,13 @@ def upgrade_option(opt: dict[str,Any], phase: str, pipeline: ProbabilityPipeline
 
 def upgrade_result(result: dict[str,Any], pipeline: ProbabilityPipelineV13 | dict[str,Any] | None = None) -> dict[str,Any]:
     pipeline = _as_pipeline(pipeline); phase = str(result.get("phase") or "EARLY").upper()
-    # Compute the same explicit pregame data-quality assessment used by the
-    # selector before building probability intervals. This prevents Discord from
-    # showing a falsely narrow interval when lineups/starters/weather are weak.
     from . import data_quality
     dq = result.get("data_quality") if isinstance(result.get("data_quality"), dict) else data_quality.assess(result)
     result["data_quality"] = dq
-    dq_score = max(0.0, min(1.0, _num(dq.get("score"), 1.0)))
+    # Only baseball-input quality can change epistemic probability uncertainty.
+    # Sharp coverage and execution-price availability remain selector/market
+    # diagnostics and cannot make the baseball model appear more certain.
+    dq_score = max(0.0, min(1.0, _num(dq.get("model_input_score", dq.get("score")), 1.0)))
     for opt in result.get("options") or []:
         try: upgrade_option(opt, phase, pipeline, data_quality=dq_score)
         except Exception as exc:
@@ -112,8 +112,6 @@ def install() -> bool:
 
     def analyze(game, event, as_of=None):
         result = original_analyze(game, event, as_of=as_of)
-        # Research-only V13.3 challenger. It reads the already-computed V12.4
-        # point-in-time modules and never mutates official means/probabilities.
         v13_rich_run_shadow.attach(result)
         return upgrade_result(result)
 
