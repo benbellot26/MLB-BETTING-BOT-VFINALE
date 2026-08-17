@@ -75,7 +75,12 @@ class V1351AuditFixesTest(unittest.TestCase):
     def test_final_run_mean_exact_transfer_excludes_early_late(self):
         rows=[
             {"game_pk":1,"game_date":"2026-08-17T20:00:00Z","phase":"EARLY","analyzed_at":"2026-08-17T10:00:00Z","projected_home_runs":4.2,"projected_away_runs":4.0,"home_score":5,"away_score":4},
-            {"game_pk":1,"game_date":"2026-08-17T20:00:00Z","phase":"FINAL","analyzed_at":"2026-08-17T19:00:00Z","projected_home_runs":4.4,"projected_away_runs":4.1,"home_score":5,"away_score":4},
+            {"game_pk":1,"game_date":"2026-08-17T20:00:00Z","phase":"FINAL","analyzed_at":"2026-08-17T19:00:00Z",
+             "projected_home_runs":4.4,"projected_away_runs":4.1,
+             "validation_baseline_home_runs":4.4,"validation_baseline_away_runs":4.1,
+             "validation_baseline_dispersion":7.5,
+             "validation_baseline_model_generation":contract.MODEL_GENERATION_FINGERPRINT,
+             "home_score":5,"away_score":4},
             {"game_pk":2,"game_date":"2026-08-17T21:00:00Z","phase":"LATE","analyzed_at":"2026-08-17T19:00:00Z","projected_home_runs":4.0,"projected_away_runs":3.9,"home_score":3,"away_score":2},
         ]
         contract.attach_contract(rows[1])
@@ -90,6 +95,9 @@ class V1351AuditFixesTest(unittest.TestCase):
                 v13_run_mean_prior.EXACT=old
         self.assertEqual(len(got),1)
         self.assertEqual(got[0]["phase"],"FINAL")
+        self.assertAlmostEqual(got[0]["home_mu"],4.4)
+        self.assertAlmostEqual(got[0]["away_mu"],4.1)
+        self.assertAlmostEqual(got[0]["dispersion"],7.5)
 
     def test_stale_calibration_guard_fails_closed(self):
         from v11 import v13_entry
