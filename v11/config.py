@@ -30,6 +30,11 @@ MAX_OPERATIONAL_RUN_ADJ = float(os.getenv("V11_MAX_OPERATIONAL_RUN_ADJ", "0.05")
 MAX_LEARNED_RUN_ADJ = float(os.getenv("V11_MAX_LEARNED_RUN_ADJ", "0.75") or .75)
 
 MAX_SHARP_AGE_MIN = float(os.getenv("V11_MAX_SHARP_AGE_MIN", "90") or 90)
+# Decision-grade freshness is deliberately stricter than the broad market
+# diagnostic window. FINAL should never be selected from an hour-old quote.
+MAX_SHARP_AGE_EARLY_MIN = float(os.getenv("V13_MAX_SHARP_AGE_EARLY_MIN", "90") or 90)
+MAX_SHARP_AGE_LATE_MIN = float(os.getenv("V13_MAX_SHARP_AGE_LATE_MIN", "45") or 45)
+MAX_SHARP_AGE_FINAL_MIN = float(os.getenv("V13_MAX_SHARP_AGE_FINAL_MIN", "20") or 20)
 SHARP_DISAGREEMENT_SCALE = float(os.getenv("V11_SHARP_DISAGREEMENT_SCALE", "0.10") or .10)
 SHARP_BOOK_WEIGHTS = {
     "pinnacle": float(os.getenv("V11_WEIGHT_PINNACLE", "1.20") or 1.20),
