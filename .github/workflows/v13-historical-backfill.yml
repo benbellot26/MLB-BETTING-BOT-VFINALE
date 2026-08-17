@@ -25,7 +25,7 @@ jobs:
           python-version: '3.12'
 
       - name: Compile V13 backfill
-        run: python -m py_compile v11/v13_historical_backfill.py v11/v13_entry.py
+        run: python -m py_compile v11/v13_historical_backfill.py v11/v13_run_mean_prior.py v11/v13_entry.py
 
       - name: Download durable pregame source replays
         env:
@@ -43,14 +43,20 @@ jobs:
             --output data/v13_historical_backfill.jsonl \
             --report data/v13_historical_backfill_report.json
 
-      - name: Validate leakage boundary
+      - name: Rebuild current-generation FINAL run-mean candidate
+        run: python -m v11.v13_run_mean_prior
+
+      - name: Validate leakage boundary and run-mean transfer state
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
+          from v11 import probability_contract_v13 as contract
+
           report=json.loads(Path('data/v13_historical_backfill_report.json').read_text())
           assert report['source_replays'] > 0, report
           assert report['replay_pass'] > 0, report
+          assert report['model_generation'] == contract.MODEL_GENERATION_FINGERPRINT, report
           rows=[]
           p=Path('data/v13_historical_backfill.jsonl')
           for line in p.read_text().splitlines():
@@ -60,7 +66,17 @@ jobs:
               assert r['features_from_postgame'] is False
               assert r['market_probability_used_as_baseball_feature'] is False
               assert r['result_status'] == 'SETTLED'
-          print('V13 backfill rows=',len(rows),'games=',report['canonical_games'])
+              assert contract.row_is_predictively_compatible(r), r.get('game_pk')
+
+          prior=json.loads(Path('data/v13_run_mean_prior.json').read_text())
+          assert prior['model_generation'] == contract.MODEL_GENERATION_FINGERPRINT, prior
+          assert int(prior.get('exact_final_games') or 0) <= len({str(r.get('game_pk')) for r in rows if str(r.get('phase') or '').upper() == 'FINAL'})
+          if prior.get('active'):
+              assert int(prior.get('exact_final_games') or 0) >= int(prior.get('exact_transfer_required_games') or 20), prior
+              assert prior.get('exact_transfer_status') == 'PASS_FINAL_ONLY', prior
+          print('V13 backfill rows=',len(rows),'games=',report['canonical_games'],
+                'final_transfer=',prior.get('exact_final_games'), '/', prior.get('exact_transfer_required_games'),
+                'status=',prior.get('exact_transfer_status'))
           PY
 
       - name: Upload backfill artifact
@@ -70,15 +86,16 @@ jobs:
           path: |
             data/v13_historical_backfill.jsonl
             data/v13_historical_backfill_report.json
+            data/v13_run_mean_prior.json
           retention-days: 90
 
-      - name: Persist backfill evidence
+      - name: Persist backfill evidence and rebuilt run-mean prior
         run: |
-          git config user.name 'MLB Betting Bot V13'
+          git config user.name 'MLB Betting Bot V13.5.2'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add data/v13_historical_backfill.jsonl data/v13_historical_backfill_report.json
+          git add data/v13_historical_backfill.jsonl data/v13_historical_backfill_report.json data/v13_run_mean_prior.json
           if ! git diff --cached --quiet; then
-            git commit -m 'data: persist V13 point-in-time historical backfill [skip ci]'
+            git commit -m 'data: persist V13.5.2 point-in-time backfill and run-mean transfer [skip ci]'
             git pull --rebase origin main
             git push origin HEAD:main
           fi

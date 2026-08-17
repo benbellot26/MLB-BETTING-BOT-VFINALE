@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
 
 from v11 import probability_contract_v13 as contract
 from v11 import v13_run_mean_runtime, v13_train
@@ -48,6 +49,26 @@ class V1352FinalHardeningTests(unittest.TestCase):
         }
         self.assertEqual(policy["model_generation"],contract.MODEL_GENERATION_FINGERPRINT)
         self.assertFalse(policy["training_policy"]["exact_v13_replay_backfill_allowed"])
+
+    def test_backfill_workflow_rebuilds_and_persists_run_mean_prior(self):
+        text=Path(".github/workflows/v13-historical-backfill.yml").read_text(encoding="utf-8")
+        self.assertIn("python -m v11.v13_run_mean_prior", text)
+        self.assertIn("data/v13_run_mean_prior.json", text)
+        self.assertIn("PASS_FINAL_ONLY", text)
+        self.assertIn("MODEL_GENERATION_FINGERPRINT", text)
+
+    def test_runtime_metadata_separates_software_contract_and_generation(self):
+        text=Path("v11/v13_runtime.py").read_text(encoding="utf-8")
+        self.assertIn('payload["software_version"] = VERSION', text)
+        self.assertIn('payload["probability_contract_version"] = PREDICTIVE_CONTRACT_VERSION', text)
+        self.assertIn('payload["model_generation"] = MODEL_GENERATION_FINGERPRINT', text)
+        self.assertNotIn('payload["probability_contract_version"] = VERSION', text)
+
+    def test_selector_labels_match_v1352_generation(self):
+        text=Path("v11/selector.py").read_text(encoding="utf-8")
+        self.assertIn('"selector_version": "V13.5.2-professional-portfolio-v1"', text)
+        self.assertIn('"non retenu par V13.5.2"', text)
+        self.assertNotIn('"non retenu par V13.5"', text)
 
 
 if __name__ == "__main__":

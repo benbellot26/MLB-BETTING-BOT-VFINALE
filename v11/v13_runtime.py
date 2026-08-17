@@ -10,7 +10,12 @@ from . import v13_distribution_prior
 from . import v13_run_mean_runtime
 from . import v13_rich_run_shadow
 from .pipeline_v13 import ProbabilityPipelineV13
-from .probability_contract_v13 import attach_contract, assert_no_market_leakage
+from .probability_contract_v13 import (
+    attach_contract,
+    assert_no_market_leakage,
+    PREDICTIVE_CONTRACT_VERSION,
+    MODEL_GENERATION_FINGERPRINT,
+)
 
 VERSION = "13.5.2-professional-probability-v1"
 _INSTALLED = False
@@ -73,7 +78,10 @@ def upgrade_result(result: dict[str,Any], pipeline: ProbabilityPipelineV13 | dic
     home = str((result.get("ctx") or {}).get("home") or "")
     hm = next((o for o in result.get("options") or [] if str(o.get("market") or "").upper()=="ML" and str(o.get("name") or "")==home), None)
     if hm and hm.get("p_baseball_calibrated") is not None: result["p_home"] = hm["p_baseball_calibrated"]
-    result["probability_contract_version"] = VERSION; result["probability_product"] = "baseball-only-calibrated"
+    result["software_version"] = VERSION
+    result["probability_contract_version"] = PREDICTIVE_CONTRACT_VERSION
+    result["model_generation"] = MODEL_GENERATION_FINGERPRINT
+    result["probability_product"] = "baseball-only-calibrated"
     result["market_blend_allowed_for_edge"] = False; result["market_blend_allowed_for_forecast_only"] = True
     result["probability_pipeline"] = "PregameSnapshot->BaseballModel->RunMeanPrior->ScoreDistribution->BaseballCalibration->MarketBenchmark"
     return result
@@ -131,7 +139,9 @@ def install() -> bool:
         attach_contract(payload)
         as_of = str(payload.get("analyzed_at") or at or datetime.now(timezone.utc).isoformat())
         pit.mark_live_snapshot(payload, as_of)
-        payload["software_version"] = VERSION; payload["probability_contract_version"] = VERSION
+        payload["software_version"] = VERSION
+        payload["probability_contract_version"] = PREDICTIVE_CONTRACT_VERSION
+        payload["model_generation"] = MODEL_GENERATION_FINGERPRINT
         payload["probability_product"] = "baseball-only-calibrated"; payload["predictive_compatibility_independent_of_software_version"] = True
         return payload
 
