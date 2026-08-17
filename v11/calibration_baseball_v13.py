@@ -141,26 +141,35 @@ def _option_probability(opt: dict[str,Any]) -> float | None:
 
 
 def examples_from_rows(rows: list[dict[str,Any]]) -> dict[str, list[tuple[float,int]]]:
+    """Build independent calibration buckets.
+
+    Phase buckets keep one forecast per game/phase/market. Market buckets keep
+    only one forecast per game/market, using the latest pregame phase available,
+    so repeated EARLY/LATE/FINAL snapshots cannot inflate effective sample size.
+    """
     buckets: dict[str,list[tuple[float,int]]] = {"GLOBAL":[]}
-    # Phase belongs to the identity of a calibration observation. A FINAL replay
-    # must never be discarded merely because an EARLY snapshot exists for the
-    # same game/market/side/line.
-    seen: set[tuple[str,str,str,str,str]] = set()
+    phase_seen: set[tuple[str,str,str]] = set()
+    latest_market: dict[tuple[str,str], tuple[str,tuple[float,int]]] = {}
     for row in sorted(rows, key=lambda r: (str(r.get("game_date") or ""), str(r.get("analyzed_at") or ""))):
         phase = str(row.get("phase") or "EARLY").upper(); game_pk = str(row.get("game_pk") or "")
+        rank = str(row.get("analyzed_at") or "")
         for opt in row.get("options") or []:
             result = opt.get("result")
             if result not in {"WIN","LOSS"}: continue
             p = _option_probability(opt)
             if p is None: continue
-            market = str(opt.get("market") or "").upper(); name = str(opt.get("name") or ""); point = str(opt.get("point"))
-            key = (game_pk, phase, market, name, point)
-            if key in seen: continue
-            seen.add(key)
+            market = str(opt.get("market") or "").upper()
             ex = (p, 1 if result == "WIN" else 0)
-            buckets.setdefault("GLOBAL", []).append(ex)
-            buckets.setdefault(f"MARKET:{market}", []).append(ex)
-            buckets.setdefault(f"PHASE:{phase}:{market}", []).append(ex)
+            phase_key = (game_pk, phase, market)
+            if phase_key not in phase_seen:
+                phase_seen.add(phase_key)
+                buckets.setdefault(f"PHASE:{phase}:{market}", []).append(ex)
+            market_key = (game_pk, market)
+            if market_key not in latest_market or rank > latest_market[market_key][0]:
+                latest_market[market_key] = (rank, ex)
+    for (_, market), (_, ex) in latest_market.items():
+        buckets.setdefault(f"MARKET:{market}", []).append(ex)
+        buckets.setdefault("GLOBAL", []).append(ex)
     return buckets
 
 
@@ -208,9 +217,6 @@ def choose_calibrator(model: dict[str,Any], market: str, phase: str) -> tuple[di
         if cal.get("active"):
             out=dict(cal); out.update(counts)
             return out, key
-    # Identity remains identity until a challenger wins its holdout. For an
-    # interval tied to a specific phase, report/use the phase sample whenever it
-    # exists; only fall back to market-level n when this phase has no evidence.
     evidence_n = counts["phase_n"] if counts["phase_n"] > 0 else counts["market_n"]
     return {"active":False,"method":"identity","n":evidence_n,**counts}, "identity"
 
