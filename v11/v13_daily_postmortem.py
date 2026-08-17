@@ -54,13 +54,7 @@ def _choose_side(xs):
 
 
 def _choose_independent(states, phase=None):
-    """One deterministic latest forecast per independent target.
-
-    When phase is supplied, latest means latest observation inside that phase.
-    Without phase, it means the latest pregame observation across all phases.
-    This prevents repeated hourly runs from inflating Brier/LogLoss while still
-    preserving EARLY/LATE/FINAL diagnostics separately.
-    """
+    """One deterministic latest forecast per independent target."""
     groups=defaultdict(list)
     for s in states:
         if _result_y(s) is None: continue
@@ -131,8 +125,10 @@ def build(day=None):
     priced=[s for s in states if _num(s.get("winamax_price")) and s.get("flat_1u_pnl") is not None]
     selected=[s for s in priced if s.get("official_selected")]
     report={"schema":"v13-daily-postmortem-v2","generated_at":datetime.now(timezone.utc).isoformat(),"target_date":day,
-            "settled_observations":len(states),"priced_observations":len(priced),"official_selected":len(selected),
-            "official_pnl_1u":round(sum(_num(s.get("flat_1u_pnl"),0) or 0 for s in selected),4),"markets":by_market,
+            "settled_observations":len(states),"priced_observations":len(priced),
+            "settled_options":len(states),"priced_options":len(priced),
+            "official_selected":len(selected),"official_pnl_1u":round(sum(_num(s.get("flat_1u_pnl"),0) or 0 for s in selected),4),
+            "markets":by_market,
             "methodology":{"probability_scoring":"latest deterministic independent side per game/line; EARLY/LATE/FINAL scored separately and repeated same-phase runs do not inflate n",
                            "portfolio_pnl":"official selections only; rejected options are diagnostic only",
                            "clv":"model probability minus latest valid pregame sharp fair probability"}}
