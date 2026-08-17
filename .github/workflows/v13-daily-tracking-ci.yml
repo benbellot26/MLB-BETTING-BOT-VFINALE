@@ -3,7 +3,9 @@ name: V13 Daily Market Tracking CI
 on:
   push:
     branches:
+      - main
       - 'agent/v134-daily-tracking'
+      - 'agent/v134-tracking-persistence'
   pull_request:
 
 permissions:
@@ -18,7 +20,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Compile
-        run: python -m py_compile v11/v13_daily_tracking.py v11/v13_entry.py tests/test_v13_daily_tracking.py
+        run: python -m py_compile v11/v13_daily_tracking.py v11/v13_tracking_sync.py v11/v13_entry.py tests/test_v13_daily_tracking.py
       - name: Tracking lifecycle tests
         run: python -m unittest tests.test_v13_daily_tracking
       - name: V13 self test
