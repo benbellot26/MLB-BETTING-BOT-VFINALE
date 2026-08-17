@@ -44,11 +44,7 @@ def _hist_rows() -> list[dict[str,Any]]:
 
 
 def _exact_rows() -> list[dict[str,Any]]:
-    """Use only genuine exact FINAL V13 replays for transfer monitoring.
-
-    The prior is FINAL-only. EARLY/LATE exact replays may be useful elsewhere,
-    but they must not be presented as exact transfer evidence for this layer.
-    """
+    """Use only genuine exact FINAL V13 replays for transfer validation."""
     if not EXACT.exists(): return []
     best={}
     with EXACT.open("r",encoding="utf-8") as fh:
@@ -158,21 +154,22 @@ def build():
     _,_,name,ridge,_,val_ev=chosen
     final=_fit(train+val,ridge,name!="side_bias")
     test_ev=_gain(test,final)
-    historical_active=_passes(val_ev,100) and _passes(test_ev,100)
+    historical_passes=_passes(val_ev,100) and _passes(test_ev,100)
     exact_ready=len(exact)>=MIN_EXACT_FINAL
     exact_ev=_gain(exact,final) if exact else {"games":0,"baseline":{},"candidate":{},"mae_gain":None,"rmse_gain":None,"nll_gain":None}
     exact_passes=_passes(exact_ev,MIN_EXACT_FINAL) if exact_ready else False
     exact_status="PASS_FINAL_ONLY" if exact_ready and exact_passes else "FAIL_FINAL_ONLY" if exact_ready else "COLLECTING_FINAL_ONLY"
-    return {"schema":"v13-run-mean-prior-v1","active":bool(historical_active),"phase_scope":"FINAL",
+    active=bool(historical_passes and exact_passes)
+    return {"schema":"v13-run-mean-prior-v1","active":active,"historical_candidate_active":bool(historical_passes),"phase_scope":"FINAL",
             "source":"1801-game leakage-safe reconstructed FINAL cohort",
             "historical_games":len(rows),"split":{"train":len(train),"validation":len(val),"test":len(test)},
             "exact_games":len(exact),"exact_final_games":len(exact),"exact_phase_counts":{"FINAL":len(exact)},
             "selected_variant":name,"model":final,"validation":val_ev,"test":test_ev,"exact_transfer":exact_ev,
             "exact_transfer_status":exact_status,"exact_transfer_required_games":MIN_EXACT_FINAL,
-            "activation_rule":"historical chronological validation and untouched future test must improve RMSE and NB NLL; MAE may not regress by >0.01. Exact V13 FINAL transfer is monitored independently until >=20 genuine FINAL replays.",
-            "transfer_caveat":"Exact transfer is FINAL-only and is not used to activate the historical prior while its FINAL sample is below the monitoring floor.",
+            "activation_rule":"historical chronological validation/test must pass AND >=20 genuine FINAL V13 transfer games must pass RMSE/NB-NLL with MAE regression <=0.01",
+            "transfer_caveat":"The historical model is only a candidate until native FINAL transfer is independently validated.",
             "safety":{"historical_odds_used":False,"market_probability_used":False,"feature_vector_fabricated":False,
-                      "exact_transfer_used_for_activation":False,"applies_only_when_native_residual_and_legacy_run_bootstrap_are_inactive":True}}
+                      "exact_transfer_required_for_activation":True,"applies_only_when_native_residual_and_legacy_run_bootstrap_are_inactive":True}}
 
 
 def main():
