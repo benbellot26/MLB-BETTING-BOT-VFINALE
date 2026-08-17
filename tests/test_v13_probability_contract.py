@@ -57,7 +57,7 @@ class V13ProbabilityContractTests(unittest.TestCase):
         }]
         self.assertEqual(v13_train.eligible_probability_rows(rows), [])
 
-    def test_same_game_different_phases_are_independent_calibration_evidence(self):
+    def test_phase_calibration_keeps_each_phase_but_market_count_stays_one_game(self):
         rows=[
             {"game_pk":"1","phase":"EARLY","game_date":"2026-06-01T20:00:00Z","analyzed_at":"2026-06-01T10:00:00Z",
              "options":[{"market":"ML","name":"Home","point":None,"p_baseball_raw":.55,"result":"WIN"}]},
@@ -65,7 +65,8 @@ class V13ProbabilityContractTests(unittest.TestCase):
              "options":[{"market":"ML","name":"Home","point":None,"p_baseball_raw":.61,"result":"WIN"}]},
         ]
         buckets=cal.examples_from_rows(rows)
-        self.assertEqual(len(buckets["MARKET:ML"]),2)
+        self.assertEqual(len(buckets["MARKET:ML"]),1)
+        self.assertAlmostEqual(buckets["MARKET:ML"][0][0],.61)
         self.assertEqual(len(buckets["PHASE:EARLY:ML"]),1)
         self.assertEqual(len(buckets["PHASE:FINAL:ML"]),1)
 
