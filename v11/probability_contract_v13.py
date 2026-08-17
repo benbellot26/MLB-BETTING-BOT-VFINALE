@@ -4,10 +4,11 @@ import math
 from dataclasses import dataclass, asdict
 from typing import Any
 
-PREDICTIVE_CONTRACT_VERSION = "v13-predictive-contract-v1"
+PREDICTIVE_CONTRACT_VERSION = "v13-predictive-contract-v2"
 FEATURE_CONTRACT_VERSION = "v13-baseball-features-v1"
 TARGET_CONTRACT_VERSION = "v13-market-targets-v1"
-CALIBRATION_CONTRACT_VERSION = "v13-baseball-calibration-v1"
+CALIBRATION_CONTRACT_VERSION = "v13-baseball-calibration-v2"
+MODEL_GENERATION_FINGERPRINT = "v13.5.2-gen-structural-nb-finalgate-v1"
 
 
 def _num(x: Any, default: float = 0.0) -> float:
@@ -28,6 +29,7 @@ class PredictiveContract:
     target_contract: str = TARGET_CONTRACT_VERSION
     probability_contract: str = PREDICTIVE_CONTRACT_VERSION
     calibration_contract: str = CALIBRATION_CONTRACT_VERSION
+    model_generation: str = MODEL_GENERATION_FINGERPRINT
 
     def compatible_with(self, payload: dict[str, Any] | None) -> bool:
         payload = payload or {}
@@ -50,15 +52,12 @@ def row_is_predictively_compatible(row: dict[str, Any]) -> bool:
 
 def attach_contract(row: dict[str, Any]) -> dict[str, Any]:
     row["predictive_contract"] = asdict(CONTRACT)
+    row["model_generation_fingerprint"] = MODEL_GENERATION_FINGERPRINT
     return row
 
 
 def baseball_probability(option: dict[str, Any]) -> float:
-    """Return the calibrated baseball-only probability.
-
-    This intentionally refuses to treat p_effective/p_model as baseball-only because
-    legacy generations may have mixed sharp-market information into those fields.
-    """
+    """Return the calibrated baseball-only probability."""
     if option.get("p_baseball_calibrated") is not None:
         return clip_probability(option["p_baseball_calibrated"])
     if option.get("p_baseball_raw") is not None:
@@ -84,7 +83,6 @@ def probability_gap(option: dict[str, Any]) -> float | None:
 
 
 def assert_no_market_leakage(option: dict[str, Any]) -> None:
-    """Fail closed when legacy mixed fields are presented as V13 baseball probabilities."""
     source = str(option.get("baseball_probability_source") or "")
     if "sharp" in source.lower() or "market" in source.lower():
         raise ValueError("market-derived source cannot define V13 baseball probability")

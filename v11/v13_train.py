@@ -28,6 +28,13 @@ def _norm(value: Any) -> str:
 
 
 def _load_exact_backfill(path: Path = EXACT_BACKFILL) -> list[dict[str,Any]]:
+    """Load exact replays for diagnostics only.
+
+    V13.5.2 deliberately excludes these rows from official calibration unless
+    they were produced by the exact current predictive generation and persisted
+    through the native journal path. Historical replay files remain useful for
+    transfer diagnostics, but never inflate official calibration evidence.
+    """
     if not path.exists():
         return []
     out=[]
@@ -46,19 +53,12 @@ def _load_exact_backfill(path: Path = EXACT_BACKFILL) -> list[dict[str,Any]]:
             continue
         if row.get("home_score") is None or row.get("away_score") is None:
             continue
-        row=dict(row)
-        row["v13_evidence_tier"]="A_EXACT_REPLAY"
-        out.append(row)
+        out.append(dict(row))
     return out
 
 
 def _canonical_options(row: dict[str,Any]) -> list[dict[str,Any]]:
-    """Keep at most one independent baseball-only calibration target per market/phase.
-
-    p_learned remains a valid raw baseball probability only after the enclosing
-    row has passed the V13 predictive-contract gate (or is an audited exact
-    replay). Legacy rows without that contract are rejected before this helper.
-    """
+    """Keep at most one independent baseball-only calibration target per market/phase."""
     options = [o for o in (row.get("options") or [])
                if o.get("result") in {"WIN","LOSS"}
                and (o.get("p_baseball_raw") is not None or o.get("p_learned") is not None)]
@@ -83,19 +83,11 @@ def _canonical_options(row: dict[str,Any]) -> list[dict[str,Any]]:
 
 
 def _native_contract_ok(row: dict[str,Any]) -> bool:
-    if row.get("v13_evidence_tier") == "A_EXACT_REPLAY":
-        return True
     return contract.row_is_predictively_compatible(row)
 
 
 def eligible_probability_rows(rows: list[dict[str,Any]]) -> list[dict[str,Any]]:
-    """Use only genuine V13 pregame probability observations.
-
-    Native live evidence must carry the V13 predictive contract. Exact replay
-    backfill remains allowed because its point-in-time provenance was separately
-    reconstructed and audited. Software-version strings do not define model
-    compatibility; the explicit probability contract does.
-    """
+    """Use only genuine current-generation V13 pregame probability observations."""
     best: dict[tuple[str,str], tuple[str,dict[str,Any]]] = {}
     for row in rows:
         analyzed = _dt(row.get("analyzed_at"))
@@ -150,33 +142,36 @@ def enforce_strict_activation(model: dict[str,Any]) -> dict[str,Any]:
 
 def build() -> dict[str,Any]:
     live = journal.load_rows()
-    exact = _load_exact_backfill()
-    source = list(live) + list(exact)
-    rows = eligible_probability_rows(source)
+    exact_diagnostic = _load_exact_backfill()
+    rows = eligible_probability_rows(list(live))
     model = enforce_strict_activation(calibration.build_model(rows))
+    model["model_generation"] = contract.MODEL_GENERATION_FINGERPRINT
     model["training_policy"] = {
         "native_predictive_contract_required": True,
+        "exact_model_generation_required": contract.MODEL_GENERATION_FINGERPRINT,
         "pregame_required": True,
         "settled_result_required": True,
         "accepted_probability_fields": ["p_baseball_raw","p_learned"],
-        "p_learned_requires_v13_predictive_contract": True,
+        "p_learned_requires_current_predictive_contract": True,
         "forbidden_probability_fields_as_baseball_evidence": ["p_effective","p_model","p_market","p_posterior"],
         "canonical_row": "latest pregame row per game_pk and phase",
         "independent_target_policy": "max one canonical side per market/game/phase",
         "alternate_lines_trainable_for_calibration": False,
         "strict_volume_floor_after_internal_holdout": True,
-        "exact_v13_replay_backfill_allowed": True,
+        "exact_v13_replay_backfill_allowed": False,
+        "exact_replays_diagnostic_only": True,
         "legacy_reconstructed_1801_allowed_as_native_calibration": False,
         "runtime_global_cross_market_fallback_allowed": False,
         "activation_validation": "expanding walk-forward method selection + untouched chronological final holdout",
     }
-    model["source_rows_total"] = len(source)
+    model["source_rows_total"] = len(live)
     model["source_rows_live"] = len(live)
-    model["source_rows_exact_replay"] = len(exact)
+    model["source_rows_exact_replay_diagnostic"] = len(exact_diagnostic)
+    model["source_rows_exact_replay_used_for_calibration"] = 0
     model["eligible_rows"] = len(rows)
     model["eligible_games"] = len({str(r.get("game_pk")) for r in rows})
-    model["exact_replay_games"] = len({str(r.get("game_pk")) for r in exact})
-    model["rejected_non_v13_contract_rows"] = sum(1 for r in live if not contract.row_is_predictively_compatible(r))
+    model["exact_replay_games_diagnostic"] = len({str(r.get("game_pk")) for r in exact_diagnostic})
+    model["rejected_non_current_generation_rows"] = sum(1 for r in live if not contract.row_is_predictively_compatible(r))
     return model
 
 

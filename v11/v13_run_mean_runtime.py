@@ -29,11 +29,28 @@ def load(path: Path = MODEL_FILE) -> dict[str,Any]:
     return d
 
 
+def _transfer_gate(artifact: dict[str,Any]) -> tuple[bool,str]:
+    required=int(artifact.get("exact_transfer_required_games") or 20)
+    n=int(artifact.get("exact_final_games") or artifact.get("exact_games") or 0)
+    status=str(artifact.get("exact_transfer_status") or "")
+    if n < required:
+        return False,f"FINAL_TRANSFER_COLLECTING_{n}_OF_{required}"
+    if status != "PASS_FINAL_ONLY":
+        return False,f"FINAL_TRANSFER_{status or 'UNVALIDATED'}"
+    return True,"PASS_FINAL_ONLY"
+
+
 def apply_pair(home_mu: float, away_mu: float, phase: str, artifact: dict[str,Any] | None = None):
     artifact=load() if artifact is None else artifact
     phase=str(phase or "EARLY").upper()
-    if not artifact.get("active") or phase != str(artifact.get("phase_scope") or "FINAL").upper():
-        return home_mu,away_mu,{"active":False,"source":"none"}
+    if phase != str(artifact.get("phase_scope") or "FINAL").upper():
+        return home_mu,away_mu,{"active":False,"source":"none","reason":"phase_out_of_scope"}
+    gate_ok,gate_reason=_transfer_gate(artifact)
+    if not artifact.get("active") or not gate_ok:
+        return home_mu,away_mu,{"active":False,"source":"none","reason":gate_reason,
+                "historical_candidate_active":bool(artifact.get("historical_candidate_active")),
+                "exact_transfer_games":artifact.get("exact_final_games",artifact.get("exact_games")),
+                "exact_transfer_required_games":artifact.get("exact_transfer_required_games",20)}
     model=artifact.get("model") or {}
     cap=max(0.0,min(1.0,_num(model.get("max_adjustment"),.75)))
     sd=_num(model.get("slope_delta"))
@@ -44,4 +61,5 @@ def apply_pair(home_mu: float, away_mu: float, phase: str, artifact: dict[str,An
     h,hd=one(home_mu,"home"); a,ad=one(away_mu,"away")
     return h,a,{"active":True,"source":"v13-historical-run-mean-prior","home_delta":hd,"away_delta":ad,
                 "variant":artifact.get("selected_variant"),"historical_games":artifact.get("historical_games"),
-                "exact_transfer_games":artifact.get("exact_games")}
+                "exact_transfer_games":artifact.get("exact_final_games",artifact.get("exact_games")),
+                "exact_transfer_status":artifact.get("exact_transfer_status")}

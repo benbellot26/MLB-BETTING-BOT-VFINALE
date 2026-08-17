@@ -14,6 +14,7 @@ from typing import Any
 # Activates the complete hardened V12 stack plus V13 probability contract.
 from . import v13_entry  # noqa: F401
 from . import core, engine_v12 as engine
+from . import probability_contract_v13 as contract
 
 SCHEMA = "v13-point-in-time-backfill-v1"
 OUTPUT_FILE = Path(os.getenv("V13_BACKFILL_FILE", "data/v13_historical_backfill.jsonl"))
@@ -120,7 +121,6 @@ def replay_one(path: Path, score_cache: dict[str, dict[str, tuple[int, int]]]) -
             try:
                 results.append(engine.analyze(game, event, as_of=analyzed_at))
             except Exception as exc:
-                # A replay can legitimately be incomplete for a later code path.
                 diag.setdefault("analysis_errors", []).append({"game_pk": game.get("gamePk"), "error": f"{type(exc).__name__}:{exc}"})
         core.clear_http_replay()
         if day not in score_cache:
@@ -133,7 +133,7 @@ def replay_one(path: Path, score_cache: dict[str, dict[str, tuple[int, int]]]) -
             hs, aws = scores[gid]
             ctx = result.get("ctx") or {}
             options = [_option_row(o, str(ctx.get("home") or ""), hs, aws) for o in result.get("options") or []]
-            rows.append({
+            row = {
                 "schema": SCHEMA,
                 "source_replay_schema": payload.get("schema"),
                 "run_id": payload.get("run_id"),
@@ -156,8 +156,11 @@ def replay_one(path: Path, score_cache: dict[str, dict[str, tuple[int, int]]]) -
                 "market_probability_used_as_baseball_feature": False,
                 "probability_contract_version": result.get("probability_contract_version"),
                 "options": options,
-            })
-        diag.update({"status": "PASS", "day": day, "analyzed_at": analyzed_at, "games_in_replay": len(games), "analyzed": len(results), "rows": len(rows)})
+            }
+            contract.attach_contract(row)
+            rows.append(row)
+        diag.update({"status": "PASS", "day": day, "analyzed_at": analyzed_at, "games_in_replay": len(games), "analyzed": len(results), "rows": len(rows),
+                     "model_generation": contract.MODEL_GENERATION_FINGERPRINT})
         return rows, diag
     except Exception as exc:
         diag["error"] = f"{type(exc).__name__}:{exc}"
@@ -195,8 +198,9 @@ def build(paths: list[Path]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
             if opt.get("result") in {"WIN", "LOSS", "PUSH"}:
                 market_counts[str(opt.get("market") or "UNKNOWN")] += 1
     report = {
-        "schema": "v13-historical-backfill-report-v1",
+        "schema": "v13-historical-backfill-report-v2",
         "generated_at": datetime.now(timezone.utc).isoformat(),
+        "model_generation": contract.MODEL_GENERATION_FINGERPRINT,
         "source_replays": len(paths),
         "replay_pass": sum(d.get("status") == "PASS" for d in diagnostics),
         "replay_fail": sum(d.get("status") != "PASS" for d in diagnostics),
@@ -206,7 +210,7 @@ def build(paths: list[Path]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
         "phase_counts": dict(phase_counts),
         "settled_options_by_market": dict(market_counts),
         "diagnostics": diagnostics,
-        "evidence_boundary": "All features come exclusively from recorded pregame HTTP replays. Final MLB scores are fetched after replay and used only as labels.",
+        "evidence_boundary": "All features come exclusively from recorded pregame HTTP replays. Final MLB scores are fetched after replay and used only as labels. Every output row is stamped with the exact predictive model generation used for reconstruction.",
     }
     return canonical, report
 
