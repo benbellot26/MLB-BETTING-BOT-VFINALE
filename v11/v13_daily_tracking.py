@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import json, math, os
-from collections import defaultdict
+import argparse, json, math, os
 from datetime import datetime, timezone
 from pathlib import Path
-from . import config, core, storage
+from . import config, core, storage, market
 
 TRACK_FILE = Path(os.getenv("V13_TRACK_FILE", "data/v13_market_tracking.jsonl"))
 REPORT_FILE = Path(os.getenv("V13_TRACK_REPORT", "data/v13_market_tracking_report.json"))
@@ -14,8 +13,7 @@ def _num(x, d=None):
     try:
         y=float(x)
         return y if math.isfinite(y) else d
-    except Exception:
-        return d
+    except Exception:return d
 
 
 def _dt(x):
@@ -51,37 +49,30 @@ def fold(events=None):
     return state
 
 
-def _key(r,o):
-    return storage.bet_key(r.get("game_pk"),o.get("market"),o.get("name"),o.get("point"))
+def _key(r,o):return storage.bet_key(r.get("game_pk"),o.get("market"),o.get("name"),o.get("point"))
 
 
 def _price(o):
-    e=o.get("winamax_eval") or {}
-    p=_num(e.get("price"))
+    p=_num((o.get("winamax_eval") or {}).get("price"))
     return p if p and p>1 else None
 
 
 def _nominal_ev(o,price):
     if not price:return None
-    p=_num(o.get("p_win"))
-    push=max(0.0,min(.95,_num(o.get("p_push"),0.0) or 0.0))
+    p=_num(o.get("p_win")); push=max(0.0,min(.95,_num(o.get("p_push"),0.0) or 0.0))
     if p is None:
-        pe=_num(o.get("p_effective"))
-        p=(pe*(1-push)) if pe is not None else None
+        pe=_num(o.get("p_effective")); p=(pe*(1-push)) if pe is not None else None
     if p is None:return None
-    loss=max(0.0,1-p-push)
-    return p*(price-1)-loss
+    return p*(price-1)-max(0.0,1-p-push)
 
 
 def capture_results(results, analyzed_at=None, target_date=None):
-    at=analyzed_at or datetime.now(timezone.utc).isoformat()
-    rows=[]
+    at=analyzed_at or datetime.now(timezone.utc).isoformat(); rows=[]
     for r in results or []:
         game_date=(r.get("game") or {}).get("gameDate") or (r.get("event") or {}).get("commence_time")
         for o in r.get("options") or []:
             price=_price(o); e=o.get("winamax_eval") or {}; gate=e.get("v11_price_gate") or {}
-            rows.append({
-                "schema":"v13-market-tracking-v1","event_type":"MODEL_SNAPSHOT","tracking_key":_key(r,o),
+            rows.append({"schema":"v13-market-tracking-v2","event_type":"MODEL_SNAPSHOT","tracking_key":_key(r,o),
                 "observed_at":at,"target_date":target_date or core.TARGET_DATE,"game_pk":r.get("game_pk"),"game_date":game_date,
                 "home":(r.get("ctx") or {}).get("home"),"away":(r.get("ctx") or {}).get("away"),"phase":r.get("phase"),
                 "market":o.get("market"),"pick":o.get("name"),"point":o.get("point"),"canonical":bool(o.get("is_canonical_line")),
@@ -94,27 +85,80 @@ def capture_results(results, analyzed_at=None, target_date=None):
     return _append(rows)
 
 
+def _market_update(k, known, at, mins, price, sharp):
+    row={"schema":"v13-market-tracking-v2","event_type":"MARKET_UPDATE","tracking_key":k,
+         "last_market_observed_at":at,"latest_winamax_price":price,"latest_sharp_fair":sharp,
+         "minutes_to_start":round(mins,2) if mins is not None else None}
+    close_window=float(getattr(config,"CLOSING_CANDIDATE_WINDOW_MIN",90) or 90)
+    if mins is not None and 0 < mins <= close_window:
+        row.update({"close_price":price,"close_sharp_fair":sharp,"close_observed_at":at,"close_minutes_to_start":round(mins,2)})
+        base=_num(known.get("winamax_price"))
+        if base and price:row["price_clv_pct"]=round(base/price-1,6)
+        pm=_num(known.get("p_market")); ps=_num(sharp)
+        if pm is not None and ps is not None:row["sharp_probability_move"]=round(ps-pm,6)
+    return row
+
+
 def observe_closing(results, analyzed_at=None):
-    at=analyzed_at or datetime.now(timezone.utc).isoformat(); now=_dt(at) or datetime.now(timezone.utc)
-    known=fold(); rows=[]
+    at=analyzed_at or datetime.now(timezone.utc).isoformat(); now=_dt(at) or datetime.now(timezone.utc); known=fold(); rows=[]
     for r in results or []:
-        start=_dt((r.get("game") or {}).get("gameDate") or (r.get("event") or {}).get("commence_time"))
-        mins=(start-now).total_seconds()/60 if start else None
+        start=_dt((r.get("game") or {}).get("gameDate") or (r.get("event") or {}).get("commence_time")); mins=(start-now).total_seconds()/60 if start else None
         for o in r.get("options") or []:
             k=_key(r,o)
-            if k not in known:continue
-            price=_price(o); sharp=o.get("p_market")
-            row={"schema":"v13-market-tracking-v1","event_type":"MARKET_UPDATE","tracking_key":k,
-                 "last_market_observed_at":at,"latest_winamax_price":price,"latest_sharp_fair":sharp,
-                 "minutes_to_start":round(mins,2) if mins is not None else None}
-            if mins is not None and 0 < mins <= config.CLOSING_CANDIDATE_WINDOW_MIN:
-                row.update({"close_price":price,"close_sharp_fair":sharp,"close_observed_at":at,"close_minutes_to_start":round(mins,2)})
-                base=_num(known[k].get("winamax_price"));
-                if base and price:row["price_clv_pct"]=round(base/price-1,6)
-                pm=_num(known[k].get("p_market")); ps=_num(sharp)
-                if pm is not None and ps is not None:row["sharp_probability_move"]=round(ps-pm,6)
-            rows.append(row)
+            if k in known:rows.append(_market_update(k,known[k],at,mins,_price(o),o.get("p_market")))
     return _append(rows)
+
+
+def needs_market_poll(now=None, horizon_min=150):
+    now=now or datetime.now(timezone.utc)
+    for s in fold().values():
+        if s.get("settled_result") in {"WIN","LOSS","PUSH"}:continue
+        start=_dt(s.get("game_date"))
+        if not start:continue
+        mins=(start-now).total_seconds()/60
+        if 0 < mins <= horizon_min:return True
+    return False
+
+
+def _event_for_state(events,s):
+    h,a=core.norm_name(s.get("home")),core.norm_name(s.get("away"))
+    for e in events or []:
+        if core.norm_name(e.get("home_team"))==h and core.norm_name(e.get("away_team"))==a:return e
+    return None
+
+
+def _winamax_price_from_event(event,s):
+    key={"ML":"h2h","RUNLINE":"spreads","TOTAL":"totals"}.get(str(s.get("market") or "").upper())
+    if not key:return None
+    point=_num(s.get("point")); pick=core.norm_name(s.get("pick"))
+    for b in event.get("bookmakers") or []:
+        if b.get("key")!=core.WINAMAX_KEY:continue
+        for m in b.get("markets") or []:
+            if m.get("key")!=key:continue
+            for o in m.get("outcomes") or []:
+                if core.norm_name(o.get("name"))!=pick:continue
+                if key!="h2h" and (point is None or abs((_num(o.get("point"),999) or 999)-point)>1e-9):continue
+                p=_num(o.get("price"));
+                if p and p>1:return p
+    return None
+
+
+def snapshot_market(analyzed_at=None):
+    at=analyzed_at or datetime.now(timezone.utc).isoformat(); now=_dt(at) or datetime.now(timezone.utc)
+    if not needs_market_poll(now):return 0
+    events=core.odds_api(); state=fold(); rows=[]
+    for k,s in state.items():
+        if s.get("settled_result") in {"WIN","LOSS","PUSH"}:continue
+        start=_dt(s.get("game_date")); mins=(start-now).total_seconds()/60 if start else None
+        if mins is None or mins<=0 or mins>150:continue
+        e=_event_for_state(events,s)
+        if not e:continue
+        price=_winamax_price_from_event(e,s); sharp=None
+        try:
+            sharp=(market.sharp_consensus(e,str(s.get("market") or ""),s.get("pick"),s.get("point"),as_of=at) or {}).get("fair")
+        except Exception:sharp=None
+        rows.append(_market_update(k,s,at,mins,price,sharp))
+    n=_append(rows); write_report(); return n
 
 
 def settle_from_journal(journal_rows, settled_at=None):
@@ -129,13 +173,10 @@ def settle_from_journal(journal_rows, settled_at=None):
         if s.get("settled_result") in {"WIN","LOSS","PUSH"}:continue
         r=(finals.get(str(s.get("game_pk"))) or (None,None))[1]
         if not r:continue
-        o={"market":s.get("market"),"name":s.get("pick"),"point":s.get("point"),"p_effective":s.get("p_model")}
-        journal.settle_option(o,r); res=o.get("result")
+        o={"market":s.get("market"),"name":s.get("pick"),"point":s.get("point"),"p_effective":s.get("p_model")}; journal.settle_option(o,r); res=o.get("result")
         if res not in {"WIN","LOSS","PUSH"}:continue
-        price=_num(s.get("winamax_price")); pnl=None
-        if price and price>1:
-            pnl=price-1 if res=="WIN" else -1.0 if res=="LOSS" else 0.0
-        out.append({"schema":"v13-market-tracking-v1","event_type":"SETTLED","tracking_key":k,"settled_at":at,
+        price=_num(s.get("winamax_price")); pnl=(price-1 if res=="WIN" else -1.0 if res=="LOSS" else 0.0) if price and price>1 else None
+        out.append({"schema":"v13-market-tracking-v2","event_type":"SETTLED","tracking_key":k,"settled_at":at,
                     "settled_result":res,"flat_1u_pnl":pnl,"home_score":r.get("home_score"),"away_score":r.get("away_score")})
     n=_append(out); write_report(); return n
 
@@ -152,25 +193,26 @@ def _band(ev):
 
 
 def write_report():
-    xs=list(fold().values()); settled=[x for x in xs if x.get("settled_result") in {"WIN","LOSS","PUSH"}]
-    by_market={}; by_edge={}
-    for market in ("ML","RUNLINE","TOTAL"):
-        ms=[x for x in settled if x.get("market")==market]
-        priced=[x for x in ms if _num(x.get("winamax_price")) and x.get("flat_1u_pnl") is not None]
+    xs=list(fold().values()); settled=[x for x in xs if x.get("settled_result") in {"WIN","LOSS","PUSH"}]; by_market={}; by_edge={}
+    for market_name in ("ML","RUNLINE","TOTAL"):
+        ms=[x for x in settled if x.get("market")==market_name]; priced=[x for x in ms if _num(x.get("winamax_price")) and x.get("flat_1u_pnl") is not None]
         pos=[x for x in priced if (_num(x.get("nominal_ev"),-999) or -999)>0]
-        by_market[market]={"settled":len(ms),"priced":len(priced),"positive_nominal_ev":len(pos),
-                           "positive_ev_wins":sum(x.get("settled_result")=="WIN" for x in pos),
-                           "positive_ev_pnl_1u":round(sum(_num(x.get("flat_1u_pnl"),0) or 0 for x in pos),4)}
+        by_market[market_name]={"settled":len(ms),"priced":len(priced),"positive_nominal_ev":len(pos),"positive_ev_wins":sum(x.get("settled_result")=="WIN" for x in pos),"positive_ev_pnl_1u":round(sum(_num(x.get("flat_1u_pnl"),0) or 0 for x in pos),4),"closing_price_observed":sum(x.get("close_price") is not None for x in ms),"closing_sharp_observed":sum(x.get("close_sharp_fair") is not None for x in ms)}
         bands={}
         for x in priced:
             b=_band(_num(x.get("nominal_ev"))); d=bands.setdefault(b,{"n":0,"wins":0,"losses":0,"pushes":0,"pnl_1u":0.0})
             d["n"]+=1; d["wins"]+=x.get("settled_result")=="WIN"; d["losses"]+=x.get("settled_result")=="LOSS"; d["pushes"]+=x.get("settled_result")=="PUSH"; d["pnl_1u"]+=_num(x.get("flat_1u_pnl"),0) or 0
         for d in bands.values():d["pnl_1u"]=round(d["pnl_1u"],4); d["roi_1u"]=round(d["pnl_1u"]/max(1,d["n"]-d["pushes"]),4)
-        by_edge[market]=bands
-    report={"schema":"v13-market-tracking-report-v1","generated_at":datetime.now(timezone.utc).isoformat(),
-            "tracked_options":len(xs),"settled_options":len(settled),"by_market":by_market,"by_nominal_ev_band":by_edge,
-            "methodology":{"unit_pnl":"descriptive flat 1u; complementary displayed sides are not a betting portfolio",
-                           "closing":"last eligible pregame observation inside configured closing window",
-                           "missing_price":"never imputed; unpriced RL/TOTAL remain usable for probability/sharp diagnostics only"}}
-    REPORT_FILE.parent.mkdir(parents=True,exist_ok=True); REPORT_FILE.write_text(json.dumps(report,indent=2,sort_keys=True),encoding="utf-8")
-    return report
+        by_edge[market_name]=bands
+    report={"schema":"v13-market-tracking-report-v2","generated_at":datetime.now(timezone.utc).isoformat(),"tracked_options":len(xs),"settled_options":len(settled),"by_market":by_market,"by_nominal_ev_band":by_edge,"methodology":{"unit_pnl":"descriptive flat 1u; complementary displayed sides are not a betting portfolio","closing":"last eligible pregame observation inside configured closing window; scheduled raw market polls do not recompute model probabilities","missing_price":"never imputed; absent Winamax RL/TOTAL prices remain unpriced and are still tracked against sharp probability"}}
+    REPORT_FILE.parent.mkdir(parents=True,exist_ok=True); REPORT_FILE.write_text(json.dumps(report,indent=2,sort_keys=True),encoding="utf-8"); return report
+
+
+def main():
+    p=argparse.ArgumentParser(); p.add_argument("--needs-poll",action="store_true"); p.add_argument("--snapshot-market",action="store_true"); p.add_argument("--report",action="store_true"); a=p.parse_args()
+    if a.needs_poll: print("true" if needs_market_poll() else "false")
+    elif a.snapshot_market: print(json.dumps({"market_updates":snapshot_market()}))
+    elif a.report: print(json.dumps(write_report(),indent=2))
+
+
+if __name__=="__main__":main()
