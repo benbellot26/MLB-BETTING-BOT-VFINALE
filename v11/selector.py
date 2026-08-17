@@ -14,7 +14,7 @@ def _num(x, d=0.0):
 
 def conservative_probability(rec):
     p = max(.001, min(.999, _num(rec.get("p_effective", rec.get("p_model")), .5)))
-    # V13.5 uses the same lower bound shown to the user for prudent EV. This
+    # V13.5.2 uses the same lower bound shown to the user for prudent EV. This
     # removes the previous contradiction where Discord could show a wide 90%
     # interval while the selector used a much narrower legacy uncertainty.
     low = rec.get("probability_interval_low")
@@ -148,7 +148,7 @@ def allocate(results, unit_eur=.5, bankroll_eur=10.0, existing=None, target_date
             key = storage.bet_key(r.get("game_pk"), rec.get("market"), rec.get("name"), rec.get("point"))
             duplicate = key in existing_keys or str(r.get("game_pk")) in existing_game_ids
             e.update({"v11_price_gate": gate, "official_selected": False, "official_units": 0, "selected": False,
-                      "units": 0.0, "stake_eur": 0.0, "official_reason": "non retenu par V13.5", "bet_key": key})
+                      "units": 0.0, "stake_eur": 0.0, "official_reason": "non retenu par V13.5.2", "bet_key": key})
             rec["selection_score"] = round(score, 2)
             if gate["ok"] and dq["eligible"] and not duplicate:
                 pool.append({"result": r, "rec": rec, "score": score, "gate": gate, "dq": dq,
@@ -179,7 +179,7 @@ def allocate(results, unit_eur=.5, bankroll_eur=10.0, existing=None, target_date
         e.update({"official_selected": True, "official_units": units, "selected": True, "units": units,
                   "stake_eur": round(units*unit_eur, 2), "kelly_full": round(kelly, 6),
                   "kelly_fraction": config.FRACTIONAL_KELLY, "kelly_raw_units": round(raw_units, 4),
-                  "official_reason": f"V13.5 value: score {c['score']:.1f}/100, DQ {c['dq']['score']:.2f}, EV prudent {100*_num(c['gate'].get('ev_at_price')):+.1f}%"})
+                  "official_reason": f"V13.5.2 value: score {c['score']:.1f}/100, DQ {c['dq']['score']:.2f}, EV prudent {100*_num(c['gate'].get('ev_at_price')):+.1f}%"})
         chosen.append(c); used_games.add(gid); profiles[c["profile"]] = profiles.get(c["profile"], 0)+1; used_units += units
 
     combo_candidates = [c for c in pool if str(c["result"].get("game_pk")) not in used_games and c["score"] >= 72 and _num(c["gate"].get("ev_at_price")) >= config.MIN_EV]
@@ -196,7 +196,7 @@ def allocate(results, unit_eur=.5, bankroll_eur=10.0, existing=None, target_date
         combo.update(_combo_math(legs))
         combo["winamax_price"] = combo.get("display_price")
         if config.ENABLE_OFFICIAL_COMBOS:
-            combo["reason"] = "activation manuelle refusée: modèle de dépendance non certifié en V13.5"
+            combo["reason"] = "activation manuelle refusée: modèle de dépendance non certifié en V13.5.2"
 
     new_units = sum(_num((c["rec"].get("winamax_eval") or {}).get("official_units")) for c in chosen)
     total_units = existing_units+new_units
@@ -206,5 +206,5 @@ def allocate(results, unit_eur=.5, bankroll_eur=10.0, existing=None, target_date
                  "official_count": existing_singles+len(chosen), "new_official_count": len(chosen),
                  "official_units": total_units, "new_official_units": new_units, "combo_official": False,
                  "combo_units": 0.0, "bankroll_eur": bankroll_eur, "staking": f"{config.FRACTIONAL_KELLY:g} Kelly fraction",
-                 "selector_version": "V13.5-professional-portfolio-v1"}
+                 "selector_version": "V13.5.2-professional-portfolio-v1"}
     return portfolio, chosen, combo, pool
