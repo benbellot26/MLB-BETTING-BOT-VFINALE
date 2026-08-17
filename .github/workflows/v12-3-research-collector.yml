@@ -43,7 +43,7 @@ jobs:
           mkdir -p data runtime/v11
           python -m v11.v13_entry
 
-      - name: Assert V13 contract and no research recommendation
+      - name: Assert no research recommendation was created
         run: |
           python - <<'PY'
           import json
