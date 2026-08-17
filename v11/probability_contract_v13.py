@@ -1,13 +1,25 @@
 from __future__ import annotations
 
+import hashlib
 import math
 from dataclasses import dataclass, asdict
 from typing import Any
 
-PREDICTIVE_CONTRACT_VERSION = "v13-predictive-contract-v1"
+PREDICTIVE_CONTRACT_VERSION = "v13-predictive-contract-v2"
 FEATURE_CONTRACT_VERSION = "v13-baseball-features-v1"
 TARGET_CONTRACT_VERSION = "v13-market-targets-v1"
-CALIBRATION_CONTRACT_VERSION = "v13-baseball-calibration-v1"
+CALIBRATION_CONTRACT_VERSION = "v13-baseball-calibration-v2"
+
+# Explicit algorithm-generation fingerprint. Any production change that can alter
+# baseball probabilities must change this manifest. Historical rows from another
+# generation then fail compatibility instead of silently entering calibration.
+MODEL_GENERATION_MANIFEST = (
+    "v13.5.2|base=structural-v12.3-v12.4-shadow-excluded|"
+    "distribution=negative-binomial-correlated+validated-final-dispersion|"
+    "extra-innings=neutral|final-run-mean=exact-final-transfer-gated-20|"
+    "calibration=baseball-only-native-contract+nested-walk-forward"
+)
+MODEL_GENERATION_FINGERPRINT = hashlib.sha256(MODEL_GENERATION_MANIFEST.encode("utf-8")).hexdigest()[:20]
 
 
 def _num(x: Any, default: float = 0.0) -> float:
@@ -28,6 +40,7 @@ class PredictiveContract:
     target_contract: str = TARGET_CONTRACT_VERSION
     probability_contract: str = PREDICTIVE_CONTRACT_VERSION
     calibration_contract: str = CALIBRATION_CONTRACT_VERSION
+    model_generation: str = MODEL_GENERATION_FINGERPRINT
 
     def compatible_with(self, payload: dict[str, Any] | None) -> bool:
         payload = payload or {}
@@ -50,6 +63,7 @@ def row_is_predictively_compatible(row: dict[str, Any]) -> bool:
 
 def attach_contract(row: dict[str, Any]) -> dict[str, Any]:
     row["predictive_contract"] = asdict(CONTRACT)
+    row["model_generation_fingerprint"] = MODEL_GENERATION_FINGERPRINT
     return row
 
 
