@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   schedule:
     # 10:30 UTC during the MLB season: late enough for the previous US slate
-    # to be final while keeping the transfer artifacts fresh before daytime runs.
+    # to be final while keeping predictive evidence fresh before daytime runs.
     - cron: '30 10 * 3-11 *'
 
 permissions:
@@ -28,8 +28,15 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Compile V13 backfill
-        run: python -m py_compile v11/v13_historical_backfill.py v11/v13_run_mean_prior.py v11/v13_distribution_prior.py v11/v13_entry.py
+      - name: Compile V13 historical probability pipeline
+        run: |
+          python -m py_compile \
+            v11/v13_historical_backfill.py \
+            v11/v13_historical_validation.py \
+            v11/v13_train.py \
+            v11/v13_run_mean_prior.py \
+            v11/v13_distribution_prior.py \
+            v11/v13_entry.py
 
       - name: Download durable pregame source replays
         env:
@@ -53,7 +60,16 @@ jobs:
       - name: Rebuild current-generation FINAL distribution transfer
         run: python -m v11.v13_distribution_prior
 
-      - name: Validate leakage boundary and historical transfer states
+      - name: Build blocked walk-forward posterior validation
+        run: |
+          python -m v11.v13_historical_validation \
+            --input data/v13_historical_backfill.jsonl \
+            --output data/v13_historical_validation.json
+
+      - name: Train baseball calibration from native plus exact replay baseline evidence
+        run: python -m v11.v13_train
+
+      - name: Validate leakage boundary and evidence hierarchy
         run: |
           python - <<'PY'
           import json
@@ -78,6 +94,9 @@ jobs:
               assert r.get('validation_baseline_home_runs') is not None, r.get('game_pk')
               assert r.get('validation_baseline_away_runs') is not None, r.get('game_pk')
               assert r.get('validation_baseline_dispersion') is not None, r.get('game_pk')
+              for o in r.get('options') or []:
+                  if o.get('result') in {'WIN','LOSS'} and o.get('p_replay_baseline_raw') is not None:
+                      assert o.get('replay_probability_source') == 'v13-pre-candidate-score-distribution'
 
           final_games=len({str(r.get('game_pk')) for r in rows if str(r.get('phase') or '').upper() == 'FINAL'})
 
@@ -100,29 +119,61 @@ jobs:
               assert dist.get('exact_transfer_status') == 'PASS_FINAL_ONLY', dist
               assert float((dist.get('current_generation_transfer') or {}).get('nll_gain') or 0) > 0, dist
 
-          print('V13 backfill rows=',len(rows),'games=',report['canonical_games'],
-                'run_mean=',prior.get('exact_final_games'),'/',prior.get('exact_transfer_required_games'),prior.get('exact_transfer_status'),prior.get('active'),
-                'distribution=',dist.get('exact_final_games'),'/',dist.get('exact_transfer_required_games'),dist.get('exact_transfer_status'),dist.get('active'))
+          hist=json.loads(Path('data/v13_historical_validation.json').read_text())
+          assert hist['model_generation'] == contract.MODEL_GENERATION_FINGERPRINT, hist
+          assert hist['canonical_games'] <= report['canonical_games'], hist
+          assert 'whole game' in hist['methodology']['walk_forward'], hist
+          for o in hist.get('observations') or []:
+              assert o['evidence_origin'] == 'exact-replay-blocked-walk-forward'
+              assert o.get('p_baseball_calibrated') is not None
+
+          cal=json.loads(Path('data/v13_baseball_calibration.json').read_text())
+          policy=cal.get('training_policy') or {}
+          assert policy.get('exact_v13_replay_backfill_allowed') is True, policy
+          assert policy.get('exact_replays_require_pre_candidate_baseline') is True, policy
+          assert policy.get('exact_replay_layered_probability_forbidden') is True, policy
+          assert policy.get('legacy_reconstructed_1801_allowed_as_native_calibration') is False, policy
+          assert (cal.get('legacy_2026_research') or {}).get('used_for_native_calibration') is False, cal
+          assert int(cal.get('source_rows_exact_replay_used_for_calibration') or 0) <= int(cal.get('source_rows_exact_replay_eligible') or 0), cal
+          if report.get('calibration_candidate_rows'):
+              assert int(cal.get('source_rows_exact_replay_eligible') or 0) > 0, cal
+
+          print('V13 historical evidence:',
+                'replays=',report['canonical_games'],
+                'calibration_replay_rows=',cal.get('source_rows_exact_replay_used_for_calibration'),
+                'eligible_total=',cal.get('eligible_rows'),
+                'historical_posterior_obs=',len(hist.get('observations') or []))
           PY
 
-      - name: Upload backfill artifact
+      - name: Run predictive hardening tests
+        run: python -m unittest tests.test_v135_professional_audit -v
+
+      - name: Upload historical predictive artifacts
         uses: actions/upload-artifact@v4
         with:
           name: v13-historical-backfill-${{ github.run_id }}
           path: |
             data/v13_historical_backfill.jsonl
             data/v13_historical_backfill_report.json
+            data/v13_historical_validation.json
+            data/v13_baseball_calibration.json
             data/v13_run_mean_prior.json
             data/v13_distribution_prior.json
           retention-days: 90
 
-      - name: Persist backfill evidence and rebuilt transfer artifacts
+      - name: Persist historical predictive evidence
         run: |
           git config user.name 'MLB Betting Bot V13.5.2'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add data/v13_historical_backfill.jsonl data/v13_historical_backfill_report.json data/v13_run_mean_prior.json data/v13_distribution_prior.json
+          git add \
+            data/v13_historical_backfill.jsonl \
+            data/v13_historical_backfill_report.json \
+            data/v13_historical_validation.json \
+            data/v13_baseball_calibration.json \
+            data/v13_run_mean_prior.json \
+            data/v13_distribution_prior.json
           if ! git diff --cached --quiet; then
-            git commit -m 'data: persist V13.5.2 independent historical transfer evidence [skip ci]'
+            git commit -m 'data: persist V13.5.2 historical predictive evidence [skip ci]'
             git pull --rebase origin main
             git push origin HEAD:main
           fi
