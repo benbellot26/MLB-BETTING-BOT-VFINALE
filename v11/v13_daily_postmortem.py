@@ -7,11 +7,12 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from . import core, v13_daily_tracking as tracking, v13_tracking_sync
+from . import v13_posterior_policy as posterior_policy
 
 OUT = Path(os.getenv("V13_DAILY_POSTMORTEM_FILE", "data/v13_daily_postmortem.json"))
 HISTORICAL_VALIDATION = Path(os.getenv("V13_HISTORICAL_VALIDATION_FILE", "data/v13_historical_validation.json"))
 PARIS = ZoneInfo("Europe/Paris")
-PROMOTION_MIN_N = 300
+PROMOTION_MIN_N = 300  # UNIQUE games, never phase observations
 PROMOTION_MIN_BRIER_GAIN = .001
 PROMOTION_MIN_LOGLOSS_GAIN = .002
 
@@ -51,7 +52,10 @@ def _independent_key(s):
 
 
 def _obs_rank(s):
-    return str(s.get("observation_at") or s.get("observed_at") or s.get("game_date") or "")
+    phase=str(s.get("phase") or "EARLY").upper()
+    phase_rank={"EARLY":0,"LATE":1,"FINAL":2}.get(phase,-1)
+    at=str(s.get("observation_at") or s.get("observed_at") or s.get("game_date") or "")
+    return phase_rank,at
 
 
 def _choose_side(xs):
@@ -108,42 +112,47 @@ def _ece(rows, field):
 
 def _scores(rows, field):
     xs=[x for x in rows if _prob(x,field) is not None and _result_y(x) is not None]
-    if not xs:return {"n":0,"brier":None,"logloss":None,"ece":None,"mean_p":None,"hit_rate":None}
+    if not xs:return {"n":0,"unique_games":0,"brier":None,"logloss":None,"ece":None,"mean_p":None,"hit_rate":None}
     b=sum((_prob(x,field)-_result_y(x))**2 for x in xs)/len(xs)
     ll=sum(_logloss(_prob(x,field),_result_y(x)) for x in xs)/len(xs)
-    return {"n":len(xs),"brier":round(b,6),"logloss":round(ll,6),"ece":_ece(xs,field),
+    return {"n":len(xs),"unique_games":len({str(x.get('game_pk') or '') for x in xs}),
+            "brier":round(b,6),"logloss":round(ll,6),"ece":_ece(xs,field),
             "mean_p":round(sum(_prob(x,field) for x in xs)/len(xs),6),
             "hit_rate":round(sum(_result_y(x) for x in xs)/len(xs),6)}
 
 
 def _paired_improvement(rows, baseline_field, candidate_field):
     paired=[x for x in rows if _prob(x,baseline_field) is not None and _prob(x,candidate_field) is not None and _result_y(x) is not None]
-    if not paired:return {"n":0,"brier_improvement":None,"logloss_improvement":None}
+    games=len({str(x.get("game_pk") or "") for x in paired})
+    if not paired:return {"n":0,"unique_games":0,"brier_improvement":None,"logloss_improvement":None}
     base=_scores(paired,baseline_field); candidate=_scores(paired,candidate_field)
-    return {"n":len(paired),
+    return {"n":len(paired),"unique_games":games,
             "brier_improvement":round(base["brier"]-candidate["brier"],6),
             "logloss_improvement":round(base["logloss"]-candidate["logloss"],6)}
 
 
 def _promotion_readiness(comparison):
-    n=int(comparison.get("n") or 0)
+    unique_games=int(comparison.get("unique_games") or 0)
+    observations=int(comparison.get("n") or 0)
     bg=_num(comparison.get("brier_improvement")); lg=_num(comparison.get("logloss_improvement"))
-    if n<PROMOTION_MIN_N:
-        return {"status":"COLLECTING","n":n,"required_n":PROMOTION_MIN_N,"eligible":False,
+    if unique_games<PROMOTION_MIN_N:
+        return {"status":"COLLECTING","n":unique_games,"unique_games":unique_games,"observations":observations,
+                "required_n":PROMOTION_MIN_N,"sample_unit":"unique_games","eligible":False,
                 "required_brier_gain":PROMOTION_MIN_BRIER_GAIN,"required_logloss_gain":PROMOTION_MIN_LOGLOSS_GAIN}
     passed=(bg is not None and lg is not None and bg>=PROMOTION_MIN_BRIER_GAIN and lg>=PROMOTION_MIN_LOGLOSS_GAIN)
-    return {"status":"PROMOTION_CANDIDATE" if passed else "KEEP_BASEBALL_PRIMARY","n":n,"required_n":PROMOTION_MIN_N,
+    return {"status":"PROMOTION_CANDIDATE" if passed else "KEEP_BASEBALL_PRIMARY","n":unique_games,
+            "unique_games":unique_games,"observations":observations,"required_n":PROMOTION_MIN_N,"sample_unit":"unique_games",
             "eligible":bool(passed),"required_brier_gain":PROMOTION_MIN_BRIER_GAIN,"required_logloss_gain":PROMOTION_MIN_LOGLOSS_GAIN}
 
 
 def _load_historical_validation():
     if not HISTORICAL_VALIDATION.exists():
-        return [],{"status":"ABSENT","observations":0}
+        return [],{"status":"ABSENT","observations":0,"canonical_games":0}
     try:data=json.loads(HISTORICAL_VALIDATION.read_text(encoding="utf-8"))
-    except Exception as exc:return [],{"status":"INVALID","error":type(exc).__name__,"observations":0}
+    except Exception as exc:return [],{"status":"INVALID","error":type(exc).__name__,"observations":0,"canonical_games":0}
     rows=[r for r in (data.get("observations") or []) if isinstance(r,dict) and r.get("evidence_origin")=="exact-replay-blocked-walk-forward"]
     return rows,{"status":"AVAILABLE","observations":len(rows),"canonical_games":int(data.get("canonical_games") or 0),
-                 "generated_at":data.get("generated_at")}
+                 "generated_at":data.get("generated_at"),"schema":data.get("schema")}
 
 
 def _promotion_key(row):
@@ -156,8 +165,6 @@ def _current_live_promotion_rows(states):
         if s.get("settled_result") not in {"WIN","LOSS"}:continue
         if not s.get("canonical"):continue
         if s.get("p_posterior") is None or s.get("p_baseball_calibrated") is None:continue
-        # This field was introduced by the predictive-analytics contract. Old
-        # tracking generations are intentionally excluded from promotion evidence.
         if not s.get("predictive_final_status"):continue
         groups[_promotion_key(s)].append(s)
     chosen=[]
@@ -168,20 +175,31 @@ def _current_live_promotion_rows(states):
     return chosen
 
 
+def _latest_phase_per_game(rows):
+    return posterior_policy.latest_phase_per_game([r for r in rows if r.get("settled_result") in {"WIN","LOSS"}])
+
+
 def _cumulative_promotion(market, all_live_states, historical_rows):
     merged={}
     hist=[r for r in historical_rows if str(r.get("market") or "").upper()==market and r.get("settled_result") in {"WIN","LOSS"}
           and r.get("p_posterior") is not None and r.get("p_baseball_calibrated") is not None]
     for r in hist:merged[_promotion_key(r)]=dict(r)
     live=[r for r in _current_live_promotion_rows(all_live_states) if str(r.get("market") or "").upper()==market]
-    for r in live:merged[_promotion_key(r)]=dict(r)  # genuine live current-generation evidence wins collisions
-    rows=list(merged.values())
-    comparison=_paired_improvement(rows,"p_baseball_calibrated","p_posterior")
+    for r in live:merged[_promotion_key(r)]=dict(r)
+    all_phase_rows=list(merged.values())
+    pooled=_latest_phase_per_game(all_phase_rows)
+    comparison=_paired_improvement(pooled,"p_baseball_calibrated","p_posterior")
     readiness=_promotion_readiness(comparison)
-    readiness["historical_exact_oos"] = sum(str(r.get("evidence_origin") or "").startswith("exact-replay") for r in rows)
-    readiness["live_current_generation"] = sum(not str(r.get("evidence_origin") or "").startswith("exact-replay") for r in rows)
-    readiness["dedup_key"] = "game_pk + phase + market; live current-generation overrides historical replay collision"
-    return {"comparison":comparison,"readiness":readiness}
+    by_phase={}
+    for phase in ("EARLY","LATE","FINAL"):
+        phase_rows=[r for r in all_phase_rows if str(r.get("phase") or "").upper()==phase]
+        cmp=_paired_improvement(phase_rows,"p_baseball_calibrated","p_posterior")
+        by_phase[phase]={"comparison":cmp,"readiness":_promotion_readiness(cmp)}
+    readiness["historical_exact_oos"] = sum(str(r.get("evidence_origin") or "").startswith("exact-replay") for r in pooled)
+    readiness["live_current_generation"] = sum(not str(r.get("evidence_origin") or "").startswith("exact-replay") for r in pooled)
+    readiness["dedup_key"] = "pooled promotion: latest phase per unique game+market; live current-generation overrides historical same-phase collision"
+    return {"comparison":comparison,"readiness":readiness,"by_phase":by_phase,
+            "all_phase_observations_diagnostic":_paired_improvement(all_phase_rows,"p_baseball_calibrated","p_posterior")}
 
 
 def _metrics_from_independent(independent, all_rows):
@@ -238,16 +256,17 @@ def build(day=None):
     for market in ("ML","RUNLINE","TOTAL"):
         cumulative[market]=_cumulative_promotion(market,all_states,historical_rows)
         by_market[market]["posterior_promotion"]=cumulative[market]["readiness"]
+        by_market[market]["posterior_promotion_by_phase"]=cumulative[market]["by_phase"]
         by_market[market]["cumulative_posterior_comparison"]=cumulative[market]["comparison"]
     priced=[s for s in states if _num(s.get("winamax_price")) and s.get("flat_1u_pnl") is not None]
     selected=[s for s in priced if s.get("official_selected")]
-    report={"schema":"v13-daily-postmortem-v3","generated_at":datetime.now(timezone.utc).isoformat(),"target_date":day,
+    report={"schema":"v13-daily-postmortem-v4","generated_at":datetime.now(timezone.utc).isoformat(),"target_date":day,
             "settled_observations":len(states),"priced_observations":len(priced),
             "settled_options":len(states),"priced_options":len(priced),
             "official_selected":len(selected),"official_pnl_1u":round(sum(_num(s.get("flat_1u_pnl"),0) or 0 for s in selected),4),
             "markets":by_market,"historical_validation":historical_meta,"promotion_evidence":cumulative,
-            "methodology":{"probability_scoring":"latest deterministic independent side per game/line; raw, calibrated baseball, posterior shadow, primary predictive and sharp are scored on settled outcomes",
-                           "posterior_promotion":f"cumulative deduplicated exact-replay out-of-sample + current-generation live evidence; n>={PROMOTION_MIN_N}, Brier gain>={PROMOTION_MIN_BRIER_GAIN:.3f}, LogLoss gain>={PROMOTION_MIN_LOGLOSS_GAIN:.3f}; promotion is never automatic from a tiny sample",
+            "methodology":{"probability_scoring":"latest deterministic independent side per game/line; raw, calibrated baseball, learned-weight posterior shadow, primary predictive and sharp are scored on settled outcomes",
+                           "posterior_promotion":f"cumulative exact-replay OOS + current live; pooled sample is ONE latest phase per UNIQUE game; >= {PROMOTION_MIN_N} unique games, Brier gain >= {PROMOTION_MIN_BRIER_GAIN:.3f}, LogLoss gain >= {PROMOTION_MIN_LOGLOSS_GAIN:.3f}; EARLY/LATE/FINAL also reported separately; promotion is never automatic",
                            "historical_2026":"legacy 2026 walk-forward data remains research-only unless an exact current-feature pregame replay exists; missing historical sharp data never gets fabricated",
                            "portfolio_pnl":"official selections only; rejected options are diagnostic only",
                            "clv":"primary predictive probability minus latest valid pregame sharp fair probability"}}
@@ -263,7 +282,7 @@ def _fmt_metric(m):
 
 def _fmt_gain(c):
     if not c.get("n"):return "n=0"
-    return f"n={c['n']} • ΔB {c['brier_improvement']:+.4f} • ΔLL {c['logloss_improvement']:+.4f}"
+    return f"{c.get('unique_games',0)} matchs • {c.get('n',0)} obs • ΔB {c['brier_improvement']:+.4f} • ΔLL {c['logloss_improvement']:+.4f}"
 
 
 def discord_fields(report):
@@ -271,19 +290,21 @@ def discord_fields(report):
     for market in ("ML","RUNLINE","TOTAL"):
         m=report["markets"][market]; selected=m["selected"]
         promotion=m.get("posterior_promotion") or {}; cumulative=m.get("cumulative_posterior_comparison") or {}
+        phase_prom=m.get("posterior_promotion_by_phase") or {}
         phases=[]
         for phase in ("EARLY","LATE","FINAL"):
             pm=(m.get("by_phase") or {}).get(phase,{}).get("predictive_final") or {}
-            if pm.get("n"): phases.append(f"{phase} n={pm['n']} Brier={pm['brier']:.4f}")
-        phase_text=" • ".join(phases) if phases else "aucune phase scorée"
+            pr=(phase_prom.get(phase) or {}).get("readiness") or {}
+            if pm.get("n"): phases.append(f"{phase} n={pm['n']} Brier={pm['brier']:.4f} • posterior {pr.get('unique_games',0)}/{pr.get('required_n',PROMOTION_MIN_N)} matchs")
+        phase_text="\n".join(phases) if phases else "aucune phase scorée"
         fields.append((market,
             f"Principal aujourd'hui: {_fmt_metric(m['predictive_final'])}\n"
             f"Baseball calibré: {_fmt_metric(m['baseball'])}\n"
-            f"Posterior shadow: {_fmt_metric(m['posterior'])}\n"
+            f"Posterior shadow appris: {_fmt_metric(m['posterior'])}\n"
             f"Sharp: {_fmt_metric(m['sharp'])}\n"
             f"Posterior cumulatif vs baseball: {_fmt_gain(cumulative)}\n"
-            f"Statut posterior: **{promotion.get('status') or 'COLLECTING'}** ({promotion.get('n',0)}/{promotion.get('required_n',PROMOTION_MIN_N)}) • historique {promotion.get('historical_exact_oos',0)} • live {promotion.get('live_current_generation',0)}\n"
-            f"Phases principal: {phase_text}\n"
+            f"Statut posterior: **{promotion.get('status') or 'COLLECTING'}** ({promotion.get('unique_games',0)}/{promotion.get('required_n',PROMOTION_MIN_N)} matchs uniques) • historique {promotion.get('historical_exact_oos',0)} • live {promotion.get('live_current_generation',0)}\n"
+            f"Phases:\n{phase_text}\n"
             f"Économie secondaire: {selected['wins']}W-{selected['losses']}L-{selected['pushes']}P • P/L {selected['pnl_1u']:+.2f}u • Closing sharp n={m['closing_sharp_n']}"))
     return fields
 
@@ -292,7 +313,7 @@ def send(report):
     if not core.DISCORD_URL:return False
     title=f"📊 V13 PREDICTIVE POST-MORTEM — {report['target_date']}"
     desc=(f"{report['settled_observations']} observations settled • scoring probabiliste prioritaire • "
-          f"{report['priced_observations']} observations avec cote d'exécution")
+          f"promotion posterior basée sur matchs uniques • {report['priced_observations']} observations avec cote d'exécution")
     return core.send_embed(title,discord_fields(report),5763719,desc)
 
 
