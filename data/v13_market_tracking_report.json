@@ -7,7 +7,8 @@
       "positive_ev_wins": 22,
       "positive_nominal_ev": 62,
       "priced": 358,
-      "settled": 358
+      "settled": 358,
+      "t60_sharp_observed": 0
     },
     "RUNLINE": {
       "closing_price_observed": 0,
@@ -16,7 +17,8 @@
       "positive_ev_wins": 0,
       "positive_nominal_ev": 0,
       "priced": 0,
-      "settled": 544
+      "settled": 544,
+      "t60_sharp_observed": 0
     },
     "TOTAL": {
       "closing_price_observed": 0,
@@ -25,7 +27,8 @@
       "positive_ev_wins": 0,
       "positive_nominal_ev": 0,
       "priced": 0,
-      "settled": 358
+      "settled": 358,
+      "t60_sharp_observed": 0
     }
   },
   "by_nominal_ev_band": {
@@ -82,11 +85,12 @@
     "RUNLINE": {},
     "TOTAL": {}
   },
-  "generated_at": "2026-08-18T12:01:01.646543+00:00",
+  "generated_at": "2026-08-18T14:09:29.715334+00:00",
   "methodology": {
-    "closing": "last valid eligible pregame observation inside configured closing window; missing API fields never erase a valid close",
+    "closing": "paid market polling is checkpoint-based: one T-60 window and one close window per tracked observation, batched in a single Odds API request across all games due at that time",
     "missing_price": "never imputed; absent Winamax RL/TOTAL prices remain unpriced and are still tracked against sharp probability",
     "observation_identity": "immutable game/market/side/line + phase + analysis as-of; later phases never overwrite earlier forecasts",
+    "probability_products": "raw baseball, calibrated baseball, learned-weight posterior shadow, and primary predictive probability are persisted separately",
     "unit_pnl": "descriptive flat 1u; complementary displayed sides are not a betting portfolio"
   },
   "schema": "v13-market-tracking-report-v3",
