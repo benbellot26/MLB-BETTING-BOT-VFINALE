@@ -1,4 +1,5 @@
 {
+  "binary_probability_conditioning": "RUNLINE/TOTAL replay calibration uses P(WIN | no PUSH), identical to the live binary probability product; push mass is persisted separately.",
   "calibration_baseline_options": 680,
   "calibration_candidate_rows": 85,
   "calibration_rejected_rows": 0,
@@ -128,7 +129,7 @@
     }
   ],
   "evidence_boundary": "All features come exclusively from recorded pregame HTTP replays. Final MLB scores are fetched after replay and used only as labels. Official historical calibration evidence requires a complete pre-candidate baseline tagged with the exact current model generation and uses only p_replay_baseline_raw; rows missing that provenance remain diagnostic but are excluded from calibration. Sportsbook probabilities remain excluded from baseball calibration.",
-  "generated_at": "2026-08-18T13:14:28.616402+00:00",
+  "generated_at": "2026-08-18T14:11:54.278635+00:00",
   "model_generation": "v13.5.2-gen-structural-nb-independent-transfer-v2",
   "phase_counts": {
     "EARLY": 32,
