@@ -64,7 +64,7 @@ jobs:
           V124_ENABLE_SHADOW: '1'
         run: python -m v11.v13_entry
 
-      - name: Assert research-only safety and current predictive contract
+      - name: Assert no research recommendation was created
         if: steps.gate.outputs.run_needed == 'true'
         run: |
           python - <<'PY'
