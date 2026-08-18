@@ -65,6 +65,8 @@ A posterior may only become a promotion candidate after at least 300 paired, ded
 - Brier improvement versus calibrated baseball is at least 0.001.
 - LogLoss improvement versus calibrated baseball is at least 0.002.
 
+The 1,801-game legacy 2026 reconstruction does **not** count toward this 300-pair posterior threshold unless an exact archived pregame market snapshot exists for the game. It can still guide baseball-model research and ablations.
+
 These thresholds identify a candidate for review; they do not silently switch production probability. Any promotion must preserve point-in-time integrity and be validated across phases/markets so a local short-term improvement does not create a global regression.
 
 ## Calibration volume
