@@ -2,7 +2,7 @@ name: MLB V13 Phase Research Collector
 
 on:
   schedule:
-    # Hourly across the normal MLB game window; captures native V13 EARLY/LATE/FINAL without publishing picks.
+    # Cheap hourly gate; the paid Odds API is called only when a new EARLY/LATE/FINAL phase is missing.
     - cron: '23 0-6,14-23 * * *'
   workflow_dispatch:
 
@@ -27,12 +27,32 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Build contract-strict V13 calibration artifact
+      - name: Shared V13 critical preflight
+        run: |
+          python -m py_compile v11/*.py tests/*.py
+          python -m v11.v13_preflight
+
+      - name: Check whether a new phase snapshot is actually needed
+        id: gate
+        run: |
+          python -m v11.v13_research_gate > /tmp/v13_research_gate.json
+          cat /tmp/v13_research_gate.json
+          echo "run_needed=$(python - <<'PY'
+          import json
+          d=json.load(open('/tmp/v13_research_gate.json'))
+          print('true' if d.get('run_needed') else 'false')
+          PY
+          )" >> "$GITHUB_OUTPUT"
+
+      - name: Build contract-strict predictive artifacts
+        if: steps.gate.outputs.run_needed == 'true'
         run: |
           mkdir -p data runtime/v11
           python -m v11.v13_train
+          python -m v11.v13_posterior_policy
 
       - name: Collect native V13 point-in-time research snapshot
+        if: steps.gate.outputs.run_needed == 'true'
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           BANKROLL: ${{ vars.BANKROLL }}
@@ -44,15 +64,15 @@ jobs:
           V1231_ENABLE_ALT_RUNLINES: '1'
           V1232_ENABLE_V115_SHADOW: '1'
           V124_ENABLE_SHADOW: '1'
-        run: |
-          python -m v11.v13_entry
+        run: python -m v11.v13_entry
 
-      - name: Assert no research recommendation was created
+      - name: Assert research-only safety and current predictive contract
+        if: steps.gate.outputs.run_needed == 'true'
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
-          from v11.probability_contract_v13 import row_is_predictively_compatible
+          from v11.probability_contract_v13 import MODEL_GENERATION_FINGERPRINT, row_is_predictively_compatible
           p = Path('runtime/v11/discord_payload.json')
           if not p.exists():
               raise SystemExit('research payload missing')
@@ -61,20 +81,25 @@ jobs:
               raise SystemExit('research-only run produced chosen recommendations')
           if (d.get('combo') or {}).get('official'):
               raise SystemExit('research-only run produced an official combo')
+          results=d.get('results') or []
+          for r in results:
+              if r.get('model_generation') != MODEL_GENERATION_FINGERPRINT:
+                  raise SystemExit(f"research result generation mismatch: {r.get('game_pk')}")
           rows=[]
           live=Path('data/v11_3_live.jsonl')
           if live.exists():
-              for line in live.read_text(encoding='utf-8').splitlines()[-100:]:
+              for line in live.read_text(encoding='utf-8').splitlines()[-250:]:
                   if line.strip():
                       try: rows.append(json.loads(line))
                       except Exception: pass
-          recent=[r for r in rows if str(r.get('software_version') or '').startswith('13.5-')]
-          if recent and not all(row_is_predictively_compatible(r) for r in recent):
-              raise SystemExit('native V13 research row missing predictive contract')
-          print('V13 research-only safety + predictive contract OK')
+          current=[r for r in rows if r.get('model_generation') == MODEL_GENERATION_FINGERPRINT]
+          if current and not all(row_is_predictively_compatible(r) for r in current):
+              raise SystemExit('native V13 current-generation row missing predictive contract')
+          print('V13 research-only safety + exact predictive generation OK; results=',len(results),'current_rows=',len(current))
           PY
 
       - name: Persist V13 phase observations
+        if: steps.gate.outputs.run_needed == 'true'
         run: |
           git config user.name 'MLB Betting Bot V13 Research'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
@@ -82,6 +107,7 @@ jobs:
           [ -f data/v11_3_live_report.json ] && git add data/v11_3_live_report.json
           [ -f data/v11_bet_ledger.jsonl ] && git add -f data/v11_bet_ledger.jsonl
           [ -f data/v13_baseball_calibration.json ] && git add -f data/v13_baseball_calibration.json
+          [ -f data/v13_posterior_policy.json ] && git add -f data/v13_posterior_policy.json
           if ! git diff --cached --quiet; then
             git commit -m 'data: collect native V13 phase snapshot [skip ci]'
             git pull --rebase origin "$GITHUB_REF_NAME"
@@ -89,7 +115,7 @@ jobs:
           fi
 
       - name: Prepare V13 point-in-time archive
-        if: always()
+        if: steps.gate.outputs.run_needed == 'true'
         run: |
           mkdir -p runtime/v11/snapshots
           if [ -f data/v11_market_snapshots.jsonl ]; then
@@ -97,7 +123,7 @@ jobs:
           fi
 
       - name: Archive V13 research sources
-        if: always()
+        if: steps.gate.outputs.run_needed == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: v13-phase-research-${{ github.run_id }}
