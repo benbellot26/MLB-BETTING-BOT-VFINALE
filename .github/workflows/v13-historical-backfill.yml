@@ -25,10 +25,14 @@ jobs:
           python-version: '3.12'
 
       - name: Compile V13 backfill
-        run: python -m py_compile v11/v13_historical_backfill.py v11/v13_historical_validation.py v11/v13_run_mean_prior.py v11/v13_distribution_prior.py v11/v13_train.py v11/v13_entry.py tests/test_v13_historical_backfill_regression.py
+        run: python -m py_compile v11/v13_historical_backfill.py v11/v13_historical_validation.py v11/v13_run_mean_prior.py v11/v13_distribution_prior.py v11/v13_train.py v11/v13_entry.py tests/test_v13_historical_backfill_regression.py tests/test_v1352_runtime_hook.py tests/test_v1352_final_hardening.py
 
-      - name: V13 historical backfill regression tests
-        run: python -m unittest tests.test_v13_historical_backfill_regression
+      - name: V13 historical backfill preflight tests
+        run: |
+          python -m unittest tests.test_v13_historical_backfill_regression
+          python -m unittest tests.test_v1352_runtime_hook
+          python -m unittest tests.test_v1352_final_hardening
+          python -m v11.v13_entry --self-test
 
       - name: Download durable pregame source replays
         env:
@@ -45,6 +49,29 @@ jobs:
           python -m v11.v13_historical_backfill --dir runtime/v13/replays \
             --output data/v13_historical_backfill.jsonl \
             --report data/v13_historical_backfill_report.json
+
+      - name: Verify reconstructed pre-candidate baselines
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from v11 import probability_contract_v13 as contract
+
+          report=json.loads(Path('data/v13_historical_backfill_report.json').read_text())
+          canonical=int(report.get('canonical_rows') or 0)
+          baselines=int(report.get('validation_baseline_rows') or 0)
+          generations=int(report.get('validation_generation_rows') or 0)
+          candidates=int(report.get('calibration_candidate_rows') or 0)
+          options=int(report.get('calibration_baseline_options') or 0)
+          assert canonical > 0, report
+          assert report.get('model_generation') == contract.MODEL_GENERATION_FINGERPRINT, report
+          assert baselines == canonical, report
+          assert generations == canonical, report
+          assert candidates == canonical, report
+          assert options >= candidates, report
+          assert not (report.get('calibration_rejection_reasons') or {}), report
+          print('V13 baseline preflight OK:', canonical, 'rows /', options, 'settled baseline options')
+          PY
 
       - name: Rebuild current-generation FINAL run-mean candidate
         run: python -m v11.v13_run_mean_prior
