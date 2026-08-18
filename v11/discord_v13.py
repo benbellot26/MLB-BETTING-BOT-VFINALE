@@ -49,7 +49,7 @@ def _line(r):
         f"🎯 **{_label(r)}**\n"
         f"Probabilité principale **{core.pct(primary)}** • bande d'incertitude modèle **{interval}**{push_txt}\n"
         f"Baseball **{core.pct(r.get('p_baseball_calibrated'))}** • brut **{core.pct(r.get('p_baseball_raw'))}** • "
-        f"Sharp **{core.pct(r.get('p_market'))}** • posterior shadow **{posterior_txt}** (Sharp appris **{posterior_weight:.0f}%**)\n"
+        f"Sharp **{core.pct(r.get('p_market'))}** • ensemble candidat / posterior shadow **{posterior_txt}** (Sharp appris **{posterior_weight:.0f}%**)\n"
         f"Poids posterior **{weight_source}** • gap baseball/marché **{gap_txt}** • désaccord books **{market_disp_txt}**\n"
         f"Calibration **{cal_status} / {cal_source}** • n phase **{phase_n}** • n marché **{market_n}**\n"
         f"DQ modèle **{100*core.num(dq.get('model_input_score')):.0f}/100** • DQ globale **{100*core.num(dq.get('score')):.0f}/100**\n"
