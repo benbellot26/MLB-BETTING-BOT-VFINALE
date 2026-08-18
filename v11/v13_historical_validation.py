@@ -127,7 +127,7 @@ def _comparison(rows: list[dict[str,Any]]) -> dict[str,Any]:
             "logloss_improvement":None if not paired else round(base["logloss"]-post["logloss"],6)}
 
 
-def build(path: Path = BACKFILL) -> dict[str,Any]:
+def build(path: Path = BACKFILL, out_path: Path = OUT) -> dict[str,Any]:
     rows=_canonical_rows(_load(path))
     by_game=defaultdict(list)
     for r in rows:by_game[str(r.get("game_pk") or "")].append(r)
@@ -137,12 +137,13 @@ def build(path: Path = BACKFILL) -> dict[str,Any]:
         block_games=games[start:start+max(1,BLOCK_GAMES)]
         model=_training_model(prior_rows)
         block_index=start//max(1,BLOCK_GAMES)
+        train_games=len({str(x.get("game_pk")) for x in prior_rows})
         for gid in block_games:
             for row in by_game[gid]:
                 for market in ("ML","RUNLINE","TOTAL"):
                     opt=_canonical_option(row,market)
                     if opt is not None:
-                        observations.append(_observation(row,opt,model,block_index,len({str(x.get('game_pk')) for x in prior_rows})))
+                        observations.append(_observation(row,opt,model,block_index,train_games))
         for gid in block_games:prior_rows.extend(by_game[gid])
     comparisons={m:_comparison([r for r in observations if r.get("market")==m]) for m in ("ML","RUNLINE","TOTAL")}
     report={
@@ -161,15 +162,13 @@ def build(path: Path = BACKFILL) -> dict[str,Any]:
             "leakage":"current layered replay probabilities, final scores and future blocks are excluded from feature/calibration generation",
         },
     }
-    OUT.parent.mkdir(parents=True,exist_ok=True); OUT.write_text(json.dumps(report,indent=2,sort_keys=True),encoding="utf-8")
+    out_path.parent.mkdir(parents=True,exist_ok=True); out_path.write_text(json.dumps(report,indent=2,sort_keys=True),encoding="utf-8")
     return report
 
 
 def main():
     p=argparse.ArgumentParser();p.add_argument("--input",default=str(BACKFILL));p.add_argument("--output",default=str(OUT));a=p.parse_args()
-    global OUT
-    OUT=Path(a.output)
-    print(json.dumps(build(Path(a.input)),indent=2,sort_keys=True))
+    print(json.dumps(build(Path(a.input),Path(a.output)),indent=2,sort_keys=True))
 
 
 if __name__=="__main__":main()
