@@ -21,10 +21,11 @@ VERSION = "13.5.2-professional-probability-v1"
 _INSTALLED = False
 
 V13_OPTION_FIELDS = (
-    "p_baseball_raw", "p_baseball_calibrated", "p_posterior", "model_market_gap",
+    "p_baseball_raw", "p_baseball_calibrated", "p_posterior", "p_predictive_final", "model_market_gap",
     "baseball_probability_source", "calibration_source_v13", "calibration_n_v13",
     "calibration_phase_n_v13", "calibration_market_n_v13", "reliability_source_v13",
     "probability_interval_low", "probability_interval_high", "probability_uncertainty_v13",
+    "predictive_final_source", "predictive_final_status",
     "p_legacy_market_blended", "probability_product", "edge_probability_field",
     "posterior_allowed_for_edge", "selector_uncertainty_source",
     "v13_probability_error", "v13_probability_eligible",
@@ -59,6 +60,17 @@ def upgrade_option(opt: dict[str,Any], phase: str, pipeline: ProbabilityPipeline
     push = max(0.0, min(.35, _num(opt.get("p_push_model", opt.get("p_push")), 0.0)))
     opt["p_effective"] = round(calibrated, 6); opt["p_model"] = round(raw, 6)
     opt["p_win"] = round(calibrated*(1-push), 6); opt["p_push"] = round(push, 6)
+
+    # Predictive-analytics product contract:
+    # - baseball calibrated remains the primary probability until a market-aware
+    #   ensemble has demonstrated an out-of-sample Brier + LogLoss improvement;
+    # - p_posterior stays available as a shadow candidate and is scored separately.
+    # This prevents a tiny recent sample from silently changing the user-facing
+    # probability while still collecting the evidence needed to promote it later.
+    opt["p_predictive_final"] = round(calibrated, 6)
+    opt["predictive_final_source"] = "baseball_calibrated"
+    opt["predictive_final_status"] = "BASEBALL_PRIMARY_POSTERIOR_SHADOW"
+
     opt["probability_product"] = "calibrated-baseball-only"
     opt["edge_probability_field"] = "p_baseball_calibrated"; opt["posterior_allowed_for_edge"] = False
     assert_no_market_leakage(opt)
@@ -82,6 +94,9 @@ def upgrade_result(result: dict[str,Any], pipeline: ProbabilityPipelineV13 | dic
     result["probability_contract_version"] = PREDICTIVE_CONTRACT_VERSION
     result["model_generation"] = MODEL_GENERATION_FINGERPRINT
     result["probability_product"] = "baseball-only-calibrated"
+    result["predictive_analytics_mode"] = True
+    result["primary_probability_field"] = "p_predictive_final"
+    result["posterior_role"] = "shadow_candidate_until_out_of_sample_validation"
     result["market_blend_allowed_for_edge"] = False; result["market_blend_allowed_for_forecast_only"] = True
     result["probability_pipeline"] = "PregameSnapshot->BaseballModel->RunMeanPrior->ScoreDistribution->BaseballCalibration->MarketBenchmark"
     return result
@@ -177,6 +192,8 @@ def install() -> bool:
         payload["probability_contract_version"] = PREDICTIVE_CONTRACT_VERSION
         payload["model_generation"] = MODEL_GENERATION_FINGERPRINT
         payload["probability_product"] = "baseball-only-calibrated"; payload["predictive_compatibility_independent_of_software_version"] = True
+        payload["predictive_analytics_mode"] = True
+        payload["primary_probability_field"] = "p_predictive_final"
         return payload
 
     engine_v12.analyze = analyze; runner.engine.analyze = analyze; runner._row = row; config.VERSION = VERSION
