@@ -45,7 +45,9 @@ def _num(x: Any, d: float = 0.0) -> float:
 
 def _as_pipeline(value: ProbabilityPipelineV13 | dict[str,Any] | None) -> ProbabilityPipelineV13:
     if isinstance(value, ProbabilityPipelineV13): return value
-    if isinstance(value, dict): return ProbabilityPipelineV13(value, v13_posterior_policy.load_policy())
+    # Explicitly injected calibration models are deterministic test/research
+    # inputs; do not silently add a persisted posterior policy to them.
+    if isinstance(value, dict): return ProbabilityPipelineV13(value, {})
     return ProbabilityPipelineV13.from_artifact()
 
 
@@ -144,7 +146,11 @@ def install() -> bool:
     engine_v12.prob_home_win = neutral_extra_innings_home_win
 
     def v13_analysis_points(event, key, home=None, as_of=None):
-        """Keep the standard +/-1.5 RL surface visible for both teams."""
+        """Keep the standard +/-1.5 RL surface visible for both teams.
+
+        Synthetic visibility cannot bypass the selector: missing executable prices
+        and the normal value/data-quality gates still fail closed.
+        """
         points, source = original_analysis_points(event, key, home, as_of)
         if key != "spreads":
             return points, source
