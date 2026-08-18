@@ -130,7 +130,9 @@ class V1352FinalHardeningTests(unittest.TestCase):
         self.assertIn("data/v13_baseball_calibration.json", text)
         self.assertIn("PASS_FINAL_ONLY", text)
         self.assertIn("MODEL_GENERATION_FINGERPRINT", text)
-        self.assertIn("cron: '30 10 * 3-11 *'", text)
+        self.assertIn("workflow_dispatch:", text)
+        self.assertNotIn("schedule:", text)
+        self.assertNotIn("cron:", text)
 
     def test_transfer_backfill_uses_persisted_pre_candidate_baseline(self):
         runtime=Path("v11/v13_runtime.py").read_text(encoding="utf-8")
