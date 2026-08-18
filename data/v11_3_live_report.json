@@ -1,5 +1,5 @@
 {
-  "analyzed_at": "2026-08-18T14:35:51.293412+00:00",
+  "analyzed_at": "2026-08-18T17:51:50.123454+00:00",
   "calibration_health": {
     "by_phase": {
       "EARLY": {
@@ -1089,7 +1089,7 @@
     "confirmed_lineups": 0,
     "confirmed_starters": 13,
     "matched_events": 15,
-    "mean_data_quality": 0.7473,
+    "mean_data_quality": 0.7421,
     "scheduled_games": 15,
     "sharp_coverage": {
       "ML": 15,
@@ -1158,14 +1158,14 @@
     "generation": "V12.3.2 value-selection-v1 + V12.4 predictive shadow",
     "historical_evidence": "legacy V10 1,801-game data are diagnostic only until a V12.3 structural baseline exists",
     "ledger": "PROPOSED -> PUBLISHED -> CONFIRMED_PLACED -> SETTLED",
-    "raw_archive": "runtime/v11/snapshots/2026-08-18_7e01e3745be02f22.json.gz",
+    "raw_archive": "runtime/v11/snapshots/2026-08-18_2c4d558ace8c1b19.json.gz",
     "runs_model": "immutable structural baseline + validated FINAL historical prior fallback + phase-specific live residual",
     "selection": "informational recommendations use model confidence + conservative EV/edge + DQ + uncertainty + Kelly; Winamax never decides eligibility",
     "selection_confidence": "RL >= 55%; ML/TOTAL >= 58%",
     "selection_price_floor": "reference decimal odds >= 1.40",
     "selection_reference_price": "fresh configured sharp books; exact side/point; second-best effective quote when >=2 books, otherwise single fresh sharp quote",
     "sharp_disagreement": "large model-vs-sharp disagreement reduces selection score but is not a hard directional veto",
-    "source_replay": "runtime/v11/source_replays/2026-08-18_7e01e3745be02f22_sources.json.gz",
+    "source_replay": "runtime/v11/source_replays/2026-08-18_2c4d558ace8c1b19_sources.json.gz",
     "staking": "bankroll-aware fractional Kelly; official combos disabled",
     "starter_model": "current season + N-1/N-2 prior affects structural run means",
     "uncertainty": "empirical phase/market reliability bins + market disagreement + DQ penalty",
@@ -2543,7 +2543,7 @@
       }
     },
     "affects_v12_selection": false,
-    "analyzed_at": "2026-08-18T14:35:51.293412+00:00",
+    "analyzed_at": "2026-08-18T17:51:50.123454+00:00",
     "canonicalization": "latest settled pre-game snapshot per game_pk",
     "convergence": {
       "affects_v12_selection": false,
@@ -2576,8 +2576,8 @@
           "neutral": 3,
           "normalized_support": 0.625,
           "oppose": 0,
-          "p_effective": 0.619207,
-          "p_market": 0.607046,
+          "p_effective": 0.618305,
+          "p_market": 0.604179,
           "point": null,
           "research_only": true,
           "schema": "v12-4-convergence-score-v1",
@@ -2609,17 +2609,17 @@
             },
             "model": {
               "detail": {
-                "p": 0.619207
+                "p": 0.618305
               },
               "state": "SUPPORT",
-              "value": 0.11920699999999995
+              "value": 0.118305
             },
             "sharp": {
               "detail": {
-                "p_market": 0.607046
+                "p_market": 0.604179
               },
               "state": "SUPPORT",
-              "value": 0.10704599999999997
+              "value": 0.10417900000000002
             },
             "starter": {
               "detail": {
@@ -2639,8 +2639,8 @@
             },
             "weather_park": {
               "detail": {
-                "opponent_factor": 1.0047424482147556,
-                "own_factor": 1.0047424482147556
+                "opponent_factor": 1.0066400722094748,
+                "own_factor": 1.0066400722094748
               },
               "state": "NEUTRAL",
               "value": 0.0
@@ -2663,8 +2663,8 @@
           "neutral": 3,
           "normalized_support": 0.625,
           "oppose": 0,
-          "p_effective": 0.586056,
-          "p_market": 0.505936,
+          "p_effective": 0.585663,
+          "p_market": 0.503717,
           "point": 9.0,
           "research_only": true,
           "schema": "v12-4-convergence-score-v1",
@@ -2696,17 +2696,17 @@
             },
             "model": {
               "detail": {
-                "p": 0.586056
+                "p": 0.585663
               },
               "state": "SUPPORT",
-              "value": 0.08605600000000002
+              "value": 0.08566300000000004
             },
             "sharp": {
               "detail": {
-                "p_market": 0.505936
+                "p_market": 0.503717
               },
               "state": "NEUTRAL",
-              "value": 0.005936000000000052
+              "value": 0.0037169999999999703
             },
             "starter": {
               "detail": {
@@ -2726,11 +2726,11 @@
             },
             "weather_park": {
               "detail": {
-                "away_factor": 1.0258605014893667,
-                "home_factor": 1.0258605014893667
+                "away_factor": 1.027944375776754,
+                "home_factor": 1.027944375776754
               },
               "state": "SUPPORT",
-              "value": 0.025860501489366694
+              "value": 0.027944375776753905
             }
           },
           "support": 5,
@@ -2750,8 +2750,8 @@
           "neutral": 3,
           "normalized_support": 0.625,
           "oppose": 0,
-          "p_effective": 0.583537,
-          "p_market": 0.665068,
+          "p_effective": 0.583282,
+          "p_market": 0.662026,
           "point": null,
           "research_only": true,
           "schema": "v12-4-convergence-score-v1",
@@ -2783,17 +2783,17 @@
             },
             "model": {
               "detail": {
-                "p": 0.583537
+                "p": 0.583282
               },
               "state": "SUPPORT",
-              "value": 0.08353699999999997
+              "value": 0.08328199999999997
             },
             "sharp": {
               "detail": {
-                "p_market": 0.665068
+                "p_market": 0.662026
               },
               "state": "SUPPORT",
-              "value": 0.165068
+              "value": 0.162026
             },
             "starter": {
               "detail": {
@@ -2813,8 +2813,8 @@
             },
             "weather_park": {
               "detail": {
-                "opponent_factor": 1.0159850422970231,
-                "own_factor": 1.0159850422970231
+                "opponent_factor": 1.0138792353070776,
+                "own_factor": 1.0138792353070776
               },
               "state": "NEUTRAL",
               "value": 0.0
@@ -2837,8 +2837,8 @@
           "neutral": 3,
           "normalized_support": 0.625,
           "oppose": 0,
-          "p_effective": 0.579992,
-          "p_market": 0.538251,
+          "p_effective": 0.579769,
+          "p_market": 0.537256,
           "point": null,
           "research_only": true,
           "schema": "v12-4-convergence-score-v1",
@@ -2870,17 +2870,17 @@
             },
             "model": {
               "detail": {
-                "p": 0.579992
+                "p": 0.579769
               },
               "state": "SUPPORT",
-              "value": 0.07999199999999995
+              "value": 0.07976899999999998
             },
             "sharp": {
               "detail": {
-                "p_market": 0.538251
+                "p_market": 0.537256
               },
               "state": "SUPPORT",
-              "value": 0.038251000000000035
+              "value": 0.037255999999999956
             },
             "starter": {
               "detail": {
@@ -2900,8 +2900,8 @@
             },
             "weather_park": {
               "detail": {
-                "opponent_factor": 1.0217001819634999,
-                "own_factor": 1.0217001819634999
+                "opponent_factor": 1.0204286713696658,
+                "own_factor": 1.0204286713696658
               },
               "state": "NEUTRAL",
               "value": 0.0
@@ -2987,8 +2987,8 @@
             },
             "weather_park": {
               "detail": {
-                "opponent_factor": 1.0047424482147556,
-                "own_factor": 1.0047424482147556
+                "opponent_factor": 1.0066400722094748,
+                "own_factor": 1.0066400722094748
               },
               "state": "NEUTRAL",
               "value": 0.0
@@ -3074,8 +3074,8 @@
             },
             "weather_park": {
               "detail": {
-                "opponent_factor": 1.0217001819634999,
-                "own_factor": 1.0217001819634999
+                "opponent_factor": 1.0204286713696658,
+                "own_factor": 1.0204286713696658
               },
               "state": "NEUTRAL",
               "value": 0.0
@@ -3161,8 +3161,8 @@
             },
             "weather_park": {
               "detail": {
-                "opponent_factor": 1.0159850422970231,
-                "own_factor": 1.0159850422970231
+                "opponent_factor": 1.0138792353070776,
+                "own_factor": 1.0138792353070776
               },
               "state": "NEUTRAL",
               "value": 0.0
@@ -3185,8 +3185,8 @@
           "neutral": 4,
           "normalized_support": 0.5,
           "oppose": 0,
-          "p_effective": 0.608389,
-          "p_market": 0.57114,
+          "p_effective": 0.602938,
+          "p_market": 0.552521,
           "point": 1.5,
           "research_only": true,
           "schema": "v12-4-convergence-score-v1",
@@ -3218,17 +3218,17 @@
             },
             "model": {
               "detail": {
-                "p": 0.608389
+                "p": 0.602938
               },
               "state": "SUPPORT",
-              "value": 0.10838899999999996
+              "value": 0.10293799999999997
             },
             "sharp": {
               "detail": {
-                "p_market": 0.57114
+                "p_market": 0.552521
               },
               "state": "SUPPORT",
-              "value": 0.07113999999999998
+              "value": 0.05252100000000004
             },
             "starter": {
               "detail": {
@@ -3248,8 +3248,8 @@
             },
             "weather_park": {
               "detail": {
-                "opponent_factor": 1.01603806174759,
-                "own_factor": 1.01603806174759
+                "opponent_factor": 1.0146289755581397,
+                "own_factor": 1.0146289755581397
               },
               "state": "NEUTRAL",
               "value": 0.0
@@ -3272,8 +3272,8 @@
           "neutral": 4,
           "normalized_support": 0.5,
           "oppose": 0,
-          "p_effective": 0.587699,
-          "p_market": 0.591761,
+          "p_effective": 0.588914,
+          "p_market": 0.595731,
           "point": null,
           "research_only": true,
           "schema": "v12-4-convergence-score-v1",
@@ -3305,17 +3305,17 @@
             },
             "model": {
               "detail": {
-                "p": 0.587699
+                "p": 0.588914
               },
               "state": "SUPPORT",
-              "value": 0.08769899999999997
+              "value": 0.08891400000000005
             },
             "sharp": {
               "detail": {
-                "p_market": 0.591761
+                "p_market": 0.595731
               },
               "state": "SUPPORT",
-              "value": 0.09176099999999998
+              "value": 0.09573100000000001
             },
             "starter": {
               "detail": {
@@ -3335,8 +3335,8 @@
             },
             "weather_park": {
               "detail": {
-                "opponent_factor": 1.0258605014893667,
-                "own_factor": 1.0258605014893667
+                "opponent_factor": 1.027944375776754,
+                "own_factor": 1.027944375776754
               },
               "state": "NEUTRAL",
               "value": 0.0
@@ -3359,8 +3359,8 @@
           "neutral": 4,
           "normalized_support": 0.5,
           "oppose": 0,
-          "p_effective": 0.572179,
-          "p_market": 0.584568,
+          "p_effective": 0.580598,
+          "p_market": 0.613552,
           "point": null,
           "research_only": true,
           "schema": "v12-4-convergence-score-v1",
@@ -3392,17 +3392,17 @@
             },
             "model": {
               "detail": {
-                "p": 0.572179
+                "p": 0.580598
               },
               "state": "SUPPORT",
-              "value": 0.072179
+              "value": 0.08059799999999995
             },
             "sharp": {
               "detail": {
-                "p_market": 0.584568
+                "p_market": 0.613552
               },
               "state": "SUPPORT",
-              "value": 0.08456799999999998
+              "value": 0.11355199999999999
             },
             "starter": {
               "detail": {
@@ -3446,8 +3446,8 @@
           "neutral": 4,
           "normalized_support": 0.5,
           "oppose": 0,
-          "p_effective": 0.567126,
-          "p_market": 0.550441,
+          "p_effective": 0.566904,
+          "p_market": 0.549638,
           "point": null,
           "research_only": true,
           "schema": "v12-4-convergence-score-v1",
@@ -3479,17 +3479,17 @@
             },
             "model": {
               "detail": {
-                "p": 0.567126
+                "p": 0.566904
               },
               "state": "SUPPORT",
-              "value": 0.06712600000000002
+              "value": 0.06690399999999996
             },
             "sharp": {
               "detail": {
-                "p_market": 0.550441
+                "p_market": 0.549638
               },
               "state": "SUPPORT",
-              "value": 0.05044099999999996
+              "value": 0.04963799999999996
             },
             "starter": {
               "detail": {
@@ -3509,8 +3509,8 @@
             },
             "weather_park": {
               "detail": {
-                "opponent_factor": 1.0158711466737425,
-                "own_factor": 1.0158711466737425
+                "opponent_factor": 1.0160641130759305,
+                "own_factor": 1.0160641130759305
               },
               "state": "NEUTRAL",
               "value": 0.0
@@ -3524,80 +3524,80 @@
           "affects_v12_selection": false,
           "available": 8,
           "directional": 5,
-          "game": "Los Angeles Dodgers @ Colorado Rockies",
-          "game_pk": 824319,
+          "game": "Washington Nationals @ Texas Rangers",
+          "game_pk": 822859,
           "grade": "MIXED",
-          "market": "ML",
-          "name": "Los Angeles Dodgers",
+          "market": "TOTAL",
+          "name": "Over",
           "net_support": 3,
           "neutral": 3,
           "normalized_support": 0.5,
           "oppose": 1,
-          "p_effective": 0.636406,
-          "p_market": 0.630284,
-          "point": null,
+          "p_effective": 0.658265,
+          "p_market": 0.5211,
+          "point": 7.5,
           "research_only": true,
           "schema": "v12-4-convergence-score-v1",
           "score_8": 4,
           "signals": {
             "attack": {
               "detail": {
-                "projected_margin": 1.6431984289800399,
-                "required_margin": 0.0
+                "line": 7.5,
+                "projected_total": 9.914191552429259
               },
               "state": "SUPPORT",
-              "value": 1.6431984289800399
+              "value": 2.4141915524292585
             },
             "bullpen": {
               "detail": {
-                "opponent_factor": 0.9942691806572796,
-                "own_factor": 1.0381210707099704
+                "away_factor": 0.9850041634244383,
+                "home_factor": 1.0046981157337689
               },
-              "state": "SUPPORT",
-              "value": 0.04410464581000251
+              "state": "OPPOSE",
+              "value": -0.005148860420896462
             },
             "lineup": {
               "detail": {
-                "opponent_factor": 1.0,
-                "own_factor": 1.0
+                "away_factor": 1.0,
+                "home_factor": 1.0
               },
               "state": "NEUTRAL",
               "value": 0.0
             },
             "model": {
               "detail": {
-                "p": 0.636406
+                "p": 0.658265
               },
               "state": "SUPPORT",
-              "value": 0.13640600000000003
+              "value": 0.158265
             },
             "sharp": {
               "detail": {
-                "p_market": 0.630284
+                "p_market": 0.5211
               },
               "state": "SUPPORT",
-              "value": 0.13028399999999996
+              "value": 0.021100000000000008
             },
             "starter": {
               "detail": {
-                "opponent_factor": 1.0039877233150452,
-                "own_factor": 0.9995196250803361
+                "away_factor": 1.0156887987417114,
+                "home_factor": 1.0
               },
-              "state": "OPPOSE",
-              "value": -0.004450351464414304
+              "state": "SUPPORT",
+              "value": 0.007844399370855681
             },
             "statcast": {
               "detail": {
-                "opponent_factor": 1.0,
-                "own_factor": 1.0
+                "away_factor": 1.0,
+                "home_factor": 1.0
               },
               "state": "NEUTRAL",
               "value": 0.0
             },
             "weather_park": {
               "detail": {
-                "opponent_factor": 1.0366,
-                "own_factor": 1.0366
+                "away_factor": 1.0,
+                "home_factor": 1.0
               },
               "state": "NEUTRAL",
               "value": 0.0
@@ -3612,85 +3612,85 @@
     },
     "current_run_disagreements": [
       {
-        "abs_gap": 0.021504999999999996,
-        "baseline_p": 0.561076,
+        "abs_gap": 0.02150400000000008,
+        "baseline_p": 0.561073,
         "challenger": "all_core",
         "crosses_55": true,
         "game": "Los Angeles Angels @ Houston Astros",
         "game_pk": 824154,
-        "gap": -0.021504999999999996,
+        "gap": -0.02150400000000008,
         "market": "TOTAL",
         "name": "Over",
         "point": 9.0,
-        "v124_p": 0.539571
+        "v124_p": 0.539569
       },
       {
-        "abs_gap": 0.017484999999999973,
-        "baseline_p": 0.557666,
+        "abs_gap": 0.01790999999999998,
+        "baseline_p": 0.560867,
         "challenger": "all_core",
         "crosses_55": true,
         "game": "Chicago White Sox @ Chicago Cubs",
         "game_pk": 824639,
-        "gap": -0.017484999999999973,
+        "gap": -0.01790999999999998,
         "market": "ML",
         "name": "Chicago Cubs",
         "point": null,
-        "v124_p": 0.540181
+        "v124_p": 0.542957
       },
       {
-        "abs_gap": 0.010131000000000001,
-        "baseline_p": 0.55255,
+        "abs_gap": 0.010465000000000058,
+        "baseline_p": 0.553714,
         "challenger": "all_core",
         "crosses_55": true,
         "game": "Arizona Diamondbacks @ Boston Red Sox",
         "game_pk": 824723,
-        "gap": -0.010131000000000001,
+        "gap": -0.010465000000000058,
         "market": "RUNLINE",
         "name": "Arizona Diamondbacks",
         "point": 1.5,
-        "v124_p": 0.542419
+        "v124_p": 0.543249
       },
       {
-        "abs_gap": 0.008603000000000027,
-        "baseline_p": 0.558191,
+        "abs_gap": 0.008480000000000043,
+        "baseline_p": 0.558401,
         "challenger": "all_core",
         "crosses_55": true,
         "game": "San Diego Padres @ New York Mets",
         "game_pk": 823586,
-        "gap": -0.008603000000000027,
+        "gap": -0.008480000000000043,
         "market": "TOTAL",
         "name": "Under",
         "point": 8.5,
-        "v124_p": 0.549588
+        "v124_p": 0.549921
       }
     ],
     "evolution": {
       "has_previous": true,
-      "settled_games_delta": 10,
+      "settled_games_delta": 0,
       "variants": {
         "all_core": {
           "accuracy": 0.0,
-          "brier": -0.005272638984879591,
-          "gt55_hit_rate": 0.0434526439829136,
-          "gt55_n": 20,
-          "logloss": -0.01084350073207263,
-          "n": 60
+          "brier": 0.0,
+          "gt55_hit_rate": 0.0,
+          "gt55_n": 0,
+          "logloss": 0.0,
+          "n": 0
         },
         "baseline_v1232": {
           "accuracy": 0.0,
-          "brier": -0.0051770664242553055,
-          "gt55_hit_rate": 0.03574468085106375,
-          "gt55_n": 19,
-          "logloss": -0.010670692128500359,
-          "n": 60
+          "brier": 0.0,
+          "gt55_hit_rate": 0.0,
+          "gt55_n": 0,
+          "logloss": 0.0,
+          "n": 0
         },
         "ensemble": {
           "accuracy": 0.0,
-          "brier": -0.004913479609969684,
-          "gt55_hit_rate": 0.03376623376623378,
-          "gt55_n": 18,
-          "logloss": -0.010110749274780617,
-          "n": 60
+          "brier": 0.0,
+          "gt55_hit_rate": 0.0,
+          "gt55_n": 0,
+          "logloss": 0.0,
+          "n": 0
         }
       }
     },
@@ -3804,7 +3804,7 @@
       "weight_source": "NO_ELIGIBLE_WARM_START"
     },
     "research_only": true,
-    "run_id": "7e01e3745be02f22",
+    "run_id": "2c4d558ace8c1b19",
     "schema": "v12-4-research-monitor-v1",
     "target_date": "2026-08-18",
     "v115": {
@@ -3921,7 +3921,7 @@
     },
     "version": "v12.4-research-monitor-v1"
   },
-  "run_id": "7e01e3745be02f22",
+  "run_id": "2c4d558ace8c1b19",
   "scheduled_games": 15,
   "schema": "v12-3-professional-v1",
   "shadow_challenger": {
