@@ -122,6 +122,10 @@ jobs:
                       if line.strip(): json.loads(line)
           payload=json.loads(Path('runtime/v11/discord_payload.json').read_text(encoding='utf-8'))
           report=(payload.get('report') or {})
+          if payload.get('chosen'):
+              raise SystemExit('V13 analytics-only payload contains chosen recommendations')
+          if (payload.get('combo') or {}).get('official'):
+              raise SystemExit('V13 analytics-only payload contains an official combo')
           shadow=report.get('shadow_challenger') or {}
           if (shadow.get('activation') or {}).get('affects_v12_selection') is not False:
               raise SystemExit('V11.5 shadow must remain research-only')
@@ -146,11 +150,26 @@ jobs:
                       bad.append({'game_pk':result.get('game_pk'),'reason':'posterior entered edge selection'})
                   if option.get('p_predictive_final') != option.get('p_baseball_calibrated'):
                       bad.append({'game_pk':result.get('game_pk'),'reason':'primary probability changed before promotion'})
+                  execution=option.get('winamax_eval') or {}
+                  if execution.get('official_selected') or execution.get('selected') or float(execution.get('official_units') or 0.0) != 0.0:
+                      bad.append({'game_pk':result.get('game_pk'),'reason':'analytics-only option became actionable'})
           if bad:
               raise SystemExit(f'V13.5 probability invariant failure: {bad[:3]}')
+          run_id=report.get('run_id')
+          ledger=Path('data/v11_bet_ledger.jsonl')
+          action_events=[]
+          if run_id and ledger.exists():
+              for line in ledger.read_text(encoding='utf-8').splitlines():
+                  if not line.strip():
+                      continue
+                  event=json.loads(line)
+                  if event.get('run_id') == run_id and event.get('event_type') in {'PROPOSED','PUBLISHED','CONFIRMED_PLACED'}:
+                      action_events.append({'event_type':event.get('event_type'),'bet_key':event.get('bet_key')})
+          if action_events:
+              raise SystemExit(f'V13 analytics-only run wrote betting ledger events: {action_events[:3]}')
           PY
 
-      - name: Persist PROPOSED recommendations and probability journal
+      - name: Persist analytics probability journal
         run: |
           git config user.name 'MLB Betting Bot V13.5'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
@@ -163,7 +182,7 @@ jobs:
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
 
-      - name: Publish Discord recommendations
+      - name: Publish Discord analytics
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: python -m v11.v13_entry --send-persisted
@@ -180,16 +199,25 @@ jobs:
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
 
-      - name: Persist PUBLISHED lifecycle state
+      - name: Assert analytics-only lifecycle after Discord
         run: |
-          git config user.name 'MLB Betting Bot V13.5'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-          [ -f data/v11_bet_ledger.jsonl ] && git add -f data/v11_bet_ledger.jsonl
-          if ! git diff --cached --quiet; then
-            git commit -m 'data: mark V13.5 recommendations published [skip ci]'
-            git pull --rebase --autostash origin "$GITHUB_REF_NAME"
-            git push origin "HEAD:$GITHUB_REF_NAME"
-          fi
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          payload=json.loads(Path('runtime/v11/discord_payload.json').read_text(encoding='utf-8'))
+          run_id=(payload.get('report') or {}).get('run_id')
+          bad=[]
+          ledger=Path('data/v11_bet_ledger.jsonl')
+          if run_id and ledger.exists():
+              for line in ledger.read_text(encoding='utf-8').splitlines():
+                  if not line.strip(): continue
+                  event=json.loads(line)
+                  if event.get('run_id') == run_id and event.get('event_type') in {'PROPOSED','PUBLISHED','CONFIRMED_PLACED'}:
+                      bad.append({'event_type':event.get('event_type'),'bet_key':event.get('bet_key')})
+          if bad:
+              raise SystemExit(f'V13 analytics-only run wrote betting ledger events after Discord: {bad[:3]}')
+          print('V13 analytics-only lifecycle OK: no betting ledger action for run', run_id)
+          PY
 
       - name: Challenger and evaluation
         run: |
