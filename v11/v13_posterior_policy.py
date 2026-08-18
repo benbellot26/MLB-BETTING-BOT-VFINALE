@@ -33,12 +33,22 @@ def _phase_rank(row: dict[str, Any]) -> tuple[int, str]:
     return priority, str(row.get("observation_at") or row.get("analyzed_at") or row.get("game_date") or "")
 
 
+def _dedup_valid(row: dict[str, Any]) -> bool:
+    """Minimum contract for unique-game/phase deduplication.
+
+    Deduplication is also reused by post-mortem code that already has a computed
+    posterior, so it must not require p_market merely to collapse correlated
+    EARLY/LATE/FINAL observations.
+    """
+    return row.get("settled_result") in {"WIN", "LOSS"} and bool(_game_key(row))
+
+
 def _valid(row: dict[str, Any]) -> bool:
+    """Stricter contract required to learn a market weight."""
     return (
-        row.get("settled_result") in {"WIN", "LOSS"}
+        _dedup_valid(row)
         and _num(row.get("p_baseball_calibrated")) is not None
         and _num(row.get("p_market")) is not None
-        and bool(_game_key(row))
     )
 
 
@@ -50,7 +60,7 @@ def latest_phase_per_game(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """
     best: dict[str, dict[str, Any]] = {}
     for row in rows:
-        if not _valid(row):
+        if not _dedup_valid(row):
             continue
         gid = _game_key(row)
         if gid not in best or _phase_rank(row) > _phase_rank(best[gid]):
@@ -62,7 +72,7 @@ def one_per_game_phase(rows: list[dict[str, Any]], phase: str) -> list[dict[str,
     phase = str(phase or "EARLY").upper()
     best: dict[str, dict[str, Any]] = {}
     for row in rows:
-        if not _valid(row) or str(row.get("phase") or "").upper() != phase:
+        if not _dedup_valid(row) or str(row.get("phase") or "").upper() != phase:
             continue
         gid = _game_key(row)
         rank = str(row.get("observation_at") or row.get("analyzed_at") or row.get("game_date") or "")
@@ -131,7 +141,7 @@ def prior_only_weight(history: list[dict[str, Any]], market: str, phase: str) ->
     phase = str(phase or "EARLY").upper()
     market_rows = [r for r in history if str(r.get("market") or "").upper() == market]
     phase_rows = one_per_game_phase(market_rows, phase)
-    if len(phase_rows) >= MIN_SELECTION_GAMES:
+    if len([r for r in phase_rows if _valid(r)]) >= MIN_SELECTION_GAMES:
         out = select_weight(phase_rows, MIN_SELECTION_GAMES)
         out["source"] = f"prior-only:{market}:{phase}"
         return out
