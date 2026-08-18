@@ -20,6 +20,16 @@ class V1352FinalHardeningTests(unittest.TestCase):
         if attach: contract.attach_contract(row)
         return row
 
+    def _replay_row(self, *, game_pk=1, baseline=.55, attach=True):
+        row=self._row(game_pk=game_pk,attach=attach)
+        row.update({"point_in_time":True,"source_replay":f"replay-{game_pk}.json.gz",
+                    "validation_baseline_model_generation":contract.MODEL_GENERATION_FINGERPRINT,
+                    "calibration_evidence_candidate":True})
+        row["options"][0]["p_replay_baseline_raw"]=baseline
+        row["options"][0]["p_market"]=.54
+        row["options"][0]["sharp_weight"]=.20
+        return row
+
     def _distribution_artifact(self, generation="older-generation"):
         return {
             "schema":"v13-distribution-prior-v1","active":True,"phase_scope":"FINAL","variant":"dispersion_only",
@@ -39,9 +49,32 @@ class V1352FinalHardeningTests(unittest.TestCase):
         self.assertIn("independent-transfer", contract.MODEL_GENERATION_FINGERPRINT)
 
     def test_exact_replay_marker_cannot_bypass_current_contract(self):
-        exact=self._row(attach=False)
+        exact=self._replay_row(attach=False)
         exact["v13_evidence_tier"]="A_EXACT_REPLAY"
         self.assertEqual(v13_train.eligible_probability_rows([exact]),[])
+        self.assertEqual(v13_train.eligible_exact_replay_rows([exact]),[])
+
+    def test_exact_replay_calibration_uses_only_pre_candidate_probability(self):
+        exact=self._replay_row(baseline=.55)
+        exact["options"][0]["p_baseball_raw"]=.91
+        exact["options"][0]["p_baseball_calibrated"]=.88
+        exact["options"][0]["p_posterior"]=.73
+        rows=v13_train.eligible_exact_replay_rows([exact])
+        self.assertEqual(len(rows),1)
+        opt=rows[0]["options"][0]
+        self.assertAlmostEqual(opt["p_baseball_raw"],.55)
+        self.assertIsNone(opt.get("p_learned"))
+        self.assertNotIn("p_market",opt)
+        self.assertNotIn("p_posterior",opt)
+        self.assertEqual(rows[0]["calibration_evidence_origin"],"exact-replay-pre-candidate-baseline")
+
+    def test_native_current_row_wins_replay_collision(self):
+        replay=v13_train.eligible_exact_replay_rows([self._replay_row(baseline=.55)])
+        native=v13_train.eligible_probability_rows([self._row()])
+        combined=v13_train.combine_calibration_rows(native,replay)
+        self.assertEqual(len(combined),1)
+        self.assertEqual(combined[0]["calibration_evidence_origin"],"native-current-generation")
+        self.assertAlmostEqual(combined[0]["options"][0]["p_baseball_raw"],.58)
 
     def test_final_run_mean_prior_is_gated_until_native_transfer_passes(self):
         collecting={
@@ -59,9 +92,8 @@ class V1352FinalHardeningTests(unittest.TestCase):
     def test_final_run_mean_prior_rejects_stale_generation_even_if_marked_active(self):
         stale={
             "active":True,"historical_candidate_active":True,"phase_scope":"FINAL",
-            "model_generation":"older-generation","exact_final_games":50,
-            "exact_transfer_required_games":20,"exact_transfer_status":"PASS_FINAL_ONLY",
-            "model":{"home_bias":.1,"away_bias":.1,"slope_delta":0,"max_adjustment":.75},
+            "model_generation":"older-generation","exact_final_games":50,"exact_transfer_required_games":20,
+            "exact_transfer_status":"PASS_FINAL_ONLY","model":{"home_bias":.1,"away_bias":.1,"slope_delta":0,"max_adjustment":.75},
         }
         h,a,meta=v13_run_mean_runtime.apply_pair(5.0,4.0,"FINAL",stale)
         self.assertEqual((h,a),(5.0,4.0)); self.assertFalse(meta["active"])
@@ -80,20 +112,22 @@ class V1352FinalHardeningTests(unittest.TestCase):
             self.assertTrue(active["active"])
             self.assertEqual(active["status"],"ACTIVE_VALIDATED_CURRENT_GENERATION_FINAL_ONLY")
 
-    def test_training_model_records_generation_and_excludes_replay_calibration(self):
-        policy={
-            "model_generation":contract.MODEL_GENERATION_FINGERPRINT,
-            "training_policy":{"exact_v13_replay_backfill_allowed":False,"exact_replays_diagnostic_only":True},
-        }
-        self.assertEqual(policy["model_generation"],contract.MODEL_GENERATION_FINGERPRINT)
-        self.assertFalse(policy["training_policy"]["exact_v13_replay_backfill_allowed"])
+    def test_training_policy_accepts_exact_baseline_but_keeps_legacy_2026_research_only(self):
+        text=Path("v11/v13_train.py").read_text(encoding="utf-8")
+        self.assertIn('"exact_v13_replay_backfill_allowed": True',text)
+        self.assertIn('"accepted_exact_replay_probability_field": "p_replay_baseline_raw"',text)
+        self.assertIn('"exact_replay_layered_probability_forbidden": True',text)
+        self.assertIn('"legacy_reconstructed_1801_allowed_as_native_calibration": False',text)
+        self.assertIn('"research-walk-forward-only"',text)
 
-    def test_backfill_workflow_rebuilds_persists_and_runs_in_season(self):
+    def test_backfill_workflow_rebuilds_calibration_and_historical_validation(self):
         text=Path(".github/workflows/v13-historical-backfill.yml").read_text(encoding="utf-8")
         self.assertIn("python -m v11.v13_run_mean_prior", text)
         self.assertIn("python -m v11.v13_distribution_prior", text)
-        self.assertIn("data/v13_run_mean_prior.json", text)
-        self.assertIn("data/v13_distribution_prior.json", text)
+        self.assertIn("python -m v11.v13_historical_validation", text)
+        self.assertIn("python -m v11.v13_train", text)
+        self.assertIn("data/v13_historical_validation.json", text)
+        self.assertIn("data/v13_baseball_calibration.json", text)
         self.assertIn("PASS_FINAL_ONLY", text)
         self.assertIn("MODEL_GENERATION_FINGERPRINT", text)
         self.assertIn("cron: '30 10 * 3-11 *'", text)
@@ -103,10 +137,19 @@ class V1352FinalHardeningTests(unittest.TestCase):
         backfill=Path("v11/v13_historical_backfill.py").read_text(encoding="utf-8")
         run_mean=Path("v11/v13_run_mean_prior.py").read_text(encoding="utf-8")
         self.assertIn("v13_validation_baseline_home_mu", runtime)
+        self.assertIn("p_replay_baseline_raw", backfill)
+        self.assertIn("v13-pre-candidate-score-distribution", backfill)
         self.assertIn("validation_baseline_home_runs", backfill)
-        self.assertIn("validation_baseline_dispersion", backfill)
         self.assertIn('hm=r.get("validation_baseline_home_runs")', run_mean)
         self.assertNotIn('hm=r.get("projected_home_runs"); am=r.get("projected_away_runs")', run_mean)
+
+    def test_historical_posterior_validation_is_blocked_walk_forward(self):
+        text=Path("v11/v13_historical_validation.py").read_text(encoding="utf-8")
+        self.assertIn("blocked chronological by whole game",text)
+        self.assertIn("strictly earlier game blocks",text)
+        self.assertIn("p_replay_baseline_raw",text)
+        self.assertIn("sharp_weight",text)
+        self.assertIn("exact-replay-blocked-walk-forward",text)
 
     def test_runtime_metadata_separates_software_contract_and_generation(self):
         text=Path("v11/v13_runtime.py").read_text(encoding="utf-8")
@@ -176,7 +219,20 @@ class V1352FinalHardeningTests(unittest.TestCase):
         self.assertEqual(m["baseball"]["n"],2)
         self.assertEqual(m["posterior"]["n"],2)
         self.assertGreater(m["comparisons"]["posterior_vs_baseball"]["brier_improvement"],0)
-        self.assertEqual(m["posterior_promotion"]["status"],"COLLECTING")
+        self.assertEqual(m["posterior_promotion_daily"]["status"],"COLLECTING")
+
+    def test_posterior_promotion_combines_historical_and_live_without_double_counting(self):
+        historical=[{"game_pk":1,"phase":"FINAL","market":"ML","settled_result":"WIN",
+                     "p_baseball_calibrated":.60,"p_posterior":.65,"evidence_origin":"exact-replay-blocked-walk-forward"}]
+        live=[{"game_pk":2,"phase":"FINAL","market":"ML","settled_result":"LOSS","canonical":True,
+              "p_baseball_calibrated":.40,"p_posterior":.35,"p_predictive_final":.40,
+              "predictive_final_status":"BASEBALL_PRIMARY_POSTERIOR_SHADOW","observation_at":"2026-08-18T10:00:00+00:00",
+              "home":"Home","pick":"Home"}]
+        evidence=v13_daily_postmortem._cumulative_promotion("ML",live,historical)
+        self.assertEqual(evidence["comparison"]["n"],2)
+        self.assertEqual(evidence["readiness"]["historical_exact_oos"],1)
+        self.assertEqual(evidence["readiness"]["live_current_generation"],1)
+        self.assertEqual(evidence["readiness"]["status"],"COLLECTING")
 
 
 if __name__ == "__main__":
