@@ -136,6 +136,15 @@ class V1352FinalHardeningTests(unittest.TestCase):
         self.assertIn('engine_v12._analysis_points = v13_analysis_points', text)
         self.assertIn('cannot bypass the selector', text)
 
+    def test_discord_shows_truthful_per_team_lineup_and_starter_status(self):
+        text=Path("v11/discord_v13.py").read_text(encoding="utf-8")
+        self.assertIn('CONFIRMÉE {min(count, 9)}/9', text)
+        self.assertIn('PARTIELLE {count}/9', text)
+        self.assertIn('NON PUBLIÉE', text)
+        self.assertIn('PROBABLE/ANNONCÉ', text)
+        self.assertIn('Lineups & starters', text)
+        self.assertNotIn('PROJETÉE', text)
+
 
 if __name__ == "__main__":
     unittest.main()
