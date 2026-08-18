@@ -82,9 +82,12 @@ def build(rows: list[dict[str,Any]] | None = None) -> dict[str,Any]:
     native=_native_rows(journal.load_rows() if rows is None else rows)
     coverage={name:(sum(max(0.0,min(1.0,rich._num((r.get("modules") or {}).get(name,{}).get("coverage"),0.0))) for r in native)/len(native) if native else 0.0) for name in NATIVE_MODULES}
     base={"schema":SCHEMA,"target_phase":TARGET_PHASE,"native_games":len(native),"minimum_games":MIN_GAMES,"active_for_production":False,"status":"COLLECTING",
+          "baseline_role":"heuristic_structural_champion",
+          "replacement_policy":"Do not hand-tune production coefficients. Rich/native modules may replace or augment the heuristic champion only after exact current-generation point-in-time walk-forward and untouched holdout validation.",
           "native_feature_coverage":coverage,"available_native_modules":list(NATIVE_MODULES),
           "safety":{"market_probability_used":False,"historical_reconstruction_used_for_promotion":False,"point_in_time_required":True,
                     "native_predictive_contract_required":True,"phase_specific_training":True,"selector_unchanged_until_promotion":True,
+                    "manual_structural_retuning_allowed_without_oos_evidence":False,
                     "weather_requires_native_pregame_snapshot":True}}
     if len(native)<MIN_GAMES:return base
     train,hold=_split_outer(native)
