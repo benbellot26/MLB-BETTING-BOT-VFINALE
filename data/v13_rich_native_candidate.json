@@ -8,6 +8,7 @@
     "lineup_player",
     "weather_park"
   ],
+  "baseline_role": "heuristic_structural_champion",
   "minimum_games": 300,
   "native_feature_coverage": {
     "bullpen_player": 0.0,
@@ -18,8 +19,10 @@
     "weather_park": 0.0
   },
   "native_games": 0,
+  "replacement_policy": "Do not hand-tune production coefficients. Rich/native modules may replace or augment the heuristic champion only after exact current-generation point-in-time walk-forward and untouched holdout validation.",
   "safety": {
     "historical_reconstruction_used_for_promotion": false,
+    "manual_structural_retuning_allowed_without_oos_evidence": false,
     "market_probability_used": false,
     "native_predictive_contract_required": true,
     "phase_specific_training": true,
