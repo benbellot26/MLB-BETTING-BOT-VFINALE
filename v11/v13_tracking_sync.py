@@ -9,9 +9,9 @@ from . import v13_daily_tracking as tracking
 def _latest_pregame_rows():
     """Return latest immutable pregame row per game and phase.
 
-    EARLY/LATE/FINAL must remain separate evidence streams. The pre-V13.5.1
-    implementation kept only the latest row per game and silently discarded
-    earlier phases during sync.
+    EARLY/LATE/FINAL remain separate model observations in the journal. Promotion
+    statistics later collapse them to one unique game when a pooled sample is
+    required, so storage fidelity and statistical independence are both kept.
     """
     best={}
     for r in journal.load_rows():
@@ -33,13 +33,22 @@ def sync_from_journal():
             if k in state:continue
             e=o.get("winamax_eval") or {}; gate=e.get("v11_price_gate") or {}
             price=tracking._num(e.get("price")); price=price if price and price>1 else None
+            calibrated=o.get("p_baseball_calibrated",o.get("p_effective"))
+            predictive=o.get("p_predictive_final",calibrated)
             rows.append({"schema":"v13-market-tracking-v3","event_type":"MODEL_SNAPSHOT","tracking_key":k,
                 "market_key":tracking._market_key(r,o),"observation_at":r.get("analyzed_at"),"observation_phase":phase,
                 "source":"persisted-v13-journal","source_run_id":r.get("run_id"),"observed_at":r.get("analyzed_at"),
                 "target_date":r.get("target_date"),"game_pk":r.get("game_pk"),"game_date":r.get("game_date"),
                 "home":r.get("home"),"away":r.get("away"),"phase":r.get("phase"),"market":o.get("market"),
                 "pick":o.get("name"),"point":o.get("point"),"canonical":bool(o.get("is_canonical_line")),
-                "p_model":o.get("p_baseball_calibrated",o.get("p_effective")),"p_raw":o.get("p_baseball_raw",o.get("p_model")),
+                "p_model":calibrated,"p_baseball_calibrated":calibrated,"p_raw":o.get("p_baseball_raw",o.get("p_model")),
+                "p_posterior":o.get("p_posterior"),"p_predictive_final":predictive,
+                "posterior_weight_v13":o.get("posterior_weight_v13"),
+                "posterior_weight_source_v13":o.get("posterior_weight_source_v13"),
+                "posterior_weight_games_v13":o.get("posterior_weight_games_v13"),
+                "predictive_final_source":o.get("predictive_final_source"),"predictive_final_status":o.get("predictive_final_status"),
+                "calibration_source_v13":o.get("calibration_source_v13"),
+                "probability_interval_low":o.get("probability_interval_low"),"probability_interval_high":o.get("probability_interval_high"),
                 "p_market":o.get("p_market"),"model_market_gap":o.get("model_market_gap"),"model_uncertainty":o.get("model_uncertainty"),
                 "p_win":o.get("p_win"),"p_push":o.get("p_push"),"winamax_price":price,
                 "nominal_ev":tracking._nominal_ev(o,price),"conservative_ev":gate.get("ev_at_price"),
