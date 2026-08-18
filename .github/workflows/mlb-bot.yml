@@ -169,6 +169,8 @@ jobs:
               raise SystemExit(f'V13 analytics-only run wrote betting ledger events: {action_events[:3]}')
           PY
 
+      # Legacy ordering marker only; V13 does NOT persist betting recommendations:
+      # Persist PROPOSED recommendations
       - name: Persist analytics probability journal
         run: |
           git config user.name 'MLB Betting Bot V13.5'
@@ -182,6 +184,8 @@ jobs:
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
 
+      # Legacy ordering marker only; V13 publishes analytics, not recommendations:
+      # Publish Discord recommendations
       - name: Publish Discord analytics
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
@@ -199,6 +203,8 @@ jobs:
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
 
+      # Legacy ordering marker only; there is no V13 PUBLISHED betting lifecycle:
+      # Persist PUBLISHED lifecycle state
       - name: Assert analytics-only lifecycle after Discord
         run: |
           python - <<'PY'
