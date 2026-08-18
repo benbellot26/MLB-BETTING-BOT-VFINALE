@@ -105,9 +105,13 @@ def upgrade_result(result: dict[str,Any], pipeline: ProbabilityPipelineV13 | dic
 def install() -> bool:
     global _INSTALLED
     if _INSTALLED: return True
-    from . import config, engine_v12, runner
+    from . import config, engine_v12, runner, methodology_v123
     original_analyze = engine_v12.analyze; original_row = runner._row
-    original_joint = engine_v12.joint_score_matrix; original_bootstrap_prior = engine_v12._bootstrap_prior
+    original_joint = engine_v12.joint_score_matrix
+    # V12.3's active project path calls methodology_v123.bootstrap_prior_v123
+    # directly through compose_runtime().  Hook that exact function, not only
+    # engine_v12._bootstrap_prior, otherwise V13 baseline/transfer logic is bypassed.
+    original_bootstrap_prior = methodology_v123.bootstrap_prior_v123
     original_analysis_points = engine_v12._analysis_points
 
     def neutral_extra_innings_home_win(home_mu, away_mu, dispersion=None, env_sigma=None):
@@ -149,6 +153,7 @@ def install() -> bool:
             "v13_validation_baseline_dispersion": values[4],
             "v13_validation_baseline_environment_sigma": values[6],
             "v13_validation_model_generation": MODEL_GENERATION_FINGERPRINT,
+            "v13_validation_baseline_source": "v123-compose-runtime-pre-v13-candidate",
         })
         values[2] = validation_meta
         legacy_run_prior_active = bool(validation_meta.get("active"))
@@ -163,10 +168,27 @@ def install() -> bool:
             values[4] = dispersion; values[5] = dist_meta.get("source"); values[6] = env_sigma
             bootstrap = dict(values[3] or {}); bootstrap["v13_distribution_prior"] = dist_meta; values[3] = bootstrap
         return tuple(values)
+
+    # Keep both aliases in sync.  project_v123() resolves the methodology module
+    # global at call time, while some legacy paths still call engine_v12 directly.
+    methodology_v123.bootstrap_prior_v123 = validated_historical_priors
     engine_v12._bootstrap_prior = validated_historical_priors
 
     def analyze(game, event, as_of=None):
         result = original_analyze(game, event, as_of=as_of)
+        run_prior_meta = ((((result.get("features") or {}).get("historical_bootstrap") or {}).get("run_prior")) or {})
+        result["v13_validation_baseline"] = {
+            "home_mu": run_prior_meta.get("v13_validation_baseline_home_mu"),
+            "away_mu": run_prior_meta.get("v13_validation_baseline_away_mu"),
+            "dispersion": run_prior_meta.get("v13_validation_baseline_dispersion"),
+            "environment_sigma": run_prior_meta.get("v13_validation_baseline_environment_sigma"),
+            "model_generation": run_prior_meta.get("v13_validation_model_generation"),
+            "source": run_prior_meta.get("v13_validation_baseline_source"),
+        }
+        result["v13_validation_baseline_ready"] = (
+            all(result["v13_validation_baseline"].get(k) is not None for k in ("home_mu","away_mu","dispersion","environment_sigma"))
+            and result["v13_validation_baseline"].get("model_generation") == MODEL_GENERATION_FINGERPRINT
+        )
         before = bool((result.get("shadow_v124") or {}).get("modules"))
         v13_rich_run_shadow.attach(result)
         result["v13_shadow_chain"] = {
@@ -185,6 +207,8 @@ def install() -> bool:
         payload["data_quality"] = result.get("data_quality")
         payload["shadow_v13_rich_runs"] = result.get("shadow_v13_rich_runs")
         payload["v13_shadow_chain"] = result.get("v13_shadow_chain")
+        payload["v13_validation_baseline"] = result.get("v13_validation_baseline")
+        payload["v13_validation_baseline_ready"] = result.get("v13_validation_baseline_ready")
         attach_contract(payload)
         as_of = str(payload.get("analyzed_at") or at or datetime.now(timezone.utc).isoformat())
         pit.mark_live_snapshot(payload, as_of)
