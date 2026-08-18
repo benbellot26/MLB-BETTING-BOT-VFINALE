@@ -22,7 +22,12 @@ class V13ProbabilityContractTests(unittest.TestCase):
         self.assertAlmostEqual(out["p_effective"], .62)
         self.assertAlmostEqual(out["p_market"], .51)
         self.assertAlmostEqual(out["model_market_gap"], .11)
-        self.assertNotEqual(out["p_posterior"], out["p_effective"])
+        # No validated posterior policy was injected, so the safe market weight
+        # is exactly 0% Sharp. The shadow therefore equals baseball rather than
+        # using the old heuristic sharp_weight=.30.
+        self.assertAlmostEqual(out["p_posterior"], out["p_effective"])
+        self.assertEqual(out["posterior_weight_v13"],0.0)
+        self.assertEqual(out["posterior_weight_source_v13"],"BASEBALL_ONLY_UNTIL_VALIDATED_WEIGHT")
         self.assertAlmostEqual(out["probability_uncertainty_v13"]["data_quality"], .8)
 
     def test_contract_rejects_market_derived_baseball_source(self):
