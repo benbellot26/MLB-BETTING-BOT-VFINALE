@@ -25,7 +25,10 @@ jobs:
           python-version: '3.12'
 
       - name: Compile V13 backfill
-        run: python -m py_compile v11/v13_historical_backfill.py v11/v13_historical_validation.py v11/v13_run_mean_prior.py v11/v13_distribution_prior.py v11/v13_train.py v11/v13_entry.py
+        run: python -m py_compile v11/v13_historical_backfill.py v11/v13_historical_validation.py v11/v13_run_mean_prior.py v11/v13_distribution_prior.py v11/v13_train.py v11/v13_entry.py tests/test_v13_historical_backfill_regression.py
+
+      - name: V13 historical backfill regression tests
+        run: python -m unittest tests.test_v13_historical_backfill_regression
 
       - name: Download durable pregame source replays
         env:
@@ -70,18 +73,34 @@ jobs:
           p=Path('data/v13_historical_backfill.jsonl')
           for line in p.read_text().splitlines():
               if line.strip(): rows.append(json.loads(line))
+
+          candidates=0
+          rejected=0
           for r in rows:
               assert r['point_in_time'] is True
               assert r['features_from_postgame'] is False
               assert r['market_probability_used_as_baseball_feature'] is False
               assert r['result_status'] == 'SETTLED'
               assert contract.row_is_predictively_compatible(r), r.get('game_pk')
-              assert r.get('validation_baseline_model_generation') == contract.MODEL_GENERATION_FINGERPRINT, r.get('game_pk')
-              assert r.get('validation_baseline_home_runs') is not None, r.get('game_pk')
-              assert r.get('validation_baseline_away_runs') is not None, r.get('game_pk')
-              assert r.get('validation_baseline_dispersion') is not None, r.get('game_pk')
+              if r.get('calibration_evidence_candidate'):
+                  candidates += 1
+                  assert r.get('validation_baseline_model_generation') == contract.MODEL_GENERATION_FINGERPRINT, r.get('game_pk')
+                  assert r.get('validation_baseline_home_runs') is not None, r.get('game_pk')
+                  assert r.get('validation_baseline_away_runs') is not None, r.get('game_pk')
+                  assert r.get('validation_baseline_dispersion') is not None, r.get('game_pk')
+                  assert r.get('validation_baseline_environment_sigma') is not None, r.get('game_pk')
+                  assert int(r.get('calibration_baseline_options') or 0) > 0, r.get('game_pk')
+              else:
+                  rejected += 1
+                  assert r.get('calibration_evidence_rejection_reason'), r.get('game_pk')
 
-          final_games=len({str(r.get('game_pk')) for r in rows if str(r.get('phase') or '').upper() == 'FINAL'})
+          assert candidates == int(report.get('calibration_candidate_rows') or 0), report
+          assert rejected == int(report.get('calibration_rejected_rows') or 0), report
+          assert candidates > 0, report
+
+          final_games=len({str(r.get('game_pk')) for r in rows
+                           if str(r.get('phase') or '').upper() == 'FINAL'
+                           and r.get('calibration_evidence_candidate')})
 
           prior=json.loads(Path('data/v13_run_mean_prior.json').read_text())
           assert prior['model_generation'] == contract.MODEL_GENERATION_FINGERPRINT, prior
@@ -111,6 +130,7 @@ jobs:
           assert hist.get('source') == 'exact archived pregame source replays', hist
 
           print('V13 backfill rows=',len(rows),'games=',report['canonical_games'],
+                'candidates=',candidates,'rejected=',rejected,
                 'run_mean=',prior.get('exact_final_games'),'/',prior.get('exact_transfer_required_games'),prior.get('exact_transfer_status'),prior.get('active'),
                 'distribution=',dist.get('exact_final_games'),'/',dist.get('exact_transfer_required_games'),dist.get('exact_transfer_status'),dist.get('active'),
                 'calibration_games=',calibration.get('eligible_games'),
@@ -118,9 +138,11 @@ jobs:
           PY
 
       - name: Upload backfill artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: v13-historical-backfill-${{ github.run_id }}
+          if-no-files-found: warn
           path: |
             data/v13_historical_backfill.jsonl
             data/v13_historical_backfill_report.json

@@ -105,18 +105,35 @@ def _baseline_probability(
             p_home = engine.prob_home_win(hmu, amu, dispersion=disp, env_sigma=env)
             return max(.001, min(.999, p_home if is_home else 1-p_home)), 0.0
         if market == "RUNLINE" and opt.get("point") is not None:
-            point = _num(opt.get("point"))
-            home_line = point if is_home else -point
-            p_home, push = engine.prob_cover_parts(hmu, amu, home_line, dispersion=disp, env_sigma=env)
-            p = p_home if is_home else 1-p_home
-            return max(.001, min(.999, p)), max(0.0, min(.95, _num(push)))
+            side = "home" if is_home else "away"
+            p_side, push = engine.prob_cover_parts(
+                hmu, amu, side, _num(opt.get("point")), dispersion=disp, env_sigma=env
+            )
+            return max(.001, min(.999, p_side)), max(0.0, min(.95, _num(push)))
         if market == "TOTAL" and opt.get("point") is not None:
-            p_over, push = engine.prob_total_parts(hmu, amu, _num(opt.get("point")), dispersion=disp, env_sigma=env)
-            p = p_over if name.lower() == "over" else 1-p_over
-            return max(.001, min(.999, p)), max(0.0, min(.95, _num(push)))
+            side = "over" if name.lower() == "over" else "under"
+            p_side, push = engine.prob_total_parts(
+                hmu, amu, side, _num(opt.get("point")), dispersion=disp, env_sigma=env
+            )
+            return max(.001, min(.999, p_side)), max(0.0, min(.95, _num(push)))
     except Exception:
         return None, None
     return None, None
+
+
+def _calibration_evidence_status(
+    baseline_ready: bool,
+    baseline_generation: Any,
+    baseline_option_count: int,
+) -> tuple[bool, str | None]:
+    """Gate replay calibration evidence without weakening the leakage boundary."""
+    if not baseline_ready:
+        return False, "MISSING_PRE_CANDIDATE_BASELINE"
+    if baseline_generation != contract.MODEL_GENERATION_FINGERPRINT:
+        return False, "BASELINE_GENERATION_MISSING_OR_MISMATCH"
+    if int(baseline_option_count or 0) <= 0:
+        return False, "NO_SETTLED_BASELINE_OPTIONS"
+    return True, None
 
 
 def _option_row(
@@ -194,6 +211,7 @@ def replay_one(path: Path, score_cache: dict[str, dict[str, tuple[int, int]]]) -
             baseline_amu = run_prior_meta.get("v13_validation_baseline_away_mu")
             baseline_disp = run_prior_meta.get("v13_validation_baseline_dispersion")
             baseline_env = run_prior_meta.get("v13_validation_baseline_environment_sigma")
+            baseline_generation = run_prior_meta.get("v13_validation_model_generation")
             options = [
                 _option_row(o, str(ctx.get("home") or ""), hs, aws, baseline_hmu, baseline_amu, baseline_disp, baseline_env)
                 for o in result.get("options") or []
@@ -202,6 +220,9 @@ def replay_one(path: Path, score_cache: dict[str, dict[str, tuple[int, int]]]) -
             baseline_option_count = sum(
                 o.get("result") in {"WIN", "LOSS"} and o.get("p_replay_baseline_raw") is not None
                 for o in options
+            )
+            evidence_candidate, evidence_rejection = _calibration_evidence_status(
+                baseline_ready, baseline_generation, baseline_option_count
             )
             row = {
                 "schema": SCHEMA,
@@ -222,8 +243,9 @@ def replay_one(path: Path, score_cache: dict[str, dict[str, tuple[int, int]]]) -
                 "validation_baseline_away_runs": baseline_amu,
                 "validation_baseline_dispersion": baseline_disp,
                 "validation_baseline_environment_sigma": baseline_env,
-                "validation_baseline_model_generation": run_prior_meta.get("v13_validation_model_generation"),
-                "calibration_evidence_candidate": bool(baseline_ready and baseline_option_count),
+                "validation_baseline_model_generation": baseline_generation,
+                "calibration_evidence_candidate": evidence_candidate,
+                "calibration_evidence_rejection_reason": evidence_rejection,
                 "calibration_evidence_source": "exact-pregame-replay-pre-candidate-baseline",
                 "calibration_baseline_options": int(baseline_option_count),
                 "home_score": hs, "away_score": aws,
@@ -271,15 +293,24 @@ def build(paths: list[Path]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     canonical = _canonical(all_rows)
     phase_counts = Counter(str(r.get("phase") or "UNKNOWN") for r in canonical)
     market_counts = Counter()
+    rejection_counts = Counter(
+        str(r.get("calibration_evidence_rejection_reason"))
+        for r in canonical
+        if not r.get("calibration_evidence_candidate") and r.get("calibration_evidence_rejection_reason")
+    )
     validation_baselines = sum(1 for r in canonical if r.get("validation_baseline_home_runs") is not None and r.get("validation_baseline_away_runs") is not None and r.get("validation_baseline_dispersion") is not None)
+    validation_generation_rows = sum(
+        1 for r in canonical
+        if r.get("validation_baseline_model_generation") == contract.MODEL_GENERATION_FINGERPRINT
+    )
     calibration_candidates = sum(1 for r in canonical if r.get("calibration_evidence_candidate"))
-    calibration_baseline_options = sum(int(r.get("calibration_baseline_options") or 0) for r in canonical)
+    calibration_baseline_options = sum(int(r.get("calibration_baseline_options") or 0) for r in canonical if r.get("calibration_evidence_candidate"))
     for row in canonical:
         for opt in row.get("options") or []:
             if opt.get("result") in {"WIN", "LOSS", "PUSH"}:
                 market_counts[str(opt.get("market") or "UNKNOWN")] += 1
     report = {
-        "schema": "v13-historical-backfill-report-v3",
+        "schema": "v13-historical-backfill-report-v4",
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "model_generation": contract.MODEL_GENERATION_FINGERPRINT,
         "source_replays": len(paths),
@@ -289,12 +320,15 @@ def build(paths: list[Path]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
         "canonical_rows": len(canonical),
         "canonical_games": len({str(r.get("game_pk")) for r in canonical}),
         "validation_baseline_rows": validation_baselines,
+        "validation_generation_rows": validation_generation_rows,
         "calibration_candidate_rows": calibration_candidates,
+        "calibration_rejected_rows": len(canonical)-calibration_candidates,
+        "calibration_rejection_reasons": dict(rejection_counts),
         "calibration_baseline_options": calibration_baseline_options,
         "phase_counts": dict(phase_counts),
         "settled_options_by_market": dict(market_counts),
         "diagnostics": diagnostics,
-        "evidence_boundary": "All features come exclusively from recorded pregame HTTP replays. Final MLB scores are fetched after replay and used only as labels. Official historical calibration evidence uses only p_replay_baseline_raw reconstructed from the persisted pre-candidate run/distribution baseline; the current layered replay output is never used as its own calibration evidence. Sportsbook probabilities remain excluded from baseball calibration.",
+        "evidence_boundary": "All features come exclusively from recorded pregame HTTP replays. Final MLB scores are fetched after replay and used only as labels. Official historical calibration evidence requires a complete pre-candidate baseline tagged with the exact current model generation and uses only p_replay_baseline_raw; rows missing that provenance remain diagnostic but are excluded from calibration. Sportsbook probabilities remain excluded from baseball calibration.",
     }
     return canonical, report
 
