@@ -24,14 +24,10 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Compile V13 backfill
-        run: python -m py_compile v11/v13_historical_backfill.py v11/v13_historical_validation.py v11/v13_run_mean_prior.py v11/v13_distribution_prior.py v11/v13_train.py v11/v13_entry.py tests/test_v13_historical_backfill_regression.py tests/test_v1352_runtime_hook.py tests/test_v1352_final_hardening.py
-
-      - name: V13 historical backfill preflight tests
+      - name: Shared V13.5.2 critical preflight
         run: |
-          python -m unittest tests.test_v13_historical_backfill_regression
-          python -m unittest tests.test_v1352_runtime_hook
-          python -m unittest tests.test_v1352_final_hardening
+          python -m py_compile v11/*.py tests/*.py
+          python -m v11.v13_preflight --verbose
           python -m v11.v13_entry --self-test
 
       - name: Download durable pregame source replays
@@ -50,7 +46,7 @@ jobs:
             --output data/v13_historical_backfill.jsonl \
             --report data/v13_historical_backfill_report.json
 
-      - name: Verify reconstructed pre-candidate baselines
+      - name: Verify reconstructed pre-candidate baselines and push parity
         run: |
           python - <<'PY'
           import json
@@ -70,7 +66,24 @@ jobs:
           assert candidates == canonical, report
           assert options >= candidates, report
           assert not (report.get('calibration_rejection_reasons') or {}), report
-          print('V13 baseline preflight OK:', canonical, 'rows /', options, 'settled baseline options')
+          assert 'P(WIN | no PUSH)' in str(report.get('binary_probability_conditioning') or ''), report
+
+          rows=[]
+          for line in Path('data/v13_historical_backfill.jsonl').read_text().splitlines():
+              if line.strip(): rows.append(json.loads(line))
+          checked=0
+          for row in rows:
+              for opt in row.get('options') or []:
+                  if str(opt.get('market') or '').upper() not in {'RUNLINE','TOTAL'}: continue
+                  if opt.get('result') not in {'WIN','LOSS'}: continue
+                  if opt.get('p_replay_baseline_raw') is None: continue
+                  checked += 1
+                  assert opt.get('replay_probability_conditioning') == 'WIN_GIVEN_NO_PUSH', (row.get('game_pk'),opt)
+                  p=float(opt['p_replay_baseline_raw'])
+                  push=float(opt.get('p_replay_baseline_push') or 0)
+                  assert 0 < p < 1 and 0 <= push < 1, (row.get('game_pk'),opt)
+          assert checked > 0
+          print('V13 baseline preflight OK:', canonical, 'rows /', options, 'settled baseline options / push-parity options=',checked)
           PY
 
       - name: Rebuild current-generation FINAL run-mean candidate
@@ -82,8 +95,11 @@ jobs:
       - name: Rebuild baseball calibration from native + exact replay evidence
         run: python -m v11.v13_train
 
-      - name: Build blocked historical predictive validation
+      - name: Build unique-game blocked historical predictive validation
         run: python -m v11.v13_historical_validation
+
+      - name: Build learned posterior shadow policy
+        run: python -m v11.v13_posterior_policy
 
       - name: Validate leakage boundary and historical transfer states
         run: |
@@ -155,6 +171,21 @@ jobs:
           hist=json.loads(Path('data/v13_historical_validation.json').read_text())
           assert hist['model_generation'] == contract.MODEL_GENERATION_FINGERPRINT, hist
           assert hist.get('source') == 'exact archived pregame source replays', hist
+          assert hist.get('promotion_sample_unit') == 'unique game; pooled comparison keeps one latest pregame phase per game', hist
+          for market, comparison in (hist.get('comparisons') or {}).items():
+              assert int(comparison.get('unique_games') or 0) <= int(hist.get('canonical_games') or 0), (market,comparison)
+              assert int(comparison.get('n') or 0) == int(comparison.get('unique_games') or 0), (market,comparison)
+          assert set((hist.get('comparisons_by_phase') or {}).keys()) == {'ML','RUNLINE','TOTAL'}, hist
+
+          policy=json.loads(Path('data/v13_posterior_policy.json').read_text())
+          assert policy.get('model_generation') == contract.MODEL_GENERATION_FINGERPRINT, policy
+          assert policy.get('primary_probability_affected') is False, policy
+          assert policy.get('promotion_requires_unique_games') is True, policy
+          for key, entry in (policy.get('entries') or {}).items():
+              assert 0 <= float(entry.get('weight') or 0) <= 1, (key,entry)
+              if entry.get('active_for_shadow'):
+                  assert float(entry.get('holdout_brier_gain') or 0) > 0, (key,entry)
+                  assert float(entry.get('holdout_logloss_gain') or 0) > 0, (key,entry)
 
           print('V13 backfill rows=',len(rows),'games=',report['canonical_games'],
                 'candidates=',candidates,'rejected=',rejected,
@@ -177,13 +208,14 @@ jobs:
             data/v13_distribution_prior.json
             data/v13_baseball_calibration.json
             data/v13_historical_validation.json
+            data/v13_posterior_policy.json
           retention-days: 90
 
       - name: Persist backfill evidence and rebuilt predictive artifacts
         run: |
           git config user.name 'MLB Betting Bot V13.5.2'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add -f data/v13_historical_backfill.jsonl data/v13_historical_backfill_report.json data/v13_run_mean_prior.json data/v13_distribution_prior.json data/v13_baseball_calibration.json data/v13_historical_validation.json
+          git add -f data/v13_historical_backfill.jsonl data/v13_historical_backfill_report.json data/v13_run_mean_prior.json data/v13_distribution_prior.json data/v13_baseball_calibration.json data/v13_historical_validation.json data/v13_posterior_policy.json
           if ! git diff --cached --quiet; then
             git commit -m 'data: persist V13.5.2 historical predictive evidence [skip ci]'
             git pull --rebase origin main

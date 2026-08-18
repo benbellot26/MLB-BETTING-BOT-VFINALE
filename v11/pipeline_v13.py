@@ -1,20 +1,22 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from . import calibration_baseball_v13 as calibration
 from . import uncertainty_v13
+from . import v13_posterior_policy as posterior_policy
 from .probability_contract_v13 import option_contract_payload
 
 
 @dataclass
 class ProbabilityPipelineV13:
     calibration_model: dict[str,Any]
+    posterior_weight_policy: dict[str,Any] = field(default_factory=dict)
 
     @classmethod
     def from_artifact(cls):
-        return cls(calibration.load_model())
+        return cls(calibration.load_model(), posterior_policy.load_policy())
 
     @staticmethod
     def baseball_raw(option: dict[str,Any]) -> float:
@@ -41,8 +43,10 @@ class ProbabilityPipelineV13:
             self.calibration_model, market_name, phase, raw
         )
         market = option.get("p_market")
-        market_weight = max(0.0,min(.35,float(option.get("sharp_weight") or 0.0)))
-        posterior = None if market is None else (1-market_weight)*calibrated+market_weight*float(market)
+        market_weight, weight_source, weight_games = posterior_policy.resolve_weight(
+            self.posterior_weight_policy or {}, market_name, phase
+        )
+        posterior = None if market is None else posterior_policy.blend(calibrated, float(market), market_weight)
         interval = uncertainty_v13.empirical_interval(
             calibrated,
             calibration_n=n,
@@ -66,6 +70,11 @@ class ProbabilityPipelineV13:
         option["calibration_market_n_v13"] = evidence["market_n"]
         option["probability_uncertainty_v13"] = interval
         option["reliability_source_v13"] = reliability_source
+        option["posterior_weight_v13"] = round(float(market_weight), 6)
+        option["posterior_weight_source_v13"] = weight_source
+        option["posterior_weight_games_v13"] = int(weight_games)
+        option["legacy_sharp_weight_v13"] = option.get("sharp_weight")
+        option["posterior_weight_policy_v13"] = "learned-chronological-holdout; baseball-only fallback"
         return option
 
     def transform_result(self, result: dict[str,Any]) -> dict[str,Any]:

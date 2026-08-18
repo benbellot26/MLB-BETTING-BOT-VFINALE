@@ -78,6 +78,19 @@ def _settle(opt: dict[str, Any], home: str, hs: int, aws: int) -> str | None:
     return None
 
 
+def _conditional_binary_probability(win: Any, push: Any) -> tuple[float, float]:
+    """Match the live engine's binary WIN/LOSS probability semantics.
+
+    Calibration and Brier/LogLoss exclude PUSH outcomes. For push-capable lines,
+    the probability scored against WIN/LOSS must therefore be P(WIN | no PUSH),
+    not the unconditional score-distribution win mass.
+    """
+    w = max(0.0, min(1.0, _num(win)))
+    p = max(0.0, min(.95, _num(push)))
+    binary = w / max(1e-9, 1.0 - p)
+    return max(.001, min(.999, binary)), p
+
+
 def _baseline_probability(
     opt: dict[str, Any],
     home: str,
@@ -92,6 +105,10 @@ def _baseline_probability(
     or distribution candidates are applied. Recomputing the market target from
     that baseline prevents a candidate trained on historical games from grading
     itself on its own output. No sportsbook probability is used here.
+
+    For RUNLINE/TOTAL lines capable of PUSH, the returned probability is the
+    exact live-model binary product P(WIN | no PUSH). The push mass is persisted
+    separately for settlement/economic diagnostics.
     """
     if any(v is None for v in (home_mu, away_mu, dispersion, env_sigma)):
         return None, None
@@ -109,13 +126,13 @@ def _baseline_probability(
             p_side, push = engine.prob_cover_parts(
                 hmu, amu, side, _num(opt.get("point")), dispersion=disp, env_sigma=env
             )
-            return max(.001, min(.999, p_side)), max(0.0, min(.95, _num(push)))
+            return _conditional_binary_probability(p_side, push)
         if market == "TOTAL" and opt.get("point") is not None:
             side = "over" if name.lower() == "over" else "under"
             p_side, push = engine.prob_total_parts(
                 hmu, amu, side, _num(opt.get("point")), dispersion=disp, env_sigma=env
             )
-            return max(.001, min(.999, p_side)), max(0.0, min(.95, _num(push)))
+            return _conditional_binary_probability(p_side, push)
     except Exception:
         return None, None
     return None, None
@@ -161,7 +178,8 @@ def _option_row(
     )
     out["p_replay_baseline_raw"] = None if p is None else round(p, 6)
     out["p_replay_baseline_push"] = None if push is None else round(push, 6)
-    out["replay_probability_source"] = "v13-pre-candidate-score-distribution" if p is not None else None
+    out["replay_probability_source"] = "v13-pre-candidate-score-distribution"
+    out["replay_probability_conditioning"] = "WIN_GIVEN_NO_PUSH" if p is not None else None
     out["result"] = _settle(opt, home, hs, aws)
     return out
 
@@ -328,6 +346,7 @@ def build(paths: list[Path]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
         "phase_counts": dict(phase_counts),
         "settled_options_by_market": dict(market_counts),
         "diagnostics": diagnostics,
+        "binary_probability_conditioning": "RUNLINE/TOTAL replay calibration uses P(WIN | no PUSH), identical to the live binary probability product; push mass is persisted separately.",
         "evidence_boundary": "All features come exclusively from recorded pregame HTTP replays. Final MLB scores are fetched after replay and used only as labels. Official historical calibration evidence requires a complete pre-candidate baseline tagged with the exact current model generation and uses only p_replay_baseline_raw; rows missing that provenance remain diagnostic but are excluded from calibration. Sportsbook probabilities remain excluded from baseball calibration.",
     }
     return canonical, report

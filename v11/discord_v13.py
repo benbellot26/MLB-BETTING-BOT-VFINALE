@@ -43,12 +43,14 @@ def _line(r):
         primary = r.get("p_baseball_calibrated")
     posterior = r.get("p_posterior")
     posterior_txt = "—" if posterior is None else core.pct(posterior)
+    posterior_weight = 100*core.num(r.get("posterior_weight_v13"))
+    weight_source = str(r.get("posterior_weight_source_v13") or "BASEBALL_ONLY")
     return (
         f"🎯 **{_label(r)}**\n"
-        f"Probabilité principale **{core.pct(primary)}** • intervalle modèle 90% **{interval}**{push_txt}\n"
+        f"Probabilité principale **{core.pct(primary)}** • bande d'incertitude modèle **{interval}**{push_txt}\n"
         f"Baseball **{core.pct(r.get('p_baseball_calibrated'))}** • brut **{core.pct(r.get('p_baseball_raw'))}** • "
-        f"Sharp **{core.pct(r.get('p_market'))}** • ensemble candidat **{posterior_txt}**\n"
-        f"Gap baseball/marché **{gap_txt}** • désaccord books **{market_disp_txt}**\n"
+        f"Sharp **{core.pct(r.get('p_market'))}** • ensemble candidat / posterior shadow **{posterior_txt}** (Sharp appris **{posterior_weight:.0f}%**)\n"
+        f"Poids posterior **{weight_source}** • gap baseball/marché **{gap_txt}** • désaccord books **{market_disp_txt}**\n"
         f"Calibration **{cal_status} / {cal_source}** • n phase **{phase_n}** • n marché **{market_n}**\n"
         f"DQ modèle **{100*core.num(dq.get('model_input_score')):.0f}/100** • DQ globale **{100*core.num(dq.get('score')):.0f}/100**\n"
         f"Cote réf. **{_price_text(ref_price)}** • Winamax **{_price_text(winamax_price)}**"
@@ -79,7 +81,7 @@ def send_game(result, portfolio):
     brief = (
         f"Phase **{result.get('phase')}** • modèle **{model.get('version') or 'structural-only'}**\n"
         f"Projection **{ctx['away']} {result['amu']:.1f} – {result['hmu']:.1f} {ctx['home']}**\n"
-        f"Produit principal **probabilité prédictive** • posterior marché **shadow uniquement**\n"
+        f"Produit principal **probabilité prédictive** • posterior marché **shadow appris uniquement**\n"
         f"Sharp ML refs **{int(core.num(con.get('n')))}** • dispersion **{core.num(model.get('dispersion')):.2f}** • "
         f"env σ **{core.num(model.get('environment_sigma')):.3f}** • bootstrap **{bootstrap.get('status') or '—'}**"
     )

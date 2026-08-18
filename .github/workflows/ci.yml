@@ -42,17 +42,13 @@ jobs:
           python -m unittest tests.test_v124_weight_optimizer tests.test_v124_research_monitor
           python -m unittest tests.test_v124_historical_reconstruction tests.test_v124_historical_daily_reconstruction tests.test_v124_historical_warmstart
           python -m unittest tests.test_discord_limits
-      - name: V13 probability contract tests
+      - name: Shared V13.5.2 critical preflight
         run: |
-          python -m unittest tests.test_v13_probability_contract
-          python -m unittest tests.test_v13_historical_migration
-          python -m unittest tests.test_v13_probability_invariants
-          python -m unittest tests.test_v13_historical_backfill_regression
+          python -m v11.v13_preflight --verbose
           python -m unittest tests.test_v13_rich_run_residual tests.test_v13_rich_native_train
-          python -m unittest tests.test_v135_professional_audit tests.test_v1351_audit_fixes
-          python -m unittest tests.test_v1352_final_hardening tests.test_v1352_runtime_hook
           python -m v11.v13_entry --self-test
           python -m v11.v13_train --dry-run >/tmp/v13_calibration_candidate.json
+          python -m v11.v13_posterior_policy >/tmp/v13_posterior_policy.json
           python -m v11.v13_rich_native_train >/tmp/v13_rich_native_candidate.json
       - name: Historical source cohort smoke test
         run: |

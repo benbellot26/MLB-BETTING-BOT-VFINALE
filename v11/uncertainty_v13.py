@@ -16,7 +16,7 @@ def empirical_interval(p: float, *, calibration_n: int, phase_n: int | None = No
                        market_n: int | None = None, reliability_gap: float | None = None,
                        empirical_sigma: float | None = None,
                        sharp_dispersion: float | None = None, data_quality: float = 1.0,
-                       z: float = 1.645) -> dict[str,float]:
+                       z: float = 1.645) -> dict[str,float | int | str | bool | None]:
     p = max(.001,min(.999,_num(p,.5)))
     pn = max(0,int(phase_n or 0)); mn = max(0,int(market_n or 0)); cn = max(0,int(calibration_n or 0))
     if pn > 0:
@@ -34,9 +34,9 @@ def empirical_interval(p: float, *, calibration_n: int, phase_n: int | None = No
     dq_score = max(0.0,min(1.0,_num(data_quality,1.0)))
     dq = .065*max(0.0,1-dq_score)
 
-    # Empirical reliability is a floor when available. Sampling remains as a
-    # finite-evidence guardrail. Market disagreement is deliberately excluded
-    # from the baseball interval and reported separately below.
+    # This is an engineering uncertainty band, not a frequentist confidence
+    # interval with empirically demonstrated 90% coverage. The z=1.645 scaling
+    # remains a nominal width convention only until coverage is validated.
     epistemic_floor = max(calibration, empirical)
     sigma = math.sqrt(sampling*sampling + epistemic_floor*epistemic_floor + dq*dq)
     sigma = max(.018,min(.14,sigma))
@@ -45,8 +45,11 @@ def empirical_interval(p: float, *, calibration_n: int, phase_n: int | None = No
         "sigma":sigma,
         "low":max(.001,p-z*sigma),
         "high":min(.999,p+z*sigma),
-        "confidence_level":.90,
-        "method":"phase-aware-empirical-reliability-plus-data-quality-v2",
+        "confidence_level":.90,  # backward-compatible nominal width metadata
+        "nominal_level":.90,
+        "coverage_validated":False,
+        "user_facing_type":"model_uncertainty_band",
+        "method":"phase-aware-empirical-reliability-plus-data-quality-v3",
         "evidence_scope":evidence_scope,
         "effective_n":n,
         "phase_n":pn,
