@@ -27,22 +27,20 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Shared V13 critical preflight
-        run: |
-          python -m py_compile v11/*.py tests/*.py
-          python -m v11.v13_preflight
-
       - name: Check whether a new phase snapshot is actually needed
         id: gate
         run: |
+          python -m py_compile v11/v13_research_gate.py
           python -m v11.v13_research_gate > /tmp/v13_research_gate.json
           cat /tmp/v13_research_gate.json
-          echo "run_needed=$(python - <<'PY'
-          import json
-          d=json.load(open('/tmp/v13_research_gate.json'))
-          print('true' if d.get('run_needed') else 'false')
-          PY
-          )" >> "$GITHUB_OUTPUT"
+          run_needed=$(python -c "import json; d=json.load(open('/tmp/v13_research_gate.json')); print('true' if d.get('run_needed') else 'false')")
+          echo "run_needed=$run_needed" >> "$GITHUB_OUTPUT"
+
+      - name: Shared V13 critical preflight
+        if: steps.gate.outputs.run_needed == 'true'
+        run: |
+          python -m py_compile v11/*.py tests/*.py
+          python -m v11.v13_preflight
 
       - name: Build contract-strict predictive artifacts
         if: steps.gate.outputs.run_needed == 'true'
