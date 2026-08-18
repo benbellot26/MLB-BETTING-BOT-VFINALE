@@ -14,6 +14,7 @@ STRICT_GLOBAL_N = 600
 STRICT_MARKET_N = 400
 STRICT_PHASE_MARKET_N = 300
 EXACT_BACKFILL = Path("data/v13_historical_backfill.jsonl")
+LEGACY_2026_REPORT = Path("data/mlb_backtest_2026_report.json")
 
 
 def _dt(value: Any):
@@ -28,12 +29,11 @@ def _norm(value: Any) -> str:
 
 
 def _load_exact_backfill(path: Path = EXACT_BACKFILL) -> list[dict[str,Any]]:
-    """Load exact replays for diagnostics only.
+    """Load exact archived pregame replays.
 
-    V13.5.2 deliberately excludes these rows from official calibration unless
-    they were produced by the exact current predictive generation and persisted
-    through the native journal path. Historical replay files remain useful for
-    transfer diagnostics, but never inflate official calibration evidence.
+    These rows are not trusted merely because they came from a historical run.
+    Only the separately persisted pre-candidate probability field may become
+    calibration evidence after contract, point-in-time and settlement checks.
     """
     if not path.exists():
         return []
@@ -87,7 +87,7 @@ def _native_contract_ok(row: dict[str,Any]) -> bool:
 
 
 def eligible_probability_rows(rows: list[dict[str,Any]]) -> list[dict[str,Any]]:
-    """Use only genuine current-generation V13 pregame probability observations."""
+    """Use only genuine current-generation native V13 pregame observations."""
     best: dict[tuple[str,str], tuple[str,dict[str,Any]]] = {}
     for row in rows:
         analyzed = _dt(row.get("analyzed_at"))
@@ -108,9 +108,101 @@ def eligible_probability_rows(rows: list[dict[str,Any]]) -> list[dict[str,Any]]:
         rank = str(row.get("analyzed_at") or "")
         clone = dict(row)
         clone["options"] = canonical
+        clone["calibration_evidence_origin"] = "native-current-generation"
         if key not in best or rank > best[key][0]:
             best[key] = (rank,clone)
     return sorted((x[1] for x in best.values()), key=lambda r: (str(r.get("game_date") or ""), str(r.get("game_pk") or ""), str(r.get("phase") or "")))
+
+
+def eligible_exact_replay_rows(rows: list[dict[str,Any]]) -> list[dict[str,Any]]:
+    """Promote only leakage-safe pre-candidate probabilities from exact replays.
+
+    The current layered replay probability is deliberately discarded. The
+    calibration engine sees p_replay_baseline_raw as p_baseball_raw, computed
+    from the frozen baseline captured before any historical V13 candidate layer.
+    """
+    best: dict[tuple[str,str], tuple[str,dict[str,Any]]] = {}
+    for row in rows:
+        analyzed = _dt(row.get("analyzed_at"))
+        game_time = _dt(row.get("game_date"))
+        if analyzed is None or game_time is None or analyzed >= game_time:
+            continue
+        if row.get("point_in_time") is not True or row.get("features_from_postgame") is True:
+            continue
+        if row.get("home_score") is None or row.get("away_score") is None:
+            continue
+        if not row.get("source_replay") or not _native_contract_ok(row):
+            continue
+        if row.get("validation_baseline_model_generation") != contract.MODEL_GENERATION_FINGERPRINT:
+            continue
+        rebuilt=[]
+        for opt in row.get("options") or []:
+            p=opt.get("p_replay_baseline_raw")
+            if opt.get("result") not in {"WIN","LOSS"} or p is None:
+                continue
+            rebuilt.append({
+                "market":opt.get("market"),
+                "name":opt.get("name"),
+                "point":opt.get("point"),
+                "is_canonical_line":bool(opt.get("is_canonical_line")),
+                "result":opt.get("result"),
+                "p_baseball_raw":p,
+                "p_learned":None,
+                "p_structural":None,
+                "calibration_evidence_source":"exact-replay-pre-candidate-baseline",
+            })
+        clone=dict(row)
+        clone["options"] = rebuilt
+        clone["calibration_evidence_origin"] = "exact-replay-pre-candidate-baseline"
+        clone["market_probability_used_as_baseball_feature"] = False
+        canonical=_canonical_options(clone)
+        if not canonical:
+            continue
+        clone["options"] = canonical
+        phase=str(clone.get("phase") or "EARLY").upper()
+        key=(str(clone.get("game_pk") or ""),phase)
+        rank=str(clone.get("analyzed_at") or "")
+        if key not in best or rank > best[key][0]:
+            best[key]=(rank,clone)
+    return sorted((x[1] for x in best.values()), key=lambda r:(str(r.get("game_date") or ""),str(r.get("game_pk") or ""),str(r.get("phase") or "")))
+
+
+def combine_calibration_rows(native_rows: list[dict[str,Any]], replay_rows: list[dict[str,Any]]) -> list[dict[str,Any]]:
+    """Deduplicate game/phase evidence, preferring genuine native observations."""
+    merged: dict[tuple[str,str],dict[str,Any]] = {}
+    for row in replay_rows:
+        key=(str(row.get("game_pk") or ""),str(row.get("phase") or "EARLY").upper())
+        merged[key]=row
+    for row in native_rows:
+        key=(str(row.get("game_pk") or ""),str(row.get("phase") or "EARLY").upper())
+        merged[key]=row
+    return sorted(merged.values(),key=lambda r:(str(r.get("game_date") or ""),str(r.get("game_pk") or ""),str(r.get("phase") or "")))
+
+
+def _legacy_2026_research_summary(path: Path = LEGACY_2026_REPORT) -> dict[str,Any]:
+    """Expose the large 2026 walk-forward dataset as research evidence only."""
+    if not path.exists():
+        return {"status":"ABSENT","role":"research-walk-forward-only","used_for_native_calibration":False}
+    try:
+        report=json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        return {"status":"INVALID","error":type(exc).__name__,"role":"research-walk-forward-only","used_for_native_calibration":False}
+    methodology=report.get("methodology") or {}
+    return {
+        "status":"AVAILABLE",
+        "role":"research-walk-forward-only",
+        "used_for_native_calibration":False,
+        "games":int(report.get("games") or 0),
+        "warm_games":int(report.get("warm_games") or 0),
+        "range":report.get("range"),
+        "walk_forward":bool(methodology.get("walk_forward")),
+        "future_game_stats_used":bool(methodology.get("future_game_stats_used")),
+        "historical_odds_used":bool(methodology.get("historical_odds_used")),
+        "v10_ml":report.get("v10_ml"),
+        "warm_v10_ml":report.get("warm_v10_ml"),
+        "probability_bins":report.get("v10_probability_bins"),
+        "reason_not_native":"The 2026 legacy reconstruction lacks the exact current V13 feature/market snapshot for every game; it remains a broad walk-forward benchmark instead of being mislabeled as current-generation calibration evidence.",
+    }
 
 
 def _strict_required_n(key: str) -> int:
@@ -142,8 +234,10 @@ def enforce_strict_activation(model: dict[str,Any]) -> dict[str,Any]:
 
 def build() -> dict[str,Any]:
     live = journal.load_rows()
-    exact_diagnostic = _load_exact_backfill()
-    rows = eligible_probability_rows(list(live))
+    exact_source = _load_exact_backfill()
+    native_rows = eligible_probability_rows(list(live))
+    replay_rows = eligible_exact_replay_rows(exact_source)
+    rows = combine_calibration_rows(native_rows, replay_rows)
     model = enforce_strict_activation(calibration.build_model(rows))
     model["model_generation"] = contract.MODEL_GENERATION_FINGERPRINT
     model["training_policy"] = {
@@ -151,27 +245,36 @@ def build() -> dict[str,Any]:
         "exact_model_generation_required": contract.MODEL_GENERATION_FINGERPRINT,
         "pregame_required": True,
         "settled_result_required": True,
-        "accepted_probability_fields": ["p_baseball_raw","p_learned"],
+        "accepted_native_probability_fields": ["p_baseball_raw","p_learned"],
+        "accepted_exact_replay_probability_field": "p_replay_baseline_raw",
+        "exact_replay_layered_probability_forbidden": True,
         "p_learned_requires_current_predictive_contract": True,
-        "forbidden_probability_fields_as_baseball_evidence": ["p_effective","p_model","p_market","p_posterior"],
+        "forbidden_probability_fields_as_baseball_evidence": ["p_effective","p_model","p_market","p_posterior","p_predictive_final","p_baseball_calibrated"],
         "canonical_row": "latest pregame row per game_pk and phase",
         "independent_target_policy": "max one canonical side per market/game/phase",
+        "native_row_preferred_over_replay_on_collision": True,
         "alternate_lines_trainable_for_calibration": False,
         "strict_volume_floor_after_internal_holdout": True,
-        "exact_v13_replay_backfill_allowed": False,
-        "exact_replays_diagnostic_only": True,
+        "exact_v13_replay_backfill_allowed": True,
+        "exact_replays_require_pre_candidate_baseline": True,
         "legacy_reconstructed_1801_allowed_as_native_calibration": False,
+        "legacy_2026_dataset_role": "research-walk-forward-only",
         "runtime_global_cross_market_fallback_allowed": False,
         "activation_validation": "expanding walk-forward method selection + untouched chronological final holdout",
     }
-    model["source_rows_total"] = len(live)
+    model["source_rows_total"] = len(live) + len(exact_source)
     model["source_rows_live"] = len(live)
-    model["source_rows_exact_replay_diagnostic"] = len(exact_diagnostic)
-    model["source_rows_exact_replay_used_for_calibration"] = 0
+    model["source_rows_exact_replay_total"] = len(exact_source)
+    model["source_rows_exact_replay_eligible"] = len(replay_rows)
+    model["source_rows_exact_replay_used_for_calibration"] = sum(
+        1 for r in rows if r.get("calibration_evidence_origin") == "exact-replay-pre-candidate-baseline"
+    )
+    model["eligible_native_rows"] = len(native_rows)
     model["eligible_rows"] = len(rows)
     model["eligible_games"] = len({str(r.get("game_pk")) for r in rows})
-    model["exact_replay_games_diagnostic"] = len({str(r.get("game_pk")) for r in exact_diagnostic})
+    model["exact_replay_games"] = len({str(r.get("game_pk")) for r in replay_rows})
     model["rejected_non_current_generation_rows"] = sum(1 for r in live if not contract.row_is_predictively_compatible(r))
+    model["legacy_2026_research"] = _legacy_2026_research_summary()
     return model
 
 
