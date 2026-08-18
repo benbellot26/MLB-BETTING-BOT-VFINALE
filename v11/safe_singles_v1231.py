@@ -155,6 +155,7 @@ def value_gate_with_reference_market(rec):
         "p_push": round(push, 6),
         "p_conservative": round(p_cons, 6),
         "uncertainty": round(_num(rec.get("model_uncertainty"), _config.FALLBACK_MODEL_UNCERTAINTY), 6),
+        "conservative_source": "v13_interval_low" if rec.get("probability_interval_low") is not None else "legacy_sigma",
         "sharp_disagreement": round(sharp_gap, 6) if sharp_gap is not None else None,
     }
 
