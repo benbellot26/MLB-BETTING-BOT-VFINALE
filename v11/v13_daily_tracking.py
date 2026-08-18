@@ -97,12 +97,18 @@ def capture_results(results, analyzed_at=None, target_date=None):
         key_ctx=dict(r); key_ctx.setdefault("analyzed_at",observation_at)
         for o in r.get("options") or []:
             price=_price(o); e=o.get("winamax_eval") or {}; gate=e.get("v11_price_gate") or {}
+            calibrated=o.get("p_baseball_calibrated",o.get("p_effective"))
+            predictive_final=o.get("p_predictive_final",calibrated)
             rows.append({"schema":"v13-market-tracking-v3","event_type":"MODEL_SNAPSHOT","tracking_key":_key(key_ctx,o),
                 "market_key":_market_key(r,o),"observation_at":observation_at,"observation_phase":phase,
                 "observed_at":at,"target_date":target_date or core.TARGET_DATE,"game_pk":r.get("game_pk"),"game_date":game_date,
                 "home":(r.get("ctx") or {}).get("home"),"away":(r.get("ctx") or {}).get("away"),"phase":r.get("phase"),
                 "market":o.get("market"),"pick":o.get("name"),"point":o.get("point"),"canonical":bool(o.get("is_canonical_line")),
-                "p_model":o.get("p_baseball_calibrated",o.get("p_effective")),"p_raw":o.get("p_baseball_raw",o.get("p_model")),
+                "p_model":calibrated,"p_baseball_calibrated":calibrated,"p_raw":o.get("p_baseball_raw",o.get("p_model")),
+                "p_posterior":o.get("p_posterior"),"p_predictive_final":predictive_final,
+                "predictive_final_source":o.get("predictive_final_source"),"predictive_final_status":o.get("predictive_final_status"),
+                "calibration_source_v13":o.get("calibration_source_v13"),
+                "probability_interval_low":o.get("probability_interval_low"),"probability_interval_high":o.get("probability_interval_high"),
                 "p_market":o.get("p_market"),"model_market_gap":o.get("model_market_gap"),"model_uncertainty":o.get("model_uncertainty"),
                 "p_win":o.get("p_win"),"p_push":o.get("p_push"),"winamax_price":price,"nominal_ev":_nominal_ev(o,price),
                 "conservative_ev":gate.get("ev_at_price"),"required_price":gate.get("required_price"),
@@ -247,7 +253,7 @@ def write_report():
     report={"schema":"v13-market-tracking-report-v3","generated_at":datetime.now(timezone.utc).isoformat(),
             "tracked_observations":len(xs),"settled_observations":len(settled),"tracked_options":len(xs),"settled_options":len(settled),
             "by_market":by_market,"by_nominal_ev_band":by_edge,
-            "methodology":{"observation_identity":"immutable game/market/side/line + phase + analysis as-of; later phases never overwrite earlier forecasts","unit_pnl":"descriptive flat 1u; complementary displayed sides are not a betting portfolio","closing":"last valid eligible pregame observation inside configured closing window; missing API fields never erase a valid close","missing_price":"never imputed; absent Winamax RL/TOTAL prices remain unpriced and are still tracked against sharp probability"}}
+            "methodology":{"observation_identity":"immutable game/market/side/line + phase + analysis as-of; later phases never overwrite earlier forecasts","unit_pnl":"descriptive flat 1u; complementary displayed sides are not a betting portfolio","closing":"last valid eligible pregame observation inside configured closing window; missing API fields never erase a valid close","missing_price":"never imputed; absent Winamax RL/TOTAL prices remain unpriced and are still tracked against sharp probability","probability_products":"raw baseball, calibrated baseball, market-aware posterior shadow, and primary predictive probability are persisted separately"}}
     REPORT_FILE.parent.mkdir(parents=True,exist_ok=True); REPORT_FILE.write_text(json.dumps(report,indent=2,sort_keys=True),encoding="utf-8"); return report
 
 

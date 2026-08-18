@@ -3,7 +3,7 @@ from __future__ import annotations
 from . import core
 from . import discord_v123 as base
 
-VERSION_LABEL = "V13.5"
+VERSION_LABEL = "V13.5 ANALYTICS"
 base.VERSION_LABEL = VERSION_LABEL
 
 
@@ -23,7 +23,6 @@ def _line(r):
     e = r.get("winamax_eval") or {}
     g = e.get("v11_price_gate") or {}
     dq = r.get("data_quality") or {}
-    state = "✅ RECOMMANDÉ" if e.get("official_selected") else "🟢 QUALIFIÉ" if g.get("ok") and dq.get("eligible") else "⚪ NON RETENU"
     gap = r.get("model_market_gap")
     gap_txt = "—" if gap is None else f"{100*core.num(gap):+.1f} pp"
     lo, hi = r.get("probability_interval_low"), r.get("probability_interval_high")
@@ -33,21 +32,26 @@ def _line(r):
     ref_price = g.get("price")
     winamax_price = g.get("winamax_price") or e.get("price")
     cal_source = str(r.get("calibration_source_v13") or "identity")
-    prob_label = "Baseball estimé" if cal_source == "identity" else "Baseball calibré"
+    cal_status = "COLLECTING" if cal_source == "identity" else "ACTIVE"
     phase_n = int(core.num(r.get("calibration_phase_n_v13")))
     market_n = int(core.num(r.get("calibration_market_n_v13")))
     unc = r.get("probability_uncertainty_v13") or {}
     market_disp = unc.get("market_disagreement_sigma")
     market_disp_txt = "—" if market_disp is None else f"{100*core.num(market_disp):.1f} pp"
+    primary = r.get("p_predictive_final")
+    if primary is None:
+        primary = r.get("p_baseball_calibrated")
+    posterior = r.get("p_posterior")
+    posterior_txt = "—" if posterior is None else core.pct(posterior)
     return (
-        f"{state} • **{_label(r)}**\n"
-        f"{prob_label} **{core.pct(r.get('p_baseball_calibrated'))}** • brut **{core.pct(r.get('p_baseball_raw'))}**"
-        f" • intervalle modèle 90% **{interval}**{push_txt}\n"
-        f"Sharp **{core.pct(r.get('p_market'))}** • gap modèle/marché **{gap_txt}** • désaccord books **{market_disp_txt}**\n"
-        f"Calibration **{cal_source}** • n phase **{phase_n}** • n marché **{market_n}**\n"
-        f"Posterior forecast-only **{core.pct(r.get('p_posterior'))}** • DQ modèle **{100*core.num(dq.get('model_input_score')):.0f}/100** • DQ exécution **{100*core.num(dq.get('score')):.0f}/100**\n"
+        f"🎯 **{_label(r)}**\n"
+        f"Probabilité principale **{core.pct(primary)}** • intervalle modèle 90% **{interval}**{push_txt}\n"
+        f"Baseball **{core.pct(r.get('p_baseball_calibrated'))}** • brut **{core.pct(r.get('p_baseball_raw'))}** • "
+        f"Sharp **{core.pct(r.get('p_market'))}** • ensemble candidat **{posterior_txt}**\n"
+        f"Gap baseball/marché **{gap_txt}** • désaccord books **{market_disp_txt}**\n"
+        f"Calibration **{cal_status} / {cal_source}** • n phase **{phase_n}** • n marché **{market_n}**\n"
+        f"DQ modèle **{100*core.num(dq.get('model_input_score')):.0f}/100** • DQ globale **{100*core.num(dq.get('score')):.0f}/100**\n"
         f"Cote réf. **{_price_text(ref_price)}** • Winamax **{_price_text(winamax_price)}**"
-        +(f" • EV prudent **{100*core.num(g.get('ev_at_price')):+.1f}%**" if g.get("ev_at_price") is not None else "")
     )
 
 
@@ -75,6 +79,7 @@ def send_game(result, portfolio):
     brief = (
         f"Phase **{result.get('phase')}** • modèle **{model.get('version') or 'structural-only'}**\n"
         f"Projection **{ctx['away']} {result['amu']:.1f} – {result['hmu']:.1f} {ctx['home']}**\n"
+        f"Produit principal **probabilité prédictive** • posterior marché **shadow uniquement**\n"
         f"Sharp ML refs **{int(core.num(con.get('n')))}** • dispersion **{core.num(model.get('dispersion')):.2f}** • "
         f"env σ **{core.num(model.get('environment_sigma')):.3f}** • bootstrap **{bootstrap.get('status') or '—'}**"
     )
@@ -99,11 +104,19 @@ def send_game(result, portfolio):
     return core.send_embed(f"⚾ MLB {VERSION_LABEL} • {ctx['away']} @ {ctx['home']}", fields, 5763719)
 
 
+def send_top(results):
+    """Predictive analytics mode deliberately emits no ranking/recommendation card."""
+    return True
+
+
+def send_plan(chosen, combo, portfolio, pool):
+    """Predictive analytics mode deliberately emits no betting-plan card."""
+    return True
+
+
 base._line = _line
 base._label = _label
 base._price_text = _price_text
 
-send_top = base.send_top
-send_plan = base.send_plan
 send_health = base.send_health
 send_research_monitor = base.send_research_monitor

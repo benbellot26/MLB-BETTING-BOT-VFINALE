@@ -2,10 +2,6 @@ name: V13 Historical Point-in-Time Backfill
 
 on:
   workflow_dispatch:
-  schedule:
-    # 10:30 UTC during the MLB season: late enough for the previous US slate
-    # to be final while keeping the transfer artifacts fresh before daytime runs.
-    - cron: '30 10 * 3-11 *'
 
 permissions:
   contents: write
@@ -29,7 +25,7 @@ jobs:
           python-version: '3.12'
 
       - name: Compile V13 backfill
-        run: python -m py_compile v11/v13_historical_backfill.py v11/v13_run_mean_prior.py v11/v13_distribution_prior.py v11/v13_entry.py
+        run: python -m py_compile v11/v13_historical_backfill.py v11/v13_historical_validation.py v11/v13_run_mean_prior.py v11/v13_distribution_prior.py v11/v13_train.py v11/v13_entry.py
 
       - name: Download durable pregame source replays
         env:
@@ -52,6 +48,12 @@ jobs:
 
       - name: Rebuild current-generation FINAL distribution transfer
         run: python -m v11.v13_distribution_prior
+
+      - name: Rebuild baseball calibration from native + exact replay evidence
+        run: python -m v11.v13_train
+
+      - name: Build blocked historical predictive validation
+        run: python -m v11.v13_historical_validation
 
       - name: Validate leakage boundary and historical transfer states
         run: |
@@ -100,9 +102,19 @@ jobs:
               assert dist.get('exact_transfer_status') == 'PASS_FINAL_ONLY', dist
               assert float((dist.get('current_generation_transfer') or {}).get('nll_gain') or 0) > 0, dist
 
+          calibration=json.loads(Path('data/v13_baseball_calibration.json').read_text())
+          assert calibration['model_generation'] == contract.MODEL_GENERATION_FINGERPRINT, calibration
+          assert calibration.get('training_policy',{}).get('exact_v13_replay_backfill_allowed') is True, calibration
+
+          hist=json.loads(Path('data/v13_historical_validation.json').read_text())
+          assert hist['model_generation'] == contract.MODEL_GENERATION_FINGERPRINT, hist
+          assert hist.get('source') == 'exact archived pregame source replays', hist
+
           print('V13 backfill rows=',len(rows),'games=',report['canonical_games'],
                 'run_mean=',prior.get('exact_final_games'),'/',prior.get('exact_transfer_required_games'),prior.get('exact_transfer_status'),prior.get('active'),
-                'distribution=',dist.get('exact_final_games'),'/',dist.get('exact_transfer_required_games'),dist.get('exact_transfer_status'),dist.get('active'))
+                'distribution=',dist.get('exact_final_games'),'/',dist.get('exact_transfer_required_games'),dist.get('exact_transfer_status'),dist.get('active'),
+                'calibration_games=',calibration.get('eligible_games'),
+                'historical_validation=',hist.get('canonical_games'))
           PY
 
       - name: Upload backfill artifact
@@ -114,15 +126,17 @@ jobs:
             data/v13_historical_backfill_report.json
             data/v13_run_mean_prior.json
             data/v13_distribution_prior.json
+            data/v13_baseball_calibration.json
+            data/v13_historical_validation.json
           retention-days: 90
 
-      - name: Persist backfill evidence and rebuilt transfer artifacts
+      - name: Persist backfill evidence and rebuilt predictive artifacts
         run: |
           git config user.name 'MLB Betting Bot V13.5.2'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add data/v13_historical_backfill.jsonl data/v13_historical_backfill_report.json data/v13_run_mean_prior.json data/v13_distribution_prior.json
+          git add -f data/v13_historical_backfill.jsonl data/v13_historical_backfill_report.json data/v13_run_mean_prior.json data/v13_distribution_prior.json data/v13_baseball_calibration.json data/v13_historical_validation.json
           if ! git diff --cached --quiet; then
-            git commit -m 'data: persist V13.5.2 independent historical transfer evidence [skip ci]'
+            git commit -m 'data: persist V13.5.2 historical predictive evidence [skip ci]'
             git pull --rebase origin main
             git push origin HEAD:main
           fi
