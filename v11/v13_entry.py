@@ -5,22 +5,25 @@ from .v13_runtime import install
 
 install()
 
-from . import config, runner, discord_v13, core, selector, storage, journal, v13_daily_tracking
+from . import config, runner, discord_v13, core, selector, storage, journal, v13_daily_tracking, v13_analytics_only
 from . import calibration_baseball_v13 as calibration_v13
 from . import probability_contract_v13 as probability_contract
 runner.discord = discord_v13
 
-# Observation-only hooks. They never alter probabilities, gates, stakes or picks.
+# V13 remains a predictive-analytics product. The legacy selector is still run
+# to compute useful diagnostics (reference price, conservative EV, DQ, score),
+# but every actionable betting output is scrubbed before runner/storage sees it.
 _original_allocate = selector.allocate
 _original_update_clv = storage.update_clv
 _original_settle_rows = journal.settle_rows
 _original_run = runner.run
+_original_send_persisted = runner.send_persisted
 
 
 def _tracked_allocate(results, *args, **kwargs):
     out = _original_allocate(results, *args, **kwargs)
     v13_daily_tracking.capture_results(results, target_date=core.TARGET_DATE)
-    return out
+    return v13_analytics_only.suppress_allocation(results, out)
 
 
 def _tracked_update_clv(results, analyzed_at=None):
@@ -51,10 +54,22 @@ def _run_v135(*args, **kwargs):
     return _original_run(*args, **kwargs)
 
 
+def _send_persisted_v135():
+    # Discord publication is fail-closed if a stale/future code path manages to
+    # re-introduce actionable betting state into the analytics payload.
+    v13_analytics_only.assert_payload_file(runner.DISCORD_PAYLOAD)
+    return _original_send_persisted()
+
+
 selector.allocate = _tracked_allocate
+# Redundant storage guard: even if a future runner bypasses the empty chosen
+# list returned above, V13 cannot create PROPOSED betting ledger events.
+storage.record_selected_bets = v13_analytics_only.disabled_record_selected_bets
+runner.storage.record_selected_bets = v13_analytics_only.disabled_record_selected_bets
 storage.update_clv = _tracked_update_clv
 journal.settle_rows = _tracked_settle_rows
 runner.run = _run_v135
+runner.send_persisted = _send_persisted_v135
 
 
 def _summary_v13(report):
@@ -121,7 +136,9 @@ def self_test_v13():
     assert v13_daily_tracking._band(.004) == "0-1%" and v13_daily_tracking._band(.12) == ">=10%"
     rec={"p_effective":.60,"probability_interval_low":.52,"model_uncertainty":.01}
     assert abs(selector.conservative_probability(rec)-.52)<1e-12
-    print("SELF-TEST V13.5.2 GENERATION-FINGERPRINT + NATIVE CALIBRATION + INDEPENDENT TRANSFER GATES OK")
+    assert storage.record_selected_bets([], {}, "test", "test", core.TARGET_DATE) == 0
+    v13_analytics_only.assert_payload({"results": [], "chosen": [], "combo": {}})
+    print("SELF-TEST V13.5.2 GENERATION-FINGERPRINT + NATIVE CALIBRATION + ANALYTICS-ONLY GATES OK")
 
 
 runner._summary = _summary_v13
