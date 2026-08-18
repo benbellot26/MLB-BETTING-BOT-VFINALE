@@ -1,59 +1,96 @@
 {
-  "schema": "v13-run-mean-prior-v1",
+  "activation_rule": "historical chronological validation/test must pass AND >=20 current-generation genuine FINAL V13 transfer games, evaluated from an independent pre-prior mean baseline and its actual baseline dispersion, must pass RMSE/NB-NLL with MAE regression <=0.01",
   "active": false,
-  "historical_candidate_active": true,
-  "phase_scope": "FINAL",
-  "source": "1801-game leakage-safe reconstructed FINAL cohort",
-  "model_generation": "v13.5.2-gen-structural-nb-independent-transfer-v2",
-  "historical_games": 1724,
-  "split": {
-    "train": 1027,
-    "validation": 341,
-    "test": 356
-  },
-  "exact_games": 0,
-  "exact_final_games": 0,
+  "exact_final_games": 12,
+  "exact_games": 12,
   "exact_phase_counts": {
-    "FINAL": 0
-  },
-  "selected_variant": "side_bias_shared_slope",
-  "model": {
-    "home_bias": 1.7461393951673727,
-    "away_bias": 1.7889096574516503,
-    "slope_delta": -0.3978879088468419,
-    "ridge": 10.0,
-    "formula": "mu + side_bias + slope_delta*mu",
-    "max_adjustment": 0.75
-  },
-  "validation": {
-    "mae_gain": 0.0191348104880662,
-    "rmse_gain": 0.0024069232669621243,
-    "nll_gain": 0.0017597003304095082
-  },
-  "test": {
-    "mae_gain": 0.004545626855521068,
-    "rmse_gain": 0.00561564300469497,
-    "nll_gain": 0.0024821206487626313
+    "FINAL": 12
   },
   "exact_transfer": {
-    "games": 0,
-    "baseline": {},
-    "candidate": {},
-    "mae_gain": null,
-    "rmse_gain": null,
-    "nll_gain": null
+    "baseline": {
+      "mae": 2.6339376852283634,
+      "nb_nll": 2.5781257640331123,
+      "rmse": 3.2984638007463327,
+      "team_observations": 24
+    },
+    "candidate": {
+      "mae": 2.593659974081992,
+      "nb_nll": 2.5695368256122904,
+      "rmse": 3.2813423747354395,
+      "team_observations": 24
+    },
+    "games": 12,
+    "mae_gain": 0.04027771114637124,
+    "nll_gain": 0.008588938420821979,
+    "rmse_gain": 0.01712142601089317
   },
-  "exact_transfer_status": "COLLECTING_FINAL_ONLY",
   "exact_transfer_required_games": 20,
-  "activation_rule": "historical chronological validation/test must pass AND >=20 current-generation genuine FINAL V13 transfer games, evaluated from an independent pre-prior baseline, must pass RMSE/NB-NLL with MAE regression <=0.01",
-  "transfer_caveat": "The historical model is only a candidate until current-generation native FINAL transfer is independently validated from a baseline captured before the candidate layer.",
+  "exact_transfer_status": "COLLECTING_FINAL_ONLY",
+  "historical_candidate_active": true,
+  "historical_games": 1724,
+  "model": {
+    "away_bias": 1.7889096574516503,
+    "formula": "mu + side_bias + slope_delta*mu",
+    "home_bias": 1.7461393951673727,
+    "max_adjustment": 0.75,
+    "ridge": 10.0,
+    "slope_delta": -0.3978879088468419
+  },
+  "model_generation": "v13.5.2-gen-structural-nb-independent-transfer-v2",
+  "phase_scope": "FINAL",
   "safety": {
-    "historical_odds_used": false,
-    "market_probability_used": false,
-    "feature_vector_fabricated": false,
-    "exact_transfer_required_for_activation": true,
+    "applies_only_when_native_residual_and_legacy_run_bootstrap_are_inactive": true,
     "exact_transfer_generation_locked": true,
+    "exact_transfer_required_for_activation": true,
+    "exact_transfer_uses_baseline_dispersion": true,
+    "feature_vector_fabricated": false,
+    "historical_odds_used": false,
     "independent_pre_candidate_baseline_required": true,
-    "applies_only_when_native_residual_and_legacy_run_bootstrap_are_inactive": true
+    "market_probability_used": false
+  },
+  "schema": "v13-run-mean-prior-v1",
+  "selected_variant": "side_bias_shared_slope",
+  "source": "1801-game leakage-safe reconstructed FINAL cohort",
+  "split": {
+    "test": 356,
+    "train": 1027,
+    "validation": 341
+  },
+  "test": {
+    "baseline": {
+      "mae": 2.480167415730337,
+      "nb_nll": 2.4424923683006368,
+      "rmse": 3.1629787628679917,
+      "team_observations": 712
+    },
+    "candidate": {
+      "mae": 2.475621788874816,
+      "nb_nll": 2.440010247651874,
+      "rmse": 3.1573631198632968,
+      "team_observations": 712
+    },
+    "games": 356,
+    "mae_gain": 0.004545626855521068,
+    "nll_gain": 0.0024821206487626313,
+    "rmse_gain": 0.00561564300469497
+  },
+  "transfer_caveat": "The historical model is only a candidate until current-generation native FINAL transfer is independently validated from a baseline captured before the candidate layer.",
+  "validation": {
+    "baseline": {
+      "mae": 2.5562277126099704,
+      "nb_nll": 2.486710408381761,
+      "rmse": 3.3495456403063986,
+      "team_observations": 682
+    },
+    "candidate": {
+      "mae": 2.537092902121904,
+      "nb_nll": 2.4849507080513513,
+      "rmse": 3.3471387170394364,
+      "team_observations": 682
+    },
+    "games": 341,
+    "mae_gain": 0.0191348104880662,
+    "nll_gain": 0.0017597003304095082,
+    "rmse_gain": 0.0024069232669621243
   }
 }

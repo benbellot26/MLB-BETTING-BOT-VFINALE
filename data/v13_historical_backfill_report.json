@@ -1,12 +1,17 @@
 {
-  "canonical_games": 29,
-  "canonical_rows": 49,
+  "calibration_baseline_options": 680,
+  "calibration_candidate_rows": 85,
+  "calibration_rejected_rows": 0,
+  "calibration_rejection_reasons": {},
+  "canonical_games": 54,
+  "canonical_rows": 85,
   "diagnostics": [
     {
       "analyzed": 14,
       "analyzed_at": "2026-08-14T17:43:00.531893+00:00",
       "day": "2026-08-14",
       "games_in_replay": 14,
+      "model_generation": "v13.5.2-gen-structural-nb-independent-transfer-v2",
       "rows": 14,
       "source": "2026-08-14_034cd87a44879326_sources.json.gz",
       "status": "PASS"
@@ -16,6 +21,7 @@
       "analyzed_at": "2026-08-14T15:42:19.890215+00:00",
       "day": "2026-08-14",
       "games_in_replay": 14,
+      "model_generation": "v13.5.2-gen-structural-nb-independent-transfer-v2",
       "rows": 14,
       "source": "2026-08-14_8da5bb64c1c2826b_sources.json.gz",
       "status": "PASS"
@@ -25,6 +31,7 @@
       "analyzed_at": "2026-08-14T16:16:10.923036+00:00",
       "day": "2026-08-14",
       "games_in_replay": 14,
+      "model_generation": "v13.5.2-gen-structural-nb-independent-transfer-v2",
       "rows": 14,
       "source": "2026-08-14_b5127858c1ec9bc0_sources.json.gz",
       "status": "PASS"
@@ -34,6 +41,7 @@
       "analyzed_at": "2026-08-14T12:03:48.417008+00:00",
       "day": "2026-08-14",
       "games_in_replay": 14,
+      "model_generation": "v13.5.2-gen-structural-nb-independent-transfer-v2",
       "rows": 14,
       "source": "2026-08-14_f9411eb9322d93e6_sources.json.gz",
       "status": "PASS"
@@ -43,6 +51,7 @@
       "analyzed_at": "2026-08-15T17:03:15.439491+00:00",
       "day": "2026-08-15",
       "games_in_replay": 15,
+      "model_generation": "v13.5.2-gen-structural-nb-independent-transfer-v2",
       "rows": 15,
       "source": "2026-08-15_540ef4fd9f1941d7_sources.json.gz",
       "status": "PASS"
@@ -52,6 +61,7 @@
       "analyzed_at": "2026-08-15T19:55:23.387067+00:00",
       "day": "2026-08-15",
       "games_in_replay": 15,
+      "model_generation": "v13.5.2-gen-structural-nb-independent-transfer-v2",
       "rows": 12,
       "source": "2026-08-15_718f0d1c1f17574d_sources.json.gz",
       "status": "PASS"
@@ -61,8 +71,39 @@
       "analyzed_at": "2026-08-15T13:40:07.654645+00:00",
       "day": "2026-08-15",
       "games_in_replay": 15,
+      "model_generation": "v13.5.2-gen-structural-nb-independent-transfer-v2",
       "rows": 15,
       "source": "2026-08-15_d87124d4052dec96_sources.json.gz",
+      "status": "PASS"
+    },
+    {
+      "analyzed": 1,
+      "analyzed_at": "2026-08-16T21:34:08.703846+00:00",
+      "day": "2026-08-16",
+      "games_in_replay": 15,
+      "model_generation": "v13.5.2-gen-structural-nb-independent-transfer-v2",
+      "rows": 1,
+      "source": "2026-08-16_24f9968c814c571c_sources.json.gz",
+      "status": "PASS"
+    },
+    {
+      "analyzed": 15,
+      "analyzed_at": "2026-08-16T15:58:08.337138+00:00",
+      "day": "2026-08-16",
+      "games_in_replay": 15,
+      "model_generation": "v13.5.2-gen-structural-nb-independent-transfer-v2",
+      "rows": 15,
+      "source": "2026-08-16_94b442c580a78943_sources.json.gz",
+      "status": "PASS"
+    },
+    {
+      "analyzed": 6,
+      "analyzed_at": "2026-08-16T18:41:39.686083+00:00",
+      "day": "2026-08-16",
+      "games_in_replay": 15,
+      "model_generation": "v13.5.2-gen-structural-nb-independent-transfer-v2",
+      "rows": 6,
+      "source": "2026-08-16_aa3d14f053142b86_sources.json.gz",
       "status": "PASS"
     },
     {
@@ -70,26 +111,40 @@
       "analyzed_at": "2026-08-16T14:23:28.295818+00:00",
       "day": "2026-08-16",
       "games_in_replay": 15,
-      "rows": 0,
+      "model_generation": "v13.5.2-gen-structural-nb-independent-transfer-v2",
+      "rows": 15,
       "source": "2026-08-16_fea78e0df09d90bf_sources.json.gz",
+      "status": "PASS"
+    },
+    {
+      "analyzed": 10,
+      "analyzed_at": "2026-08-17T21:01:45.800474+00:00",
+      "day": "2026-08-17",
+      "games_in_replay": 11,
+      "model_generation": "v13.5.2-gen-structural-nb-independent-transfer-v2",
+      "rows": 10,
+      "source": "2026-08-17_86592f13b9359d06_sources.json.gz",
       "status": "PASS"
     }
   ],
-  "evidence_boundary": "All features come exclusively from recorded pregame HTTP replays. Final MLB scores are fetched after replay and used only as labels.",
-  "generated_at": "2026-08-16T15:04:21.660202+00:00",
+  "evidence_boundary": "All features come exclusively from recorded pregame HTTP replays. Final MLB scores are fetched after replay and used only as labels. Official historical calibration evidence requires a complete pre-candidate baseline tagged with the exact current model generation and uses only p_replay_baseline_raw; rows missing that provenance remain diagnostic but are excluded from calibration. Sportsbook probabilities remain excluded from baseball calibration.",
+  "generated_at": "2026-08-18T13:14:28.616402+00:00",
+  "model_generation": "v13.5.2-gen-structural-nb-independent-transfer-v2",
   "phase_counts": {
-    "EARLY": 27,
-    "FINAL": 5,
-    "LATE": 17
+    "EARLY": 32,
+    "FINAL": 12,
+    "LATE": 41
   },
-  "raw_rows": 98,
+  "raw_rows": 145,
   "replay_fail": 0,
-  "replay_pass": 8,
-  "schema": "v13-historical-backfill-report-v1",
+  "replay_pass": 12,
+  "schema": "v13-historical-backfill-report-v4",
   "settled_options_by_market": {
-    "ML": 98,
-    "RUNLINE": 138,
-    "TOTAL": 98
+    "ML": 170,
+    "RUNLINE": 340,
+    "TOTAL": 170
   },
-  "source_replays": 8
+  "source_replays": 12,
+  "validation_baseline_rows": 85,
+  "validation_generation_rows": 85
 }
