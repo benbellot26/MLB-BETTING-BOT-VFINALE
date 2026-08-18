@@ -34,8 +34,8 @@ jobs:
           python -m unittest tests.test_v123 tests.test_v1231_runlines tests.test_safe_singles_v1231
           python -m unittest tests.test_v1233_audit_hardening tests.test_shadow_v115 tests.test_calibration_v1232
           python -m unittest tests.test_predictive_v124 tests.test_v124_statcast_provider
-          python -m unittest tests.test_v13_probability_contract tests.test_v13_historical_migration tests.test_v13_probability_invariants
-          python -m unittest tests.test_v13_rich_run_residual tests.test_v13_rich_native_train tests.test_v135_professional_audit
+          python -m unittest tests.test_v13_rich_run_residual tests.test_v13_rich_native_train
+          python -m v11.v13_preflight
           python -m v11.v13_entry --self-test
           python -m v11.v123_bootstrap --dry-run >/tmp/v12_3_historical_bootstrap.json
           python -m v11.v123_train --dry-run >/tmp/v12_3_candidate.json
@@ -70,8 +70,10 @@ jobs:
           }, indent=2, sort_keys=True))
           PY
 
-      - name: Build V13.5 baseball-only calibration artifact
-        run: python -m v11.v13_train
+      - name: Build V13.5 predictive artifacts
+        run: |
+          python -m v11.v13_train
+          python -m v11.v13_posterior_policy
 
       - name: Persist pre-run predictive artifacts
         run: |
@@ -79,6 +81,7 @@ jobs:
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           [ -f data/v12_3_historical_bootstrap_model.json ] && git add data/v12_3_historical_bootstrap_model.json
           [ -f data/v13_baseball_calibration.json ] && git add -f data/v13_baseball_calibration.json
+          [ -f data/v13_posterior_policy.json ] && git add -f data/v13_posterior_policy.json
           if ! git diff --cached --quiet; then
             git commit -m 'data: persist V13.5 predictive artifacts [skip ci]'
             git pull --rebase --autostash origin "$GITHUB_REF_NAME"
@@ -111,6 +114,7 @@ jobs:
           import json
           from pathlib import Path
           from v11.professional_probability_checks_v13 import check_result
+          from v11.probability_contract_v13 import MODEL_GENERATION_FINGERPRINT
           for name in ('data/v11_3_live.jsonl','data/v11_bet_ledger.jsonl'):
               p=Path(name)
               if p.exists():
@@ -127,6 +131,8 @@ jobs:
           results=payload.get('results') or []
           bad=[]
           for result in results:
+              if result.get('model_generation') != MODEL_GENERATION_FINGERPRINT:
+                  bad.append({'game_pk':result.get('game_pk'),'reason':'model generation mismatch'})
               c=check_result(result)
               if not c['passes']: bad.append(c)
               chain=result.get('v13_shadow_chain') or {}
@@ -135,6 +141,11 @@ jobs:
                   bad.append({'game_pk':result.get('game_pk'),'reason':'rich shadow affected probability'})
               if chain.get('affects_probability') is not False:
                   bad.append({'game_pk':result.get('game_pk'),'reason':'shadow chain affected probability'})
+              for option in result.get('options') or []:
+                  if option.get('posterior_allowed_for_edge') is not False:
+                      bad.append({'game_pk':result.get('game_pk'),'reason':'posterior entered edge selection'})
+                  if option.get('p_predictive_final') != option.get('p_baseball_calibrated'):
+                      bad.append({'game_pk':result.get('game_pk'),'reason':'primary probability changed before promotion'})
           if bad:
               raise SystemExit(f'V13.5 probability invariant failure: {bad[:3]}')
           PY
@@ -185,6 +196,7 @@ jobs:
           python -m v11.v123_train
           python -m v11.v123_backtest
           python -m v11.v13_train
+          python -m v11.v13_posterior_policy
           python -m v11.v13_rich_native_train
 
       - name: Validate research artifacts
@@ -192,7 +204,7 @@ jobs:
           python - <<'PY'
           import json
           from pathlib import Path
-          for name in ('data/v12_3_historical_bootstrap_model.json','data/v11_candidate_model.json','data/v11_point_in_time_backtest.json','data/v13_baseball_calibration.json','data/v13_rich_native_candidate.json'):
+          for name in ('data/v12_3_historical_bootstrap_model.json','data/v11_candidate_model.json','data/v11_point_in_time_backtest.json','data/v13_baseball_calibration.json','data/v13_posterior_policy.json','data/v13_rich_native_candidate.json'):
               p=Path(name)
               if p.exists(): json.loads(p.read_text(encoding='utf-8'))
           native=Path('data/v13_rich_native_candidate.json')
@@ -200,6 +212,11 @@ jobs:
               d=json.loads(native.read_text(encoding='utf-8'))
               if d.get('active_for_production') and int(d.get('native_games') or 0) < 300:
                   raise SystemExit('rich challenger cannot promote below native volume floor')
+          posterior=Path('data/v13_posterior_policy.json')
+          if posterior.exists():
+              d=json.loads(posterior.read_text(encoding='utf-8'))
+              if d.get('primary_probability_affected') is not False:
+                  raise SystemExit('posterior policy must remain shadow-only')
           PY
 
       - name: Prepare market archive
@@ -241,6 +258,7 @@ jobs:
           [ -f data/v11_candidate_model.json ] && git add data/v11_candidate_model.json
           [ -f data/v11_point_in_time_backtest.json ] && git add data/v11_point_in_time_backtest.json
           [ -f data/v13_baseball_calibration.json ] && git add -f data/v13_baseball_calibration.json
+          [ -f data/v13_posterior_policy.json ] && git add -f data/v13_posterior_policy.json
           [ -f data/v13_rich_native_candidate.json ] && git add -f data/v13_rich_native_candidate.json
           if ! git diff --cached --quiet; then
             git commit -m 'data: update V13.5 research evidence [skip ci]'
