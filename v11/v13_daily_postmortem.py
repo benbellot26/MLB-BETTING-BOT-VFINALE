@@ -10,6 +10,9 @@ from . import core, v13_daily_tracking as tracking, v13_tracking_sync
 
 OUT = Path(os.getenv("V13_DAILY_POSTMORTEM_FILE", "data/v13_daily_postmortem.json"))
 PARIS = ZoneInfo("Europe/Paris")
+PROMOTION_MIN_N = 300
+PROMOTION_MIN_BRIER_GAIN = .001
+PROMOTION_MIN_LOGLOSS_GAIN = .002
 
 
 def _num(x, d=None):
@@ -27,6 +30,13 @@ def _logloss(p,y):
 def _result_y(s):
     r=s.get("settled_result")
     return 1 if r=="WIN" else 0 if r=="LOSS" else None
+
+
+def _prob(row, field):
+    value=row.get(field)
+    if value is None and field=="p_baseball_calibrated": value=row.get("p_model")
+    if value is None and field=="p_predictive_final": value=row.get("p_baseball_calibrated",row.get("p_model"))
+    return _num(value)
 
 
 def _independent_key(s):
@@ -72,37 +82,96 @@ def _calibration_bins(rows, field):
     bins=[(0,.45),(.45,.50),(.50,.55),(.55,.60),(.60,.65),(.65,.70),(.70,1.001)]
     out=[]
     for lo,hi in bins:
-        xs=[r for r in rows if _num(r.get(field)) is not None and lo<=_num(r.get(field))<hi]
+        xs=[r for r in rows if _prob(r,field) is not None and lo<=_prob(r,field)<hi]
         if not xs: continue
-        out.append({"lo":lo,"hi":hi,"n":len(xs),"mean_p":round(sum(_num(x[field]) for x in xs)/len(xs),4),
+        out.append({"lo":lo,"hi":hi,"n":len(xs),"mean_p":round(sum(_prob(x,field) for x in xs)/len(xs),4),
                     "win_rate":round(sum(_result_y(x) for x in xs)/len(xs),4)})
     return out
 
 
+def _ece(rows, field):
+    bins=[]
+    for i in range(10):
+        lo=i/10; hi=(i+1)/10 if i<9 else 1.001
+        xs=[r for r in rows if _prob(r,field) is not None and lo<=_prob(r,field)<hi]
+        if xs: bins.append(xs)
+    n=sum(len(xs) for xs in bins)
+    if not n:return None
+    total=0.0
+    for xs in bins:
+        mean_p=sum(_prob(x,field) for x in xs)/len(xs)
+        win_rate=sum(_result_y(x) for x in xs)/len(xs)
+        total+=(len(xs)/n)*abs(mean_p-win_rate)
+    return round(total,6)
+
+
+def _scores(rows, field):
+    xs=[x for x in rows if _prob(x,field) is not None and _result_y(x) is not None]
+    if not xs:return {"n":0,"brier":None,"logloss":None,"ece":None,"mean_p":None,"hit_rate":None}
+    b=sum((_prob(x,field)-_result_y(x))**2 for x in xs)/len(xs)
+    ll=sum(_logloss(_prob(x,field),_result_y(x)) for x in xs)/len(xs)
+    return {"n":len(xs),"brier":round(b,6),"logloss":round(ll,6),"ece":_ece(xs,field),
+            "mean_p":round(sum(_prob(x,field) for x in xs)/len(xs),6),
+            "hit_rate":round(sum(_result_y(x) for x in xs)/len(xs),6)}
+
+
+def _paired_improvement(rows, baseline_field, candidate_field):
+    paired=[x for x in rows if _prob(x,baseline_field) is not None and _prob(x,candidate_field) is not None and _result_y(x) is not None]
+    if not paired:return {"n":0,"brier_improvement":None,"logloss_improvement":None}
+    base=_scores(paired,baseline_field); candidate=_scores(paired,candidate_field)
+    return {"n":len(paired),
+            "brier_improvement":round(base["brier"]-candidate["brier"],6),
+            "logloss_improvement":round(base["logloss"]-candidate["logloss"],6)}
+
+
+def _promotion_readiness(comparison):
+    n=int(comparison.get("n") or 0)
+    bg=_num(comparison.get("brier_improvement")); lg=_num(comparison.get("logloss_improvement"))
+    if n<PROMOTION_MIN_N:
+        return {"status":"COLLECTING","n":n,"required_n":PROMOTION_MIN_N,"eligible":False}
+    passed=(bg is not None and lg is not None and bg>=PROMOTION_MIN_BRIER_GAIN and lg>=PROMOTION_MIN_LOGLOSS_GAIN)
+    return {"status":"PROMOTION_CANDIDATE" if passed else "KEEP_BASEBALL_PRIMARY","n":n,"required_n":PROMOTION_MIN_N,
+            "eligible":bool(passed),"required_brier_gain":PROMOTION_MIN_BRIER_GAIN,"required_logloss_gain":PROMOTION_MIN_LOGLOSS_GAIN}
+
+
 def _metrics_from_independent(independent, all_rows):
-    model=[x for x in independent if _num(x.get("p_model")) is not None]
-    sharp=[x for x in independent if _num(x.get("p_market")) is not None]
-    def scores(xs,field):
-        if not xs:return {"n":0,"brier":None,"logloss":None}
-        b=sum((_num(x[field])-_result_y(x))**2 for x in xs)/len(xs)
-        ll=sum(_logloss(_num(x[field]),_result_y(x)) for x in xs)/len(xs)
-        return {"n":len(xs),"brier":round(b,6),"logloss":round(ll,6)}
+    raw=_scores(independent,"p_raw")
+    baseball=_scores(independent,"p_baseball_calibrated")
+    posterior=_scores(independent,"p_posterior")
+    predictive=_scores(independent,"p_predictive_final")
+    sharp=_scores(independent,"p_market")
+    posterior_cmp=_paired_improvement(independent,"p_baseball_calibrated","p_posterior")
+    sharp_cmp=_paired_improvement(independent,"p_baseball_calibrated","p_market")
+    predictive_cmp=_paired_improvement(independent,"p_baseball_calibrated","p_predictive_final")
     priced=[x for x in all_rows if _num(x.get("winamax_price")) and x.get("flat_1u_pnl") is not None]
     selected=[x for x in priced if x.get("official_selected")]
     rejected=[x for x in priced if not x.get("official_selected")]
-    close=[x for x in independent if _num(x.get("close_sharp_fair")) is not None and _num(x.get("p_model")) is not None]
-    clv=[_num(x.get("close_sharp_fair"))-_num(x.get("p_model")) for x in close]
+    close=[x for x in independent if _num(x.get("close_sharp_fair")) is not None and _prob(x,"p_predictive_final") is not None]
+    clv=[_num(x.get("close_sharp_fair"))-_prob(x,"p_predictive_final") for x in close]
     pos_rejected=[x for x in rejected if (_num(x.get("nominal_ev"),-999) or -999)>0]
     return {
         "independent_targets":len(independent),
-        "model":scores(model,"p_model"),"sharp":scores(sharp,"p_market"),
-        "calibration_model":_calibration_bins(model,"p_model"),
+        "model":baseball,
+        "raw":raw,
+        "baseball":baseball,
+        "posterior":posterior,
+        "predictive_final":predictive,
+        "sharp":sharp,
+        "comparisons":{
+            "posterior_vs_baseball":posterior_cmp,
+            "sharp_vs_baseball":sharp_cmp,
+            "predictive_final_vs_baseball":predictive_cmp,
+        },
+        "posterior_promotion":_promotion_readiness(posterior_cmp),
+        "calibration_model":_calibration_bins(independent,"p_baseball_calibrated"),
+        "calibration_predictive_final":_calibration_bins(independent,"p_predictive_final"),
         "selected":{"n":len(selected),"wins":sum(x.get("settled_result")=="WIN" for x in selected),
                     "losses":sum(x.get("settled_result")=="LOSS" for x in selected),
                     "pushes":sum(x.get("settled_result")=="PUSH" for x in selected),
                     "pnl_1u":round(sum(_num(x.get("flat_1u_pnl"),0) or 0 for x in selected),4)},
         "rejected_priced":len(rejected),"positive_ev_rejected":len(pos_rejected),
         "positive_ev_rejected_wins":sum(x.get("settled_result")=="WIN" for x in pos_rejected),
+        "mean_predictive_minus_close_sharp":round(-sum(clv)/len(clv),6) if clv else None,
         "mean_model_minus_close_sharp":round(-sum(clv)/len(clv),6) if clv else None,
         "closing_sharp_n":len(clv),
     }
@@ -129,43 +198,52 @@ def build(day=None):
             "settled_options":len(states),"priced_options":len(priced),
             "official_selected":len(selected),"official_pnl_1u":round(sum(_num(s.get("flat_1u_pnl"),0) or 0 for s in selected),4),
             "markets":by_market,
-            "methodology":{"probability_scoring":"latest deterministic independent side per game/line; EARLY/LATE/FINAL scored separately and repeated same-phase runs do not inflate n",
+            "methodology":{"probability_scoring":"latest deterministic independent side per game/line; raw, calibrated baseball, posterior shadow, primary predictive and sharp are scored on settled outcomes",
+                           "posterior_promotion":f"shadow only until paired n>={PROMOTION_MIN_N}, Brier gain>={PROMOTION_MIN_BRIER_GAIN:.3f} and LogLoss gain>={PROMOTION_MIN_LOGLOSS_GAIN:.3f}; promotion is never automatic from a tiny sample",
                            "portfolio_pnl":"official selections only; rejected options are diagnostic only",
-                           "clv":"model probability minus latest valid pregame sharp fair probability"}}
+                           "clv":"primary predictive probability minus latest valid pregame sharp fair probability"}}
     OUT.parent.mkdir(parents=True,exist_ok=True); OUT.write_text(json.dumps(report,indent=2,sort_keys=True),encoding="utf-8")
     return report
 
 
 def _fmt_metric(m):
     if not m.get("n"):return "n=0"
-    return f"n={m['n']} • Brier {m['brier']:.4f} • LogLoss {m['logloss']:.4f}"
+    ece="—" if m.get("ece") is None else f"{m['ece']:.4f}"
+    return f"n={m['n']} • Brier {m['brier']:.4f} • LogLoss {m['logloss']:.4f} • ECE {ece}"
+
+
+def _fmt_gain(c):
+    if not c.get("n"):return "n=0"
+    return f"n={c['n']} • ΔB {c['brier_improvement']:+.4f} • ΔLL {c['logloss_improvement']:+.4f}"
 
 
 def discord_fields(report):
     fields=[]
     for market in ("ML","RUNLINE","TOTAL"):
         m=report["markets"][market]; selected=m["selected"]
-        sharp=m["sharp"]; model=m["model"]
-        delta=None if not model.get("n") or not sharp.get("n") else sharp["brier"]-model["brier"]
+        promotion=m.get("posterior_promotion") or {}
         phases=[]
         for phase in ("EARLY","LATE","FINAL"):
-            pm=(m.get("by_phase") or {}).get(phase,{}).get("model") or {}
+            pm=(m.get("by_phase") or {}).get(phase,{}).get("predictive_final") or {}
             if pm.get("n"): phases.append(f"{phase} n={pm['n']} Brier={pm['brier']:.4f}")
         phase_text=" • ".join(phases) if phases else "aucune phase scorée"
         fields.append((market,
-            f"Model latest: {_fmt_metric(model)}\nSharp: {_fmt_metric(sharp)}\n"
-            f"Brier edge vs sharp: {'—' if delta is None else f'{delta:+.4f}'}\n"
-            f"Phases: {phase_text}\n"
-            f"Official: {selected['wins']}W-{selected['losses']}L-{selected['pushes']}P • P/L {selected['pnl_1u']:+.2f}u\n"
-            f"Rejected +EV: {m['positive_ev_rejected']} ({m['positive_ev_rejected_wins']} wins) • Closing sharp n={m['closing_sharp_n']}"))
+            f"Principal: {_fmt_metric(m['predictive_final'])}\n"
+            f"Baseball calibré: {_fmt_metric(m['baseball'])}\n"
+            f"Posterior shadow: {_fmt_metric(m['posterior'])}\n"
+            f"Sharp: {_fmt_metric(m['sharp'])}\n"
+            f"Posterior vs baseball: {_fmt_gain(m['comparisons']['posterior_vs_baseball'])}\n"
+            f"Statut posterior: **{promotion.get('status') or 'COLLECTING'}** ({promotion.get('n',0)}/{promotion.get('required_n',PROMOTION_MIN_N)})\n"
+            f"Phases principal: {phase_text}\n"
+            f"Économie secondaire: {selected['wins']}W-{selected['losses']}L-{selected['pushes']}P • P/L {selected['pnl_1u']:+.2f}u • Closing sharp n={m['closing_sharp_n']}"))
     return fields
 
 
 def send(report):
     if not core.DISCORD_URL:return False
-    title=f"📊 V13 DAILY POST-MORTEM — {report['target_date']}"
-    desc=(f"{report['settled_observations']} observations settled • {report['priced_observations']} priced • "
-          f"{report['official_selected']} official • P/L {report['official_pnl_1u']:+.2f}u")
+    title=f"📊 V13 PREDICTIVE POST-MORTEM — {report['target_date']}"
+    desc=(f"{report['settled_observations']} observations settled • scoring probabiliste prioritaire • "
+          f"{report['priced_observations']} observations avec cote d'exécution")
     return core.send_embed(title,discord_fields(report),5763719,desc)
 
 
