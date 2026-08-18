@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 
 from v11 import probability_contract_v13 as contract
-from v11 import v13_distribution_prior, v13_run_mean_runtime, v13_train
+from v11 import v13_daily_postmortem, v13_distribution_prior, v13_run_mean_runtime, v13_train
 
 
 class V1352FinalHardeningTests(unittest.TestCase):
@@ -144,6 +144,39 @@ class V1352FinalHardeningTests(unittest.TestCase):
         self.assertIn('PROBABLE/ANNONCÉ', text)
         self.assertIn('Lineups & starters', text)
         self.assertNotIn('PROJETÉE', text)
+
+    def test_runtime_exposes_primary_predictive_probability_without_promoting_posterior(self):
+        text=Path("v11/v13_runtime.py").read_text(encoding="utf-8")
+        self.assertIn('opt["p_predictive_final"] = round(calibrated, 6)', text)
+        self.assertIn('"BASEBALL_PRIMARY_POSTERIOR_SHADOW"', text)
+        self.assertIn('result["primary_probability_field"] = "p_predictive_final"', text)
+
+    def test_discord_is_analytics_first_and_suppresses_recommendation_cards(self):
+        text=Path("v11/discord_v13.py").read_text(encoding="utf-8")
+        self.assertIn("Probabilité principale", text)
+        self.assertIn("ensemble candidat", text)
+        self.assertIn("COLLECTING", text)
+        self.assertIn("def send_top(results):", text)
+        self.assertIn("def send_plan(chosen, combo, portfolio, pool):", text)
+        self.assertNotIn("✅ RECOMMANDÉ", text)
+
+    def test_tracking_persists_probability_products_separately(self):
+        text=Path("v11/v13_daily_tracking.py").read_text(encoding="utf-8")
+        self.assertIn('"p_baseball_calibrated":calibrated', text)
+        self.assertIn('"p_posterior":o.get("p_posterior")', text)
+        self.assertIn('"p_predictive_final":predictive_final', text)
+        self.assertIn('"calibration_source_v13":o.get("calibration_source_v13")', text)
+
+    def test_postmortem_scores_posterior_against_baseball_on_paired_rows(self):
+        rows=[
+            {"settled_result":"WIN","p_model":.60,"p_baseball_calibrated":.60,"p_posterior":.70,"p_predictive_final":.60,"p_market":.65},
+            {"settled_result":"LOSS","p_model":.40,"p_baseball_calibrated":.40,"p_posterior":.30,"p_predictive_final":.40,"p_market":.35},
+        ]
+        m=v13_daily_postmortem._metrics_from_independent(rows,rows)
+        self.assertEqual(m["baseball"]["n"],2)
+        self.assertEqual(m["posterior"]["n"],2)
+        self.assertGreater(m["comparisons"]["posterior_vs_baseball"]["brier_improvement"],0)
+        self.assertEqual(m["posterior_promotion"]["status"],"COLLECTING")
 
 
 if __name__ == "__main__":
