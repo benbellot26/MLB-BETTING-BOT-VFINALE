@@ -27,6 +27,35 @@ class V13HistoricalBackfillRegressionTests(unittest.TestCase):
                 self.assertGreaterEqual(float(push),0.0)
                 self.assertLess(float(push),1.0)
 
+    def test_conditional_binary_probability_matches_live_push_semantics(self):
+        p,push=backfill._conditional_binary_probability(.48,.10)
+        self.assertAlmostEqual(push,.10)
+        self.assertAlmostEqual(p,.48/.90,places=12)
+
+    def test_integer_total_replay_probability_is_win_given_no_push(self):
+        opt={"market":"TOTAL","name":"Over","point":8.0}
+        p,push=backfill._baseline_probability(opt,"Home",4.8,4.2,7.5,.08)
+        raw,raw_push=backfill.engine.prob_total_parts(4.8,4.2,"over",8.0,dispersion=7.5,env_sigma=.08)
+        self.assertGreater(raw_push,0.0)
+        self.assertAlmostEqual(push,raw_push,places=12)
+        self.assertAlmostEqual(p,raw/(1-raw_push),places=12)
+
+    def test_half_point_total_has_zero_push_and_no_conditioning_change(self):
+        opt={"market":"TOTAL","name":"Over","point":8.5}
+        p,push=backfill._baseline_probability(opt,"Home",4.8,4.2,7.5,.08)
+        raw,raw_push=backfill.engine.prob_total_parts(4.8,4.2,"over",8.5,dispersion=7.5,env_sigma=.08)
+        self.assertAlmostEqual(raw_push,0.0,places=12)
+        self.assertAlmostEqual(push,0.0,places=12)
+        self.assertAlmostEqual(p,raw,places=12)
+
+    def test_integer_runline_replay_probability_is_win_given_no_push(self):
+        opt={"market":"RUNLINE","name":"Home","point":-1.0}
+        p,push=backfill._baseline_probability(opt,"Home",4.8,4.2,7.5,.08)
+        raw,raw_push=backfill.engine.prob_cover_parts(4.8,4.2,"home",-1.0,dispersion=7.5,env_sigma=.08)
+        self.assertGreater(raw_push,0.0)
+        self.assertAlmostEqual(push,raw_push,places=12)
+        self.assertAlmostEqual(p,raw/(1-raw_push),places=12)
+
     def test_evidence_gate_rejects_missing_or_stale_generation(self):
         ok,reason=backfill._calibration_evidence_status(True,None,3)
         self.assertFalse(ok)
