@@ -4,9 +4,9 @@
   "compatibility_retained": 8,
   "engineering_closed": 35,
   "engineering_open": 0,
-  "evidence_closed": 0,
+  "evidence_closed": 1,
   "evidence_gate_total": 5,
-  "evidence_pending": 5,
+  "evidence_pending": 4,
   "legacy_v139_registry_role": "coverage inventory only; token presence is not accepted here as behavioral proof",
   "points": [
     {
@@ -492,9 +492,9 @@
     {
       "compatibility_retained": false,
       "engineering_closed": true,
-      "evidence_closed": false,
+      "evidence_closed": true,
       "evidence_requirement": "post-merge free-data refresh must show park_prior_coverage > 0",
-      "evidence_status": "PARK_HISTORY_REFRESH_PENDING",
+      "evidence_status": "PARK_HISTORY_REFRESHED",
       "id": "M15",
       "name": "Historical park data pipeline rebuilt from fixed provider before team history",
       "severity": "MEDIUM",
@@ -542,7 +542,7 @@
       "verification": {
         "errors": 0,
         "failures": 0,
-        "output": "----------------------------------------------------------------------\nRan 1 test in 0.174s\n\nOK\n",
+        "output": "----------------------------------------------------------------------\nRan 1 test in 0.171s\n\nOK\n",
         "passed": true,
         "test_id": "tests.test_v138_audit_closure.V138AuditClosureTests.test_glm_gam_gbdt_hierarchy_and_ensemble_are_finite",
         "tests_run": 1,

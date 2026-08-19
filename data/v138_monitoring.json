@@ -1,11 +1,9 @@
 {
-  "alerts": [
-    "weather_zero_coverage"
-  ],
+  "alerts": [],
   "claim": "observability only; provider freshness is explicit and stale artifacts cannot look silently current",
   "dataset": {
-    "dataset_content_sha256": "5fd8ca72257419fe841e8e9025ad2eacf931ebbb4fe755773f71e784f16dcb54",
-    "dataset_version": "81c3c33072e03b312dde248ae11e504f88eacfe2",
+    "dataset_content_sha256": "8913f9a6a4d3283f7a563f4de0615f875dcb5e52741522a7bccd9eef1bade3a1",
+    "dataset_version": "1d0fd736d9b05fb752a31747f0b1a2cb683a3400",
     "feature_contract_sha256": "08b35bb22ea34adb3113de13d335975ca00e401b9c1d80deada2473a9b661a61",
     "feature_rows": 14043,
     "label_rows": 14043
@@ -130,30 +128,34 @@
       }
     }
   },
-  "generated_at": "2026-08-19T18:13:30.936699+00:00",
+  "generated_at": "2026-08-19T19:19:15.282578+00:00",
   "provider_current": {
     "free_health_alerts": [],
-    "free_health_status": null,
-    "free_health_warnings": [],
+    "free_health_status": "DEGRADED",
+    "free_health_warnings": [
+      "weather_previous_runs_fallback_used"
+    ],
     "freshness": {
-      "mlb_state_age_hours": 5.777659289722223,
-      "park_age_hours": 5.777686815555555,
+      "mlb_state_age_hours": 1.0253990191666666,
+      "park_age_hours": 1.0254268972222222,
       "provider_stale_threshold_hours": 36.0,
-      "statcast_age_hours": 18.224994583055555,
+      "statcast_age_hours": 19.320637207222223,
       "statcast_stale_threshold_hours": 72.0,
-      "weather_age_hours": 5.735944329722222
+      "weather_age_hours": 0.9191020116666666
     },
-    "il_signals": 85,
-    "observed_at": "2026-08-19T18:13:29.980499+00:00",
-    "park_empty_parses": null,
-    "park_fallback_requests": null,
-    "park_rows": null,
+    "il_signals": 86,
+    "observed_at": "2026-08-19T19:19:14.293946+00:00",
+    "park_empty_parses": 0,
+    "park_fallback_requests": 0,
+    "park_rows": 525,
     "rosters_ok": 30,
     "statcast_failures": 0,
-    "statcast_rows": 150406,
-    "transactions": 579,
-    "weather_available": 0,
-    "weather_provider_counts": {},
+    "statcast_rows": 165680,
+    "transactions": 585,
+    "weather_available": 70,
+    "weather_provider_counts": {
+      "Open-Meteo Previous Runs / Best Match": 70
+    },
     "weather_rows": 70
   },
   "provider_history": [
@@ -245,6 +247,35 @@
       "transactions": 579,
       "weather_available": 0,
       "weather_provider_counts": {},
+      "weather_rows": 70
+    },
+    {
+      "free_health_alerts": [],
+      "free_health_status": "DEGRADED",
+      "free_health_warnings": [
+        "weather_previous_runs_fallback_used"
+      ],
+      "freshness": {
+        "mlb_state_age_hours": 1.0253990191666666,
+        "park_age_hours": 1.0254268972222222,
+        "provider_stale_threshold_hours": 36.0,
+        "statcast_age_hours": 19.320637207222223,
+        "statcast_stale_threshold_hours": 72.0,
+        "weather_age_hours": 0.9191020116666666
+      },
+      "il_signals": 86,
+      "observed_at": "2026-08-19T19:19:14.293946+00:00",
+      "park_empty_parses": 0,
+      "park_fallback_requests": 0,
+      "park_rows": 525,
+      "rosters_ok": 30,
+      "statcast_failures": 0,
+      "statcast_rows": 165680,
+      "transactions": 585,
+      "weather_available": 70,
+      "weather_provider_counts": {
+        "Open-Meteo Previous Runs / Best Match": 70
+      },
       "weather_rows": 70
     }
   ],
@@ -455,10 +486,10 @@
       }
     },
     "claim": "research validation only; no automatic champion promotion",
-    "dataset_content_sha256": "5fd8ca72257419fe841e8e9025ad2eacf931ebbb4fe755773f71e784f16dcb54",
+    "dataset_content_sha256": "8913f9a6a4d3283f7a563f4de0615f875dcb5e52741522a7bccd9eef1bade3a1",
     "dataset_integrity": {
       "bound": true,
-      "content_sha256": "5fd8ca72257419fe841e8e9025ad2eacf931ebbb4fe755773f71e784f16dcb54",
+      "content_sha256": "8913f9a6a4d3283f7a563f4de0615f875dcb5e52741522a7bccd9eef1bade3a1",
       "feature_contract_sha256": "08b35bb22ea34adb3113de13d335975ca00e401b9c1d80deada2473a9b661a61",
       "feature_rows": 14043,
       "label_rows": 14043,
@@ -1453,5 +1484,8 @@
       "strict_temporal_policy": "each test season is trained only on earlier seasons"
     }
   },
-  "warnings": []
+  "warnings": [
+    "free_provider_health_degraded",
+    "weather_previous_runs_fallback_used"
+  ]
 }
