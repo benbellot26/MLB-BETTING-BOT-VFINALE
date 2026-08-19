@@ -1,9 +1,9 @@
 {
-  "analyzed_at": "2026-08-19T17:02:51.504961+00:00",
-  "analyzed_games": 14,
+  "analyzed_at": "2026-08-19T17:42:43.031443+00:00",
+  "analyzed_games": 12,
   "complete_future_coverage": true,
   "future_coverage_rate": 1.0,
-  "future_or_unresolved_games": 14,
+  "future_or_unresolved_games": 12,
   "games": [
     {
       "away": "Detroit Tigers",
@@ -19,7 +19,7 @@
       "game_pk": 823587,
       "home": "New York Mets",
       "odds_event_id": "68cb74d6a042f0c12d3b2e066f58bee6",
-      "status": "ANALYZED"
+      "status": "SKIPPED_ALREADY_STARTED"
     },
     {
       "away": "Atlanta Braves",
@@ -27,7 +27,7 @@
       "game_pk": 823664,
       "home": "Minnesota Twins",
       "odds_event_id": "ebe3d5c684fd83932e02698e22564f7b",
-      "status": "ANALYZED"
+      "status": "SKIPPED_ALREADY_STARTED"
     },
     {
       "away": "Chicago White Sox",
@@ -127,12 +127,12 @@
     }
   ],
   "policy": "Every scheduled game is either ANALYZED or carries an explicit skip reason; ambiguous event identity fails closed.",
-  "run_id": "a41e177db35e4b99",
+  "run_id": "240a029575e111a8",
   "scheduled_games": 15,
   "schema": "v13-daily-coverage-v1",
   "status_counts": {
-    "ANALYZED": 14,
-    "SKIPPED_ALREADY_STARTED": 1
+    "ANALYZED": 12,
+    "SKIPPED_ALREADY_STARTED": 3
   },
   "target_date": "2026-08-19"
 }
