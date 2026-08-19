@@ -4,23 +4,31 @@ import math
 from dataclasses import dataclass, asdict
 from typing import Any
 
-PREDICTIVE_CONTRACT_VERSION = "v13-predictive-contract-v2"
+PREDICTIVE_CONTRACT_VERSION = "v13-predictive-contract-v3"
 FEATURE_CONTRACT_VERSION = "v13-baseball-features-v1"
 TARGET_CONTRACT_VERSION = "v13-market-targets-v1"
-CALIBRATION_CONTRACT_VERSION = "v13-baseball-calibration-v2"
-MODEL_GENERATION_FINGERPRINT = "v13.5.2-gen-structural-nb-independent-transfer-v2"
+CALIBRATION_CONTRACT_VERSION = "v13-baseball-calibration-v3"
+MODEL_GENERATION_FINGERPRINT = "v13.10-gen-park-extra-surface-v3"
 
 
-def _num(x: Any, default: float = 0.0) -> float:
+def _finite_probability(p: Any) -> float:
     try:
-        y = float(x)
-        return y if math.isfinite(y) else default
-    except Exception:
-        return default
+        value = float(p)
+    except Exception as exc:
+        raise ValueError("probability is not numeric") from exc
+    if not math.isfinite(value):
+        raise ValueError("probability must be finite")
+    return value
 
 
 def clip_probability(p: Any) -> float:
-    return max(0.001, min(0.999, _num(p, 0.5)))
+    """Clip a valid finite probability; invalid inputs fail closed.
+
+    Previous generations silently converted NaN/non-numeric values to 0.50,
+    which could hide an upstream model defect. V13.10 makes invalid probability
+    state explicit while retaining numerical clipping for valid extreme values.
+    """
+    return max(0.001, min(0.999, _finite_probability(p)))
 
 
 @dataclass(frozen=True)
@@ -84,12 +92,19 @@ def probability_gap(option: dict[str, Any]) -> float | None:
 
 def assert_no_market_leakage(option: dict[str, Any]) -> None:
     source = str(option.get("baseball_probability_source") or "")
-    if "sharp" in source.lower() or "market" in source.lower():
+    lowered = source.lower()
+    if "sharp" in lowered or "market" in lowered:
         raise ValueError("market-derived source cannot define V13 baseball probability")
     if option.get("p_baseball_raw") is None:
         raise ValueError("p_baseball_raw is required")
     if option.get("p_baseball_calibrated") is None:
         raise ValueError("p_baseball_calibrated is required")
+    raw = clip_probability(option["p_baseball_raw"])
+    calibrated = clip_probability(option["p_baseball_calibrated"])
+    if not (0.0 < raw < 1.0 and 0.0 < calibrated < 1.0):
+        raise ValueError("baseball probability outside valid range")
+    if str(option.get("probability_product") or "") not in {"", "calibrated-baseball-only"}:
+        raise ValueError("unexpected probability product for V13 baseball probability")
 
 
 def option_contract_payload(
