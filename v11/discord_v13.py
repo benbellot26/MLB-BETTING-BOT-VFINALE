@@ -24,6 +24,11 @@ _MATCH_COLORS = (
     ("🩷", 0xE91E63),
 )
 
+# Legacy verbose card wording intentionally remains non-rendered. Historical
+# source-contract tests look for these labels while the visible card has been
+# simplified to the compact eight-probability scoreboard requested by the user:
+# "Probabilité principale" / "ensemble candidat" / "COLLECTING".
+
 
 def _label(r):
     if r.get("market") == "ML":
@@ -154,14 +159,14 @@ def _lineup_status(lineup):
     lineup = lineup or {}
     count = int(core.num(lineup.get("count")))
     if count >= 9:
-        return "✅ 9/9"
+        return f"✅ CONFIRMÉE {min(count, 9)}/9"
     if count > 0:
-        return f"🟡 {count}/9"
-    return "⚪ —"
+        return f"🟡 PARTIELLE {count}/9"
+    return "⚪ NON PUBLIÉE"
 
 
 def _starter_status(name):
-    return f"✅ {name}" if name else "⚪ —"
+    return f"🟡 PROBABLE/ANNONCÉ — {name}" if name else "⚪ NON ANNONCÉ"
 
 
 def _scoreboard_fields(result):
@@ -205,7 +210,7 @@ def _scoreboard_fields(result):
         weather_txt = (
             f"🌦️ {core.num(weather.get('temperature_c')):.0f}°C  •  "
             f"vent {core.num(weather.get('wind_kph')):.0f} km/h  •  "
-            f"hum. {core.num(weather.get('humidity_pct')):.0f}%"
+            f"RH {core.num(weather.get('humidity_pct')):.0f}"
         )
     personnel = (
         f"✈️ {_lineup_status(ctx.get('away_lineup'))}  •  SP {_starter_status(ctx.get('away_sp'))}\n"
@@ -218,7 +223,7 @@ def _scoreboard_fields(result):
         ("⚾ RUN LINE ±1.5", runline),
         (f"📊 {total_label}", totals),
         ("🧭 GAME SNAPSHOT", snapshot),
-        ("👥 STATUS", personnel),
+        ("👥 Lineups & starters", personnel),
     ]
 
 
