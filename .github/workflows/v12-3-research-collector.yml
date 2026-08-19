@@ -109,6 +109,7 @@ jobs:
           python -m v11.v13_rich_native_train
           python -m v11.v13_feature_store
           python -m v11.v13_probability_diagnostics
+          python -m v11.v138_native_evidence
           python -m v11.v13_coverage_report
           python -m v11.v13_model_health
 
@@ -130,6 +131,8 @@ jobs:
           [ -f data/v13_label_store.jsonl ] && git add -f data/v13_label_store.jsonl
           [ -f data/v13_market_tracking.jsonl ] && git add -f data/v13_market_tracking.jsonl
           [ -f data/v13_market_tracking_report.json ] && git add -f data/v13_market_tracking_report.json
+          [ -f data/v138_book_probabilities.jsonl ] && git add -f data/v138_book_probabilities.jsonl
+          [ -f data/v138_native_evidence.json ] && git add -f data/v138_native_evidence.json
           if ! git diff --cached --quiet; then
             git commit -m 'data: collect native V13 phase snapshot [skip ci]'
             git pull --rebase origin "$GITHUB_REF_NAME"

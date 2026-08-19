@@ -38,9 +38,16 @@ def _line_match(market_name, outcome_point, target_point):
 
 
 def sharp_consensus(event, market, name, point=None, as_of=None):
-    """Point-in-time sharp consensus. All freshness calculations use explicit as_of when supplied."""
+    """Point-in-time sharp consensus with per-book no-vig probabilities.
+
+    ``book_probs`` is telemetry for future OOS weight learning only. The active
+    consensus still uses the existing configured/freshness weights, so exposing
+    this map cannot alter the current baseball or market probability path.
+    """
     key = {"ML": "h2h", "RUNLINE": "spreads", "TOTAL": "totals"}[market]
     vals, books, ages, excluded = [], [], [], []
+    book_probs = {}
+    book_ages = {}
     for b in event.get("bookmakers") or []:
         bkey = b.get("key")
         if bkey not in core.SHARP_BOOKS:
@@ -82,10 +89,13 @@ def sharp_consensus(event, market, name, point=None, as_of=None):
         vals.append((p, weight))
         books.append(bkey)
         ages.append(age)
+        book_probs[str(bkey)] = p
+        book_ages[str(bkey)] = age
 
     if not vals:
-        return {"p": None, "n": 0, "books": [], "dispersion": None, "max_age_min": None,
-                "robustness": 0.0, "effective_n": 0.0, "excluded": excluded, "as_of": as_of}
+        return {"p": None, "n": 0, "books": [], "book_probs": {}, "book_ages_min": {},
+                "dispersion": None, "max_age_min": None, "robustness": 0.0, "effective_n": 0.0,
+                "excluded": excluded, "as_of": as_of}
     wsum = sum(w for _, w in vals)
     p = sum(v*w for v, w in vals)/wsum
     variance = sum(w*(v-p)**2 for v, w in vals)/wsum if wsum else 0.0
@@ -93,8 +103,8 @@ def sharp_consensus(event, market, name, point=None, as_of=None):
     robustness = max(.20, min(1.0, 1-disp/max(.001, config.SHARP_DISAGREEMENT_SCALE)))
     sumw2 = sum(w*w for _, w in vals)
     effective_n = (wsum*wsum/sumw2) if sumw2 else 0.0
-    return {"p": p, "n": len(vals), "books": books, "dispersion": disp,
-            "max_age_min": max(ages) if ages else None, "robustness": robustness,
+    return {"p": p, "n": len(vals), "books": books, "book_probs": book_probs, "book_ages_min": book_ages,
+            "dispersion": disp, "max_age_min": max(ages) if ages else None, "robustness": robustness,
             "effective_n": effective_n, "excluded": excluded, "as_of": as_of}
 
 
