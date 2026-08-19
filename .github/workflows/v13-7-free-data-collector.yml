@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/v13-7-free-data-collector.yml'
+      - 'v11/v137_*.py'
   schedule:
     # Free-only collector: no Odds API secret and no paid provider.
     - cron: '11 11 * * *'
@@ -118,6 +119,7 @@ jobs:
 
       - name: Collect prior-only Statcast park factors
         run: |
+          # v137_park_factors maps Savant's rolling=1 flag to the 3-season view.
           python -m v11.v137_park_factors \
             --start-season 2021 \
             --end-season "${{ steps.dates.outputs.season }}"
