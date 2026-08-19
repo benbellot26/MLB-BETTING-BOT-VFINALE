@@ -1,34 +1,34 @@
 {
   "by_market": {
     "ML": {
-      "closing_price_observed": 42,
-      "closing_sharp_observed": 42,
+      "closing_price_observed": 52,
+      "closing_sharp_observed": 52,
       "positive_ev_pnl_1u": -22.75,
       "positive_ev_wins": 31,
       "positive_nominal_ev": 93,
-      "priced": 464,
-      "settled": 464,
-      "t60_sharp_observed": 54
+      "priced": 474,
+      "settled": 474,
+      "t60_sharp_observed": 60
     },
     "RUNLINE": {
       "closing_price_observed": 0,
-      "closing_sharp_observed": 44,
+      "closing_sharp_observed": 54,
       "positive_ev_pnl_1u": 0,
       "positive_ev_wins": 0,
       "positive_nominal_ev": 0,
       "priced": 0,
-      "settled": 756,
-      "t60_sharp_observed": 54
+      "settled": 776,
+      "t60_sharp_observed": 60
     },
     "TOTAL": {
       "closing_price_observed": 0,
-      "closing_sharp_observed": 32,
+      "closing_sharp_observed": 42,
       "positive_ev_pnl_1u": 0,
       "positive_ev_wins": 0,
       "positive_nominal_ev": 0,
       "priced": 0,
-      "settled": 464,
-      "t60_sharp_observed": 46
+      "settled": 474,
+      "t60_sharp_observed": 52
     }
   },
   "by_nominal_ev_band": {
@@ -66,12 +66,12 @@
         "wins": 9
       },
       "<0%": {
-        "losses": 170,
-        "n": 371,
-        "pnl_1u": -1.12,
+        "losses": 175,
+        "n": 381,
+        "pnl_1u": 0.38,
         "pushes": 0,
-        "roi_1u": -0.003,
-        "wins": 201
+        "roi_1u": 0.001,
+        "wins": 206
       },
       ">=10%": {
         "losses": 12,
@@ -85,7 +85,7 @@
     "RUNLINE": {},
     "TOTAL": {}
   },
-  "generated_at": "2026-08-19T23:02:33.210144+00:00",
+  "generated_at": "2026-08-19T23:57:13.455831+00:00",
   "methodology": {
     "closing": "paid market polling is checkpoint-based: one T-60 window and one close window per tracked observation, batched in a single Odds API request across all games due at that time",
     "missing_price": "never imputed; absent Winamax RL/TOTAL prices remain unpriced and are still tracked against sharp probability",
@@ -94,8 +94,8 @@
     "unit_pnl": "descriptive flat 1u; complementary displayed sides are not a betting portfolio"
   },
   "schema": "v13-market-tracking-report-v3",
-  "settled_observations": 1684,
-  "settled_options": 1684,
-  "tracked_observations": 2284,
-  "tracked_options": 2284
+  "settled_observations": 1724,
+  "settled_options": 1724,
+  "tracked_observations": 2364,
+  "tracked_options": 2364
 }
