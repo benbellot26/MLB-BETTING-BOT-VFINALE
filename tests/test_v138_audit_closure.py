@@ -69,14 +69,18 @@ class V138AuditClosureTests(unittest.TestCase):
         rows,labels=self._dataset();artifact=models.fit(rows,labels)
         self.assertEqual(artifact["status"],"TRAINED_RESEARCH_ONLY")
         self.assertFalse(artifact["promotion_eligible"])
+        self.assertTrue(artifact["holdout_isolation"])
+        self.assertGreater(artifact["validation_games"],0)
         p=models.predict(artifact,rows[-1]);self.assertTrue(p["available"]);self.assertFalse(p["affects_champion"])
 
     def test_glm_gam_gbdt_hierarchy_and_ensemble_are_finite(self):
         rows,labels=self._dataset();artifact=models.fit(rows,labels)
         self.assertEqual(set((artifact.get("models") or {}).keys()),{"glm","gam","gbdt","hierarchical"})
+        self.assertIn("naive",artifact.get("ensemble_weights") or {})
         self.assertAlmostEqual(sum((artifact.get("ensemble_weights") or {}).values()),1.0,places=6)
-        for metric in (artifact.get("holdout_metrics") or {}).values():
-            for key,val in metric.items():self.assertTrue(val is None or math.isfinite(float(val)),key)
+        for block in (artifact.get("validation_metrics") or {},artifact.get("holdout_metrics") or {}):
+            for metric in block.values():
+                for key,val in metric.items():self.assertTrue(val is None or math.isfinite(float(val)),key)
 
     def test_bootstrap_calibration_book_weights_and_extra_innings_keep_evidence_floors(self):
         y=[i%2 for i in range(80)];a=[.60 if x else .40 for x in y];b=[.55 if x else .45 for x in y]
