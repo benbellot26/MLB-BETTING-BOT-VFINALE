@@ -12,16 +12,17 @@ def _history(seasons=range(2021, 2027), games_per_season=30):
     rows = []
     for season in seasons:
         for i in range(games_per_season):
-            # Stable, deliberately small historical correction: the baseline is
-            # low by 0.10 home and 0.05 away. No market field is present.
+            # Stable integer-run target: baseline is low by 0.20 on both sides.
+            # No market field exists, so this fixture also exercises the
+            # baseball-only nature of the historical run-mean correction.
             rows.append({
                 "game_pk": f"h-{season}-{i}",
                 "game_date": f"{season}-06-{(i % 28) + 1:02d}T18:00:00Z",
                 "season": season,
-                "home_mu": 4.40,
-                "away_mu": 4.30,
-                "home_score": 4.50,
-                "away_score": 4.35,
+                "home_mu": 4.80,
+                "away_mu": 3.80,
+                "home_score": 5,
+                "away_score": 4,
             })
     return rows
 
@@ -32,11 +33,11 @@ def _exact(n=12):
         "game_date": f"2026-08-{(i % 18) + 1:02d}T18:00:00Z",
         "season": 2026,
         "phase": "FINAL",
-        "home_mu": 4.40,
-        "away_mu": 4.30,
+        "home_mu": 4.80,
+        "away_mu": 3.80,
         "dispersion": prior.DISPERSION,
-        "home_score": 4.50,
-        "away_score": 4.35,
+        "home_score": 5,
+        "away_score": 4,
     } for i in range(n)]
 
 
@@ -60,13 +61,12 @@ class V1311HistoricalTransferTests(unittest.TestCase):
             "season": 2026,
             "home_mu": 1.0,
             "away_mu": 1.0,
-            "home_score": 20.0,
-            "away_score": 20.0,
+            "home_score": 20,
+            "away_score": 20,
         })
         with patch.object(prior, "MIN_WF_TEST_GAMES", 10), patch.object(prior, "MIN_WF_FOLDS", 3), \
              patch.object(prior, "MIN_EXACT_FINAL", 10), patch.object(prior, "EXACT_BOOTSTRAP_DRAWS", 200):
             report = prior.build(historical_rows=hist, exact_rows=exact)
-        self.assertNotIn(exact[0]["game_pk"], {r for r in report["excluded_exact_transfer_game_ids"] if not r.startswith("x-")})
         self.assertIn(exact[0]["game_pk"], report["excluded_exact_transfer_game_ids"])
         self.assertEqual(report["historical_games"], len(hist) - 1)
         self.assertTrue(report["safety"]["exact_transfer_games_excluded_from_historical_fit"])
