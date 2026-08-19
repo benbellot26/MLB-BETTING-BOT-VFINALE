@@ -19,6 +19,7 @@ REPORT = Path("data/v137_park_factors_report.json")
 SOURCE_URL = "https://baseballsavant.mlb.com/leaderboard/statcast-park-factors"
 MLB_FALLBACK_PROVIDER = "MLB Stats API completed-season venue run environment"
 MIN_FALLBACK_VENUE_GAMES = 20
+SAVANT_ROLLING_SEASONS = 3
 
 _SEASON_GAMES_CACHE: dict[int, list[dict[str, Any]]] = {}
 _MLB_FALLBACK_CACHE: dict[int, list[dict[str, Any]]] = {}
@@ -269,6 +270,7 @@ def fetch_prior_factors(
     """
     target = int(target_season)
     source_end = target - 1
+    source_years = [source_end - 2, source_end - 1, source_end]
     side = str(bat_side or "").upper()
     if side not in {"", "L", "R"}:
         raise ValueError("bat_side must be '', 'L', or 'R'")
@@ -277,7 +279,7 @@ def fetch_prior_factors(
         "batSide": side,
         "condition": "All",
         "parks": "mlb",
-        "rolling": 1,
+        "rolling": SAVANT_ROLLING_SEASONS,
         "stat": "index_wOBA",
         "type": "year",
         "year": source_end,
@@ -291,13 +293,17 @@ def fetch_prior_factors(
         parse_mode = "mlb_stats_derived" if rows else "none"
         provider = MLB_FALLBACK_PROVIDER if rows else provider
         fallback = bool(rows)
+    else:
+        for row in rows:
+            row["handedness_specific"] = bool(side)
 
     return {
-        "schema": "v13-7-prior-park-factor-v4",
+        "schema": "v13-7-prior-park-factor-v5",
         "cohort": COHORT,
         "target_season": target,
         "source_window_end_season": source_end,
-        "source_window_years": [source_end - 2, source_end - 1, source_end],
+        "source_window_years": source_years,
+        "savant_rolling_seasons": SAVANT_ROLLING_SEASONS,
         "bat_side": side or "ALL",
         "point_in_time": True,
         "native_live": False,
@@ -306,10 +312,11 @@ def fetch_prior_factors(
         "source_url": SOURCE_URL if not fallback else "https://statsapi.mlb.com/api/v1/schedule",
         "parse_mode": parse_mode,
         "provider_fallback": fallback,
-        "handedness_specific": not fallback,
+        "handedness_specific": bool(side) and not fallback,
         "rows": rows,
         "venue_count": len(rows),
-        "policy": "three completed seasons ending before target season; target-season results excluded",
+        "request_contract": {"rolling": SAVANT_ROLLING_SEASONS, "year": source_end},
+        "policy": "exactly three completed seasons ending before target season; target-season results excluded",
     }
 
 
@@ -336,7 +343,7 @@ def collect(start_season: int, end_season: int) -> tuple[dict[str, Any], dict[st
                     empty_parses.append({"season": season, "bat_side": label, "error": "empty_parse"})
             except Exception as exc:
                 side_payloads[label] = {
-                    "schema": "v13-7-prior-park-factor-v4",
+                    "schema": "v13-7-prior-park-factor-v5",
                     "target_season": season,
                     "bat_side": label,
                     "point_in_time": True,
@@ -349,12 +356,13 @@ def collect(start_season: int, end_season: int) -> tuple[dict[str, Any], dict[st
                 failures.append({"season": season, "bat_side": label, "error": type(exc).__name__})
         seasons[str(season)] = side_payloads
     artifact = {
-        "schema": "v13-7-prior-park-factors-store-v4",
+        "schema": "v13-7-prior-park-factors-store-v5",
         "cohort": COHORT,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "point_in_time_policy": True,
         "native_live": False,
         "promotion_eligible": False,
+        "savant_rolling_seasons": SAVANT_ROLLING_SEASONS,
         "seasons": seasons,
     }
     venue_counts = {
@@ -362,7 +370,7 @@ def collect(start_season: int, end_season: int) -> tuple[dict[str, Any], dict[st
         for season, sides in seasons.items()
     }
     report = {
-        "schema": "v13-7-prior-park-factors-report-v4",
+        "schema": "v13-7-prior-park-factors-report-v5",
         "start_season": start,
         "end_season": end,
         "season_count": len(seasons),
@@ -375,7 +383,8 @@ def collect(start_season: int, end_season: int) -> tuple[dict[str, Any], dict[st
         "parse_modes": parse_modes,
         "venue_counts": venue_counts,
         "total_venue_rows": sum(sum(sides.values()) for sides in venue_counts.values()),
-        "rolling_parameter": 1,
+        "rolling_parameter": SAVANT_ROLLING_SEASONS,
+        "rolling_contract": "Baseball Savant 3-year rolling window",
         "fallback_policy": "Savant first; prior completed-season MLB venue run environment if client-rendered Savant payload is unavailable",
         "promotion_eligible": False,
     }
@@ -407,6 +416,8 @@ def venue_prior(artifact: dict[str, Any], target_season: int, venue: str) -> dic
         if row:
             result[side.lower()] = row
             result["source_window_end_season"] = payload.get("source_window_end_season")
+            result["source_window_years"] = payload.get("source_window_years")
+            result["savant_rolling_seasons"] = payload.get("savant_rolling_seasons")
             result["provider_fallback"] = bool(payload.get("provider_fallback"))
             result["handedness_specific"] = bool(payload.get("handedness_specific"))
     result["available"] = any(k in result for k in ("all", "l", "r"))
