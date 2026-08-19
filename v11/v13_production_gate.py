@@ -78,7 +78,8 @@ def build(now: datetime | None=None,games: list[dict[str,Any]] | None=None,deliv
         if not gid or start is None or start<=now:continue
         future+=1
         phase=core.phase_for_game(game,now)
-        if phase!="FINAL":continue
+        is_final=phase=="FINAL"
+        if not is_final:continue
         prior=sent.get(gid) or {}
         if not prior.get("sent"):
             due.append({"game_pk":game.get("gamePk"),"game_date":game.get("gameDate"),"phase":phase,"reason":"undelivered-final-game"})
