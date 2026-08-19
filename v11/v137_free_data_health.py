@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 OUT = Path("data/v137_free_data_health.json")
-SCHEMA = "v13-7-free-data-health-v3"
+SCHEMA = "v13-7-free-data-health-v4"
 
 
 def _load(path: str) -> dict[str, Any]:
@@ -16,6 +16,16 @@ def _load(path: str) -> dict[str, Any]:
         return json.loads(p.read_text(encoding="utf-8"))
     except Exception:
         return {}
+
+
+def _coverage(available: Any, total: Any) -> float | None:
+    try:
+        n = int(total or 0)
+        if n <= 0:
+            return None
+        return round(max(0.0, min(1.0, int(available or 0) / n)), 6)
+    except Exception:
+        return None
 
 
 def build() -> dict[str, Any]:
@@ -68,6 +78,11 @@ def build() -> dict[str, Any]:
             alerts.append("park_factor_zero_venue_rows")
         if int(park.get("empty_parse_count") or 0):
             alerts.append("park_factor_empty_parses")
+        if int(park.get("window_rejection_count") or 0):
+            alerts.append("park_factor_window_rejections")
+        rolling = park.get("rolling_parameter")
+        if rolling not in (None, 3):
+            alerts.append("park_factor_wrong_rolling_window")
     else:
         alerts.append("prior_park_factors_not_collected_yet")
 
@@ -81,8 +96,46 @@ def build() -> dict[str, Any]:
     else:
         alerts.append("mlb_native_state_not_collected_yet")
 
+    critical_alerts = {
+        "statcast_not_stable_id_only",
+        "statcast_not_point_in_time",
+        "statcast_chunk_failures",
+        "statcast_unresolved_row_cap_truncation",
+        "team_feature_label_count_mismatch",
+        "weather_point_in_time_gap",
+        "weather_zero_available_rows",
+        "park_factor_request_failures",
+        "park_factor_zero_venue_rows",
+        "park_factor_empty_parses",
+        "park_factor_window_rejections",
+        "park_factor_wrong_rolling_window",
+        "mlb_state_snapshot_not_native_pit",
+        "mlb_roster_snapshot_failures",
+        "mlb_transaction_snapshot_failure",
+    }
+    unique_alerts = sorted(set(alerts))
+    critical = sorted(x for x in unique_alerts if x in critical_alerts)
+    status = "HEALTHY" if not unique_alerts else "DEGRADED" if critical else "PARTIAL"
+
+    provider_metrics = {
+        "weather_coverage": _coverage(weather.get("available_rows"), weather.get("rows")) if weather else None,
+        "weather_pit_coverage": _coverage(weather.get("point_in_time_rows"), weather.get("rows")) if weather else None,
+        "park_total_venue_rows": int(park.get("total_venue_rows") or 0) if park else None,
+        "park_request_success_rate": (
+            _coverage(
+                int(park.get("requests_expected") or 0) - int(park.get("failed_requests") or 0),
+                park.get("requests_expected"),
+            )
+            if park
+            else None
+        ),
+        "roster_coverage": _coverage(mlb_state.get("rosters_ok"), 30) if mlb_state else None,
+    }
+
     return {
         "schema": SCHEMA,
+        "status": status,
+        "critical_alerts": critical,
         "providers": {
             "mlb": "MLB Stats API (free)",
             "statcast": "Baseball Savant / Statcast Search CSV (free)",
@@ -94,12 +147,13 @@ def build() -> dict[str, Any]:
             "historical_reconstructed": "research/challenger evidence only",
             "native_live": "authenticated live snapshots stay separate and may become eligible only through existing promotion gates",
         },
+        "provider_metrics": provider_metrics,
         "team_history": team,
         "statcast": statcast,
         "park_factors": park,
         "mlb_native_state": mlb_state,
         "weather": weather,
-        "alerts": sorted(set(alerts)),
+        "alerts": unique_alerts,
         "claim": "data-health artifact only; reconstructed free data cannot masquerade as native-live evidence",
     }
 
