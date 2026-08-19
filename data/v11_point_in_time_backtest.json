@@ -33,7 +33,7 @@
   },
   "compatible_games": 15,
   "engine": "12.3.2-audit-hardening-v1",
-  "generated_at": "2026-08-19T17:04:41.357456+00:00",
+  "generated_at": "2026-08-19T19:45:44.490844+00:00",
   "methodology": {
     "claim_limit": "Only V12.2 rows with matching feature schema train/calibrate the challenger.",
     "end_to_end_stack_gate": true,
@@ -208,13 +208,13 @@
     "predictive_quality": {
       "qualified_markets": [
         {
-          "brier": 0.24667570956521742,
-          "logloss": 0.6862032110144928,
+          "brier": 0.24624476614285712,
+          "logloss": 0.6853440317142857,
           "market": "ML",
-          "n": 69,
+          "n": 70,
           "safe": false,
-          "sharp_brier": 0.24059482826086956,
-          "sharp_logloss": 0.6737262014492753
+          "sharp_brier": 0.239550492,
+          "sharp_logloss": 0.671621173
         }
       ],
       "ready": true,
@@ -272,7 +272,7 @@
     {
       "engine_version": "13.5.2-professional-probability-v1",
       "feature_schema": "v12-3-features-v1",
-      "rows": 55
+      "rows": 56
     }
   ]
 }
