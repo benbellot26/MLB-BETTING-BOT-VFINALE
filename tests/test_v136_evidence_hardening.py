@@ -6,7 +6,9 @@ from v11 import data_quality
 from v11 import point_in_time_v13 as pit
 from v11 import uncertainty_v13
 from v11 import v13_coverage_report as coverage
+from v11 import v13_feature_store as feature_store
 from v11 import v13_probability_diagnostics as diagnostics
+from v11.probability_contract_v13 import attach_contract
 
 
 class V136EvidenceHardeningTests(unittest.TestCase):
@@ -97,6 +99,18 @@ class V136EvidenceHardeningTests(unittest.TestCase):
         self.assertEqual(state["same_day_games_before_as_of"],1)
         self.assertEqual(state["relievers"][0]["pitches_today"],24)
         self.assertGreaterEqual(state["likely_unavailable_relievers"],1)
+
+    def test_feature_store_never_embeds_postgame_labels(self):
+        analyzed="2026-08-19T18:00:00Z"
+        row={"game_pk":77,"game_date":"2026-08-19T20:00:00Z","analyzed_at":analyzed,"phase":"FINAL",
+             "result_status":"FINAL","home_score":5,"away_score":2,"winner":"Home","settled_at":"2026-08-19T23:00:00Z",
+             "home":"Home","away":"Away","ctx":{"home":"Home","away":"Away"},"features":{"home_ops":.740}}
+        row["feature_provenance"]={name:pit.provenance_entry("test",as_of=analyzed,snapshot=True) for name in ("team_stats","starter_stats","bullpen","weather","lineup")}
+        row["features_from_postgame"]=False;row["point_in_time"]=True;attach_contract(row)
+        fs,ls,report=feature_store.build([row])
+        self.assertEqual(report["feature_rows"],1);self.assertEqual(report["label_rows"],1)
+        self.assertNotIn("home_score",fs[0]);self.assertNotIn("away_score",fs[0]);self.assertNotIn("winner",fs[0])
+        self.assertEqual(ls[0]["home_score"],5)
 
 
 if __name__ == "__main__":
