@@ -1,9 +1,9 @@
 {
-  "analyzed_at": "2026-08-19T15:49:53.869977+00:00",
-  "analyzed_games": 15,
+  "analyzed_at": "2026-08-19T17:02:51.504961+00:00",
+  "analyzed_games": 14,
   "complete_future_coverage": true,
   "future_coverage_rate": 1.0,
-  "future_or_unresolved_games": 15,
+  "future_or_unresolved_games": 14,
   "games": [
     {
       "away": "Detroit Tigers",
@@ -11,7 +11,7 @@
       "game_pk": 823342,
       "home": "Pittsburgh Pirates",
       "odds_event_id": "c0a1041457ba1cf76c5f2a1ac9eb70bc",
-      "status": "ANALYZED"
+      "status": "SKIPPED_ALREADY_STARTED"
     },
     {
       "away": "San Diego Padres",
@@ -127,11 +127,12 @@
     }
   ],
   "policy": "Every scheduled game is either ANALYZED or carries an explicit skip reason; ambiguous event identity fails closed.",
-  "run_id": "61c7e89d8b057a7a",
+  "run_id": "a41e177db35e4b99",
   "scheduled_games": 15,
   "schema": "v13-daily-coverage-v1",
   "status_counts": {
-    "ANALYZED": 15
+    "ANALYZED": 14,
+    "SKIPPED_ALREADY_STARTED": 1
   },
   "target_date": "2026-08-19"
 }

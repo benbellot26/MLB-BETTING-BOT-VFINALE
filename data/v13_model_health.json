@@ -62,7 +62,8 @@
     "complete_future_coverage": true,
     "future_coverage_rate": 1.0,
     "status_counts": {
-      "ANALYZED": 15
+      "ANALYZED": 14,
+      "SKIPPED_ALREADY_STARTED": 1
     }
   },
   "free_data_foundation": {
@@ -135,11 +136,11 @@
     },
     "providers": {
       "mlb": "MLB Stats API (free)",
-      "park_factors": "Baseball Savant Statcast Park Factors (free)",
+      "park_factors": "Baseball Savant preferred; MLB Stats prior-season fallback (free)",
       "statcast": "Baseball Savant / Statcast Search CSV (free)",
-      "weather": "Open-Meteo Single Runs / ECMWF IFS (free)"
+      "weather": "Open-Meteo Single Runs preferred; Previous Runs fallback (free)"
     },
-    "schema": "v13-7-free-data-health-v3",
+    "schema": "v13-7-free-data-health-v4",
     "statcast": {
       "chunks": [
         {
@@ -199,6 +200,7 @@
       "schema": "v13-7-statcast-priors-report-v1",
       "stable_id_only": true
     },
+    "status": "FAIL",
     "team_history": {
       "cohort": "HISTORICAL_RECONSTRUCTED_FREE",
       "end": "2026-08-18",
@@ -238,6 +240,7 @@
       "start": "2021-03-01",
       "unique_games": 14043
     },
+    "warnings": [],
     "weather": {
       "archive_available_from": "2024-03-14",
       "available_rows": 0,
