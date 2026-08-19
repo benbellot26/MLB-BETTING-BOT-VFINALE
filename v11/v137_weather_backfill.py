@@ -90,8 +90,23 @@ def write(rows: list[dict[str, Any]]) -> list[str]:
     paths = []
     for month, items in sorted(grouped.items()):
         path = OUT_DIR / f"weather_{month}.jsonl.gz"
+        merged: dict[str, dict[str, Any]] = {}
+        if path.exists():
+            try:
+                with gzip.open(path, "rt", encoding="utf-8") as fh:
+                    for line in fh:
+                        if not line.strip():
+                            continue
+                        row = json.loads(line)
+                        key = str(row.get("game_pk") or "") + "|" + str(row.get("as_of") or "")
+                        merged[key] = row
+            except Exception:
+                merged = {}
+        for row in items:
+            key = str(row.get("game_pk") or "") + "|" + str(row.get("as_of") or "")
+            merged[key] = row
         with gzip.open(path, "wt", encoding="utf-8", compresslevel=9) as fh:
-            for row in sorted(items, key=lambda r: str(r.get("game_date") or "")):
+            for row in sorted(merged.values(), key=lambda r: (str(r.get("game_date") or ""), str(r.get("game_pk") or ""))):
                 fh.write(json.dumps(row, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n")
         paths.append(str(path))
     return paths
