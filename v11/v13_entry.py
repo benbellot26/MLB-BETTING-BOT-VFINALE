@@ -46,7 +46,7 @@ def _tracked_settle_rows(rows):
     return n
 
 
-def _assert_v135_calibration_artifact():
+def _assert_v13_calibration_artifact():
     """Fail closed unless calibration belongs to the exact current model generation."""
     model=calibration_v13.load_model()
     bad_status=str(model.get("status") or "").upper() in {"ABSENT","INCOMPATIBLE","INVALID"}
@@ -54,7 +54,7 @@ def _assert_v135_calibration_artifact():
             or model.get("baseball_only") is not True
             or model.get("model_generation") != probability_contract.MODEL_GENERATION_FINGERPRINT
             or bad_status):
-        raise SystemExit("V13.5.2 calibration artifact stale/incompatible: run `python -m v11.v13_train` before analysis")
+        raise SystemExit("V13 calibration artifact stale/incompatible: run `python -m v11.v13_train` before analysis")
 
 
 def _write_postrun_diagnostics():
@@ -72,14 +72,14 @@ def _write_postrun_diagnostics():
             core.logging.exception("V13 %s impossible; analytics publication remains available", name)
 
 
-def _run_v135(*args, **kwargs):
-    _assert_v135_calibration_artifact()
+def _run_v13(*args, **kwargs):
+    _assert_v13_calibration_artifact()
     report = _original_run(*args, **kwargs)
     _write_postrun_diagnostics()
     return report
 
 
-def _send_persisted_v135():
+def _send_persisted_v13():
     # Discord publication is fail-closed if a stale/future code path manages to
     # re-introduce actionable betting state into the analytics payload.
     v13_analytics_only.assert_payload_file(runner.DISCORD_PAYLOAD)
@@ -93,8 +93,8 @@ storage.record_selected_bets = v13_analytics_only.disabled_record_selected_bets
 runner.storage.record_selected_bets = v13_analytics_only.disabled_record_selected_bets
 storage.update_clv = _tracked_update_clv
 journal.settle_rows = _tracked_settle_rows
-runner.run = _run_v135
-runner.send_persisted = _send_persisted_v135
+runner.run = _run_v13
+runner.send_persisted = _send_persisted_v13
 
 
 def _summary_v13(report):
@@ -106,7 +106,17 @@ def self_test_v13():
     from . import probability_contract_v13 as contract
     from . import calibration_baseball_v13 as cal
     from . import extra_innings_v13, v13_distribution_prior, v13_run_mean_runtime, v13_rich_run_shadow, uncertainty_v13
-    assert config.VERSION.startswith("13.5")
+    from . import v13_runtime
+    from .v13_engine import VERSION as ENGINE_VERSION
+
+    # Software versions may advance independently from the predictive evidence
+    # fingerprint. Validate the actual runtime contract instead of pinning an old
+    # 13.5 prefix forever.
+    assert config.VERSION == ENGINE_VERSION
+    runtime_status = v13_runtime.assert_runtime_hooks()
+    assert runtime_status.get("explicit_engine") is True
+    assert runtime_status.get("no_v13_engine_global_monkeypatches") is True
+
     payload = contract.option_contract_payload(p_baseball_raw=.62,p_baseball_calibrated=.59,p_market=.56,p_posterior=.58,
         calibration_source="test",calibration_n=500,interval_low=.54,interval_high=.64)
     assert payload["p_baseball_calibrated"] == .59 and abs(payload["model_market_gap"]-.03) < 1e-9
@@ -161,7 +171,7 @@ def self_test_v13():
     assert abs(selector.conservative_probability(rec)-.52)<1e-12
     assert storage.record_selected_bets([], {}, "test", "test", core.TARGET_DATE) == 0
     v13_analytics_only.assert_payload({"results": [], "chosen": [], "combo": {}})
-    print("SELF-TEST V13.8.2 EVIDENCE + GENERATION-FINGERPRINT + NATIVE CALIBRATION + ANALYTICS-ONLY GATES OK")
+    print("SELF-TEST V13 EXPLICIT ENGINE + EVIDENCE + GENERATION-FINGERPRINT + ANALYTICS-ONLY GATES OK")
 
 
 runner._summary = _summary_v13
