@@ -31,7 +31,7 @@ class FreeDataFoundationTests(unittest.TestCase):
                 "relative_humidity_2m": [55, 56, 57],
                 "dew_point_2m": [10, 11, 12],
                 "surface_pressure": [1000, 1001, 1002],
-                "precipitation_probability": [1, 2, 3],
+                "precipitation": [0.0, 0.4, 0.8],
                 "cloud_cover": [10, 20, 30],
                 "wind_speed_10m": [8, 9, 10],
                 "wind_direction_10m": [90, 100, 110],
@@ -47,6 +47,8 @@ class FreeDataFoundationTests(unittest.TestCase):
         self.assertTrue(good["available"])
         self.assertTrue(good["point_in_time"])
         self.assertEqual(good["temperature_c"], 21.0)
+        self.assertEqual(good["precipitation_mm"], 0.4)
+        self.assertIsNone(good["precip_probability"])
         self.assertEqual(good["valid_hour"], "2026-08-19T19:00:00+00:00")
 
         bad = free.weather_from_single_run_payload(
@@ -59,7 +61,7 @@ class FreeDataFoundationTests(unittest.TestCase):
         self.assertFalse(bad["point_in_time"])
         self.assertEqual(bad["reason"], "weather_run_not_public_by_as_of")
 
-    def test_historical_weather_request_uses_single_run_and_ecmwf(self):
+    def test_historical_weather_request_uses_supported_ecmwf_variables(self):
         calls = []
 
         def fake_fetch(url, params):
@@ -71,7 +73,7 @@ class FreeDataFoundationTests(unittest.TestCase):
                     "relative_humidity_2m": [50],
                     "dew_point_2m": [12],
                     "surface_pressure": [1005],
-                    "precipitation_probability": [5],
+                    "precipitation": [0.2],
                     "cloud_cover": [20],
                     "wind_speed_10m": [10],
                     "wind_direction_10m": [180],
@@ -90,6 +92,43 @@ class FreeDataFoundationTests(unittest.TestCase):
         self.assertEqual(calls[0][0], "https://single-runs-api.open-meteo.com/v1/forecast")
         self.assertEqual(calls[0][1]["models"], "ecmwf_ifs")
         self.assertEqual(calls[0][1]["run"], "2026-08-19T06:00")
+        self.assertIn("precipitation", calls[0][1]["hourly"])
+        self.assertNotIn("precipitation_probability", calls[0][1]["hourly"])
+
+    def test_statcast_adaptive_fetch_splits_capped_ranges(self):
+        calls = []
+
+        def fake_fetch(url, params, timeout=45):
+            start = params["game_date_gt"]
+            end = params["game_date_lt"]
+            calls.append((start, end))
+            count = 2 if start == end else 5
+            lines = ["game_date,batter,pitcher,game_pk,at_bat_number,pitch_number"]
+            for i in range(count):
+                token = start.replace("-", "") + end.replace("-", "") + str(i)
+                lines.append(f"{start},100,200,{token},{i+1},1")
+            return "\n".join(lines) + "\n"
+
+        rows, diag = free.fetch_statcast_rows_adaptive(
+            "2026-08-17", "2026-08-19", fetch_text=fake_fetch, season=2026, row_cap=5
+        )
+        self.assertEqual(len(rows), 6)
+        self.assertGreaterEqual(diag["cap_hits"], 2)
+        self.assertGreaterEqual(diag["splits"], 2)
+        self.assertFalse(diag["unresolved_truncation"])
+        self.assertEqual(len(calls), 5)
+
+    def test_statcast_single_day_cap_fails_closed(self):
+        def fake_fetch(url, params, timeout=45):
+            lines = ["game_date,batter,pitcher,game_pk,at_bat_number,pitch_number"]
+            for i in range(5):
+                lines.append(f"2026-08-18,100,200,{i},{i+1},1")
+            return "\n".join(lines) + "\n"
+
+        with self.assertRaisesRegex(RuntimeError, "statcast_single_day_row_cap"):
+            free.fetch_statcast_rows_adaptive(
+                "2026-08-18", "2026-08-18", fetch_text=fake_fetch, season=2026, row_cap=5
+            )
 
     def test_statcast_is_stable_id_only_and_rejects_cutoff_day(self):
         prior = {
@@ -140,7 +179,7 @@ class FreeDataFoundationTests(unittest.TestCase):
         self.assertFalse(row["promotion_eligible"])
         self.assertFalse(row["target_labels_embedded"])
 
-    def test_prior_park_factor_excludes_target_season_and_preserves_handedness(self):
+    def test_prior_park_factor_parses_static_table_and_excludes_target_season(self):
         calls = []
         html = """
         <table>
@@ -160,14 +199,32 @@ class FreeDataFoundationTests(unittest.TestCase):
         self.assertEqual(calls[0][1]["year"], 2025)
         self.assertEqual(calls[0][1]["rolling"], 3)
         self.assertEqual(calls[0][1]["batSide"], "L")
+        self.assertEqual(result["parse_mode"], "html_table")
         self.assertEqual(result["rows"][0]["park_factor_index"], 113.0)
         self.assertFalse(result["promotion_eligible"])
+
+    def test_prior_park_factor_parses_savant_embedded_json(self):
+        html = """
+        <html><script>
+        var something = 1;
+        data = [{"team_name":"Rockies","venue_name":"Coors Field","venue_id":19,
+                 "year":"2023-2025","index_woba":113,"index_wobacon":112,
+                 "index_xwobacon":101,"index_hardhit":100,"index_r":128,
+                 "index_hr":106,"pa":48000}];
+        </script></html>
+        """
+        result = park.fetch_prior_factors(2026, "R", lambda *args, **kwargs: html)
+        self.assertEqual(result["parse_mode"], "embedded_json")
+        self.assertEqual(result["venue_count"], 1)
+        self.assertEqual(result["rows"][0]["venue"], "Coors Field")
+        self.assertEqual(result["rows"][0]["park_factor_index"], 113.0)
+        self.assertEqual(result["rows"][0]["hr_index"], 106.0)
 
         artifact = {"seasons": {"2026": {"L": result, "ALL": result, "R": result}}}
         venue = park.venue_prior(artifact, 2026, "Coors Field")
         self.assertTrue(venue["available"])
         self.assertEqual(venue["source_window_end_season"], 2025)
-        self.assertEqual(venue["l"]["hr_index"], 106.0)
+        self.assertEqual(venue["r"]["hr_index"], 106.0)
 
     def test_mlb_native_state_uses_stable_roster_ids_and_conservative_il_signal(self):
         def fake_mlb(path, params=None):
