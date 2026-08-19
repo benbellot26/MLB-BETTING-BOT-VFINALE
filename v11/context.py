@@ -14,6 +14,16 @@ def _num(x, d=0.0):
         return d
 
 
+def _weather_reference_time():
+    try:
+        replay = core.replay_as_of()
+        if replay:
+            return core.parse_dt(replay).astimezone(timezone.utc)
+    except Exception:
+        pass
+    return datetime.now(timezone.utc)
+
+
 def weather_for_game(game, home_name):
     coord = core.COORD.get(home_name)
     if not coord:
@@ -22,7 +32,11 @@ def weather_for_game(game, home_name):
         game_dt = core.parse_dt(game.get("gameDate"))
     except Exception:
         return {"available": False, "reason": "game_time_missing"}
-    key = (home_name, game_dt.strftime("%Y-%m-%dT%H"))
+    reference = _weather_reference_time()
+    # Include the analysis/replay reference in the cache key. A forecast fetched
+    # for an EARLY snapshot must never be silently reused as evidence for a later
+    # replay phase simply because the game hour is unchanged.
+    key = (home_name, game_dt.strftime("%Y-%m-%dT%H"), reference.strftime("%Y-%m-%dT%H:%M"))
     if key in _WEATHER_CACHE:
         return _WEATHER_CACHE[key]
     params = {
@@ -62,10 +76,20 @@ def weather_for_game(game, home_name):
             "wind_direction_deg": _num(at("wind_direction_10m"), None),
             "wind_gust_kph": _num(at("wind_gusts_10m"), None),
             "observed_hour": times[i],
-            "provider": "Open-Meteo hourly point-in-time forecast",
+            "retrieved_at": reference.isoformat(),
+            "forecast_reference_at": reference.isoformat(),
+            "source_issue_time_available": False,
+            "timestamp_basis": "retrieval_time; provider issue timestamp not exposed by this endpoint",
+            "point_in_time": reference < game_dt,
+            "provider": "Open-Meteo hourly pregame forecast",
         }
     except Exception as e:
-        out = {"available": False, "reason": f"weather_error:{type(e).__name__}"}
+        out = {
+            "available": False,
+            "reason": f"weather_error:{type(e).__name__}",
+            "retrieved_at": reference.isoformat(),
+            "timestamp_basis": "retrieval_time",
+        }
     _WEATHER_CACHE[key] = out
     return out
 
