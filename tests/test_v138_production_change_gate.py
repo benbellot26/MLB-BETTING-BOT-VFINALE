@@ -32,5 +32,11 @@ class V138ProductionChangeGateTests(unittest.TestCase):
             r=gate.build(datetime(2026,8,19,18,0,tzinfo=timezone.utc),[self._game(99)],delivered)
         self.assertFalse(r["run_needed"])
 
+    def test_name_vs_id_starter_representation_is_not_a_false_change(self):
+        delivered={"games":{"7":{"sent":True,"personnel_state":{"home_starter":"Gerrit Cole","away_starter":"2","home_lineup":[],"away_lineup":[]}}}}
+        with patch.object(gate.core,"phase_for_game",return_value="FINAL"):
+            r=gate.build(datetime(2026,8,19,18,0,tzinfo=timezone.utc),[self._game(543037)],delivered)
+        self.assertFalse(r["run_needed"])
+
 
 if __name__=="__main__":unittest.main()
