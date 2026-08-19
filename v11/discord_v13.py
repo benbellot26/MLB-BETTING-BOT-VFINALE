@@ -3,7 +3,7 @@ from __future__ import annotations
 from . import core
 from . import discord_v123 as base
 
-VERSION_LABEL = "V13.5 ANALYTICS"
+VERSION_LABEL = "V13.6 EVIDENCE ANALYTICS"
 base.VERSION_LABEL = VERSION_LABEL
 
 
@@ -19,6 +19,11 @@ def _price_text(value):
     return "—" if value is None or core.num(value) <= 1 else f"{core.num(value):.2f}"
 
 
+def _fair_odds(p):
+    p=core.num(p,0)
+    return "—" if p <= 0 or p >= 1 else f"{1/p:.2f}"
+
+
 def _line(r):
     e = r.get("winamax_eval") or {}
     g = e.get("v11_price_gate") or {}
@@ -28,7 +33,7 @@ def _line(r):
     lo, hi = r.get("probability_interval_low"), r.get("probability_interval_high")
     interval = "—" if lo is None or hi is None else f"{core.pct(lo)}–{core.pct(hi)}"
     push = r.get("p_push")
-    push_txt = "" if not push else f" • push **{core.pct(push)}**"
+    push_txt = "" if not push else f" • push {core.pct(push)}"
     ref_price = g.get("price")
     winamax_price = g.get("winamax_price") or e.get("price")
     cal_source = str(r.get("calibration_source_v13") or "identity")
@@ -41,19 +46,19 @@ def _line(r):
     primary = r.get("p_predictive_final")
     if primary is None:
         primary = r.get("p_baseball_calibrated")
+    market = r.get("p_market")
     posterior = r.get("p_posterior")
     posterior_txt = "—" if posterior is None else core.pct(posterior)
     posterior_weight = 100*core.num(r.get("posterior_weight_v13"))
     weight_source = str(r.get("posterior_weight_source_v13") or "BASEBALL_ONLY")
     return (
         f"🎯 **{_label(r)}**\n"
-        f"Probabilité principale **{core.pct(primary)}** • bande d'incertitude modèle **{interval}**{push_txt}\n"
-        f"Baseball **{core.pct(r.get('p_baseball_calibrated'))}** • brut **{core.pct(r.get('p_baseball_raw'))}** • "
-        f"Sharp **{core.pct(r.get('p_market'))}** • ensemble candidat / posterior shadow **{posterior_txt}** (Sharp appris **{posterior_weight:.0f}%**)\n"
-        f"Poids posterior **{weight_source}** • gap baseball/marché **{gap_txt}** • désaccord books **{market_disp_txt}**\n"
+        f"**MODEL {core.pct(primary)} | MARKET {core.pct(market)} | GAP {gap_txt}**\n"
+        f"Fair modèle **{_fair_odds(primary)}** • fair marché **{_fair_odds(market)}** • réf. **{_price_text(ref_price)}** • Winamax **{_price_text(winamax_price)}**\n"
+        f"Bande modèle **{interval}**{push_txt} • DQ modèle **{100*core.num(dq.get('model_input_score')):.0f}/100**\n"
         f"Calibration **{cal_status} / {cal_source}** • n phase **{phase_n}** • n marché **{market_n}**\n"
-        f"DQ modèle **{100*core.num(dq.get('model_input_score')):.0f}/100** • DQ globale **{100*core.num(dq.get('score')):.0f}/100**\n"
-        f"Cote réf. **{_price_text(ref_price)}** • Winamax **{_price_text(winamax_price)}**"
+        f"Brut **{core.pct(r.get('p_baseball_raw'))}** • posterior shadow **{posterior_txt}** (Sharp appris {posterior_weight:.0f}%, {weight_source})\n"
+        f"Désaccord books **{market_disp_txt}** • DQ globale **{100*core.num(dq.get('score')):.0f}/100**"
     )
 
 
@@ -78,12 +83,13 @@ def send_game(result, portfolio):
         groups.setdefault(r.get("market"), []).append(r)
     model, con, f = result.get("model") or {}, result.get("con") or {}, result.get("features") or {}
     bootstrap = model.get("historical_bootstrap") or {}
+    dq=result.get("data_quality") or {}
     brief = (
         f"Phase **{result.get('phase')}** • modèle **{model.get('version') or 'structural-only'}**\n"
         f"Projection **{ctx['away']} {result['amu']:.1f} – {result['hmu']:.1f} {ctx['home']}**\n"
-        f"Produit principal **probabilité prédictive** • posterior marché **shadow appris uniquement**\n"
-        f"Sharp ML refs **{int(core.num(con.get('n')))}** • dispersion **{core.num(model.get('dispersion')):.2f}** • "
-        f"env σ **{core.num(model.get('environment_sigma')):.3f}** • bootstrap **{bootstrap.get('status') or '—'}**"
+        f"Produit principal **baseball calibré** • marché et posterior **comparateurs/shadow uniquement**\n"
+        f"DQ modèle **{100*core.num(dq.get('model_input_score')):.0f}/100** • Sharp ML refs **{int(core.num(con.get('n')))}**\n"
+        f"Dispersion **{core.num(model.get('dispersion')):.2f}** • env σ **{core.num(model.get('environment_sigma')):.3f}** • bootstrap **{bootstrap.get('status') or '—'}**"
     )
     personnel = (
         f"**{ctx['away']}** • lineup {_lineup_status(ctx.get('away_lineup'))}\n"
