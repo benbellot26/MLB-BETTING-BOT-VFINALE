@@ -1,26 +1,34 @@
-name: MLB V13.8.2 Audit Closure Research
+name: MLB V13.9 Audit Closure Research
 
 on:
   pull_request:
     paths:
       - 'v11/v138_*.py'
+      - 'v11/v139_*.py'
+      - 'v11/v13_engine.py'
+      - 'v11/v13_runtime.py'
       - 'v11/market.py'
       - 'v11/v13_entry.py'
       - 'v11/v13_discord_delivery.py'
       - 'v11/discord_v13.py'
       - 'v11/v13_preflight.py'
       - 'tests/test_v138_*.py'
+      - 'tests/test_v139_*.py'
       - '.github/workflows/v13-8-audit-closure.yml'
   push:
     branches: [main]
     paths:
       - 'v11/v138_*.py'
+      - 'v11/v139_*.py'
+      - 'v11/v13_engine.py'
+      - 'v11/v13_runtime.py'
       - 'v11/market.py'
       - 'v11/v13_entry.py'
       - 'v11/v13_discord_delivery.py'
       - 'v11/discord_v13.py'
       - 'v11/v13_preflight.py'
       - 'tests/test_v138_*.py'
+      - 'tests/test_v139_*.py'
       - '.github/workflows/v13-8-audit-closure.yml'
   schedule:
     - cron: '47 12 * * *'
@@ -42,12 +50,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Compile V13.8.2 closure modules
+      - name: Compile V13 closure modules
         run: python -m py_compile v11/*.py tests/*.py
       - name: Shared critical preflight
         run: python -m v11.v13_preflight
-      - name: Direct V13.8 closure suites
-        run: python -m unittest -v tests.test_v138_audit_closure tests.test_v138_inning_history tests.test_v138_native_evidence tests.test_v138_production_change_gate
+      - name: Assert reconstructed 90-point engineering closure
+        run: python -m v11.v139_engineering_closure --assert-closed
+      - name: Direct V13.8/V13.9 closure suites
+        run: python -m unittest -v tests.test_v138_audit_closure tests.test_v138_inning_history tests.test_v138_native_evidence tests.test_v138_production_change_gate tests.test_v139_provider_hardening tests.test_v139_explicit_engine tests.test_v139_engineering_closure
 
   research-artifacts:
     if: github.event_name != 'pull_request'
@@ -82,8 +92,10 @@ jobs:
         run: python -m v11.v138_dataset_store
       - name: Refresh monitoring and HTML dashboard
         run: python -m v11.v138_monitoring
-      - name: Refresh truthful 52-point closure registry
+      - name: Refresh truthful 52-point evidence registry
         run: python -m v11.v138_audit_closure
+      - name: Refresh reconstructed 90-point engineering registry
+        run: python -m v11.v139_engineering_closure --assert-closed --write
       - name: Assert validation isolation and evidence integrity
         run: |
           python - <<'PY'
@@ -92,6 +104,7 @@ jobs:
           m=json.loads(Path('data/v138_research_models.json').read_text())
           a=json.loads(Path('data/v138_audit_closure.json').read_text())
           n=json.loads(Path('data/v138_native_evidence.json').read_text())
+          e=json.loads(Path('data/v139_engineering_closure.json').read_text())
           if m.get('promotion_eligible') is not False or m.get('research_only') is not True:
               raise SystemExit('reconstructed V13.8 model became promotion eligible')
           if m.get('holdout_isolation') is not True:
@@ -103,16 +116,18 @@ jobs:
           pending=sum(not bool(p.get('evidence_closed')) for p in (a.get('points') or []))
           if pending != int(a.get('evidence_gates_pending') or 0):
               raise SystemExit('closure registry pending-count mismatch')
+          if e.get('total') != 90 or e.get('engineering_closed') != 90 or e.get('engineering_open') != 0:
+              raise SystemExit('reconstructed 90-point engineering closure incomplete')
           if int(n.get('independent_native_targets') or 0) < 300:
               for key in ('uncertainty_coverage','dynamic_calibration'):
                   if (n.get(key) or {}).get('active'):
                       raise SystemExit(f'{key} bypassed the native minimum')
-          print('V13.8.2 validation isolation + self-closing native evidence gates OK; pending=',pending)
+          print('V13 validation isolation + 52 evidence registry + 90 engineering registry OK; evidence pending=',pending)
           PY
-      - name: Persist V13.8.2 research artifacts
+      - name: Persist V13 research and closure artifacts
         if: github.ref == 'refs/heads/main'
         run: |
-          git config user.name 'MLB Betting Bot V13.8 Research'
+          git config user.name 'MLB Betting Bot V13 Research'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           [ -f data/v138_inning_history.json.gz ] && git add -f data/v138_inning_history.json.gz
           [ -f data/v138_inning_evidence.json ] && git add -f data/v138_inning_evidence.json
@@ -125,9 +140,10 @@ jobs:
           [ -f data/v138_provider_health.jsonl ] && git add -f data/v138_provider_health.jsonl
           [ -f data/v138_dashboard.html ] && git add -f data/v138_dashboard.html
           [ -f data/v138_audit_closure.json ] && git add -f data/v138_audit_closure.json
+          [ -f data/v139_engineering_closure.json ] && git add -f data/v139_engineering_closure.json
           [ -d data/v138 ] && git add -f data/v138
           if ! git diff --cached --quiet; then
-            git commit -m 'data: refresh V13.8.2 native evidence automation [skip ci]'
+            git commit -m 'data: refresh V13 research and closure evidence [skip ci]'
             git pull --rebase origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi

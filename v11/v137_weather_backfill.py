@@ -3,17 +3,44 @@ from __future__ import annotations
 import argparse
 import gzip
 import json
+import math
 from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
 from . import core
-from .v137_free_data import COHORT, WEATHER_ARCHIVE_START, historical_weather_for_game
+from .v137_free_data import (
+    COHORT,
+    DEFAULT_WEATHER_PUBLICATION_LAG_HOURS,
+    WEATHER_ARCHIVE_START,
+    historical_weather_for_game,
+)
 from .v137_team_history import fetch_schedule_span
 
 OUT_DIR = Path("data/v137")
 REPORT = Path("data/v137_weather_backfill_report.json")
+PREVIOUS_RUNS_URL = "https://previous-runs-api.open-meteo.com/v1/forecast"
+PREVIOUS_RUNS_MAX_DAYS = 7
+PREVIOUS_RUNS_BASE_VARIABLES = (
+    "temperature_2m",
+    "relative_humidity_2m",
+    "dew_point_2m",
+    "surface_pressure",
+    "precipitation",
+    "cloud_cover",
+    "wind_speed_10m",
+    "wind_direction_10m",
+    "wind_gusts_10m",
+)
+
+
+def _num(value: Any) -> float | None:
+    try:
+        out = float(value)
+        return out if math.isfinite(out) else None
+    except Exception:
+        return None
 
 
 def _is_regular_game(game: dict[str, Any]) -> bool:
@@ -24,10 +51,141 @@ def _team_name(game: dict[str, Any], side: str) -> str:
     return str(((((game.get("teams") or {}).get(side) or {}).get("team") or {}).get("name")) or "")
 
 
+def _utc(value: Any) -> datetime:
+    dt = value if isinstance(value, datetime) else core.parse_dt(value)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def _previous_day_offset(game_time: Any, as_of: Any) -> int | None:
+    """Choose the minimum fixed-lead forecast safely older than ``as_of``.
+
+    Open-Meteo documents ``previous_dayN`` as the value predicted N*24 hours
+    before valid time. We add the same conservative six-hour publication margin
+    used by the exact Single Runs path before selecting a fixed lead.
+    """
+    game_dt = _utc(game_time)
+    asof_dt = _utc(as_of)
+    if asof_dt >= game_dt:
+        return None
+    hours_before_game = (game_dt - asof_dt).total_seconds() / 3600.0
+    safe_hours = hours_before_game + DEFAULT_WEATHER_PUBLICATION_LAG_HOURS
+    offset = max(1, int(math.ceil(safe_hours / 24.0)))
+    return offset if offset <= PREVIOUS_RUNS_MAX_DAYS else None
+
+
+def _hourly_value(hourly: dict[str, Any], key: str, idx: int) -> Any:
+    values = hourly.get(key) or []
+    return values[idx] if idx < len(values) else None
+
+
+def previous_run_weather_for_game(
+    game_time: Any,
+    home_name: str,
+    as_of: Any,
+    fetch_json=None,
+) -> dict[str, Any]:
+    """PIT-safe fallback using Open-Meteo fixed-lead previous-run forecasts.
+
+    The Previous Runs endpoint is deliberately queried in its documented Best
+    Match mode rather than pinning an undocumented model slug. This path remains
+    reconstructed, non-native and permanently ineligible for promotion floors.
+    """
+    game_dt = _utc(game_time)
+    asof_dt = _utc(as_of)
+    if asof_dt >= game_dt:
+        return {"available": False, "point_in_time": False, "reason": "analysis_not_pregame"}
+
+    coord = core.COORD.get(home_name)
+    if not coord:
+        return {"available": False, "point_in_time": True, "reason": "park_coordinates_missing"}
+
+    offset = _previous_day_offset(game_dt, asof_dt)
+    if offset is None:
+        return {
+            "available": False,
+            "point_in_time": True,
+            "reason": "previous_runs_safe_offset_exceeds_archive_horizon",
+        }
+
+    suffix = f"_previous_day{offset}"
+    requested = [f"{name}{suffix}" for name in PREVIOUS_RUNS_BASE_VARIABLES]
+    params = {
+        "latitude": coord[0],
+        "longitude": coord[1],
+        "timezone": "UTC",
+        "hourly": ",".join(requested),
+        "start_date": game_dt.date().isoformat(),
+        "end_date": game_dt.date().isoformat(),
+    }
+    fetch_json = fetch_json or core.http_json
+    try:
+        payload = fetch_json(PREVIOUS_RUNS_URL, params) or {}
+    except Exception as exc:
+        return {
+            "available": False,
+            "point_in_time": True,
+            "reason": f"previous_runs_error:{type(exc).__name__}",
+            "previous_day_offset": offset,
+        }
+
+    hourly = payload.get("hourly") or {}
+    raw_times = hourly.get("time") or []
+    if not raw_times:
+        return {
+            "available": False,
+            "point_in_time": True,
+            "reason": "previous_runs_hourly_missing",
+            "previous_day_offset": offset,
+        }
+
+    parsed = []
+    for value in raw_times:
+        dt = datetime.fromisoformat(str(value))
+        parsed.append(dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt.astimezone(timezone.utc))
+    idx = min(range(len(parsed)), key=lambda i: abs((parsed[i] - game_dt).total_seconds()))
+    if abs((parsed[idx] - game_dt).total_seconds()) > 90 * 60:
+        return {
+            "available": False,
+            "point_in_time": True,
+            "reason": "previous_runs_does_not_cover_game_hour",
+            "previous_day_offset": offset,
+        }
+
+    def value(name: str) -> Any:
+        return _hourly_value(hourly, f"{name}{suffix}", idx)
+
+    return {
+        "available": True,
+        "point_in_time": True,
+        "cohort": COHORT,
+        "provider": "Open-Meteo Previous Runs / Best Match",
+        "provider_fallback": True,
+        "previous_day_offset": offset,
+        "forecast_lead_hours": offset * 24,
+        "assumed_publication_lag_hours": DEFAULT_WEATHER_PUBLICATION_LAG_HOURS,
+        "as_of": asof_dt.isoformat(),
+        "valid_hour": parsed[idx].isoformat(),
+        "temperature_c": _num(value("temperature_2m")),
+        "humidity_pct": _num(value("relative_humidity_2m")),
+        "dew_point_c": _num(value("dew_point_2m")),
+        "surface_pressure_hpa": _num(value("surface_pressure")),
+        "precipitation_mm": _num(value("precipitation")),
+        "precip_probability": None,
+        "cloud_cover_pct": _num(value("cloud_cover")),
+        "wind_kph": _num(value("wind_speed_10m")),
+        "wind_direction_deg": _num(value("wind_direction_10m")),
+        "wind_gust_kph": _num(value("wind_gusts_10m")),
+        "request_model": "best_match",
+    }
+
+
 def collect(start: str, end: str, lead_hours: int = 2) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     games = fetch_schedule_span(start, end)
     rows = []
     status_counts = defaultdict(int)
+    provider_counts = defaultdict(int)
     for game in games:
         if not _is_regular_game(game):
             continue
@@ -44,10 +202,19 @@ def collect(start: str, end: str, lead_hours: int = 2) -> tuple[list[dict[str, A
             continue
         as_of = game_dt - timedelta(hours=max(1, int(lead_hours)))
         weather = historical_weather_for_game(game_dt, home, as_of)
-        status_counts["available" if weather.get("available") else str(weather.get("reason") or "unavailable")] += 1
+        if not weather.get("available") and str(weather.get("reason") or "").startswith("single_run"):
+            weather = previous_run_weather_for_game(game_dt, home, as_of)
+
+        if weather.get("available"):
+            provider = str(weather.get("provider") or "unknown")
+            provider_counts[provider] += 1
+            status_counts["available"] += 1
+        else:
+            status_counts[str(weather.get("reason") or "unavailable")] += 1
+
         rows.append(
             {
-                "schema": "v13-7-free-weather-feature-v1",
+                "schema": "v13-7-free-weather-feature-v2",
                 "cohort": COHORT,
                 "native_live": False,
                 "promotion_eligible": False,
@@ -62,7 +229,7 @@ def collect(start: str, end: str, lead_hours: int = 2) -> tuple[list[dict[str, A
             }
         )
     report = {
-        "schema": "v13-7-free-weather-backfill-report-v1",
+        "schema": "v13-7-free-weather-backfill-report-v2",
         "cohort": COHORT,
         "start": start,
         "end": end,
@@ -72,6 +239,8 @@ def collect(start: str, end: str, lead_hours: int = 2) -> tuple[list[dict[str, A
         "available_rows": sum(bool((r.get("weather") or {}).get("available")) for r in rows),
         "point_in_time_rows": sum(bool((r.get("weather") or {}).get("point_in_time")) for r in rows),
         "status_counts": dict(sorted(status_counts.items())),
+        "provider_counts": dict(sorted(provider_counts.items())),
+        "fallback_policy": "Single Runs first; documented Previous Runs fixed lead selected conservatively when exact run is unavailable",
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "promotion_eligible": False,
     }
@@ -114,7 +283,7 @@ def write(rows: list[dict[str, Any]]) -> list[str]:
 
 def main() -> None:
     yesterday = date.today() - timedelta(days=1)
-    parser = argparse.ArgumentParser(description="Backfill free point-in-time archived ECMWF weather for MLB games")
+    parser = argparse.ArgumentParser(description="Backfill free point-in-time archived weather for MLB games")
     parser.add_argument("--start", default=yesterday.isoformat())
     parser.add_argument("--end", default=yesterday.isoformat())
     parser.add_argument("--lead-hours", type=int, default=2)

@@ -25,6 +25,9 @@ CRITICAL_TEST_MODULES = (
     "tests.test_v138_production_change_gate",
     "tests.test_v138_inning_history",
     "tests.test_v138_native_evidence",
+    "tests.test_v139_provider_hardening",
+    "tests.test_v139_explicit_engine",
+    "tests.test_v139_engineering_closure",
 )
 
 
@@ -39,12 +42,12 @@ def run(modules: tuple[str, ...] = CRITICAL_TEST_MODULES, verbosity: int = 1) ->
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run the shared V13.8.2 critical preflight suite")
+    parser = argparse.ArgumentParser(description="Run the shared V13 critical preflight suite")
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args()
     if not run(verbosity=2 if args.verbose else 1):
         raise SystemExit(1)
-    print("V13.8.2 shared critical preflight OK")
+    print("V13 shared critical preflight OK")
 
 
 if __name__ == "__main__":

@@ -5,96 +5,133 @@ from datetime import datetime, timezone
 from typing import Any
 
 from . import point_in_time_v13 as pit
-from . import extra_innings_v13
-from . import v13_distribution_prior
-from . import v13_run_mean_runtime
-from . import v13_rich_run_shadow
-from . import v13_posterior_policy
 from .pipeline_v13 import ProbabilityPipelineV13
 from .probability_contract_v13 import (
+    MODEL_GENERATION_FINGERPRINT,
+    PREDICTIVE_CONTRACT_VERSION,
     attach_contract,
     assert_no_market_leakage,
-    PREDICTIVE_CONTRACT_VERSION,
-    MODEL_GENERATION_FINGERPRINT,
 )
+from .v13_engine import V13Engine, VERSION
 
-VERSION = "13.5.2-professional-probability-v1"
 _INSTALLED = False
+_ENGINE: V13Engine | None = None
 
 V13_OPTION_FIELDS = (
-    "p_baseball_raw", "p_baseball_calibrated", "p_posterior", "p_predictive_final", "model_market_gap",
-    "baseball_probability_source", "calibration_source_v13", "calibration_n_v13",
-    "calibration_phase_n_v13", "calibration_market_n_v13", "reliability_source_v13",
-    "probability_interval_low", "probability_interval_high", "probability_uncertainty_v13",
-    "posterior_weight_v13", "posterior_weight_source_v13", "posterior_weight_games_v13",
-    "posterior_weight_policy_v13", "legacy_sharp_weight_v13",
-    "predictive_final_source", "predictive_final_status",
-    "p_legacy_market_blended", "probability_product", "edge_probability_field",
-    "posterior_allowed_for_edge", "selector_uncertainty_source",
-    "v13_probability_error", "v13_probability_eligible",
+    "p_baseball_raw",
+    "p_baseball_calibrated",
+    "p_posterior",
+    "p_predictive_final",
+    "model_market_gap",
+    "baseball_probability_source",
+    "calibration_source_v13",
+    "calibration_n_v13",
+    "calibration_phase_n_v13",
+    "calibration_market_n_v13",
+    "reliability_source_v13",
+    "probability_interval_low",
+    "probability_interval_high",
+    "probability_uncertainty_v13",
+    "posterior_weight_v13",
+    "posterior_weight_source_v13",
+    "posterior_weight_games_v13",
+    "posterior_weight_policy_v13",
+    "legacy_sharp_weight_v13",
+    "predictive_final_source",
+    "predictive_final_status",
+    "p_legacy_market_blended",
+    "probability_product",
+    "edge_probability_field",
+    "posterior_allowed_for_edge",
+    "selector_uncertainty_source",
+    "v13_probability_error",
+    "v13_probability_eligible",
 )
 
 
-def _num(x: Any, d: float = 0.0) -> float:
+def _num(value: Any, default: float = 0.0) -> float:
     try:
-        y = float(x)
-        return y if math.isfinite(y) else d
+        out = float(value)
+        return out if math.isfinite(out) else default
     except Exception:
-        return d
+        return default
 
 
-def _as_pipeline(value: ProbabilityPipelineV13 | dict[str,Any] | None) -> ProbabilityPipelineV13:
-    if isinstance(value, ProbabilityPipelineV13): return value
-    # Explicitly injected calibration models are deterministic test/research
-    # inputs; do not silently add a persisted posterior policy to them.
-    if isinstance(value, dict): return ProbabilityPipelineV13(value, {})
+def _as_pipeline(value: ProbabilityPipelineV13 | dict[str, Any] | None) -> ProbabilityPipelineV13:
+    if isinstance(value, ProbabilityPipelineV13):
+        return value
+    if isinstance(value, dict):
+        # Explicit calibration injection remains deterministic for tests/research.
+        return ProbabilityPipelineV13(value, {})
     return ProbabilityPipelineV13.from_artifact()
 
 
-def _option_key(opt: dict[str,Any]) -> tuple[str,str,str]:
-    return (str(opt.get("market") or ""), str(opt.get("name") or ""), str(opt.get("point")))
+def _option_key(option: dict[str, Any]) -> tuple[str, str, str]:
+    return (
+        str(option.get("market") or ""),
+        str(option.get("name") or ""),
+        str(option.get("point")),
+    )
 
 
-def upgrade_option(opt: dict[str,Any], phase: str, pipeline: ProbabilityPipelineV13 | dict[str,Any] | None = None,
-                   data_quality: float = 1.0) -> dict[str,Any]:
+def upgrade_option(
+    option: dict[str, Any],
+    phase: str,
+    pipeline: ProbabilityPipelineV13 | dict[str, Any] | None = None,
+    data_quality: float = 1.0,
+) -> dict[str, Any]:
+    """Backward-compatible single-option V13 probability-contract adapter."""
     pipeline = _as_pipeline(pipeline)
-    legacy_effective = opt.get("p_effective")
-    pipeline.transform_option(opt, phase, data_quality=data_quality)
-    opt["p_legacy_market_blended"] = legacy_effective
-    calibrated = float(opt["p_baseball_calibrated"]); raw = float(opt["p_baseball_raw"])
-    push = max(0.0, min(.35, _num(opt.get("p_push_model", opt.get("p_push")), 0.0)))
-    opt["p_effective"] = round(calibrated, 6); opt["p_model"] = round(raw, 6)
-    opt["p_win"] = round(calibrated*(1-push), 6); opt["p_push"] = round(push, 6)
-
-    # Predictive-analytics product contract:
-    # - baseball calibrated remains the primary probability until a market-aware
-    #   ensemble has demonstrated an out-of-sample Brier + LogLoss improvement
-    #   on enough UNIQUE games;
-    # - p_posterior is a shadow candidate whose market weight comes only from a
-    #   validated chronological policy artifact. Insufficient evidence => 0% Sharp.
-    opt["p_predictive_final"] = round(calibrated, 6)
-    opt["predictive_final_source"] = "baseball_calibrated"
-    opt["predictive_final_status"] = "BASEBALL_PRIMARY_POSTERIOR_SHADOW"
-
-    opt["probability_product"] = "calibrated-baseball-only"
-    opt["edge_probability_field"] = "p_baseball_calibrated"; opt["posterior_allowed_for_edge"] = False
-    assert_no_market_leakage(opt)
-    return opt
+    legacy_effective = option.get("p_effective")
+    pipeline.transform_option(option, phase, data_quality=data_quality)
+    option["p_legacy_market_blended"] = legacy_effective
+    calibrated = float(option["p_baseball_calibrated"])
+    raw = float(option["p_baseball_raw"])
+    push = max(0.0, min(0.35, _num(option.get("p_push_model", option.get("p_push")), 0.0)))
+    option["p_effective"] = round(calibrated, 6)
+    option["p_model"] = round(raw, 6)
+    option["p_win"] = round(calibrated * (1.0 - push), 6)
+    option["p_push"] = round(push, 6)
+    option["p_predictive_final"] = round(calibrated, 6)
+    option["predictive_final_source"] = "baseball_calibrated"
+    option["predictive_final_status"] = "BASEBALL_PRIMARY_POSTERIOR_SHADOW"
+    option["probability_product"] = "calibrated-baseball-only"
+    option["edge_probability_field"] = "p_baseball_calibrated"
+    option["posterior_allowed_for_edge"] = False
+    assert_no_market_leakage(option)
+    return option
 
 
-def upgrade_result(result: dict[str,Any], pipeline: ProbabilityPipelineV13 | dict[str,Any] | None = None) -> dict[str,Any]:
-    pipeline = _as_pipeline(pipeline); phase = str(result.get("phase") or "EARLY").upper()
-    from . import data_quality
-    dq = result.get("data_quality") if isinstance(result.get("data_quality"), dict) else data_quality.assess(result)
+def upgrade_result(
+    result: dict[str, Any],
+    pipeline: ProbabilityPipelineV13 | dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Compatibility adapter retained for replay/tests outside ``V13Engine``."""
+    pipeline = _as_pipeline(pipeline)
+    phase = str(result.get("phase") or "EARLY").upper()
+    from . import data_quality as dq_module
+
+    dq = result.get("data_quality") if isinstance(result.get("data_quality"), dict) else dq_module.assess(result)
     result["data_quality"] = dq
     dq_score = max(0.0, min(1.0, _num(dq.get("model_input_score", dq.get("score")), 1.0)))
-    for opt in result.get("options") or []:
-        try: upgrade_option(opt, phase, pipeline, data_quality=dq_score)
+    for option in result.get("options") or []:
+        try:
+            upgrade_option(option, phase, pipeline, data_quality=dq_score)
         except Exception as exc:
-            opt["v13_probability_error"] = f"{type(exc).__name__}:{exc}"; opt["v13_probability_eligible"] = False
+            option["v13_probability_error"] = f"{type(exc).__name__}:{exc}"
+            option["v13_probability_eligible"] = False
     home = str((result.get("ctx") or {}).get("home") or "")
-    hm = next((o for o in result.get("options") or [] if str(o.get("market") or "").upper()=="ML" and str(o.get("name") or "")==home), None)
-    if hm and hm.get("p_baseball_calibrated") is not None: result["p_home"] = hm["p_baseball_calibrated"]
+    hm = next(
+        (
+            option
+            for option in result.get("options") or []
+            if str(option.get("market") or "").upper() == "ML"
+            and str(option.get("name") or "") == home
+        ),
+        None,
+    )
+    if hm and hm.get("p_baseball_calibrated") is not None:
+        result["p_home"] = hm["p_baseball_calibrated"]
     result["software_version"] = VERSION
     result["probability_contract_version"] = PREDICTIVE_CONTRACT_VERSION
     result["model_generation"] = MODEL_GENERATION_FINGERPRINT
@@ -102,149 +139,102 @@ def upgrade_result(result: dict[str,Any], pipeline: ProbabilityPipelineV13 | dic
     result["predictive_analytics_mode"] = True
     result["primary_probability_field"] = "p_predictive_final"
     result["posterior_role"] = "shadow_candidate_until_unique_game_out_of_sample_validation"
-    result["market_blend_allowed_for_edge"] = False; result["market_blend_allowed_for_forecast_only"] = True
-    result["probability_pipeline"] = "PregameSnapshot->BaseballModel->RunMeanPrior->ScoreDistribution->BaseballCalibration->ValidatedPosteriorShadow"
+    result["market_blend_allowed_for_edge"] = False
+    result["market_blend_allowed_for_forecast_only"] = True
     return result
 
 
-def runtime_hook_status() -> dict[str,Any]:
-    """Make the dynamic V12.3/V13 integration explicit and testable."""
-    from . import engine_v12, runner, methodology_v123
-    return {
-        "installed": bool(_INSTALLED),
+def runtime_hook_status() -> dict[str, Any]:
+    """Compatibility name; reports explicit composition rather than V13 hooks."""
+    from . import engine_v12, methodology_v123, runner
+
+    explicit_engine = isinstance(runner.engine, V13Engine)
+    row_adapter = bool(getattr(runner._row, "_v13_runtime_adapter", False))
+    global_markers = {
         "engine_analyze": bool(getattr(engine_v12.analyze, "_v13_runtime_hook", False)),
-        "runner_row": bool(getattr(runner._row, "_v13_runtime_hook", False)),
         "bootstrap": bool(getattr(methodology_v123.bootstrap_prior_v123, "_v13_runtime_hook", False)),
         "analysis_points": bool(getattr(engine_v12._analysis_points, "_v13_runtime_hook", False)),
         "extra_innings": bool(getattr(engine_v12.prob_home_win, "_v13_runtime_hook", False)),
     }
+    no_v13_engine_global_monkeypatches = not any(global_markers.values())
+    return {
+        "installed": bool(_INSTALLED),
+        "architecture": "explicit-v13-engine",
+        # Legacy status keys are retained so existing health consumers do not
+        # break; True now means the responsibility is owned by V13Engine.
+        "engine_analyze": explicit_engine,
+        "runner_row": row_adapter,
+        "bootstrap": explicit_engine,
+        "analysis_points": explicit_engine,
+        "extra_innings": explicit_engine,
+        "explicit_engine": explicit_engine,
+        "no_v13_engine_global_monkeypatches": no_v13_engine_global_monkeypatches,
+        "legacy_global_markers": global_markers,
+    }
 
 
-def assert_runtime_hooks() -> dict[str,Any]:
+def assert_runtime_hooks() -> dict[str, Any]:
+    """Backward-compatible assertion for the new explicit runtime contract."""
     status = runtime_hook_status()
-    if not status.get("installed") or not all(status.get(k) for k in ("engine_analyze","runner_row","bootstrap","analysis_points","extra_innings")):
-        raise RuntimeError(f"V13 runtime integration incomplete: {status}")
+    required = (
+        status.get("installed")
+        and status.get("explicit_engine")
+        and status.get("runner_row")
+        and status.get("no_v13_engine_global_monkeypatches")
+    )
+    if not required:
+        raise RuntimeError(f"V13 explicit runtime integration incomplete: {status}")
     return status
 
 
 def install() -> bool:
-    global _INSTALLED
-    if _INSTALLED: return True
-    from . import config, engine_v12, runner, methodology_v123
-    original_analyze = engine_v12.analyze; original_row = runner._row
-    original_joint = engine_v12.joint_score_matrix
-    # V12.3's active project path calls methodology_v123.bootstrap_prior_v123
-    # directly through compose_runtime(). Hook that exact function and verify it
-    # through runtime_hook_status() so architecture drift fails closed in CI.
-    original_bootstrap_prior = methodology_v123.bootstrap_prior_v123
-    original_analysis_points = engine_v12._analysis_points
+    """Install V13 as an explicit engine object plus a persistence adapter.
 
-    def neutral_extra_innings_home_win(home_mu, away_mu, dispersion=None, env_sigma=None):
-        joint = original_joint(home_mu, away_mu, dispersion=dispersion, env_sigma=env_sigma)
-        return extra_innings_v13.home_win_probability(joint, extra_innings_home_prior=None)
-    neutral_extra_innings_home_win._v13_runtime_hook = True
-    engine_v12.prob_home_win = neutral_extra_innings_home_win
+    No V13 code mutates ``engine_v12.analyze``, ``engine_v12._analysis_points``,
+    ``engine_v12.prob_home_win`` or ``methodology_v123.bootstrap_prior_v123``.
+    V12.3 remains the compatibility/base layer; V13 orchestration lives in the
+    ``V13Engine`` instance assigned to ``runner.engine``.
+    """
+    global _INSTALLED, _ENGINE
+    if _INSTALLED:
+        return True
 
-    def v13_analysis_points(event, key, home=None, as_of=None):
-        """Keep the standard +/-1.5 RL surface visible for both teams.
+    from . import config, runner
 
-        Synthetic visibility cannot bypass the selector: missing executable prices
-        and the normal value/data-quality gates still fail closed.
-        """
-        points, source = original_analysis_points(event, key, home, as_of)
-        if key != "spreads":
-            return points, source
-        merged = {round(_num(p), 2) for p in (points or [])}
-        before = set(merged)
-        merged.update({-1.5, 1.5})
-        if merged != before:
-            source = f"{source}+v13-standard-1.5" if source and source != "none" else "v13-standard-1.5"
-        return sorted(merged), source
-    v13_analysis_points._v13_runtime_hook = True
-    engine_v12._analysis_points = v13_analysis_points
-
-    def validated_historical_priors(structural_hmu, structural_amu, champ, phase):
-        values = list(original_bootstrap_prior(structural_hmu, structural_amu, champ, phase))
-        phase_name = str(phase or "EARLY").upper(); phase_model = ((champ.get("phase_models") or {}).get(phase_name) or {})
-        native_residual_active = bool(champ.get("active") and (phase_model.get("residual") or {}).get("active"))
-
-        validation_meta = dict(values[2] or {})
-        validation_meta.update({
-            "v13_validation_baseline_home_mu": values[0],
-            "v13_validation_baseline_away_mu": values[1],
-            "v13_validation_baseline_dispersion": values[4],
-            "v13_validation_baseline_environment_sigma": values[6],
-            "v13_validation_model_generation": MODEL_GENERATION_FINGERPRINT,
-            "v13_validation_baseline_source": "v123-compose-runtime-pre-v13-candidate",
-        })
-        values[2] = validation_meta
-        legacy_run_prior_active = bool(validation_meta.get("active"))
-
-        if phase_name == "FINAL" and not native_residual_active and not legacy_run_prior_active:
-            hmu, amu, mean_meta = v13_run_mean_runtime.apply_pair(values[0], values[1], phase_name)
-            if mean_meta.get("active"):
-                values[0], values[1] = hmu, amu; bootstrap = dict(values[3] or {})
-                bootstrap["v13_run_mean_prior"] = mean_meta; values[3] = bootstrap
-        dispersion, env_sigma, dist_meta = v13_distribution_prior.apply(values[4], values[6], phase_name)
-        if dist_meta.get("active"):
-            values[4] = dispersion; values[5] = dist_meta.get("source"); values[6] = env_sigma
-            bootstrap = dict(values[3] or {}); bootstrap["v13_distribution_prior"] = dist_meta; values[3] = bootstrap
-        return tuple(values)
-    validated_historical_priors._v13_runtime_hook = True
-
-    methodology_v123.bootstrap_prior_v123 = validated_historical_priors
-    engine_v12._bootstrap_prior = validated_historical_priors
-
-    def analyze(game, event, as_of=None):
-        result = original_analyze(game, event, as_of=as_of)
-        run_prior_meta = ((((result.get("features") or {}).get("historical_bootstrap") or {}).get("run_prior")) or {})
-        result["v13_validation_baseline"] = {
-            "home_mu": run_prior_meta.get("v13_validation_baseline_home_mu"),
-            "away_mu": run_prior_meta.get("v13_validation_baseline_away_mu"),
-            "dispersion": run_prior_meta.get("v13_validation_baseline_dispersion"),
-            "environment_sigma": run_prior_meta.get("v13_validation_baseline_environment_sigma"),
-            "model_generation": run_prior_meta.get("v13_validation_model_generation"),
-            "source": run_prior_meta.get("v13_validation_baseline_source"),
-        }
-        result["v13_validation_baseline_ready"] = (
-            all(result["v13_validation_baseline"].get(k) is not None for k in ("home_mu","away_mu","dispersion","environment_sigma"))
-            and result["v13_validation_baseline"].get("model_generation") == MODEL_GENERATION_FINGERPRINT
-        )
-        before = bool((result.get("shadow_v124") or {}).get("modules"))
-        v13_rich_run_shadow.attach(result)
-        result["v13_shadow_chain"] = {
-            "v124_modules_before_rich": before,
-            "rich_status": (result.get("shadow_v13_rich_runs") or {}).get("status"),
-            "affects_probability": False,
-        }
-        return upgrade_result(result)
-    analyze._v13_runtime_hook = True
+    original_row = runner._row
+    engine = V13Engine()
 
     def row(result, run_id, at, snapshot=None, source_replay=None):
         payload = original_row(result, run_id, at, snapshot, source_replay)
-        live = {_option_key(o): o for o in result.get("options") or []}
+        live = {_option_key(option): option for option in result.get("options") or []}
         for saved in payload.get("options") or []:
             src = live.get(_option_key(saved)) or {}
-            for field in V13_OPTION_FIELDS: saved[field] = src.get(field)
+            for field in V13_OPTION_FIELDS:
+                saved[field] = src.get(field)
         payload["data_quality"] = result.get("data_quality")
         payload["shadow_v13_rich_runs"] = result.get("shadow_v13_rich_runs")
         payload["v13_shadow_chain"] = result.get("v13_shadow_chain")
         payload["v13_validation_baseline"] = result.get("v13_validation_baseline")
         payload["v13_validation_baseline_ready"] = result.get("v13_validation_baseline_ready")
+        payload["v13_engine"] = result.get("v13_engine")
         attach_contract(payload)
         as_of = str(payload.get("analyzed_at") or at or datetime.now(timezone.utc).isoformat())
         pit.mark_live_snapshot(payload, as_of)
         payload["software_version"] = VERSION
         payload["probability_contract_version"] = PREDICTIVE_CONTRACT_VERSION
         payload["model_generation"] = MODEL_GENERATION_FINGERPRINT
-        payload["probability_product"] = "baseball-only-calibrated"; payload["predictive_compatibility_independent_of_software_version"] = True
+        payload["probability_product"] = "baseball-only-calibrated"
+        payload["predictive_compatibility_independent_of_software_version"] = True
         payload["predictive_analytics_mode"] = True
         payload["primary_probability_field"] = "p_predictive_final"
-        payload["runtime_hook_contract"] = "v13-runtime-hooks-v1"
+        payload["runtime_architecture_contract"] = "v13-explicit-engine-v1"
         return payload
-    row._v13_runtime_hook = True
 
-    engine_v12.analyze = analyze; runner.engine.analyze = analyze; runner._row = row; config.VERSION = VERSION
+    row._v13_runtime_adapter = True
+    runner.engine = engine
+    runner._row = row
+    config.VERSION = VERSION
+    _ENGINE = engine
     _INSTALLED = True
     assert_runtime_hooks()
     return True
