@@ -17,4 +17,5 @@ def main() -> None:
     v138_audit_closure.main()
 
 
-if __name__=="__main__":main()
+if __name__ == "__main__":
+    main()
