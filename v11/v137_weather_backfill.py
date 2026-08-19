@@ -35,6 +35,14 @@ PREVIOUS_RUNS_BASE_VARIABLES = (
 )
 
 
+def _num(value: Any) -> float | None:
+    try:
+        out = float(value)
+        return out if math.isfinite(out) else None
+    except Exception:
+        return None
+
+
 def _is_regular_game(game: dict[str, Any]) -> bool:
     return str(game.get("gameType") or "R").upper() == "R"
 
@@ -51,15 +59,17 @@ def _utc(value: Any) -> datetime:
 
 
 def _previous_day_offset(game_time: Any, as_of: Any) -> int | None:
-    """Choose a fixed-lead archive that is conservatively public by ``as_of``.
+    """Choose the minimum fixed-lead forecast safely older than ``as_of``.
 
-    Open-Meteo previous_dayN values represent forecasts made N*24 hours before
-    valid time. Add the same conservative six-hour publication margin used by
-    the Single Runs path before selecting the minimum safe offset.
+    Open-Meteo documents ``previous_dayN`` as the value predicted N*24 hours
+    before valid time. We add the same conservative six-hour publication margin
+    used by the exact Single Runs path before selecting a fixed lead.
     """
     game_dt = _utc(game_time)
     asof_dt = _utc(as_of)
-    hours_before_game = max(0.0, (game_dt - asof_dt).total_seconds() / 3600.0)
+    if asof_dt >= game_dt:
+        return None
+    hours_before_game = (game_dt - asof_dt).total_seconds() / 3600.0
     safe_hours = hours_before_game + DEFAULT_WEATHER_PUBLICATION_LAG_HOURS
     offset = max(1, int(math.ceil(safe_hours / 24.0)))
     return offset if offset <= PREVIOUS_RUNS_MAX_DAYS else None
@@ -78,9 +88,9 @@ def previous_run_weather_for_game(
 ) -> dict[str, Any]:
     """PIT-safe fallback using Open-Meteo fixed-lead previous-run forecasts.
 
-    This fallback is used only when the exact Single Runs archive path is
-    unavailable. It deliberately chooses a forecast older than ``as_of`` and
-    remains reconstructed/non-promotion evidence.
+    The Previous Runs endpoint is deliberately queried in its documented Best
+    Match mode rather than pinning an undocumented model slug. This path remains
+    reconstructed, non-native and permanently ineligible for promotion floors.
     """
     game_dt = _utc(game_time)
     asof_dt = _utc(as_of)
@@ -106,7 +116,6 @@ def previous_run_weather_for_game(
         "longitude": coord[1],
         "timezone": "UTC",
         "hourly": ",".join(requested),
-        "models": "ecmwf_ifs",
         "start_date": game_dt.date().isoformat(),
         "end_date": game_dt.date().isoformat(),
     }
@@ -151,24 +160,24 @@ def previous_run_weather_for_game(
         "available": True,
         "point_in_time": True,
         "cohort": COHORT,
-        "provider": "Open-Meteo Previous Runs / ECMWF IFS",
+        "provider": "Open-Meteo Previous Runs / Best Match",
         "provider_fallback": True,
         "previous_day_offset": offset,
         "forecast_lead_hours": offset * 24,
         "assumed_publication_lag_hours": DEFAULT_WEATHER_PUBLICATION_LAG_HOURS,
         "as_of": asof_dt.isoformat(),
         "valid_hour": parsed[idx].isoformat(),
-        "temperature_c": core.num(value("temperature_2m"), None),
-        "humidity_pct": core.num(value("relative_humidity_2m"), None),
-        "dew_point_c": core.num(value("dew_point_2m"), None),
-        "surface_pressure_hpa": core.num(value("surface_pressure"), None),
-        "precipitation_mm": core.num(value("precipitation"), None),
+        "temperature_c": _num(value("temperature_2m")),
+        "humidity_pct": _num(value("relative_humidity_2m")),
+        "dew_point_c": _num(value("dew_point_2m")),
+        "surface_pressure_hpa": _num(value("surface_pressure")),
+        "precipitation_mm": _num(value("precipitation")),
         "precip_probability": None,
-        "cloud_cover_pct": core.num(value("cloud_cover"), None),
-        "wind_kph": core.num(value("wind_speed_10m"), None),
-        "wind_direction_deg": core.num(value("wind_direction_10m"), None),
-        "wind_gust_kph": core.num(value("wind_gusts_10m"), None),
-        "request_model": "ecmwf_ifs",
+        "cloud_cover_pct": _num(value("cloud_cover")),
+        "wind_kph": _num(value("wind_speed_10m")),
+        "wind_direction_deg": _num(value("wind_direction_10m")),
+        "wind_gust_kph": _num(value("wind_gusts_10m")),
+        "request_model": "best_match",
     }
 
 
@@ -205,7 +214,7 @@ def collect(start: str, end: str, lead_hours: int = 2) -> tuple[list[dict[str, A
 
         rows.append(
             {
-                "schema": "v13-7-free-weather-feature-v1",
+                "schema": "v13-7-free-weather-feature-v2",
                 "cohort": COHORT,
                 "native_live": False,
                 "promotion_eligible": False,
@@ -231,7 +240,7 @@ def collect(start: str, end: str, lead_hours: int = 2) -> tuple[list[dict[str, A
         "point_in_time_rows": sum(bool((r.get("weather") or {}).get("point_in_time")) for r in rows),
         "status_counts": dict(sorted(status_counts.items())),
         "provider_counts": dict(sorted(provider_counts.items())),
-        "fallback_policy": "Single Runs first; Previous Runs fixed lead selected conservatively when exact run is unavailable",
+        "fallback_policy": "Single Runs first; documented Previous Runs fixed lead selected conservatively when exact run is unavailable",
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "promotion_eligible": False,
     }
