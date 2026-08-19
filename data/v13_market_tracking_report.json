@@ -3,11 +3,11 @@
     "ML": {
       "closing_price_observed": 40,
       "closing_sharp_observed": 40,
-      "positive_ev_pnl_1u": -23.3,
+      "positive_ev_pnl_1u": -24.3,
       "positive_ev_wins": 28,
-      "positive_nominal_ev": 87,
-      "priced": 448,
-      "settled": 448,
+      "positive_nominal_ev": 88,
+      "priced": 450,
+      "settled": 450,
       "t60_sharp_observed": 54
     },
     "RUNLINE": {
@@ -17,7 +17,7 @@
       "positive_ev_wins": 0,
       "positive_nominal_ev": 0,
       "priced": 0,
-      "settled": 724,
+      "settled": 728,
       "t60_sharp_observed": 54
     },
     "TOTAL": {
@@ -27,7 +27,7 @@
       "positive_ev_wins": 0,
       "positive_nominal_ev": 0,
       "priced": 0,
-      "settled": 448,
+      "settled": 450,
       "t60_sharp_observed": 46
     }
   },
@@ -50,11 +50,11 @@
         "wins": 7
       },
       "3-5%": {
-        "losses": 6,
-        "n": 9,
-        "pnl_1u": -1.6,
+        "losses": 7,
+        "n": 10,
+        "pnl_1u": -2.6,
         "pushes": 0,
-        "roi_1u": -0.1778,
+        "roi_1u": -0.26,
         "wins": 3
       },
       "5-10%": {
@@ -67,11 +67,11 @@
       },
       "<0%": {
         "losses": 165,
-        "n": 361,
-        "pnl_1u": -0.74,
+        "n": 362,
+        "pnl_1u": -0.14,
         "pushes": 0,
-        "roi_1u": -0.002,
-        "wins": 196
+        "roi_1u": -0.0004,
+        "wins": 197
       },
       ">=10%": {
         "losses": 12,
@@ -85,7 +85,7 @@
     "RUNLINE": {},
     "TOTAL": {}
   },
-  "generated_at": "2026-08-19T19:12:57.794700+00:00",
+  "generated_at": "2026-08-19T19:44:49.386194+00:00",
   "methodology": {
     "closing": "paid market polling is checkpoint-based: one T-60 window and one close window per tracked observation, batched in a single Odds API request across all games due at that time",
     "missing_price": "never imputed; absent Winamax RL/TOTAL prices remain unpriced and are still tracked against sharp probability",
@@ -94,8 +94,8 @@
     "unit_pnl": "descriptive flat 1u; complementary displayed sides are not a betting portfolio"
   },
   "schema": "v13-market-tracking-report-v3",
-  "settled_observations": 1620,
-  "settled_options": 1620,
+  "settled_observations": 1628,
+  "settled_options": 1628,
   "tracked_observations": 1948,
   "tracked_options": 1948
 }

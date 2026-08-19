@@ -1,16 +1,16 @@
 {
   "by_market": {
     "ML": {
-      "brier_gain_vs_market": -0.006080881075637651,
-      "gap_residual_slope": -1.440409125953063,
-      "logloss_gain_vs_market": -0.01247700924349612,
-      "market_brier": 0.2405948283363189,
-      "market_logloss": 0.6737262014622828,
-      "mean_model_minus_market": -0.01585410144927536,
-      "model_brier": 0.24667570941195655,
-      "model_logloss": 0.6862032107057789,
-      "n": 69,
-      "outcome_residual_vs_market": -0.04364249275362319
+      "brier_gain_vs_market": -0.006694273940085691,
+      "gap_residual_slope": -1.5609402254082103,
+      "logloss_gain_vs_market": -0.013722858340111697,
+      "market_brier": 0.2395504921036429,
+      "market_logloss": 0.6716211730460985,
+      "mean_model_minus_market": -0.016428314285714285,
+      "model_brier": 0.2462447660437286,
+      "model_logloss": 0.6853440313862101,
+      "n": 70,
+      "outcome_residual_vs_market": -0.0371725
     },
     "RUNLINE": {
       "n": 0
@@ -46,16 +46,16 @@
         "outcome_residual_vs_market": -0.10166870000000001
       },
       "-6/-3pp": {
-        "brier_gain_vs_market": -0.014475617515299976,
-        "gap_residual_slope": 12.343996598499952,
-        "logloss_gain_vs_market": -0.029494961084329318,
-        "market_brier": 0.2616533786128,
-        "market_logloss": 0.7166560186808715,
-        "mean_model_minus_market": -0.043714899999999994,
-        "model_brier": 0.2761289961281,
-        "model_logloss": 0.7461509797652008,
-        "n": 10,
-        "outcome_residual_vs_market": 0.1571758
+        "brier_gain_vs_market": -0.017615868794545433,
+        "gap_residual_slope": 5.207328885919231,
+        "logloss_gain_vs_market": -0.0358760051681712,
+        "market_brier": 0.25309318892518184,
+        "market_logloss": 0.6993576726489175,
+        "mean_model_minus_market": -0.04483618181818182,
+        "model_brier": 0.27070905771972725,
+        "model_logloss": 0.7352336778170887,
+        "n": 11,
+        "outcome_residual_vs_market": 0.1800922727272727
       },
       "0/3pp": {
         "brier_gain_vs_market": -0.00022132662384994896,
@@ -162,7 +162,7 @@
       }
     }
   },
-  "independent_targets": 69,
+  "independent_targets": 70,
   "interpretation": {
     "gap_residual_slope": "positive is desirable: larger model-minus-market gaps should correspond to larger positive outcome residuals versus the market probability",
     "proper_scoring": "Brier and LogLoss are the primary comparison; repeated phases and complementary sides are excluded from the independent view"

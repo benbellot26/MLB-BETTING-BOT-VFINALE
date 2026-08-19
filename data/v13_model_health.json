@@ -2,58 +2,16 @@
   "alerts": [
     "ml_brier_worse_than_market",
     "ml_model_market_gap_not_informative",
-    "v138:weather_zero_coverage"
+    "rich_native_games_zero"
   ],
   "any_market_edge_claim_allowed": false,
   "calibration": {
     "GLOBAL": {
       "active": false,
       "method": "identity",
-      "n": 207,
+      "n": 0,
       "status": "COLLECTING",
       "strict_required_n": 600
-    },
-    "MARKET:ML": {
-      "active": false,
-      "method": "identity",
-      "n": 69,
-      "status": "COLLECTING",
-      "strict_required_n": 400
-    },
-    "MARKET:RUNLINE": {
-      "active": false,
-      "method": "identity",
-      "n": 69,
-      "status": "COLLECTING",
-      "strict_required_n": 400
-    },
-    "MARKET:TOTAL": {
-      "active": false,
-      "method": "identity",
-      "n": 69,
-      "status": "COLLECTING",
-      "strict_required_n": 400
-    },
-    "PHASE:FINAL:ML": {
-      "active": false,
-      "method": "identity",
-      "n": 12,
-      "status": "COLLECTING",
-      "strict_required_n": 300
-    },
-    "PHASE:FINAL:RUNLINE": {
-      "active": false,
-      "method": "identity",
-      "n": 12,
-      "status": "COLLECTING",
-      "strict_required_n": 300
-    },
-    "PHASE:FINAL:TOTAL": {
-      "active": false,
-      "method": "identity",
-      "n": 12,
-      "status": "COLLECTING",
-      "strict_required_n": 300
     }
   },
   "claim": "monitoring artifact only; market-edge claims are blocked until each market independently clears proper-score and sample-size evidence",
@@ -61,18 +19,18 @@
     "complete_future_coverage": true,
     "future_coverage_rate": 1.0,
     "status_counts": {
-      "ANALYZED": 12,
-      "SKIPPED_ALREADY_STARTED": 3
+      "ANALYZED": 11,
+      "SKIPPED_ALREADY_STARTED": 4
     }
   },
   "edge_evidence": {
     "ML": {
-      "brier_gain_vs_market": -0.006080881075637651,
+      "brier_gain_vs_market": -0.006694273940085691,
       "claim_allowed": false,
-      "gap_residual_slope": -1.440409125953063,
-      "logloss_gain_vs_market": -0.01247700924349612,
+      "gap_residual_slope": -1.5609402254082103,
+      "logloss_gain_vs_market": -0.013722858340111697,
       "minimum_n": 300,
-      "n": 69,
+      "n": 70,
       "reason": "INSUFFICIENT_INDEPENDENT_MARKET_TARGETS"
     },
     "RUNLINE": {
@@ -527,14 +485,14 @@
   },
   "probability_drift": {
     "ML": {
-      "confidence_shift": 0.03367018,
-      "mean_probability_shift": 0.0010681799999999742,
-      "observations": 224,
-      "prior_mean_abs_edge_from_50": 0.037012960000000004,
-      "prior_mean_probability": 0.5155734000000001,
+      "confidence_shift": 0.03117296,
+      "mean_probability_shift": -0.0014290399999999925,
+      "observations": 225,
+      "prior_mean_abs_edge_from_50": 0.03806722,
+      "prior_mean_probability": 0.5166276599999999,
       "prior_n": 50,
-      "recent_mean_abs_edge_from_50": 0.07068314,
-      "recent_mean_probability": 0.51664158,
+      "recent_mean_abs_edge_from_50": 0.06924018,
+      "recent_mean_probability": 0.5151986199999999,
       "recent_n": 50,
       "sample_policy": "one canonical settled side per game/market"
     },
@@ -565,16 +523,16 @@
   },
   "proper_scoring_vs_market": {
     "ML": {
-      "brier_gain_vs_market": -0.006080881075637651,
-      "gap_residual_slope": -1.440409125953063,
-      "logloss_gain_vs_market": -0.01247700924349612,
-      "market_brier": 0.2405948283363189,
-      "market_logloss": 0.6737262014622828,
-      "mean_model_minus_market": -0.01585410144927536,
-      "model_brier": 0.24667570941195655,
-      "model_logloss": 0.6862032107057789,
-      "n": 69,
-      "outcome_residual_vs_market": -0.04364249275362319
+      "brier_gain_vs_market": -0.006694273940085691,
+      "gap_residual_slope": -1.5609402254082103,
+      "logloss_gain_vs_market": -0.013722858340111697,
+      "market_brier": 0.2395504921036429,
+      "market_logloss": 0.6716211730460985,
+      "mean_model_minus_market": -0.016428314285714285,
+      "model_brier": 0.2462447660437286,
+      "model_logloss": 0.6853440313862101,
+      "n": 70,
+      "outcome_residual_vs_market": -0.0371725
     },
     "RUNLINE": {
       "n": 0
@@ -586,27 +544,23 @@
   "rich_native": {
     "active_for_production": false,
     "feature_coverage": {
-      "bullpen_player": 1.0,
-      "lineup_player": 1.0,
-      "platoon": 1.0,
-      "starter_ip": 1.0,
-      "statcast": 0.9,
-      "weather_park": 0.65
+      "bullpen_player": 0.0,
+      "lineup_player": 0.0,
+      "platoon": 0.0,
+      "starter_ip": 0.0,
+      "statcast": 0.0,
+      "weather_park": 0.0
     },
     "minimum_games": 300,
-    "native_games": 1,
+    "native_games": 0,
     "rejection_reasons": {
-      "not_final_phase": 54,
-      "not_settled_final": 41,
-      "predictive_contract_mismatch": 525
+      "predictive_contract_mismatch": 621
     },
     "status": "COLLECTING"
   },
   "schema": "v13-model-health-v4",
   "v138_audit_research": {
-    "alerts": [
-      "weather_zero_coverage"
-    ],
+    "alerts": [],
     "audit_closure": {
       "engineering_closed": 52,
       "engineering_open": 0,
@@ -735,31 +689,113 @@
     },
     "native_evidence": {
       "bookmaker_weights": {
+        "activation_scope": "per-market; weights are never learned from a pooled ML/RUNLINE/TOTAL sample",
         "active": false,
-        "minimum_n": 300,
+        "by_market": {
+          "ML": {
+            "active": false,
+            "minimum_n": 300,
+            "n": 0,
+            "reason": "INSUFFICIENT_MARKET_SPECIFIC_PIT_BOOK_TARGETS"
+          },
+          "RUNLINE": {
+            "active": false,
+            "minimum_n": 300,
+            "n": 0,
+            "reason": "INSUFFICIENT_MARKET_SPECIFIC_PIT_BOOK_TARGETS"
+          },
+          "TOTAL": {
+            "active": false,
+            "minimum_n": 300,
+            "n": 0,
+            "reason": "INSUFFICIENT_MARKET_SPECIFIC_PIT_BOOK_TARGETS"
+          }
+        },
+        "minimum_n_per_market": 300,
         "n": 0,
-        "reason": "INSUFFICIENT_PIT_BOOK_TARGETS"
+        "production_applied": false
       },
       "dynamic_calibration": {
+        "activation_scope": "per-market; aggregate active only when ML, RUNLINE and TOTAL each pass independently",
         "active": false,
-        "minimum_n": 300,
-        "n": 69,
-        "reason": "INSUFFICIENT_NATIVE_TARGETS"
+        "by_market": {
+          "ML": {
+            "active": false,
+            "minimum_n": 300,
+            "n": 70,
+            "reason": "INSUFFICIENT_MARKET_SPECIFIC_NATIVE_TARGETS"
+          },
+          "RUNLINE": {
+            "active": false,
+            "minimum_n": 300,
+            "n": 0,
+            "reason": "INSUFFICIENT_MARKET_SPECIFIC_NATIVE_TARGETS"
+          },
+          "TOTAL": {
+            "active": false,
+            "minimum_n": 300,
+            "n": 0,
+            "reason": "INSUFFICIENT_MARKET_SPECIFIC_NATIVE_TARGETS"
+          }
+        },
+        "minimum_n_per_market": 300,
+        "n": 70,
+        "production_applied": false
       },
-      "independent_targets": 69,
+      "independent_targets": 70,
       "uncertainty_coverage": {
+        "activation_scope": "per-market; aggregate active only when ML, RUNLINE and TOTAL each pass independently",
         "active": false,
-        "bins": [],
-        "calibration_mae": null,
-        "criterion": ">=300 independent targets, >=5 bins with n>=30, >=80% weighted empirical-rate coverage and calibration MAE <= mean half-width",
-        "evaluated_n": 0,
-        "frequentist_confidence_interval": false,
-        "mean_interval_half_width": null,
-        "minimum_n": 300,
-        "n": 15,
-        "usable_bins": 0,
-        "user_facing_type": "model_uncertainty_band",
-        "weighted_bin_coverage": null
+        "by_market": {
+          "ML": {
+            "active": false,
+            "bins": [],
+            "calibration_mae": null,
+            "criterion": ">=300 independent targets in this market, >=5 bins with n>=30, >=80% weighted empirical-rate coverage and calibration MAE <= mean half-width",
+            "evaluated_n": 0,
+            "frequentist_confidence_interval": false,
+            "mean_interval_half_width": null,
+            "minimum_n": 300,
+            "n": 16,
+            "reason": "INSUFFICIENT_MARKET_SPECIFIC_NATIVE_TARGETS",
+            "usable_bins": 0,
+            "user_facing_type": "model_uncertainty_band",
+            "weighted_bin_coverage": null
+          },
+          "RUNLINE": {
+            "active": false,
+            "bins": [],
+            "calibration_mae": null,
+            "criterion": ">=300 independent targets in this market, >=5 bins with n>=30, >=80% weighted empirical-rate coverage and calibration MAE <= mean half-width",
+            "evaluated_n": 0,
+            "frequentist_confidence_interval": false,
+            "mean_interval_half_width": null,
+            "minimum_n": 300,
+            "n": 0,
+            "reason": "INSUFFICIENT_MARKET_SPECIFIC_NATIVE_TARGETS",
+            "usable_bins": 0,
+            "user_facing_type": "model_uncertainty_band",
+            "weighted_bin_coverage": null
+          },
+          "TOTAL": {
+            "active": false,
+            "bins": [],
+            "calibration_mae": null,
+            "criterion": ">=300 independent targets in this market, >=5 bins with n>=30, >=80% weighted empirical-rate coverage and calibration MAE <= mean half-width",
+            "evaluated_n": 0,
+            "frequentist_confidence_interval": false,
+            "mean_interval_half_width": null,
+            "minimum_n": 300,
+            "n": 0,
+            "reason": "INSUFFICIENT_MARKET_SPECIFIC_NATIVE_TARGETS",
+            "usable_bins": 0,
+            "user_facing_type": "model_uncertainty_band",
+            "weighted_bin_coverage": null
+          }
+        },
+        "minimum_n_per_market": 300,
+        "n": 16,
+        "production_applied": false
       }
     },
     "research_challengers": {

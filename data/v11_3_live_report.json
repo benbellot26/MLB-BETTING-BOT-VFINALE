@@ -1,5 +1,5 @@
 {
-  "analyzed_at": "2026-08-19T17:42:43.031443+00:00",
+  "analyzed_at": "2026-08-19T19:44:48.868949+00:00",
   "calibration_health": {
     "by_phase": {
       "EARLY": {
@@ -326,21 +326,21 @@
     "schema": "v12-calibration-diagnostics-v2"
   },
   "data_health": {
-    "analyzed_games": 12,
-    "confirmed_lineups": 1,
+    "analyzed_games": 11,
+    "confirmed_lineups": 4,
     "confirmed_starters": 11,
-    "matched_events": 15,
-    "mean_data_quality": 0.7561,
+    "matched_events": 14,
+    "mean_data_quality": 0.8554,
     "scheduled_games": 15,
     "sharp_coverage": {
-      "ML": 12,
-      "RUNLINE": 12,
-      "TOTAL": 12
+      "ML": 11,
+      "RUNLINE": 11,
+      "TOTAL": 11
     },
-    "usable_lineups": 1,
+    "usable_lineups": 4,
     "usable_starters": 9,
     "winamax_coverage": {
-      "ML": 12,
+      "ML": 11,
       "RUNLINE": 0,
       "TOTAL": 0
     }
@@ -387,7 +387,7 @@
     "source": "frozen 2026 baseball bootstrap; FINAL-only; not betting-profitability evidence"
   },
   "ledger_settled_this_run": 0,
-  "matched_events": 15,
+  "matched_events": 14,
   "methodology": {
     "alternate_runlines": "event-level alternate_spreads; evaluates both +/-1.5 pairs when actually available",
     "calibration": "hierarchical market fallback + phase-specific challenger; identity vs Platt vs beta; holdout Brier/LogLoss/ECE; existing stack walk-forward remains mandatory",
@@ -399,14 +399,14 @@
     "generation": "V12.3.2 value-selection-v1 + V12.4 predictive shadow",
     "historical_evidence": "legacy V10 1,801-game data are diagnostic only until a V12.3 structural baseline exists",
     "ledger": "PROPOSED -> PUBLISHED -> CONFIRMED_PLACED -> SETTLED",
-    "raw_archive": "runtime/v11/snapshots/2026-08-19_240a029575e111a8.json.gz",
+    "raw_archive": "runtime/v11/snapshots/2026-08-19_52344da87456e6e5.json.gz",
     "runs_model": "immutable structural baseline + validated FINAL historical prior fallback + phase-specific live residual",
     "selection": "informational recommendations use model confidence + conservative EV/edge + DQ + uncertainty + Kelly; Winamax never decides eligibility",
     "selection_confidence": "RL >= 55%; ML/TOTAL >= 58%",
     "selection_price_floor": "reference decimal odds >= 1.40",
     "selection_reference_price": "fresh configured sharp books; exact side/point; second-best effective quote when >=2 books, otherwise single fresh sharp quote",
     "sharp_disagreement": "large model-vs-sharp disagreement reduces selection score but is not a hard directional veto",
-    "source_replay": "runtime/v11/source_replays/2026-08-19_240a029575e111a8_sources.json.gz",
+    "source_replay": "runtime/v11/source_replays/2026-08-19_52344da87456e6e5_sources.json.gz",
     "staking": "bankroll-aware fractional Kelly; official combos disabled",
     "starter_model": "current season + N-1/N-2 prior affects structural run means",
     "uncertainty": "empirical phase/market reliability bins + market disagreement + DQ penalty",
@@ -434,17 +434,17 @@
   "performance": {
     "by_market": {
       "ML": {
-        "accuracy": 0.4927536231884058,
-        "brier": 0.24667570956521742,
-        "logloss": 0.6862032110144928,
-        "n": 69,
+        "accuracy": 0.5,
+        "brier": 0.24624476614285712,
+        "logloss": 0.6853440317142857,
+        "n": 70,
         "selection": "canonical main line",
-        "sharp_brier": 0.24059482826086956,
-        "sharp_logloss": 0.6737262014492753,
-        "wins": 34
+        "sharp_brier": 0.239550492,
+        "sharp_logloss": 0.671621173,
+        "wins": 35
       }
     },
-    "settled_games": 69
+    "settled_games": 70
   },
   "predictive_v124": {
     "activation": {
@@ -502,313 +502,313 @@
       }
     },
     "schema": "v12-4-shadow-metrics-v1",
-    "settled_games": 55,
+    "settled_games": 56,
     "variants": {
       "all_core": {
         "accuracy": 0.5,
-        "brier": 0.24272709909352236,
+        "brier": 0.24132488106115124,
         "by_market": {
           "ML": {
             "accuracy": 0.5,
-            "brier": 0.23658479622092707,
+            "brier": 0.23613060984414266,
             "gt55_hit_rate": 0.6296296296296297,
             "gt55_n": 27,
-            "logloss": 0.6657002444273984,
-            "n": 110
+            "logloss": 0.6647999006632722,
+            "n": 112
           },
           "RUNLINE": {
             "accuracy": 0.5,
-            "brier": 0.2446483870420438,
-            "gt55_hit_rate": 0.6024096385542169,
-            "gt55_n": 83,
-            "logloss": 0.6830829351018534,
-            "n": 182
+            "brier": 0.24204305855745148,
+            "gt55_hit_rate": 0.611764705882353,
+            "gt55_n": 85,
+            "logloss": 0.6776868533163911,
+            "n": 186
           },
           "TOTAL": {
             "accuracy": 0.5,
-            "brier": 0.24569054372401827,
+            "brier": 0.24532646465037514,
             "gt55_hit_rate": 0.5909090909090909,
             "gt55_n": 22,
-            "logloss": 0.6844281390334918,
-            "n": 110
+            "logloss": 0.6837010223892797,
+            "n": 112
           }
         },
-        "gt55_hit_rate": 0.6060606060606061,
-        "gt55_n": 132,
-        "logloss": 0.678694568082675,
-        "n": 402
+        "gt55_hit_rate": 0.6119402985074627,
+        "gt55_n": 134,
+        "logloss": 0.6758094099969141,
+        "n": 410
       },
       "baseline_v1232": {
         "accuracy": 0.5,
-        "brier": 0.242987233317697,
+        "brier": 0.24138165798695657,
         "by_market": {
           "ML": {
             "accuracy": 0.5,
-            "brier": 0.23584117977652727,
-            "gt55_hit_rate": 0.6538461538461539,
-            "gt55_n": 26,
-            "logloss": 0.6641910102708827,
-            "n": 110
+            "brier": 0.23522577223594646,
+            "gt55_hit_rate": 0.6666666666666666,
+            "gt55_n": 27,
+            "logloss": 0.6629656436650736,
+            "n": 112
           },
           "RUNLINE": {
             "accuracy": 0.5,
-            "brier": 0.24519091694516496,
-            "gt55_hit_rate": 0.6046511627906976,
-            "gt55_n": 86,
-            "logloss": 0.684075015770692,
-            "n": 182
+            "brier": 0.2423984495706991,
+            "gt55_hit_rate": 0.6136363636363636,
+            "gt55_n": 88,
+            "logloss": 0.6782522565779845,
+            "n": 186
           },
           "TOTAL": {
             "accuracy": 0.5,
-            "brier": 0.24648719212978168,
+            "brier": 0.2458489434292499,
             "gt55_hit_rate": 0.5652173913043478,
             "gt55_n": 23,
-            "logloss": 0.6859931732091026,
-            "n": 110
+            "logloss": 0.6847158915183285,
+            "n": 112
           }
         },
-        "gt55_hit_rate": 0.6074074074074074,
-        "gt55_n": 135,
-        "logloss": 0.6791589876941899,
-        "n": 402
+        "gt55_hit_rate": 0.6159420289855072,
+        "gt55_n": 138,
+        "logloss": 0.6758420772293809,
+        "n": 410
       },
       "ensemble": {
         "accuracy": 0.5,
-        "brier": 0.24271467737549252,
+        "brier": 0.2413279196672048,
         "by_market": {
           "ML": {
             "accuracy": 0.5,
-            "brier": 0.23675812925689083,
+            "brier": 0.23621657688460704,
             "gt55_hit_rate": 0.6538461538461539,
             "gt55_n": 26,
-            "logloss": 0.6661608383472797,
-            "n": 110
+            "logloss": 0.6650824668840833,
+            "n": 112
           },
           "RUNLINE": {
             "accuracy": 0.5,
-            "brier": 0.2439801030503407,
-            "gt55_hit_rate": 0.5975609756097561,
-            "gt55_n": 82,
-            "logloss": 0.6816477122019565,
-            "n": 182
+            "brier": 0.2414777406433441,
+            "gt55_hit_rate": 0.6071428571428571,
+            "gt55_n": 84,
+            "logloss": 0.6764706900425851,
+            "n": 186
           },
           "TOTAL": {
             "accuracy": 0.5,
-            "brier": 0.24657752119570914,
+            "brier": 0.2461904526144286,
             "gt55_hit_rate": 0.5789473684210527,
             "gt55_n": 19,
-            "logloss": 0.6862315358480654,
-            "n": 110
+            "logloss": 0.6854578769958397,
+            "n": 112
           }
         },
-        "gt55_hit_rate": 0.6062992125984252,
-        "gt55_n": 127,
-        "logloss": 0.6786642905030941,
-        "n": 402
+        "gt55_hit_rate": 0.6124031007751938,
+        "gt55_n": 129,
+        "logloss": 0.6758147972255414,
+        "n": 410
       },
       "only_bullpen_player": {
         "accuracy": 0.5,
-        "brier": 0.24358291109069155,
+        "brier": 0.24195029166758536,
         "by_market": {
           "ML": {
             "accuracy": 0.5,
-            "brier": 0.23579658979363652,
+            "brier": 0.23530192980848227,
             "gt55_hit_rate": 0.6071428571428571,
             "gt55_n": 28,
-            "logloss": 0.6639940239489079,
-            "n": 110
+            "logloss": 0.6630142695043982,
+            "n": 112
           },
           "RUNLINE": {
             "accuracy": 0.5,
-            "brier": 0.24569026068964853,
-            "gt55_hit_rate": 0.6,
-            "gt55_n": 85,
-            "logloss": 0.6851925339212144,
-            "n": 182
+            "brier": 0.24286567741422596,
+            "gt55_hit_rate": 0.6091954022988506,
+            "gt55_n": 87,
+            "logloss": 0.6793100634028792,
+            "n": 186
           },
           "TOTAL": {
             "accuracy": 0.5,
-            "brier": 0.24788252668765445,
+            "brier": 0.24707845934030348,
             "gt55_hit_rate": 0.6666666666666666,
             "gt55_n": 24,
-            "logloss": 0.6889068134206818,
-            "n": 110
+            "logloss": 0.6872933635578665,
+            "n": 112
           }
         },
-        "gt55_hit_rate": 0.6131386861313869,
-        "gt55_n": 137,
-        "logloss": 0.6804082917520299,
-        "n": 402
+        "gt55_hit_rate": 0.6187050359712231,
+        "gt55_n": 139,
+        "logloss": 0.6770393334046569,
+        "n": 410
       },
       "only_lineup_player": {
         "accuracy": 0.5,
-        "brier": 0.2432142374190199,
+        "brier": 0.2416369676080635,
         "by_market": {
           "ML": {
             "accuracy": 0.5,
-            "brier": 0.23639856490383637,
+            "brier": 0.23579937527919642,
             "gt55_hit_rate": 0.6538461538461539,
             "gt55_n": 26,
-            "logloss": 0.6653322464949556,
-            "n": 110
+            "logloss": 0.6641393811560921,
+            "n": 112
           },
           "RUNLINE": {
             "accuracy": 0.5,
-            "brier": 0.2455608449633188,
-            "gt55_hit_rate": 0.6046511627906976,
-            "gt55_n": 86,
-            "logloss": 0.6849340556809609,
-            "n": 182
+            "brier": 0.24276843678648397,
+            "gt55_hit_rate": 0.6136363636363636,
+            "gt55_n": 88,
+            "logloss": 0.679113801920822,
+            "n": 186
           },
           "TOTAL": {
             "accuracy": 0.5,
-            "brier": 0.24614734108818173,
+            "brier": 0.24559551290848208,
             "gt55_hit_rate": 0.4782608695652174,
             "gt55_n": 23,
-            "logloss": 0.6852953754855636,
-            "n": 110
+            "logloss": 0.6841922171953799,
+            "n": 112
           }
         },
-        "gt55_hit_rate": 0.5925925925925926,
-        "gt55_n": 135,
-        "logloss": 0.6796692451537107,
-        "n": 402
+        "gt55_hit_rate": 0.5985401459854015,
+        "gt55_n": 137,
+        "logloss": 0.6764105028600912,
+        "n": 410
       },
       "only_platoon": {
         "accuracy": 0.5,
-        "brier": 0.24294988454907507,
+        "brier": 0.24134503797479556,
         "by_market": {
           "ML": {
             "accuracy": 0.5,
-            "brier": 0.23589069915365452,
-            "gt55_hit_rate": 0.6538461538461539,
-            "gt55_n": 26,
-            "logloss": 0.6642898162989573,
-            "n": 110
+            "brier": 0.23527440733848212,
+            "gt55_hit_rate": 0.6666666666666666,
+            "gt55_n": 27,
+            "logloss": 0.6630626852997897,
+            "n": 112
           },
           "RUNLINE": {
             "accuracy": 0.5,
-            "brier": 0.24517475946890122,
-            "gt55_hit_rate": 0.6046511627906976,
-            "gt55_n": 86,
-            "logloss": 0.6840292318248877,
-            "n": 182
+            "brier": 0.24238263956704317,
+            "gt55_hit_rate": 0.6136363636363636,
+            "gt55_n": 88,
+            "logloss": 0.6782074572331653,
+            "n": 186
           },
           "TOTAL": {
             "accuracy": 0.5,
-            "brier": 0.24632791325896347,
+            "brier": 0.24569250882398203,
             "gt55_hit_rate": 0.5652173913043478,
             "gt55_n": 23,
-            "logloss": 0.6856749727539659,
-            "n": 110
+            "logloss": 0.6844033732141764,
+            "n": 112
           }
         },
-        "gt55_hit_rate": 0.6074074074074074,
-        "gt55_n": 135,
-        "logloss": 0.6790782263381873,
-        "n": 402
+        "gt55_hit_rate": 0.6159420289855072,
+        "gt55_n": 138,
+        "logloss": 0.675762891704715,
+        "n": 410
       },
       "only_starter_ip": {
         "accuracy": 0.5,
-        "brier": 0.24258181952617405,
+        "brier": 0.24097309799089753,
         "by_market": {
           "ML": {
             "accuracy": 0.5,
-            "brier": 0.2354522874905819,
-            "gt55_hit_rate": 0.6538461538461539,
-            "gt55_n": 26,
-            "logloss": 0.6633821580027418,
-            "n": 110
+            "brier": 0.23483583149983936,
+            "gt55_hit_rate": 0.6666666666666666,
+            "gt55_n": 27,
+            "logloss": 0.6621550778795715,
+            "n": 112
           },
           "RUNLINE": {
             "accuracy": 0.5,
-            "brier": 0.24482997362886819,
-            "gt55_hit_rate": 0.6046511627906976,
-            "gt55_n": 86,
-            "logloss": 0.6832988196116015,
-            "n": 182
+            "brier": 0.24204244156136567,
+            "gt55_hit_rate": 0.6136363636363636,
+            "gt55_n": 88,
+            "logloss": 0.677485454064075,
+            "n": 186
           },
           "TOTAL": {
             "accuracy": 0.5,
-            "brier": 0.24599167841003633,
+            "brier": 0.24533449033814278,
             "gt55_hit_rate": 0.5652173913043478,
             "gt55_n": 23,
-            "logloss": 0.6850073304046487,
-            "n": 110
+            "logloss": 0.6836916865884521,
+            "n": 112
           }
         },
-        "gt55_hit_rate": 0.6074074074074074,
-        "gt55_n": 135,
-        "logloss": 0.6783164897863789,
-        "n": 402
+        "gt55_hit_rate": 0.6159420289855072,
+        "gt55_n": 138,
+        "logloss": 0.6749930050642353,
+        "n": 410
       },
       "only_statcast": {
         "accuracy": 0.5,
-        "brier": 0.24267976905474622,
+        "brier": 0.24109007947455116,
         "by_market": {
           "ML": {
             "accuracy": 0.5,
-            "brier": 0.23557069498258199,
-            "gt55_hit_rate": 0.6551724137931034,
-            "gt55_n": 29,
-            "logloss": 0.663641584440851,
-            "n": 110
+            "brier": 0.2349518844408216,
+            "gt55_hit_rate": 0.6666666666666666,
+            "gt55_n": 30,
+            "logloss": 0.6624093862383588,
+            "n": 112
           },
           "RUNLINE": {
             "accuracy": 0.5,
-            "brier": 0.24486234181672534,
-            "gt55_hit_rate": 0.6046511627906976,
-            "gt55_n": 86,
-            "logloss": 0.6834850925289854,
-            "n": 182
+            "brier": 0.24208165151341937,
+            "gt55_hit_rate": 0.6136363636363636,
+            "gt55_n": 88,
+            "logloss": 0.6776846635872356,
+            "n": 186
           },
           "TOTAL": {
             "accuracy": 0.5,
-            "brier": 0.24617767728436352,
+            "brier": 0.24558155665801773,
             "gt55_hit_rate": 0.5416666666666666,
             "gt55_n": 24,
-            "logloss": 0.6853806805279363,
-            "n": 110
+            "logloss": 0.684188005524738,
+            "n": 112
           }
         },
-        "gt55_hit_rate": 0.60431654676259,
-        "gt55_n": 139,
-        "logloss": 0.6785739701165223,
-        "n": 402
+        "gt55_hit_rate": 0.6126760563380281,
+        "gt55_n": 142,
+        "logloss": 0.6752884275724212,
+        "n": 410
       },
       "only_weather_park": {
         "accuracy": 0.5,
-        "brier": 0.2427670240214328,
+        "brier": 0.24125782955184877,
         "by_market": {
           "ML": {
             "accuracy": 0.5,
-            "brier": 0.2358274741589999,
-            "gt55_hit_rate": 0.6538461538461539,
-            "gt55_n": 26,
-            "logloss": 0.664156304357188,
-            "n": 110
+            "brier": 0.23520886641274988,
+            "gt55_hit_rate": 0.6666666666666666,
+            "gt55_n": 27,
+            "logloss": 0.6629245941417812,
+            "n": 112
           },
           "RUNLINE": {
             "accuracy": 0.5,
-            "brier": 0.24505668360731866,
-            "gt55_hit_rate": 0.6046511627906976,
-            "gt55_n": 86,
-            "logloss": 0.68373508573831,
-            "n": 182
+            "brier": 0.24229990819907526,
+            "gt55_hit_rate": 0.6136363636363636,
+            "gt55_n": 88,
+            "logloss": 0.6779929688657513,
+            "n": 186
           },
           "TOTAL": {
             "accuracy": 0.5,
-            "brier": 0.24591822802358196,
+            "brier": 0.2455761977946609,
             "gt55_hit_rate": 0.56,
             "gt55_n": 25,
-            "logloss": 0.6847951634834498,
-            "n": 110
+            "logloss": 0.6841138485759698,
+            "n": 112
           }
         },
-        "gt55_hit_rate": 0.6058394160583942,
-        "gt55_n": 137,
-        "logloss": 0.6786677787732405,
-        "n": 402
+        "gt55_hit_rate": 0.6142857142857143,
+        "gt55_n": 140,
+        "logloss": 0.6755487751058976,
+        "n": 410
       }
     },
     "version": "12.4-predictive-core-shadow-v1",
@@ -1111,58 +1111,58 @@
       "historical_weight_share": 0.0,
       "in_sample_diagnostic": {
         "baseline": {
-          "brier": 0.242987233317697,
+          "brier": 0.24138165798695657,
           "by_market": {
             "ML": {
-              "brier": 0.23584117977652727,
-              "logloss": 0.6641910102708829,
-              "n": 110
+              "brier": 0.23522577223594646,
+              "logloss": 0.6629656436650738,
+              "n": 112
             },
             "RUNLINE": {
-              "brier": 0.24519091694516496,
-              "logloss": 0.684075015770692,
-              "n": 182
+              "brier": 0.2423984495706991,
+              "logloss": 0.6782522565779845,
+              "n": 186
             },
             "TOTAL": {
-              "brier": 0.24648719212978168,
-              "logloss": 0.6859931732091026,
-              "n": 110
+              "brier": 0.2458489434292499,
+              "logloss": 0.6847158915183285,
+              "n": 112
             }
           },
-          "games": 55,
-          "gt55_hit_rate": 0.6074074074074074,
-          "gt55_n": 135,
-          "logloss": 0.6791589876941898,
-          "options": 402,
-          "team_run_mae": 2.3289410282187744,
-          "total_run_mae": 3.4782090198908113
+          "games": 56,
+          "gt55_hit_rate": 0.6159420289855072,
+          "gt55_n": 138,
+          "logloss": 0.6758420772293808,
+          "options": 410,
+          "team_run_mae": 2.299924950132696,
+          "total_run_mae": 3.441242453656989
         },
         "optimized": {
-          "brier": 0.242987233317697,
+          "brier": 0.24138165798695657,
           "by_market": {
             "ML": {
-              "brier": 0.23584117977652727,
-              "logloss": 0.6641910102708829,
-              "n": 110
+              "brier": 0.23522577223594646,
+              "logloss": 0.6629656436650738,
+              "n": 112
             },
             "RUNLINE": {
-              "brier": 0.24519091694516496,
-              "logloss": 0.684075015770692,
-              "n": 182
+              "brier": 0.2423984495706991,
+              "logloss": 0.6782522565779845,
+              "n": 186
             },
             "TOTAL": {
-              "brier": 0.24648719212978168,
-              "logloss": 0.6859931732091026,
-              "n": 110
+              "brier": 0.2458489434292499,
+              "logloss": 0.6847158915183285,
+              "n": 112
             }
           },
-          "games": 55,
-          "gt55_hit_rate": 0.6074074074074074,
-          "gt55_n": 135,
-          "logloss": 0.6791589876941898,
-          "options": 402,
-          "team_run_mae": 2.3289410282187744,
-          "total_run_mae": 3.4782090198908113
+          "games": 56,
+          "gt55_hit_rate": 0.6159420289855072,
+          "gt55_n": 138,
+          "logloss": 0.6758420772293808,
+          "options": 410,
+          "team_run_mae": 2.299924950132696,
+          "total_run_mae": 3.441242453656989
         }
       },
       "mature_games": 250,
@@ -1241,7 +1241,7 @@
           "verdict": "WATCH"
         }
       },
-      "native_settled_games": 55,
+      "native_settled_games": 56,
       "native_weight_share": 0.0,
       "native_weights": {
         "bullpen_player": 0.0,
@@ -1269,7 +1269,7 @@
       },
       "research_only": true,
       "schema": "v12-4-weight-optimizer-v1",
-      "settled_games": 55,
+      "settled_games": 56,
       "stage": "COLLECT",
       "status": "COLLECTING",
       "version": "v12.4-weight-optimizer-v1",
@@ -1295,133 +1295,133 @@
       "affects_v12_selection": false,
       "in_sample_diagnostic": {
         "baseline": {
-          "brier": 0.242987233317697,
+          "brier": 0.24138165798695657,
           "by_market": {
             "ML": {
-              "brier": 0.23584117977652727,
-              "logloss": 0.6641910102708829,
-              "n": 110
+              "brier": 0.23522577223594646,
+              "logloss": 0.6629656436650738,
+              "n": 112
             },
             "RUNLINE": {
-              "brier": 0.24519091694516496,
-              "logloss": 0.684075015770692,
-              "n": 182
+              "brier": 0.2423984495706991,
+              "logloss": 0.6782522565779845,
+              "n": 186
             },
             "TOTAL": {
-              "brier": 0.24648719212978168,
-              "logloss": 0.6859931732091026,
-              "n": 110
+              "brier": 0.2458489434292499,
+              "logloss": 0.6847158915183285,
+              "n": 112
             }
           },
-          "games": 55,
-          "gt55_hit_rate": 0.6074074074074074,
-          "gt55_n": 135,
-          "logloss": 0.6791589876941898,
-          "options": 402,
-          "team_run_mae": 2.3289410282187744,
-          "total_run_mae": 3.4782090198908113
+          "games": 56,
+          "gt55_hit_rate": 0.6159420289855072,
+          "gt55_n": 138,
+          "logloss": 0.6758420772293808,
+          "options": 410,
+          "team_run_mae": 2.299924950132696,
+          "total_run_mae": 3.441242453656989
         },
         "optimized": {
-          "brier": 0.242987233317697,
+          "brier": 0.24138165798695657,
           "by_market": {
             "ML": {
-              "brier": 0.23584117977652727,
-              "logloss": 0.6641910102708829,
-              "n": 110
+              "brier": 0.23522577223594646,
+              "logloss": 0.6629656436650738,
+              "n": 112
             },
             "RUNLINE": {
-              "brier": 0.24519091694516496,
-              "logloss": 0.684075015770692,
-              "n": 182
+              "brier": 0.2423984495706991,
+              "logloss": 0.6782522565779845,
+              "n": 186
             },
             "TOTAL": {
-              "brier": 0.24648719212978168,
-              "logloss": 0.6859931732091026,
-              "n": 110
+              "brier": 0.2458489434292499,
+              "logloss": 0.6847158915183285,
+              "n": 112
             }
           },
-          "games": 55,
-          "gt55_hit_rate": 0.6074074074074074,
-          "gt55_n": 135,
-          "logloss": 0.6791589876941898,
-          "options": 402,
-          "team_run_mae": 2.3289410282187744,
-          "total_run_mae": 3.4782090198908113
+          "games": 56,
+          "gt55_hit_rate": 0.6159420289855072,
+          "gt55_n": 138,
+          "logloss": 0.6758420772293808,
+          "options": 410,
+          "team_run_mae": 2.299924950132696,
+          "total_run_mae": 3.441242453656989
         }
       },
       "mature_games": 250,
       "minimum_games": 75,
       "modules": {
         "bullpen_player": {
-          "brier_improvement": -0.0005956777729946017,
+          "brier_improvement": -0.0005686336806288439,
           "learned_weight": 0.0,
-          "logloss_improvement": -0.0012493040578399617,
+          "logloss_improvement": -0.0011972561752759958,
           "paired_objective_ci95": [
-            -0.0029851116271947063,
-            0.0008754722906413256
+            -0.0029307376686544514,
+            0.000989722815290598
           ],
-          "paired_objective_improvement": -0.0009510283036200092,
-          "team_run_mae_improvement": 9.754689096963531e-05,
+          "paired_objective_improvement": -0.0008862450344429186,
+          "team_run_mae_improvement": 0.0011024380906854425,
           "verdict": "WATCH"
         },
         "lineup_player": {
-          "brier_improvement": -0.0002299575532162812,
+          "brier_improvement": -0.00025820544467067275,
           "learned_weight": 0.0,
-          "logloss_improvement": -0.0005165031735480108,
+          "logloss_improvement": -0.0005745494771466353,
           "paired_objective_ci95": [
-            -0.0009564373121419179,
-            0.0001965112689843196
+            -0.0010552928226149126,
+            0.0001548269066038716
           ],
-          "paired_objective_improvement": -0.0003971146354880212,
-          "team_run_mae_improvement": -0.0017103490930927556,
+          "paired_objective_improvement": -0.00044873355421519434,
+          "team_run_mae_improvement": -0.002248202544481881,
           "verdict": "WATCH"
         },
         "platoon": {
-          "brier_improvement": 3.7270849811588125e-05,
+          "brier_improvement": 3.654361371771553e-05,
           "learned_weight": 0.0,
-          "logloss_improvement": 8.057792044746659e-05,
+          "logloss_improvement": 7.900566834107003e-05,
           "paired_objective_ci95": [
-            -7.67858171888233e-05,
-            0.0002634056907316599
+            -6.974957559055523e-05,
+            0.00026994723834518445
           ],
-          "paired_objective_improvement": 5.9006161257625265e-05,
-          "team_run_mae_improvement": 0.000621553332104785,
+          "paired_objective_improvement": 5.7952479806596245e-05,
+          "team_run_mae_improvement": 0.0006104541654603501,
           "verdict": "WATCH"
         },
         "starter_ip": {
-          "brier_improvement": 0.00037852359283185866,
+          "brier_improvement": 0.00038219448417167734,
           "learned_weight": 0.0,
-          "logloss_improvement": 0.0007848651284324548,
+          "logloss_improvement": 0.0007925639278038021,
           "paired_objective_ci95": [
-            -0.00024554273420817436,
-            0.0016970943144082836
+            -0.00012832127038871663,
+            0.0017552100505280844
           ],
-          "paired_objective_improvement": 0.0006957165503701391,
-          "team_run_mae_improvement": 0.0034250809819260652,
+          "paired_objective_improvement": 0.0007032880944514341,
+          "team_run_mae_improvement": 0.003561346708389479,
           "verdict": "WATCH"
         },
         "statcast": {
-          "brier_improvement": 0.00027131447234807204,
+          "brier_improvement": 0.00025762135501075645,
           "learned_weight": 0.0,
-          "logloss_improvement": 0.0005158445700675918,
+          "logloss_improvement": 0.0004888267210831909,
           "paired_objective_ci95": [
-            -0.0007483595998818592,
-            0.001503201738016052
+            -0.0006455608363444608,
+            0.0014184956532561721
           ],
-          "paired_objective_improvement": 0.00041558849302242496,
-          "team_run_mae_improvement": 0.001974676089214089,
+          "paired_objective_improvement": 0.0003911023587003802,
+          "team_run_mae_improvement": 0.0017188397858904914,
           "verdict": "WATCH"
         },
         "weather_park": {
-          "brier_improvement": 0.00015400512756130746,
+          "brier_improvement": 5.8916055062502304e-05,
           "learned_weight": 0.0,
-          "logloss_improvement": 0.0003549434379591654,
+          "logloss_improvement": 0.00015969547918548432,
           "paired_objective_ci95": [
-            -0.002024701327328148,
-            0.00222192001744323
+            -0.0021515104546237815,
+            0.0019746815502937765
           ],
-          "paired_objective_improvement": 0.0002394773193104115,
-          "team_run_mae_improvement": -0.004239504354662582,
+          "paired_objective_improvement": 5.9196700610397524e-05,
+          "team_run_mae_improvement": -0.006174942764995972,
           "verdict": "WATCH"
         }
       },
@@ -1442,7 +1442,7 @@
       },
       "research_only": true,
       "schema": "v12-4-weight-optimizer-v1",
-      "settled_games": 55,
+      "settled_games": 56,
       "stage": "COLLECT",
       "status": "COLLECTING",
       "version": "v12.4-weight-optimizer-v1",
@@ -1477,13 +1477,13 @@
     "predictive_quality": {
       "qualified_markets": [
         {
-          "brier": 0.24667570956521742,
-          "logloss": 0.6862032110144928,
+          "brier": 0.24624476614285712,
+          "logloss": 0.6853440317142857,
           "market": "ML",
-          "n": 69,
+          "n": 70,
           "safe": false,
-          "sharp_brier": 0.24059482826086956,
-          "sharp_logloss": 0.6737262014492753
+          "sharp_brier": 0.239550492,
+          "sharp_logloss": 0.671621173
         }
       ],
       "ready": true,
@@ -1497,7 +1497,7 @@
     "status": "COLLECTING",
     "volume_ready": false
   },
-  "remaining_games_analyzed": 12,
+  "remaining_games_analyzed": 11,
   "research_monitor_v124": {
     "ablations": {
       "bullpen_player": {
@@ -1510,37 +1510,37 @@
         "logloss_improvement": -0.0005385468325463938,
         "metrics": {
           "accuracy": 0.5,
-          "brier": 0.24358291109069155,
+          "brier": 0.24195029166758536,
           "by_market": {
             "ML": {
               "accuracy": 0.5,
-              "brier": 0.23579658979363652,
+              "brier": 0.23530192980848227,
               "gt55_hit_rate": 0.6071428571428571,
               "gt55_n": 28,
-              "logloss": 0.6639940239489079,
-              "n": 110
+              "logloss": 0.6630142695043982,
+              "n": 112
             },
             "RUNLINE": {
               "accuracy": 0.5,
-              "brier": 0.24569026068964853,
-              "gt55_hit_rate": 0.6,
-              "gt55_n": 85,
-              "logloss": 0.6851925339212144,
-              "n": 182
+              "brier": 0.24286567741422596,
+              "gt55_hit_rate": 0.6091954022988506,
+              "gt55_n": 87,
+              "logloss": 0.6793100634028792,
+              "n": 186
             },
             "TOTAL": {
               "accuracy": 0.5,
-              "brier": 0.24788252668765445,
+              "brier": 0.24707845934030348,
               "gt55_hit_rate": 0.6666666666666666,
               "gt55_n": 24,
-              "logloss": 0.6889068134206818,
-              "n": 110
+              "logloss": 0.6872933635578665,
+              "n": 112
             }
           },
-          "gt55_hit_rate": 0.6131386861313869,
-          "gt55_n": 137,
-          "logloss": 0.6804082917520299,
-          "n": 402
+          "gt55_hit_rate": 0.6187050359712231,
+          "gt55_n": 139,
+          "logloss": 0.6770393334046569,
+          "n": 410
         },
         "objective_improvement": -0.0003809713837062305,
         "team_run_mae_improvement": -0.0008409635159645212,
@@ -1557,37 +1557,37 @@
         "logloss_improvement": -0.0006743708360728018,
         "metrics": {
           "accuracy": 0.5,
-          "brier": 0.2432142374190199,
+          "brier": 0.2416369676080635,
           "by_market": {
             "ML": {
               "accuracy": 0.5,
-              "brier": 0.23639856490383637,
+              "brier": 0.23579937527919642,
               "gt55_hit_rate": 0.6538461538461539,
               "gt55_n": 26,
-              "logloss": 0.6653322464949556,
-              "n": 110
+              "logloss": 0.6641393811560921,
+              "n": 112
             },
             "RUNLINE": {
               "accuracy": 0.5,
-              "brier": 0.2455608449633188,
-              "gt55_hit_rate": 0.6046511627906976,
-              "gt55_n": 86,
-              "logloss": 0.6849340556809609,
-              "n": 182
+              "brier": 0.24276843678648397,
+              "gt55_hit_rate": 0.6136363636363636,
+              "gt55_n": 88,
+              "logloss": 0.679113801920822,
+              "n": 186
             },
             "TOTAL": {
               "accuracy": 0.5,
-              "brier": 0.24614734108818173,
+              "brier": 0.24559551290848208,
               "gt55_hit_rate": 0.4782608695652174,
               "gt55_n": 23,
-              "logloss": 0.6852953754855636,
-              "n": 110
+              "logloss": 0.6841922171953799,
+              "n": 112
             }
           },
-          "gt55_hit_rate": 0.5925925925925926,
-          "gt55_n": 135,
-          "logloss": 0.6796692451537107,
-          "n": 402
+          "gt55_hit_rate": 0.5985401459854015,
+          "gt55_n": 137,
+          "logloss": 0.6764105028600912,
+          "n": 410
         },
         "objective_improvement": -0.0005604166475434863,
         "team_run_mae_improvement": -0.003820997308473295,
@@ -1604,37 +1604,37 @@
         "logloss_improvement": 4.467255244255952e-05,
         "metrics": {
           "accuracy": 0.5,
-          "brier": 0.24294988454907507,
+          "brier": 0.24134503797479556,
           "by_market": {
             "ML": {
               "accuracy": 0.5,
-              "brier": 0.23589069915365452,
-              "gt55_hit_rate": 0.6538461538461539,
-              "gt55_n": 26,
-              "logloss": 0.6642898162989573,
-              "n": 110
+              "brier": 0.23527440733848212,
+              "gt55_hit_rate": 0.6666666666666666,
+              "gt55_n": 27,
+              "logloss": 0.6630626852997897,
+              "n": 112
             },
             "RUNLINE": {
               "accuracy": 0.5,
-              "brier": 0.24517475946890122,
-              "gt55_hit_rate": 0.6046511627906976,
-              "gt55_n": 86,
-              "logloss": 0.6840292318248877,
-              "n": 182
+              "brier": 0.24238263956704317,
+              "gt55_hit_rate": 0.6136363636363636,
+              "gt55_n": 88,
+              "logloss": 0.6782074572331653,
+              "n": 186
             },
             "TOTAL": {
               "accuracy": 0.5,
-              "brier": 0.24632791325896347,
+              "brier": 0.24569250882398203,
               "gt55_hit_rate": 0.5652173913043478,
               "gt55_n": 23,
-              "logloss": 0.6856749727539659,
-              "n": 110
+              "logloss": 0.6844033732141764,
+              "n": 112
             }
           },
-          "gt55_hit_rate": 0.6074074074074074,
-          "gt55_n": 135,
-          "logloss": 0.6790782263381873,
-          "n": 402
+          "gt55_hit_rate": 0.6159420289855072,
+          "gt55_n": 138,
+          "logloss": 0.675762891704715,
+          "n": 410
         },
         "objective_improvement": 5.201649947592856e-05,
         "team_run_mae_improvement": 0.0007198097233471756,
@@ -1651,37 +1651,37 @@
         "logloss_improvement": -6.447340861326367e-05,
         "metrics": {
           "accuracy": 0.5,
-          "brier": 0.24258181952617405,
+          "brier": 0.24097309799089753,
           "by_market": {
             "ML": {
               "accuracy": 0.5,
-              "brier": 0.2354522874905819,
-              "gt55_hit_rate": 0.6538461538461539,
-              "gt55_n": 26,
-              "logloss": 0.6633821580027418,
-              "n": 110
+              "brier": 0.23483583149983936,
+              "gt55_hit_rate": 0.6666666666666666,
+              "gt55_n": 27,
+              "logloss": 0.6621550778795715,
+              "n": 112
             },
             "RUNLINE": {
               "accuracy": 0.5,
-              "brier": 0.24482997362886819,
-              "gt55_hit_rate": 0.6046511627906976,
-              "gt55_n": 86,
-              "logloss": 0.6832988196116015,
-              "n": 182
+              "brier": 0.24204244156136567,
+              "gt55_hit_rate": 0.6136363636363636,
+              "gt55_n": 88,
+              "logloss": 0.677485454064075,
+              "n": 186
             },
             "TOTAL": {
               "accuracy": 0.5,
-              "brier": 0.24599167841003633,
+              "brier": 0.24533449033814278,
               "gt55_hit_rate": 0.5652173913043478,
               "gt55_n": 23,
-              "logloss": 0.6850073304046487,
-              "n": 110
+              "logloss": 0.6836916865884521,
+              "n": 112
             }
           },
-          "gt55_hit_rate": 0.6074074074074074,
-          "gt55_n": 135,
-          "logloss": 0.6783164897863789,
-          "n": 402
+          "gt55_hit_rate": 0.6159420289855072,
+          "gt55_n": 138,
+          "logloss": 0.6749930050642353,
+          "n": 410
         },
         "objective_improvement": 1.101057179524952e-05,
         "team_run_mae_improvement": 0.001754211519422899,
@@ -1698,37 +1698,37 @@
         "logloss_improvement": -1.1851950704078185e-05,
         "metrics": {
           "accuracy": 0.5,
-          "brier": 0.24267976905474622,
+          "brier": 0.24109007947455116,
           "by_market": {
             "ML": {
               "accuracy": 0.5,
-              "brier": 0.23557069498258199,
-              "gt55_hit_rate": 0.6551724137931034,
-              "gt55_n": 29,
-              "logloss": 0.663641584440851,
-              "n": 110
+              "brier": 0.2349518844408216,
+              "gt55_hit_rate": 0.6666666666666666,
+              "gt55_n": 30,
+              "logloss": 0.6624093862383588,
+              "n": 112
             },
             "RUNLINE": {
               "accuracy": 0.5,
-              "brier": 0.24486234181672534,
-              "gt55_hit_rate": 0.6046511627906976,
-              "gt55_n": 86,
-              "logloss": 0.6834850925289854,
-              "n": 182
+              "brier": 0.24208165151341937,
+              "gt55_hit_rate": 0.6136363636363636,
+              "gt55_n": 88,
+              "logloss": 0.6776846635872356,
+              "n": 186
             },
             "TOTAL": {
               "accuracy": 0.5,
-              "brier": 0.24617767728436352,
+              "brier": 0.24558155665801773,
               "gt55_hit_rate": 0.5416666666666666,
               "gt55_n": 24,
-              "logloss": 0.6853806805279363,
-              "n": 110
+              "logloss": 0.684188005524738,
+              "n": 112
             }
           },
-          "gt55_hit_rate": 0.60431654676259,
-          "gt55_n": 139,
-          "logloss": 0.6785739701165223,
-          "n": 402
+          "gt55_hit_rate": 0.6126760563380281,
+          "gt55_n": 142,
+          "logloss": 0.6752884275724212,
+          "n": 410
         },
         "objective_improvement": -7.090052654149212e-05,
         "team_run_mae_improvement": -0.002216992418174968,
@@ -1745,37 +1745,37 @@
         "logloss_improvement": 0.0,
         "metrics": {
           "accuracy": 0.5,
-          "brier": 0.2427670240214328,
+          "brier": 0.24125782955184877,
           "by_market": {
             "ML": {
               "accuracy": 0.5,
-              "brier": 0.2358274741589999,
-              "gt55_hit_rate": 0.6538461538461539,
-              "gt55_n": 26,
-              "logloss": 0.664156304357188,
-              "n": 110
+              "brier": 0.23520886641274988,
+              "gt55_hit_rate": 0.6666666666666666,
+              "gt55_n": 27,
+              "logloss": 0.6629245941417812,
+              "n": 112
             },
             "RUNLINE": {
               "accuracy": 0.5,
-              "brier": 0.24505668360731866,
-              "gt55_hit_rate": 0.6046511627906976,
-              "gt55_n": 86,
-              "logloss": 0.68373508573831,
-              "n": 182
+              "brier": 0.24229990819907526,
+              "gt55_hit_rate": 0.6136363636363636,
+              "gt55_n": 88,
+              "logloss": 0.6779929688657513,
+              "n": 186
             },
             "TOTAL": {
               "accuracy": 0.5,
-              "brier": 0.24591822802358196,
+              "brier": 0.2455761977946609,
               "gt55_hit_rate": 0.56,
               "gt55_n": 25,
-              "logloss": 0.6847951634834498,
-              "n": 110
+              "logloss": 0.6841138485759698,
+              "n": 112
             }
           },
-          "gt55_hit_rate": 0.6058394160583942,
-          "gt55_n": 137,
-          "logloss": 0.6786677787732405,
-          "n": 402
+          "gt55_hit_rate": 0.6142857142857143,
+          "gt55_n": 140,
+          "logloss": 0.6755487751058976,
+          "n": 410
         },
         "objective_improvement": 0.0,
         "team_run_mae_improvement": 0.0,
@@ -1784,7 +1784,7 @@
       }
     },
     "affects_v12_selection": false,
-    "analyzed_at": "2026-08-19T17:42:43.031443+00:00",
+    "analyzed_at": "2026-08-19T19:44:48.868949+00:00",
     "canonicalization": "latest settled pre-game snapshot per game_pk",
     "convergence": {
       "affects_v12_selection": false,
@@ -1807,18 +1807,192 @@
         {
           "affects_v12_selection": false,
           "available": 8,
-          "directional": 5,
+          "directional": 6,
+          "game": "Toronto Blue Jays @ Tampa Bay Rays",
+          "game_pk": 822937,
+          "grade": "STRONG",
+          "market": "ML",
+          "name": "Tampa Bay Rays",
+          "net_support": 6,
+          "neutral": 2,
+          "normalized_support": 0.75,
+          "oppose": 0,
+          "p_effective": 0.649007,
+          "p_market": 0.645777,
+          "point": null,
+          "research_only": true,
+          "schema": "v12-4-convergence-score-v1",
+          "score_8": 6,
+          "signals": {
+            "attack": {
+              "detail": {
+                "projected_margin": 1.4244198916393582,
+                "required_margin": 0.0
+              },
+              "state": "SUPPORT",
+              "value": 1.4244198916393582
+            },
+            "bullpen": {
+              "detail": {
+                "opponent_factor": 0.9674752915367898,
+                "own_factor": 1.0112088223318525
+              },
+              "state": "SUPPORT",
+              "value": 0.04520377024367628
+            },
+            "lineup": {
+              "detail": {
+                "opponent_factor": 0.9963059286319428,
+                "own_factor": 1.006301161854463
+              },
+              "state": "SUPPORT",
+              "value": 0.010032293229696121
+            },
+            "model": {
+              "detail": {
+                "p": 0.649007
+              },
+              "state": "SUPPORT",
+              "value": 0.149007
+            },
+            "sharp": {
+              "detail": {
+                "p_market": 0.645777
+              },
+              "state": "SUPPORT",
+              "value": 0.14577700000000005
+            },
+            "starter": {
+              "detail": {
+                "opponent_factor": 0.9936115777030841,
+                "own_factor": 0.9916731639885596
+              },
+              "state": "NEUTRAL",
+              "value": -0.00195087673898231
+            },
+            "statcast": {
+              "detail": {
+                "opponent_factor": 0.9779150763358779,
+                "own_factor": 0.9939370229007634
+              },
+              "state": "SUPPORT",
+              "value": 0.01638378112025607
+            },
+            "weather_park": {
+              "detail": {
+                "opponent_factor": 1.0170715825234373,
+                "own_factor": 1.0170715825234373
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            }
+          },
+          "support": 6,
+          "unavailable": 0,
+          "version": "v12.4-convergence-score-v1"
+        },
+        {
+          "affects_v12_selection": false,
+          "available": 8,
+          "directional": 6,
+          "game": "Miami Marlins @ Philadelphia Phillies",
+          "game_pk": 823424,
+          "grade": "GOOD",
+          "market": "RUNLINE",
+          "name": "Miami Marlins",
+          "net_support": 4,
+          "neutral": 2,
+          "normalized_support": 0.625,
+          "oppose": 1,
+          "p_effective": 0.677204,
+          "p_market": 0.617398,
+          "point": 1.5,
+          "research_only": true,
+          "schema": "v12-4-convergence-score-v1",
+          "score_8": 5,
+          "signals": {
+            "attack": {
+              "detail": {
+                "projected_margin": 0.4879390090850624,
+                "required_margin": -1.5
+              },
+              "state": "SUPPORT",
+              "value": 1.9879390090850624
+            },
+            "bullpen": {
+              "detail": {
+                "opponent_factor": 1.005605350822173,
+                "own_factor": 0.9827009957360103
+              },
+              "state": "OPPOSE",
+              "value": -0.022776683782993246
+            },
+            "lineup": {
+              "detail": {
+                "opponent_factor": 1.0016290115893938,
+                "own_factor": 1.0066680841182263
+              },
+              "state": "SUPPORT",
+              "value": 0.005030877171615211
+            },
+            "model": {
+              "detail": {
+                "p": 0.677204
+              },
+              "state": "SUPPORT",
+              "value": 0.17720400000000003
+            },
+            "sharp": {
+              "detail": {
+                "p_market": 0.617398
+              },
+              "state": "SUPPORT",
+              "value": 0.117398
+            },
+            "starter": {
+              "detail": {
+                "opponent_factor": 0.9923996833931807,
+                "own_factor": 1.0016828611577453
+              },
+              "state": "SUPPORT",
+              "value": 0.009354273202530461
+            },
+            "statcast": {
+              "detail": {
+                "opponent_factor": 0.9978635496183206,
+                "own_factor": 1.0010515267175573
+              },
+              "state": "NEUTRAL",
+              "value": 0.0031948026365489213
+            },
+            "weather_park": {
+              "detail": {
+                "opponent_factor": 1.0224984302866336,
+                "own_factor": 1.0224984302866336
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            }
+          },
+          "support": 5,
+          "unavailable": 0,
+          "version": "v12.4-convergence-score-v1"
+        },
+        {
+          "affects_v12_selection": false,
+          "available": 8,
+          "directional": 6,
           "game": "San Francisco Giants @ Cleveland Guardians",
           "game_pk": 824394,
           "grade": "GOOD",
           "market": "ML",
           "name": "Cleveland Guardians",
-          "net_support": 5,
-          "neutral": 3,
+          "net_support": 4,
+          "neutral": 2,
           "normalized_support": 0.625,
-          "oppose": 0,
-          "p_effective": 0.625506,
-          "p_market": 0.670442,
+          "oppose": 1,
+          "p_effective": 0.628064,
+          "p_market": 0.665208,
           "point": null,
           "research_only": true,
           "schema": "v12-4-convergence-score-v1",
@@ -1826,11 +2000,11 @@
           "signals": {
             "attack": {
               "detail": {
-                "projected_margin": 0.978685490274021,
+                "projected_margin": 1.0444368947634857,
                 "required_margin": 0.0
               },
               "state": "SUPPORT",
-              "value": 0.978685490274021
+              "value": 1.0444368947634857
             },
             "bullpen": {
               "detail": {
@@ -1843,573 +2017,51 @@
             "lineup": {
               "detail": {
                 "opponent_factor": 1.0,
-                "own_factor": 1.0
+                "own_factor": 1.0006838158248517
               },
               "state": "NEUTRAL",
-              "value": 0.0
+              "value": 0.0006838158248516635
             },
             "model": {
               "detail": {
-                "p": 0.625506
+                "p": 0.628064
               },
               "state": "SUPPORT",
-              "value": 0.125506
+              "value": 0.12806399999999996
             },
             "sharp": {
               "detail": {
-                "p_market": 0.670442
+                "p_market": 0.665208
               },
               "state": "SUPPORT",
-              "value": 0.17044199999999998
+              "value": 0.16520800000000002
             },
             "starter": {
               "detail": {
-                "opponent_factor": 0.9878614439179665,
+                "opponent_factor": 0.987861463124273,
                 "own_factor": 1.0
               },
               "state": "SUPPORT",
-              "value": 0.012287711152983771
+              "value": 0.012287691471774664
             },
             "statcast": {
               "detail": {
                 "opponent_factor": 1.0,
-                "own_factor": 1.0
-              },
-              "state": "NEUTRAL",
-              "value": 0.0
-            },
-            "weather_park": {
-              "detail": {
-                "opponent_factor": 1.016187006870448,
-                "own_factor": 1.016187006870448
-              },
-              "state": "NEUTRAL",
-              "value": 0.0
-            }
-          },
-          "support": 5,
-          "unavailable": 0,
-          "version": "v12.4-convergence-score-v1"
-        },
-        {
-          "affects_v12_selection": false,
-          "available": 8,
-          "directional": 5,
-          "game": "Athletics @ Kansas City Royals",
-          "game_pk": 824076,
-          "grade": "GOOD",
-          "market": "TOTAL",
-          "name": "Over",
-          "net_support": 5,
-          "neutral": 3,
-          "normalized_support": 0.625,
-          "oppose": 0,
-          "p_effective": 0.598049,
-          "p_market": 0.515403,
-          "point": 8.5,
-          "research_only": true,
-          "schema": "v12-4-convergence-score-v1",
-          "score_8": 5,
-          "signals": {
-            "attack": {
-              "detail": {
-                "line": 8.5,
-                "projected_total": 10.169515264853224
-              },
-              "state": "SUPPORT",
-              "value": 1.6695152648532243
-            },
-            "bullpen": {
-              "detail": {
-                "away_factor": 1.0088984519400033,
-                "home_factor": 1.0233217572155289
-              },
-              "state": "SUPPORT",
-              "value": 0.01611010457776607
-            },
-            "lineup": {
-              "detail": {
-                "away_factor": 1.0,
-                "home_factor": 1.0
-              },
-              "state": "NEUTRAL",
-              "value": 0.0
-            },
-            "model": {
-              "detail": {
-                "p": 0.598049
-              },
-              "state": "SUPPORT",
-              "value": 0.09804900000000005
-            },
-            "sharp": {
-              "detail": {
-                "p_market": 0.515403
-              },
-              "state": "SUPPORT",
-              "value": 0.015402999999999945
-            },
-            "starter": {
-              "detail": {
-                "away_factor": 1.0,
-                "home_factor": 1.0
-              },
-              "state": "NEUTRAL",
-              "value": 0.0
-            },
-            "statcast": {
-              "detail": {
-                "away_factor": 1.0,
-                "home_factor": 1.0
-              },
-              "state": "NEUTRAL",
-              "value": 0.0
-            },
-            "weather_park": {
-              "detail": {
-                "away_factor": 1.0234697395752557,
-                "home_factor": 1.0234697395752557
-              },
-              "state": "SUPPORT",
-              "value": 0.023469739575255666
-            }
-          },
-          "support": 5,
-          "unavailable": 0,
-          "version": "v12.4-convergence-score-v1"
-        },
-        {
-          "affects_v12_selection": false,
-          "available": 8,
-          "directional": 6,
-          "game": "Arizona Diamondbacks @ Boston Red Sox",
-          "game_pk": 824722,
-          "grade": "GOOD",
-          "market": "RUNLINE",
-          "name": "Boston Red Sox",
-          "net_support": 4,
-          "neutral": 2,
-          "normalized_support": 0.625,
-          "oppose": 1,
-          "p_effective": 0.725216,
-          "p_market": 0.69265,
-          "point": 1.5,
-          "research_only": true,
-          "schema": "v12-4-convergence-score-v1",
-          "score_8": 5,
-          "signals": {
-            "attack": {
-              "detail": {
-                "projected_margin": 0.702085914818757,
-                "required_margin": -1.5
-              },
-              "state": "SUPPORT",
-              "value": 2.202085914818757
-            },
-            "bullpen": {
-              "detail": {
-                "opponent_factor": 0.9773037491653835,
-                "own_factor": 0.9876271671802669
-              },
-              "state": "SUPPORT",
-              "value": 0.010563162193636844
-            },
-            "lineup": {
-              "detail": {
-                "opponent_factor": 1.0,
-                "own_factor": 1.0049842562019697
-              },
-              "state": "SUPPORT",
-              "value": 0.004984256201969739
-            },
-            "model": {
-              "detail": {
-                "p": 0.725216
-              },
-              "state": "SUPPORT",
-              "value": 0.22521599999999997
-            },
-            "sharp": {
-              "detail": {
-                "p_market": 0.69265
-              },
-              "state": "SUPPORT",
-              "value": 0.19265
-            },
-            "starter": {
-              "detail": {
-                "opponent_factor": 1.0045553704724586,
-                "own_factor": 0.9983701609997997
+                "own_factor": 0.9958606870229008
               },
               "state": "OPPOSE",
-              "value": -0.0061571613217794585
-            },
-            "statcast": {
-              "detail": {
-                "opponent_factor": 1.0,
-                "own_factor": 0.9981574427480916
-              },
-              "state": "NEUTRAL",
-              "value": -0.0018425572519084055
+              "value": -0.004139312977099241
             },
             "weather_park": {
               "detail": {
-                "opponent_factor": 1.0258645431087603,
-                "own_factor": 1.0258645431087603
+                "opponent_factor": 1.009311053194631,
+                "own_factor": 1.009311053194631
               },
               "state": "NEUTRAL",
               "value": 0.0
             }
           },
           "support": 5,
-          "unavailable": 0,
-          "version": "v12.4-convergence-score-v1"
-        },
-        {
-          "affects_v12_selection": false,
-          "available": 8,
-          "directional": 6,
-          "game": "Arizona Diamondbacks @ Boston Red Sox",
-          "game_pk": 824722,
-          "grade": "GOOD",
-          "market": "ML",
-          "name": "Boston Red Sox",
-          "net_support": 4,
-          "neutral": 2,
-          "normalized_support": 0.625,
-          "oppose": 1,
-          "p_effective": 0.582146,
-          "p_market": 0.599327,
-          "point": null,
-          "research_only": true,
-          "schema": "v12-4-convergence-score-v1",
-          "score_8": 5,
-          "signals": {
-            "attack": {
-              "detail": {
-                "projected_margin": 0.702085914818757,
-                "required_margin": 0.0
-              },
-              "state": "SUPPORT",
-              "value": 0.702085914818757
-            },
-            "bullpen": {
-              "detail": {
-                "opponent_factor": 0.9773037491653835,
-                "own_factor": 0.9876271671802669
-              },
-              "state": "SUPPORT",
-              "value": 0.010563162193636844
-            },
-            "lineup": {
-              "detail": {
-                "opponent_factor": 1.0,
-                "own_factor": 1.0049842562019697
-              },
-              "state": "SUPPORT",
-              "value": 0.004984256201969739
-            },
-            "model": {
-              "detail": {
-                "p": 0.582146
-              },
-              "state": "SUPPORT",
-              "value": 0.08214600000000005
-            },
-            "sharp": {
-              "detail": {
-                "p_market": 0.599327
-              },
-              "state": "SUPPORT",
-              "value": 0.09932700000000005
-            },
-            "starter": {
-              "detail": {
-                "opponent_factor": 1.0045553704724586,
-                "own_factor": 0.9983701609997997
-              },
-              "state": "OPPOSE",
-              "value": -0.0061571613217794585
-            },
-            "statcast": {
-              "detail": {
-                "opponent_factor": 1.0,
-                "own_factor": 0.9981574427480916
-              },
-              "state": "NEUTRAL",
-              "value": -0.0018425572519084055
-            },
-            "weather_park": {
-              "detail": {
-                "opponent_factor": 1.0258645431087603,
-                "own_factor": 1.0258645431087603
-              },
-              "state": "NEUTRAL",
-              "value": 0.0
-            }
-          },
-          "support": 5,
-          "unavailable": 0,
-          "version": "v12.4-convergence-score-v1"
-        },
-        {
-          "affects_v12_selection": false,
-          "available": 8,
-          "directional": 4,
-          "game": "Toronto Blue Jays @ Tampa Bay Rays",
-          "game_pk": 822937,
-          "grade": "MIXED",
-          "market": "ML",
-          "name": "Tampa Bay Rays",
-          "net_support": 4,
-          "neutral": 4,
-          "normalized_support": 0.5,
-          "oppose": 0,
-          "p_effective": 0.647963,
-          "p_market": 0.646932,
-          "point": null,
-          "research_only": true,
-          "schema": "v12-4-convergence-score-v1",
-          "score_8": 4,
-          "signals": {
-            "attack": {
-              "detail": {
-                "projected_margin": 1.399016110843469,
-                "required_margin": 0.0
-              },
-              "state": "SUPPORT",
-              "value": 1.399016110843469
-            },
-            "bullpen": {
-              "detail": {
-                "opponent_factor": 0.9674752915367898,
-                "own_factor": 1.0112088223318525
-              },
-              "state": "SUPPORT",
-              "value": 0.04520377024367628
-            },
-            "lineup": {
-              "detail": {
-                "opponent_factor": 1.0,
-                "own_factor": 1.0
-              },
-              "state": "NEUTRAL",
-              "value": 0.0
-            },
-            "model": {
-              "detail": {
-                "p": 0.647963
-              },
-              "state": "SUPPORT",
-              "value": 0.14796299999999996
-            },
-            "sharp": {
-              "detail": {
-                "p_market": 0.646932
-              },
-              "state": "SUPPORT",
-              "value": 0.14693199999999995
-            },
-            "starter": {
-              "detail": {
-                "opponent_factor": 0.9936113161957695,
-                "own_factor": 0.9916743875693086
-              },
-              "state": "NEUTRAL",
-              "value": -0.0019493826156053995
-            },
-            "statcast": {
-              "detail": {
-                "opponent_factor": 1.0,
-                "own_factor": 1.0
-              },
-              "state": "NEUTRAL",
-              "value": 0.0
-            },
-            "weather_park": {
-              "detail": {
-                "opponent_factor": 1.0170391380225803,
-                "own_factor": 1.0170391380225803
-              },
-              "state": "NEUTRAL",
-              "value": 0.0
-            }
-          },
-          "support": 4,
-          "unavailable": 0,
-          "version": "v12.4-convergence-score-v1"
-        },
-        {
-          "affects_v12_selection": false,
-          "available": 8,
-          "directional": 4,
-          "game": "Washington Nationals @ Texas Rangers",
-          "game_pk": 822860,
-          "grade": "MIXED",
-          "market": "TOTAL",
-          "name": "Over",
-          "net_support": 4,
-          "neutral": 4,
-          "normalized_support": 0.5,
-          "oppose": 0,
-          "p_effective": 0.643877,
-          "p_market": 0.515051,
-          "point": 7.5,
-          "research_only": true,
-          "schema": "v12-4-convergence-score-v1",
-          "score_8": 4,
-          "signals": {
-            "attack": {
-              "detail": {
-                "line": 7.5,
-                "projected_total": 9.884996215360097
-              },
-              "state": "SUPPORT",
-              "value": 2.384996215360097
-            },
-            "bullpen": {
-              "detail": {
-                "away_factor": 0.9886543814675604,
-                "home_factor": 1.0293518320771733
-              },
-              "state": "SUPPORT",
-              "value": 0.00900310677236682
-            },
-            "lineup": {
-              "detail": {
-                "away_factor": 1.0,
-                "home_factor": 1.0
-              },
-              "state": "NEUTRAL",
-              "value": 0.0
-            },
-            "model": {
-              "detail": {
-                "p": 0.643877
-              },
-              "state": "SUPPORT",
-              "value": 0.14387700000000003
-            },
-            "sharp": {
-              "detail": {
-                "p_market": 0.515051
-              },
-              "state": "SUPPORT",
-              "value": 0.015051000000000037
-            },
-            "starter": {
-              "detail": {
-                "away_factor": 1.0039293804753,
-                "home_factor": 0.9987626497133486
-              },
-              "state": "NEUTRAL",
-              "value": 0.0013460150943243043
-            },
-            "statcast": {
-              "detail": {
-                "away_factor": 1.0,
-                "home_factor": 1.0
-              },
-              "state": "NEUTRAL",
-              "value": 0.0
-            },
-            "weather_park": {
-              "detail": {
-                "away_factor": 1.0,
-                "home_factor": 1.0
-              },
-              "state": "NEUTRAL",
-              "value": 0.0
-            }
-          },
-          "support": 4,
-          "unavailable": 0,
-          "version": "v12.4-convergence-score-v1"
-        },
-        {
-          "affects_v12_selection": false,
-          "available": 8,
-          "directional": 4,
-          "game": "Chicago White Sox @ Chicago Cubs",
-          "game_pk": 824640,
-          "grade": "MIXED",
-          "market": "RUNLINE",
-          "name": "Chicago White Sox",
-          "net_support": 4,
-          "neutral": 4,
-          "normalized_support": 0.5,
-          "oppose": 0,
-          "p_effective": 0.626221,
-          "p_market": 0.608938,
-          "point": 1.5,
-          "research_only": true,
-          "schema": "v12-4-convergence-score-v1",
-          "score_8": 4,
-          "signals": {
-            "attack": {
-              "detail": {
-                "projected_margin": -0.351463359952386,
-                "required_margin": -1.5
-              },
-              "state": "SUPPORT",
-              "value": 1.148536640047614
-            },
-            "bullpen": {
-              "detail": {
-                "opponent_factor": 0.9844972493356707,
-                "own_factor": 0.9956748928438233
-              },
-              "state": "SUPPORT",
-              "value": 0.011353656412646185
-            },
-            "lineup": {
-              "detail": {
-                "opponent_factor": 1.0075185269544624,
-                "own_factor": 1.0054877625494534
-              },
-              "state": "NEUTRAL",
-              "value": -0.0020156099869921285
-            },
-            "model": {
-              "detail": {
-                "p": 0.626221
-              },
-              "state": "SUPPORT",
-              "value": 0.12622100000000003
-            },
-            "sharp": {
-              "detail": {
-                "p_market": 0.608938
-              },
-              "state": "SUPPORT",
-              "value": 0.10893799999999998
-            },
-            "starter": {
-              "detail": {
-                "opponent_factor": 0.9901997203156258,
-                "own_factor": 0.9933788089114931
-              },
-              "state": "NEUTRAL",
-              "value": 0.00321055291234984
-            },
-            "statcast": {
-              "detail": {
-                "opponent_factor": 1.002486641221374,
-                "own_factor": 1.0037290076335879
-              },
-              "state": "NEUTRAL",
-              "value": 0.0012392847556554898
-            },
-            "weather_park": {
-              "detail": {
-                "opponent_factor": 1.005629021548526,
-                "own_factor": 1.005629021548526
-              },
-              "state": "NEUTRAL",
-              "value": 0.0
-            }
-          },
-          "support": 4,
           "unavailable": 0,
           "version": "v12.4-convergence-score-v1"
         },
@@ -2426,8 +2078,8 @@
           "neutral": 4,
           "normalized_support": 0.5,
           "oppose": 0,
-          "p_effective": 0.618249,
-          "p_market": 0.640952,
+          "p_effective": 0.61807,
+          "p_market": 0.640983,
           "point": null,
           "research_only": true,
           "schema": "v12-4-convergence-score-v1",
@@ -2435,11 +2087,11 @@
           "signals": {
             "attack": {
               "detail": {
-                "projected_margin": 1.315083325627172,
+                "projected_margin": 1.3144510736599955,
                 "required_margin": 0.0
               },
               "state": "SUPPORT",
-              "value": 1.315083325627172
+              "value": 1.3144510736599955
             },
             "bullpen": {
               "detail": {
@@ -2459,25 +2111,25 @@
             },
             "model": {
               "detail": {
-                "p": 0.618249
+                "p": 0.61807
               },
               "state": "SUPPORT",
-              "value": 0.11824900000000005
+              "value": 0.11807000000000001
             },
             "sharp": {
               "detail": {
-                "p_market": 0.640952
+                "p_market": 0.640983
               },
               "state": "SUPPORT",
-              "value": 0.14095199999999997
+              "value": 0.14098299999999997
             },
             "starter": {
               "detail": {
-                "opponent_factor": 1.0024229670591305,
-                "own_factor": 1.0010478280379553
+                "opponent_factor": 1.0024231411594497,
+                "own_factor": 1.00104824062173
               },
               "state": "NEUTRAL",
-              "value": -0.0013718151582354787
+              "value": -0.0013715770130061644
             },
             "statcast": {
               "detail": {
@@ -2504,170 +2156,83 @@
           "affects_v12_selection": false,
           "available": 8,
           "directional": 4,
-          "game": "St. Louis Cardinals @ Cincinnati Reds",
-          "game_pk": 824476,
-          "grade": "MIXED",
-          "market": "ML",
-          "name": "Cincinnati Reds",
-          "net_support": 4,
-          "neutral": 4,
-          "normalized_support": 0.5,
-          "oppose": 0,
-          "p_effective": 0.572946,
-          "p_market": 0.581057,
-          "point": null,
-          "research_only": true,
-          "schema": "v12-4-convergence-score-v1",
-          "score_8": 4,
-          "signals": {
-            "attack": {
-              "detail": {
-                "projected_margin": 0.6724440053353229,
-                "required_margin": 0.0
-              },
-              "state": "SUPPORT",
-              "value": 0.6724440053353229
-            },
-            "bullpen": {
-              "detail": {
-                "opponent_factor": 0.9994918218302382,
-                "own_factor": 0.99749538248767
-              },
-              "state": "NEUTRAL",
-              "value": -0.0019974544052920873
-            },
-            "lineup": {
-              "detail": {
-                "opponent_factor": 1.0,
-                "own_factor": 1.0
-              },
-              "state": "NEUTRAL",
-              "value": 0.0
-            },
-            "model": {
-              "detail": {
-                "p": 0.572946
-              },
-              "state": "SUPPORT",
-              "value": 0.07294599999999996
-            },
-            "sharp": {
-              "detail": {
-                "p_market": 0.581057
-              },
-              "state": "SUPPORT",
-              "value": 0.08105700000000005
-            },
-            "starter": {
-              "detail": {
-                "opponent_factor": 0.9923950411761785,
-                "own_factor": 0.99908101262699
-              },
-              "state": "SUPPORT",
-              "value": 0.00673720763748209
-            },
-            "statcast": {
-              "detail": {
-                "opponent_factor": 1.0,
-                "own_factor": 1.0
-              },
-              "state": "NEUTRAL",
-              "value": 0.0
-            },
-            "weather_park": {
-              "detail": {
-                "opponent_factor": 1.0196574182527236,
-                "own_factor": 1.0196574182527236
-              },
-              "state": "NEUTRAL",
-              "value": 0.0
-            }
-          },
-          "support": 4,
-          "unavailable": 0,
-          "version": "v12.4-convergence-score-v1"
-        },
-        {
-          "affects_v12_selection": false,
-          "available": 8,
-          "directional": 4,
           "game": "Athletics @ Kansas City Royals",
           "game_pk": 824076,
           "grade": "MIXED",
-          "market": "ML",
-          "name": "Kansas City Royals",
+          "market": "TOTAL",
+          "name": "Over",
           "net_support": 4,
           "neutral": 4,
           "normalized_support": 0.5,
           "oppose": 0,
-          "p_effective": 0.56853,
-          "p_market": 0.598147,
-          "point": null,
+          "p_effective": 0.616534,
+          "p_market": 0.513917,
+          "point": 8.5,
           "research_only": true,
           "schema": "v12-4-convergence-score-v1",
           "score_8": 4,
           "signals": {
             "attack": {
               "detail": {
-                "projected_margin": 0.576469611606405,
-                "required_margin": 0.0
+                "line": 8.5,
+                "projected_total": 10.595264897899355
               },
               "state": "SUPPORT",
-              "value": 0.576469611606405
+              "value": 2.095264897899355
             },
             "bullpen": {
               "detail": {
-                "opponent_factor": 1.0088984519400033,
-                "own_factor": 1.0233217572155289
+                "away_factor": 1.0078397643245771,
+                "home_factor": 1.0244633816946107
               },
               "state": "SUPPORT",
-              "value": 0.014296092186276255
+              "value": 0.0161515730095938
             },
             "lineup": {
               "detail": {
-                "opponent_factor": 1.0,
-                "own_factor": 1.0
+                "away_factor": 1.0,
+                "home_factor": 1.0003997676571115
               },
               "state": "NEUTRAL",
-              "value": 0.0
+              "value": 0.00019988382855573583
             },
             "model": {
               "detail": {
-                "p": 0.56853
+                "p": 0.616534
               },
               "state": "SUPPORT",
-              "value": 0.06852999999999998
+              "value": 0.11653400000000003
             },
             "sharp": {
               "detail": {
-                "p_market": 0.598147
+                "p_market": 0.513917
               },
-              "state": "SUPPORT",
-              "value": 0.09814699999999998
+              "state": "NEUTRAL",
+              "value": 0.013916999999999957
             },
             "starter": {
               "detail": {
-                "opponent_factor": 1.0,
-                "own_factor": 1.0
+                "away_factor": 0.9974755057236824,
+                "home_factor": 0.9986289570998299
               },
               "state": "NEUTRAL",
-              "value": 0.0
+              "value": -0.001947768588243859
             },
             "statcast": {
               "detail": {
-                "opponent_factor": 1.0,
-                "own_factor": 1.0
+                "away_factor": 1.0,
+                "home_factor": 0.9958454198473282
               },
               "state": "NEUTRAL",
-              "value": 0.0
+              "value": -0.002077290076335947
             },
             "weather_park": {
               "detail": {
-                "opponent_factor": 1.0234697395752557,
-                "own_factor": 1.0234697395752557
+                "away_factor": 1.013123095552524,
+                "home_factor": 1.013123095552524
               },
-              "state": "NEUTRAL",
-              "value": 0.0
+              "state": "SUPPORT",
+              "value": 0.013123095552523889
             }
           },
           "support": 4,
@@ -2687,8 +2252,8 @@
           "neutral": 4,
           "normalized_support": 0.5,
           "oppose": 0,
-          "p_effective": 0.529045,
-          "p_market": 0.526258,
+          "p_effective": 0.530328,
+          "p_market": 0.525127,
           "point": null,
           "research_only": true,
           "schema": "v12-4-convergence-score-v1",
@@ -2696,11 +2261,11 @@
           "signals": {
             "attack": {
               "detail": {
-                "projected_margin": 0.3213580522283541,
+                "projected_margin": 0.34492186123486857,
                 "required_margin": 0.0
               },
               "state": "SUPPORT",
-              "value": 0.3213580522283541
+              "value": 0.34492186123486857
             },
             "bullpen": {
               "detail": {
@@ -2713,45 +2278,45 @@
             "lineup": {
               "detail": {
                 "opponent_factor": 1.0,
-                "own_factor": 1.0
+                "own_factor": 1.001753336557775
               },
               "state": "NEUTRAL",
-              "value": 0.0
+              "value": 0.0017533365577750981
             },
             "model": {
               "detail": {
-                "p": 0.529045
+                "p": 0.530328
               },
               "state": "SUPPORT",
-              "value": 0.029044999999999987
+              "value": 0.03032800000000002
             },
             "sharp": {
               "detail": {
-                "p_market": 0.526258
+                "p_market": 0.525127
               },
               "state": "SUPPORT",
-              "value": 0.026258000000000004
+              "value": 0.02512700000000001
             },
             "starter": {
               "detail": {
-                "opponent_factor": 1.0003691092547744,
-                "own_factor": 1.0025694724969791
+                "opponent_factor": 1.000369170282089,
+                "own_factor": 1.0025693755184102
               },
               "state": "NEUTRAL",
-              "value": 0.002199551367438657
+              "value": 0.002199393285681639
             },
             "statcast": {
               "detail": {
                 "opponent_factor": 1.0,
-                "own_factor": 1.0
+                "own_factor": 1.0038053435114505
               },
               "state": "NEUTRAL",
-              "value": 0.0
+              "value": 0.003805343511450454
             },
             "weather_park": {
               "detail": {
-                "opponent_factor": 1.0156850707553347,
-                "own_factor": 1.0156850707553347
+                "opponent_factor": 1.0214301173576463,
+                "own_factor": 1.0214301173576463
               },
               "state": "NEUTRAL",
               "value": 0.0
@@ -2765,17 +2330,17 @@
           "affects_v12_selection": false,
           "available": 8,
           "directional": 5,
-          "game": "Miami Marlins @ Philadelphia Phillies",
-          "game_pk": 823424,
+          "game": "Arizona Diamondbacks @ Boston Red Sox",
+          "game_pk": 824722,
           "grade": "MIXED",
           "market": "RUNLINE",
-          "name": "Miami Marlins",
+          "name": "Boston Red Sox",
           "net_support": 3,
           "neutral": 3,
           "normalized_support": 0.5,
           "oppose": 1,
-          "p_effective": 0.675443,
-          "p_market": 0.617531,
+          "p_effective": 0.721523,
+          "p_market": 0.69265,
           "point": 1.5,
           "research_only": true,
           "schema": "v12-4-convergence-score-v1",
@@ -2783,19 +2348,106 @@
           "signals": {
             "attack": {
               "detail": {
-                "projected_margin": 0.44123350240081116,
+                "projected_margin": 0.6606130558827825,
                 "required_margin": -1.5
               },
               "state": "SUPPORT",
-              "value": 1.9412335024008112
+              "value": 2.1606130558827825
             },
             "bullpen": {
               "detail": {
-                "opponent_factor": 1.005605350822173,
-                "own_factor": 0.9827009957360103
+                "opponent_factor": 0.9773037491653835,
+                "own_factor": 0.9876271671802669
+              },
+              "state": "SUPPORT",
+              "value": 0.010563162193636844
+            },
+            "lineup": {
+              "detail": {
+                "opponent_factor": 1.0032814116101123,
+                "own_factor": 1.004993935668779
+              },
+              "state": "NEUTRAL",
+              "value": 0.0017069229419075516
+            },
+            "model": {
+              "detail": {
+                "p": 0.721523
+              },
+              "state": "SUPPORT",
+              "value": 0.22152300000000003
+            },
+            "sharp": {
+              "detail": {
+                "p_market": 0.69265
+              },
+              "state": "SUPPORT",
+              "value": 0.19265
+            },
+            "starter": {
+              "detail": {
+                "opponent_factor": 1.00455598268845,
+                "own_factor": 0.998370793652067
               },
               "state": "OPPOSE",
-              "value": -0.022776683782993246
+              "value": -0.006157137225771936
+            },
+            "statcast": {
+              "detail": {
+                "opponent_factor": 0.9957652671755726,
+                "own_factor": 0.9981574427480916
+              },
+              "state": "NEUTRAL",
+              "value": 0.002402348878169036
+            },
+            "weather_park": {
+              "detail": {
+                "opponent_factor": 1.0259422085823842,
+                "own_factor": 1.0259422085823842
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            }
+          },
+          "support": 4,
+          "unavailable": 0,
+          "version": "v12.4-convergence-score-v1"
+        },
+        {
+          "affects_v12_selection": false,
+          "available": 8,
+          "directional": 5,
+          "game": "Washington Nationals @ Texas Rangers",
+          "game_pk": 822860,
+          "grade": "MIXED",
+          "market": "RUNLINE",
+          "name": "Washington Nationals",
+          "net_support": 3,
+          "neutral": 3,
+          "normalized_support": 0.5,
+          "oppose": 1,
+          "p_effective": 0.658717,
+          "p_market": 0.633463,
+          "point": 1.5,
+          "research_only": true,
+          "schema": "v12-4-convergence-score-v1",
+          "score_8": 4,
+          "signals": {
+            "attack": {
+              "detail": {
+                "projected_margin": 0.17457941628354412,
+                "required_margin": -1.5
+              },
+              "state": "SUPPORT",
+              "value": 1.6745794162835441
+            },
+            "bullpen": {
+              "detail": {
+                "opponent_factor": 1.0293518320771733,
+                "own_factor": 0.9886543814675604
+              },
+              "state": "OPPOSE",
+              "value": -0.03953696815935892
             },
             "lineup": {
               "detail": {
@@ -2807,25 +2459,25 @@
             },
             "model": {
               "detail": {
-                "p": 0.675443
+                "p": 0.658717
               },
               "state": "SUPPORT",
-              "value": 0.17544300000000002
+              "value": 0.158717
             },
             "sharp": {
               "detail": {
-                "p_market": 0.617531
+                "p_market": 0.633463
               },
               "state": "SUPPORT",
-              "value": 0.11753100000000005
+              "value": 0.133463
             },
             "starter": {
               "detail": {
-                "opponent_factor": 0.9923992403130492,
-                "own_factor": 1.0016827201204772
+                "opponent_factor": 0.9987626859935267,
+                "own_factor": 1.003929622945951
               },
               "state": "SUPPORT",
-              "value": 0.00935458173516901
+              "value": 0.005173337995986849
             },
             "statcast": {
               "detail": {
@@ -2837,8 +2489,356 @@
             },
             "weather_park": {
               "detail": {
-                "opponent_factor": 1.0144242298024284,
-                "own_factor": 1.0144242298024284
+                "opponent_factor": 1.0,
+                "own_factor": 1.0
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            }
+          },
+          "support": 4,
+          "unavailable": 0,
+          "version": "v12.4-convergence-score-v1"
+        },
+        {
+          "affects_v12_selection": false,
+          "available": 8,
+          "directional": 5,
+          "game": "Seattle Mariners @ Milwaukee Brewers",
+          "game_pk": 823748,
+          "grade": "MIXED",
+          "market": "RUNLINE",
+          "name": "Seattle Mariners",
+          "net_support": 3,
+          "neutral": 3,
+          "normalized_support": 0.5,
+          "oppose": 1,
+          "p_effective": 0.655892,
+          "p_market": 0.651374,
+          "point": 1.5,
+          "research_only": true,
+          "schema": "v12-4-convergence-score-v1",
+          "score_8": 4,
+          "signals": {
+            "attack": {
+              "detail": {
+                "projected_margin": -0.16565330119871158,
+                "required_margin": -1.5
+              },
+              "state": "SUPPORT",
+              "value": 1.3343466988012884
+            },
+            "bullpen": {
+              "detail": {
+                "opponent_factor": 0.9979872162000647,
+                "own_factor": 0.978413316274386
+              },
+              "state": "OPPOSE",
+              "value": -0.0196133774139996
+            },
+            "lineup": {
+              "detail": {
+                "opponent_factor": 1.0,
+                "own_factor": 1.0
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            },
+            "model": {
+              "detail": {
+                "p": 0.655892
+              },
+              "state": "SUPPORT",
+              "value": 0.15589200000000003
+            },
+            "sharp": {
+              "detail": {
+                "p_market": 0.651374
+              },
+              "state": "SUPPORT",
+              "value": 0.151374
+            },
+            "starter": {
+              "detail": {
+                "opponent_factor": 0.9884539577525607,
+                "own_factor": 1.0008968478347176
+              },
+              "state": "SUPPORT",
+              "value": 0.012588234367990392
+            },
+            "statcast": {
+              "detail": {
+                "opponent_factor": 1.0,
+                "own_factor": 1.0
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            },
+            "weather_park": {
+              "detail": {
+                "opponent_factor": 1.0,
+                "own_factor": 1.0
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            }
+          },
+          "support": 4,
+          "unavailable": 0,
+          "version": "v12.4-convergence-score-v1"
+        },
+        {
+          "affects_v12_selection": false,
+          "available": 8,
+          "directional": 5,
+          "game": "St. Louis Cardinals @ Cincinnati Reds",
+          "game_pk": 824476,
+          "grade": "MIXED",
+          "market": "RUNLINE",
+          "name": "St. Louis Cardinals",
+          "net_support": 3,
+          "neutral": 3,
+          "normalized_support": 0.5,
+          "oppose": 1,
+          "p_effective": 0.601182,
+          "p_market": 0.613935,
+          "point": 1.5,
+          "research_only": true,
+          "schema": "v12-4-convergence-score-v1",
+          "score_8": 4,
+          "signals": {
+            "attack": {
+              "detail": {
+                "projected_margin": -0.6727292789854014,
+                "required_margin": -1.5
+              },
+              "state": "SUPPORT",
+              "value": 0.8272707210145986
+            },
+            "bullpen": {
+              "detail": {
+                "opponent_factor": 0.99749538248767,
+                "own_factor": 0.9994918218302382
+              },
+              "state": "NEUTRAL",
+              "value": 0.0020014522148354974
+            },
+            "lineup": {
+              "detail": {
+                "opponent_factor": 0.99811225003595,
+                "own_factor": 0.999115453656274
+              },
+              "state": "NEUTRAL",
+              "value": 0.0010051009996998594
+            },
+            "model": {
+              "detail": {
+                "p": 0.601182
+              },
+              "state": "SUPPORT",
+              "value": 0.101182
+            },
+            "sharp": {
+              "detail": {
+                "p_market": 0.613935
+              },
+              "state": "SUPPORT",
+              "value": 0.11393500000000001
+            },
+            "starter": {
+              "detail": {
+                "opponent_factor": 0.9990809185742152,
+                "own_factor": 0.9923948643024485
+              },
+              "state": "OPPOSE",
+              "value": -0.0066922049530365735
+            },
+            "statcast": {
+              "detail": {
+                "opponent_factor": 0.9920219465648855,
+                "own_factor": 1.0044408396946565
+              },
+              "state": "SUPPORT",
+              "value": 0.01251876853407774
+            },
+            "weather_park": {
+              "detail": {
+                "opponent_factor": 1.0159560440586688,
+                "own_factor": 1.0159560440586688
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            }
+          },
+          "support": 4,
+          "unavailable": 0,
+          "version": "v12.4-convergence-score-v1"
+        },
+        {
+          "affects_v12_selection": false,
+          "available": 8,
+          "directional": 5,
+          "game": "Athletics @ Kansas City Royals",
+          "game_pk": 824076,
+          "grade": "MIXED",
+          "market": "ML",
+          "name": "Kansas City Royals",
+          "net_support": 3,
+          "neutral": 3,
+          "normalized_support": 0.5,
+          "oppose": 1,
+          "p_effective": 0.596075,
+          "p_market": 0.60433,
+          "point": null,
+          "research_only": true,
+          "schema": "v12-4-convergence-score-v1",
+          "score_8": 4,
+          "signals": {
+            "attack": {
+              "detail": {
+                "projected_margin": 0.9981086535949002,
+                "required_margin": 0.0
+              },
+              "state": "SUPPORT",
+              "value": 0.9981086535949002
+            },
+            "bullpen": {
+              "detail": {
+                "opponent_factor": 1.0078397643245771,
+                "own_factor": 1.0244633816946107
+              },
+              "state": "SUPPORT",
+              "value": 0.01649430589908718
+            },
+            "lineup": {
+              "detail": {
+                "opponent_factor": 1.0,
+                "own_factor": 1.0003997676571115
+              },
+              "state": "NEUTRAL",
+              "value": 0.00039976765711147166
+            },
+            "model": {
+              "detail": {
+                "p": 0.596075
+              },
+              "state": "SUPPORT",
+              "value": 0.09607500000000002
+            },
+            "sharp": {
+              "detail": {
+                "p_market": 0.60433
+              },
+              "state": "SUPPORT",
+              "value": 0.10433000000000003
+            },
+            "starter": {
+              "detail": {
+                "opponent_factor": 0.9974755057236824,
+                "own_factor": 0.9986289570998299
+              },
+              "state": "NEUTRAL",
+              "value": 0.0011563706271771057
+            },
+            "statcast": {
+              "detail": {
+                "opponent_factor": 1.0,
+                "own_factor": 0.9958454198473282
+              },
+              "state": "OPPOSE",
+              "value": -0.004154580152671783
+            },
+            "weather_park": {
+              "detail": {
+                "opponent_factor": 1.013123095552524,
+                "own_factor": 1.013123095552524
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            }
+          },
+          "support": 4,
+          "unavailable": 0,
+          "version": "v12.4-convergence-score-v1"
+        },
+        {
+          "affects_v12_selection": false,
+          "available": 8,
+          "directional": 5,
+          "game": "Arizona Diamondbacks @ Boston Red Sox",
+          "game_pk": 824722,
+          "grade": "MIXED",
+          "market": "RUNLINE",
+          "name": "Arizona Diamondbacks",
+          "net_support": 3,
+          "neutral": 3,
+          "normalized_support": 0.5,
+          "oppose": 1,
+          "p_effective": 0.595639,
+          "p_market": 0.583619,
+          "point": 1.5,
+          "research_only": true,
+          "schema": "v12-4-convergence-score-v1",
+          "score_8": 4,
+          "signals": {
+            "attack": {
+              "detail": {
+                "projected_margin": -0.6606130558827825,
+                "required_margin": -1.5
+              },
+              "state": "SUPPORT",
+              "value": 0.8393869441172175
+            },
+            "bullpen": {
+              "detail": {
+                "opponent_factor": 0.9876271671802669,
+                "own_factor": 0.9773037491653835
+              },
+              "state": "OPPOSE",
+              "value": -0.010452748119877397
+            },
+            "lineup": {
+              "detail": {
+                "opponent_factor": 1.004993935668779,
+                "own_factor": 1.0032814116101123
+              },
+              "state": "NEUTRAL",
+              "value": -0.001704014320770053
+            },
+            "model": {
+              "detail": {
+                "p": 0.595639
+              },
+              "state": "SUPPORT",
+              "value": 0.09563900000000003
+            },
+            "sharp": {
+              "detail": {
+                "p_market": 0.583619
+              },
+              "state": "SUPPORT",
+              "value": 0.083619
+            },
+            "starter": {
+              "detail": {
+                "opponent_factor": 0.998370793652067,
+                "own_factor": 1.00455598268845
+              },
+              "state": "SUPPORT",
+              "value": 0.006195282429845017
+            },
+            "statcast": {
+              "detail": {
+                "opponent_factor": 0.9981574427480916,
+                "own_factor": 0.9957652671755726
+              },
+              "state": "NEUTRAL",
+              "value": -0.002396591429437156
+            },
+            "weather_park": {
+              "detail": {
+                "opponent_factor": 1.0259422085823842,
+                "own_factor": 1.0259422085823842
               },
               "state": "NEUTRAL",
               "value": 0.0
@@ -2853,46 +2853,59 @@
     },
     "current_run_disagreements": [
       {
-        "abs_gap": 0.014832999999999985,
-        "baseline_p": 0.557733,
+        "abs_gap": 0.009859000000000062,
+        "baseline_p": 0.553737,
         "challenger": "all_core",
         "crosses_55": true,
         "game": "San Francisco Giants @ Cleveland Guardians",
         "game_pk": 824394,
-        "gap": -0.014832999999999985,
+        "gap": -0.009859000000000062,
         "market": "RUNLINE",
         "name": "San Francisco Giants",
         "point": 1.5,
-        "v124_p": 0.5429
+        "v124_p": 0.543878
+      },
+      {
+        "abs_gap": 0.007197999999999927,
+        "baseline_p": 0.542992,
+        "challenger": "all_core",
+        "crosses_55": true,
+        "game": "Arizona Diamondbacks @ Boston Red Sox",
+        "game_pk": 824722,
+        "gap": 0.007197999999999927,
+        "market": "TOTAL",
+        "name": "Over",
+        "point": 8.0,
+        "v124_p": 0.55019
       }
     ],
     "evolution": {
       "has_previous": true,
-      "settled_games_delta": 0,
+      "settled_games_delta": 1,
       "variants": {
         "all_core": {
           "accuracy": 0.0,
-          "brier": 0.0,
-          "gt55_hit_rate": 0.0,
-          "gt55_n": 0,
-          "logloss": 0.0,
-          "n": 0
+          "brier": -0.0014022180323711164,
+          "gt55_hit_rate": 0.005879692446856599,
+          "gt55_n": 2,
+          "logloss": -0.0028851580857609527,
+          "n": 8
         },
         "baseline_v1232": {
           "accuracy": 0.0,
-          "brier": 0.0,
-          "gt55_hit_rate": 0.0,
-          "gt55_n": 0,
-          "logloss": 0.0,
-          "n": 0
+          "brier": -0.001605575330740433,
+          "gt55_hit_rate": 0.00853462157809981,
+          "gt55_n": 3,
+          "logloss": -0.0033169104648089753,
+          "n": 8
         },
         "ensemble": {
           "accuracy": 0.0,
-          "brier": 0.0,
-          "gt55_hit_rate": 0.0,
-          "gt55_n": 0,
-          "logloss": 0.0,
-          "n": 0
+          "brier": -0.0013867577082877225,
+          "gt55_hit_rate": 0.006103888176768546,
+          "gt55_n": 2,
+          "logloss": -0.0028494932775526838,
+          "n": 8
         }
       }
     },
@@ -2994,136 +3007,136 @@
       "historical_warm_start_eligible": false,
       "mature_games": 250,
       "minimum_games": 75,
-      "minimum_progress": 0.7333333333333333,
+      "minimum_progress": 0.7466666666666667,
       "next_target": 75,
       "optimized_shadow_active": false,
-      "remaining_to_minimum": 20,
-      "remaining_to_next_target": 20,
-      "settled_games": 55,
+      "remaining_to_minimum": 19,
+      "remaining_to_next_target": 19,
+      "settled_games": 56,
       "stage": "COLLECT",
       "status": "COLLECTING • HIST-DIAG 1801",
       "walk_forward_ready_games": 150,
       "weight_source": "NO_ELIGIBLE_WARM_START"
     },
     "research_only": true,
-    "run_id": "240a029575e111a8",
+    "run_id": "52344da87456e6e5",
     "schema": "v12-4-research-monitor-v1",
     "target_date": "2026-08-19",
     "v115": {
       "affects_v12_selection": false,
-      "consensus_gt55_hit_rate": 0.6265060240963856,
-      "consensus_gt55_n": 83,
-      "settled_games": 55,
+      "consensus_gt55_hit_rate": 0.6309523809523809,
+      "consensus_gt55_n": 84,
+      "settled_games": 56,
       "strong_disagreement_hit_rate": 0.5,
       "strong_disagreement_n": 4
     },
     "variants": {
       "all_core": {
         "accuracy": 0.5,
-        "brier": 0.24272709909352236,
+        "brier": 0.24132488106115124,
         "by_market": {
           "ML": {
             "accuracy": 0.5,
-            "brier": 0.23658479622092707,
+            "brier": 0.23613060984414266,
             "gt55_hit_rate": 0.6296296296296297,
             "gt55_n": 27,
-            "logloss": 0.6657002444273984,
-            "n": 110
+            "logloss": 0.6647999006632722,
+            "n": 112
           },
           "RUNLINE": {
             "accuracy": 0.5,
-            "brier": 0.2446483870420438,
-            "gt55_hit_rate": 0.6024096385542169,
-            "gt55_n": 83,
-            "logloss": 0.6830829351018534,
-            "n": 182
+            "brier": 0.24204305855745148,
+            "gt55_hit_rate": 0.611764705882353,
+            "gt55_n": 85,
+            "logloss": 0.6776868533163911,
+            "n": 186
           },
           "TOTAL": {
             "accuracy": 0.5,
-            "brier": 0.24569054372401827,
+            "brier": 0.24532646465037514,
             "gt55_hit_rate": 0.5909090909090909,
             "gt55_n": 22,
-            "logloss": 0.6844281390334918,
-            "n": 110
+            "logloss": 0.6837010223892797,
+            "n": 112
           }
         },
-        "gt55_hit_rate": 0.6060606060606061,
-        "gt55_n": 132,
-        "logloss": 0.678694568082675,
-        "n": 402
+        "gt55_hit_rate": 0.6119402985074627,
+        "gt55_n": 134,
+        "logloss": 0.6758094099969141,
+        "n": 410
       },
       "baseline_v1232": {
         "accuracy": 0.5,
-        "brier": 0.242987233317697,
+        "brier": 0.24138165798695657,
         "by_market": {
           "ML": {
             "accuracy": 0.5,
-            "brier": 0.23584117977652727,
-            "gt55_hit_rate": 0.6538461538461539,
-            "gt55_n": 26,
-            "logloss": 0.6641910102708827,
-            "n": 110
+            "brier": 0.23522577223594646,
+            "gt55_hit_rate": 0.6666666666666666,
+            "gt55_n": 27,
+            "logloss": 0.6629656436650736,
+            "n": 112
           },
           "RUNLINE": {
             "accuracy": 0.5,
-            "brier": 0.24519091694516496,
-            "gt55_hit_rate": 0.6046511627906976,
-            "gt55_n": 86,
-            "logloss": 0.684075015770692,
-            "n": 182
+            "brier": 0.2423984495706991,
+            "gt55_hit_rate": 0.6136363636363636,
+            "gt55_n": 88,
+            "logloss": 0.6782522565779845,
+            "n": 186
           },
           "TOTAL": {
             "accuracy": 0.5,
-            "brier": 0.24648719212978168,
+            "brier": 0.2458489434292499,
             "gt55_hit_rate": 0.5652173913043478,
             "gt55_n": 23,
-            "logloss": 0.6859931732091026,
-            "n": 110
+            "logloss": 0.6847158915183285,
+            "n": 112
           }
         },
-        "gt55_hit_rate": 0.6074074074074074,
-        "gt55_n": 135,
-        "logloss": 0.6791589876941899,
-        "n": 402
+        "gt55_hit_rate": 0.6159420289855072,
+        "gt55_n": 138,
+        "logloss": 0.6758420772293809,
+        "n": 410
       },
       "ensemble": {
         "accuracy": 0.5,
-        "brier": 0.24271467737549252,
+        "brier": 0.2413279196672048,
         "by_market": {
           "ML": {
             "accuracy": 0.5,
-            "brier": 0.23675812925689083,
+            "brier": 0.23621657688460704,
             "gt55_hit_rate": 0.6538461538461539,
             "gt55_n": 26,
-            "logloss": 0.6661608383472797,
-            "n": 110
+            "logloss": 0.6650824668840833,
+            "n": 112
           },
           "RUNLINE": {
             "accuracy": 0.5,
-            "brier": 0.2439801030503407,
-            "gt55_hit_rate": 0.5975609756097561,
-            "gt55_n": 82,
-            "logloss": 0.6816477122019565,
-            "n": 182
+            "brier": 0.2414777406433441,
+            "gt55_hit_rate": 0.6071428571428571,
+            "gt55_n": 84,
+            "logloss": 0.6764706900425851,
+            "n": 186
           },
           "TOTAL": {
             "accuracy": 0.5,
-            "brier": 0.24657752119570914,
+            "brier": 0.2461904526144286,
             "gt55_hit_rate": 0.5789473684210527,
             "gt55_n": 19,
-            "logloss": 0.6862315358480654,
-            "n": 110
+            "logloss": 0.6854578769958397,
+            "n": 112
           }
         },
-        "gt55_hit_rate": 0.6062992125984252,
-        "gt55_n": 127,
-        "logloss": 0.6786642905030941,
-        "n": 402
+        "gt55_hit_rate": 0.6124031007751938,
+        "gt55_n": 129,
+        "logloss": 0.6758147972255414,
+        "n": 410
       }
     },
     "version": "v12.4-research-monitor-v1"
   },
-  "run_id": "240a029575e111a8",
+  "run_id": "52344da87456e6e5",
   "scheduled_games": 15,
   "schema": "v12-3-professional-v1",
   "shadow_challenger": {
@@ -3164,11 +3177,11 @@
       },
       "RUNLINE": {
         "consensus_gt55": {
-          "hit_rate_ex_push": 0.6,
+          "hit_rate_ex_push": 0.6086956521739131,
           "losses": 18,
-          "n": 45,
+          "n": 46,
           "pushes": 0,
-          "wins": 27
+          "wins": 28
         },
         "strong_disagreement": {
           "hit_rate_ex_push": 0.5,
@@ -3215,21 +3228,21 @@
           "wins": 0
         },
         "v12_only_gt55": {
-          "hit_rate_ex_push": 0.6,
+          "hit_rate_ex_push": 0.6363636363636364,
           "losses": 4,
-          "n": 10,
+          "n": 11,
           "pushes": 0,
-          "wins": 6
+          "wins": 7
         }
       }
     },
     "overall": {
       "consensus_gt55": {
-        "hit_rate_ex_push": 0.6265060240963856,
+        "hit_rate_ex_push": 0.6309523809523809,
         "losses": 31,
-        "n": 83,
+        "n": 84,
         "pushes": 0,
-        "wins": 52
+        "wins": 53
       },
       "strong_disagreement": {
         "hit_rate_ex_push": 0.5,
@@ -3246,19 +3259,19 @@
         "wins": 3
       },
       "v12_only_gt55": {
-        "hit_rate_ex_push": 0.5555555555555556,
+        "hit_rate_ex_push": 0.5789473684210527,
         "losses": 8,
-        "n": 18,
+        "n": 19,
         "pushes": 0,
-        "wins": 10
+        "wins": 11
       }
     },
-    "settled_games": 55,
+    "settled_games": 56,
     "source_commit": "34b35283d043c6ec9a004013945a23a7da356a77",
     "strong_gap": 0.08,
     "threshold": 0.55,
     "version": "11.5-standalone-all-markets-v3-shadow"
   },
   "target_date": "2026-08-19",
-  "version": "13.9-explicit-engine-v1"
+  "version": "13.10-deep-audit-hardening-v1"
 }
