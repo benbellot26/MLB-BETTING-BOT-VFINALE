@@ -1,9 +1,9 @@
 {
   "engineering_closed": 52,
   "engineering_open": 0,
-  "evidence_closed": 42,
-  "evidence_gates_pending": 10,
-  "overall_closed": 42,
+  "evidence_closed": 44,
+  "evidence_gates_pending": 8,
+  "overall_closed": 44,
   "points": [
     {
       "data_limited": false,
@@ -228,13 +228,13 @@
     {
       "data_limited": true,
       "engineering_closed": true,
-      "evidence_closed": false,
-      "evidence_note": "extra-inning prior remains neutral until >=200 authenticated examples",
+      "evidence_closed": true,
+      "evidence_note": "authenticated free MLB extra-inning examples=1220; required=200",
       "id": 21,
-      "implementation": "v138_validation.learn_extra_innings_home_prior",
-      "implementation_status": "EVIDENCE_GATE_IMPLEMENTED",
+      "implementation": "v138_inning_history + v138_validation.learn_extra_innings_home_prior",
+      "implementation_status": "FREE_EVIDENCE_IMPLEMENTED",
       "name": "Learned extra-innings prior",
-      "overall_closed": false
+      "overall_closed": true
     },
     {
       "data_limited": false,
@@ -536,13 +536,13 @@
     {
       "data_limited": true,
       "engineering_closed": true,
-      "evidence_closed": false,
-      "evidence_note": "inning learner requires authenticated inning-level labels",
+      "evidence_closed": true,
+      "evidence_note": "authenticated free MLB inning-profile games=360; required=300",
       "id": 49,
-      "implementation": "v138_advanced_research.fit_inning_profile",
-      "implementation_status": "DATA_OPTIONAL_RESEARCH_IMPLEMENTED",
+      "implementation": "v138_inning_history + v138_advanced_research.fit_inning_profile",
+      "implementation_status": "FREE_EVIDENCE_IMPLEMENTED",
       "name": "Inning-level model",
-      "overall_closed": false
+      "overall_closed": true
     },
     {
       "data_limited": false,
@@ -579,6 +579,6 @@
     }
   ],
   "policy": "A point is never called statistically closed merely because code exists. Engineering closure and evidence closure are reported separately; native/PIT sample floors are never lowered.",
-  "schema": "v13-8-52-point-closure-v1",
+  "schema": "v13-8-52-point-closure-v2",
   "total_points": 52
 }
