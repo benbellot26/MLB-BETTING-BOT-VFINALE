@@ -4,18 +4,169 @@
     "GLOBAL": {
       "active": false,
       "method": "identity",
-      "n": 0,
-      "reliability_bins": [],
+      "n": 3,
+      "reliability_bins": [
+        {
+          "avg_probability": 0.408298,
+          "calibration_gap": 0.408298,
+          "hi": 0.45,
+          "hit_rate": 0.0,
+          "lo": 0.4,
+          "n": 1,
+          "sampling_se": 0.1,
+          "sigma": 0.14
+        },
+        {
+          "avg_probability": 0.569225,
+          "calibration_gap": 0.569225,
+          "hi": 0.6,
+          "hit_rate": 0.0,
+          "lo": 0.55,
+          "n": 1,
+          "sampling_se": 0.1,
+          "sigma": 0.14
+        },
+        {
+          "avg_probability": 0.617385,
+          "calibration_gap": 0.38261500000000004,
+          "hi": 0.65,
+          "hit_rate": 1.0,
+          "lo": 0.6,
+          "n": 1,
+          "sampling_se": 0.1,
+          "sigma": 0.14
+        }
+      ],
       "status": "COLLECTING",
       "strict_required_n": 600,
       "strict_volume_ready": false
+    },
+    "MARKET:ML": {
+      "active": false,
+      "method": "identity",
+      "n": 1,
+      "reliability_bins": [
+        {
+          "avg_probability": 0.569225,
+          "calibration_gap": 0.569225,
+          "hi": 0.6,
+          "hit_rate": 0.0,
+          "lo": 0.55,
+          "n": 1,
+          "sampling_se": 0.1,
+          "sigma": 0.14
+        }
+      ],
+      "status": "COLLECTING",
+      "strict_required_n": 400,
+      "strict_volume_ready": false
+    },
+    "MARKET:RUNLINE": {
+      "active": false,
+      "method": "identity",
+      "n": 1,
+      "reliability_bins": [
+        {
+          "avg_probability": 0.408298,
+          "calibration_gap": 0.408298,
+          "hi": 0.45,
+          "hit_rate": 0.0,
+          "lo": 0.4,
+          "n": 1,
+          "sampling_se": 0.1,
+          "sigma": 0.14
+        }
+      ],
+      "status": "COLLECTING",
+      "strict_required_n": 400,
+      "strict_volume_ready": false
+    },
+    "MARKET:TOTAL": {
+      "active": false,
+      "method": "identity",
+      "n": 1,
+      "reliability_bins": [
+        {
+          "avg_probability": 0.617385,
+          "calibration_gap": 0.38261500000000004,
+          "hi": 0.65,
+          "hit_rate": 1.0,
+          "lo": 0.6,
+          "n": 1,
+          "sampling_se": 0.1,
+          "sigma": 0.14
+        }
+      ],
+      "status": "COLLECTING",
+      "strict_required_n": 400,
+      "strict_volume_ready": false
+    },
+    "PHASE:FINAL:ML": {
+      "active": false,
+      "method": "identity",
+      "n": 1,
+      "reliability_bins": [
+        {
+          "avg_probability": 0.569225,
+          "calibration_gap": 0.569225,
+          "hi": 0.6,
+          "hit_rate": 0.0,
+          "lo": 0.55,
+          "n": 1,
+          "sampling_se": 0.1,
+          "sigma": 0.14
+        }
+      ],
+      "status": "COLLECTING",
+      "strict_required_n": 300,
+      "strict_volume_ready": false
+    },
+    "PHASE:FINAL:RUNLINE": {
+      "active": false,
+      "method": "identity",
+      "n": 1,
+      "reliability_bins": [
+        {
+          "avg_probability": 0.408298,
+          "calibration_gap": 0.408298,
+          "hi": 0.45,
+          "hit_rate": 0.0,
+          "lo": 0.4,
+          "n": 1,
+          "sampling_se": 0.1,
+          "sigma": 0.14
+        }
+      ],
+      "status": "COLLECTING",
+      "strict_required_n": 300,
+      "strict_volume_ready": false
+    },
+    "PHASE:FINAL:TOTAL": {
+      "active": false,
+      "method": "identity",
+      "n": 1,
+      "reliability_bins": [
+        {
+          "avg_probability": 0.617385,
+          "calibration_gap": 0.38261500000000004,
+          "hi": 0.65,
+          "hit_rate": 1.0,
+          "lo": 0.6,
+          "n": 1,
+          "sampling_se": 0.1,
+          "sigma": 0.14
+        }
+      ],
+      "status": "COLLECTING",
+      "strict_required_n": 300,
+      "strict_volume_ready": false
     }
   },
-  "eligible_games": 0,
-  "eligible_native_rows": 0,
-  "eligible_rows": 0,
+  "eligible_games": 1,
+  "eligible_native_rows": 1,
+  "eligible_rows": 1,
   "exact_replay_games": 0,
-  "generated_at": "2026-08-19T23:03:38.352046+00:00",
+  "generated_at": "2026-08-19T23:58:30.014362+00:00",
   "legacy_2026_research": {
     "future_game_stats_used": false,
     "games": 1801,
@@ -90,14 +241,14 @@
   "market_probability_used_as_feature": false,
   "model_generation": "v13.10-gen-structural-nb-independent-transfer-park-extra-surface-v3",
   "rejected_non_current_generation_rows": 621,
-  "rows_seen": 0,
+  "rows_seen": 1,
   "runtime_global_fallback_allowed": false,
   "schema": "v13-baseball-calibration-model-v2",
   "source_rows_exact_replay_eligible": 0,
   "source_rows_exact_replay_total": 85,
   "source_rows_exact_replay_used_for_calibration": 0,
-  "source_rows_live": 647,
-  "source_rows_total": 732,
+  "source_rows_live": 650,
+  "source_rows_total": 735,
   "strict_activation_floors": {
     "global": 600,
     "market": 400,

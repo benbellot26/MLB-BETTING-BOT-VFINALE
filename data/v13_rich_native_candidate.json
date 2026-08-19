@@ -11,16 +11,16 @@
   "baseline_role": "heuristic_structural_champion",
   "minimum_games": 300,
   "native_feature_coverage": {
-    "bullpen_player": 0.0,
-    "lineup_player": 0.0,
-    "platoon": 0.0,
-    "starter_ip": 0.0,
-    "statcast": 0.0,
-    "weather_park": 0.0
+    "bullpen_player": 1.0,
+    "lineup_player": 1.0,
+    "platoon": 1.0,
+    "starter_ip": 1.0,
+    "statcast": 0.9,
+    "weather_park": 1.0
   },
-  "native_games": 0,
+  "native_games": 1,
   "native_rejection_reasons": {
-    "not_settled_final": 26,
+    "not_settled_final": 28,
     "predictive_contract_mismatch": 621
   },
   "replacement_policy": "Do not hand-tune production coefficients. Rich/native modules may replace or augment the heuristic champion only after exact current-generation promotion-grade PIT walk-forward, untouched run holdout, and downstream ML/RL/TOTAL proper-score validation.",
@@ -38,7 +38,7 @@
     "weather_requires_native_pregame_snapshot": true
   },
   "schema": "v13-rich-native-candidate-v5",
-  "source_rows": 647,
+  "source_rows": 650,
   "status": "COLLECTING",
   "target_phase": "FINAL"
 }
