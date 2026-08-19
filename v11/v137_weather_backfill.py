@@ -9,8 +9,9 @@ from pathlib import Path
 from typing import Any
 
 from . import core
-from .v137_free_data import COHORT, WEATHER_ARCHIVE_START, historical_weather_for_game
+from .v137_free_data import COHORT, WEATHER_ARCHIVE_START
 from .v137_team_history import fetch_schedule_span
+from .v137_weather_provider import historical_weather_for_game
 
 OUT_DIR = Path("data/v137")
 REPORT = Path("data/v137_weather_backfill_report.json")
@@ -28,6 +29,7 @@ def collect(start: str, end: str, lead_hours: int = 2) -> tuple[list[dict[str, A
     games = fetch_schedule_span(start, end)
     rows = []
     status_counts = defaultdict(int)
+    fallback_rows = 0
     for game in games:
         if not _is_regular_game(game):
             continue
@@ -44,10 +46,13 @@ def collect(start: str, end: str, lead_hours: int = 2) -> tuple[list[dict[str, A
             continue
         as_of = game_dt - timedelta(hours=max(1, int(lead_hours)))
         weather = historical_weather_for_game(game_dt, home, as_of)
-        status_counts["available" if weather.get("available") else str(weather.get("reason") or "unavailable")] += 1
+        status_counts[
+            "available" if weather.get("available") else str(weather.get("reason") or "unavailable")
+        ] += 1
+        fallback_rows += int(bool(weather.get("available") and weather.get("fallback_used")))
         rows.append(
             {
-                "schema": "v13-7-free-weather-feature-v1",
+                "schema": "v13-7-free-weather-feature-v2",
                 "cohort": COHORT,
                 "native_live": False,
                 "promotion_eligible": False,
@@ -62,7 +67,7 @@ def collect(start: str, end: str, lead_hours: int = 2) -> tuple[list[dict[str, A
             }
         )
     report = {
-        "schema": "v13-7-free-weather-backfill-report-v1",
+        "schema": "v13-7-free-weather-backfill-report-v2",
         "cohort": COHORT,
         "start": start,
         "end": end,
@@ -71,6 +76,7 @@ def collect(start: str, end: str, lead_hours: int = 2) -> tuple[list[dict[str, A
         "rows": len(rows),
         "available_rows": sum(bool((r.get("weather") or {}).get("available")) for r in rows),
         "point_in_time_rows": sum(bool((r.get("weather") or {}).get("point_in_time")) for r in rows),
+        "fallback_rows": fallback_rows,
         "status_counts": dict(sorted(status_counts.items())),
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "promotion_eligible": False,
@@ -106,15 +112,22 @@ def write(rows: list[dict[str, Any]]) -> list[str]:
             key = str(row.get("game_pk") or "") + "|" + str(row.get("as_of") or "")
             merged[key] = row
         with gzip.open(path, "wt", encoding="utf-8", compresslevel=9) as fh:
-            for row in sorted(merged.values(), key=lambda r: (str(r.get("game_date") or ""), str(r.get("game_pk") or ""))):
-                fh.write(json.dumps(row, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n")
+            for row in sorted(
+                merged.values(),
+                key=lambda r: (str(r.get("game_date") or ""), str(r.get("game_pk") or "")),
+            ):
+                fh.write(
+                    json.dumps(row, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
+                )
         paths.append(str(path))
     return paths
 
 
 def main() -> None:
     yesterday = date.today() - timedelta(days=1)
-    parser = argparse.ArgumentParser(description="Backfill free point-in-time archived ECMWF weather for MLB games")
+    parser = argparse.ArgumentParser(
+        description="Backfill free point-in-time archived ECMWF weather for MLB games"
+    )
     parser.add_argument("--start", default=yesterday.isoformat())
     parser.add_argument("--end", default=yesterday.isoformat())
     parser.add_argument("--lead-hours", type=int, default=2)
@@ -123,7 +136,10 @@ def main() -> None:
     rows, report = collect(args.start, args.end, args.lead_hours)
     report["files"] = write(rows) if args.persist else []
     REPORT.parent.mkdir(parents=True, exist_ok=True)
-    REPORT.write_text(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
+    REPORT.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
     print(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True))
 
 
