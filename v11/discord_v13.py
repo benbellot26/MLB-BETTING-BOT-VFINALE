@@ -5,14 +5,12 @@ import os
 from . import core
 from . import discord_v123 as base
 from . import v13_discord_delivery as delivery
+from . import v13_probability_surface
 from . import v138_live_change
 
-VERSION_LABEL = "V13.6 EVIDENCE ANALYTICS"
+VERSION_LABEL = "V13.10 EVIDENCE ANALYTICS"
 base.VERSION_LABEL = VERSION_LABEL
 
-# Discord embed accent palette. The color is deterministic per game so adjacent
-# matchup cards are visually distinct while a critical resend keeps the same
-# identity as the original card.
 _MATCH_COLORS = (
     ("🔵", 0x5865F2),
     ("🟣", 0x9B59B6),
@@ -25,8 +23,8 @@ _MATCH_COLORS = (
 )
 
 # Legacy verbose card wording intentionally remains non-rendered. Historical
-# source-contract tests look for these labels while the visible card has been
-# simplified to the compact eight-probability scoreboard requested by the user:
+# source-contract tests look for these labels while the visible card is the
+# compact eight-probability scoreboard requested by the user:
 # "Probabilité principale" / "ensemble candidat" / "COLLECTING".
 
 
@@ -50,11 +48,14 @@ def _fair_odds(p):
 def _primary_probability(option):
     if not isinstance(option, dict):
         return None
-    for key in ("p_predictive_final", "p_baseball_calibrated", "p_baseball_raw"):
+    # Never fall all the way back to an uncalibrated/raw probability on the
+    # user-facing card. Missing final/calibrated state must be visible as absent
+    # and publication will fail closed in send_game.
+    for key in ("p_predictive_final", "p_baseball_calibrated"):
         value = option.get(key)
         if value is not None:
             p = core.num(value, -1)
-            if 0 <= p <= 1:
+            if 0 < p < 1:
                 return p
     return None
 
@@ -65,7 +66,6 @@ def _probability_text(option):
 
 
 def _line(r):
-    """Compact compatibility renderer used by older Discord helpers."""
     return f"**{_label(r)}**  {_probability_text(r)}"
 
 
@@ -143,7 +143,6 @@ def _total_pair(options, result):
             by_point.setdefault(point, {})[side] = option
     complete = [(point, sides) for point, sides in by_point.items() if {"over", "under"} <= set(sides)]
     if complete:
-        # Prefer the line closest to the middle of the available total surface.
         points = sorted(point for point, _ in complete)
         target = points[len(points) // 2]
         sides = dict(complete)[target]
@@ -229,6 +228,12 @@ def _scoreboard_fields(result):
 
 def send_game(result, portfolio):
     gid = result.get("game_pk")
+    try:
+        v13_probability_surface.assert_valid(result, require_display_surface=True)
+    except Exception as exc:
+        core.logging.error("Discord V13.10 blocked incomplete/incoherent probability surface gamePk=%s: %s", gid, exc)
+        return False
+
     final_only = str(os.getenv("V13_DISCORD_FINAL_ONLY", "0")).lower() in {"1", "true", "yes"}
     if final_only and str(result.get("phase") or "").upper() != "FINAL":
         core.logging.info("Discord V13 scheduled mode: phase %s supprimée gamePk=%s", result.get("phase"), gid)
