@@ -36,7 +36,7 @@ POINTS = [
     _p("H06","HIGH","RUNLINE/TOTAL market evidence cannot be inferred from missing targets","tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_native_evidence_never_pools_markets_for_activation",evidence="RUNLINE and TOTAL each >=300 independent comparable targets with proper-score pass"),
     _p("H07","HIGH","Probability drift no longer averages complementary sides","tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_probability_drift_uses_canonical_side_and_detects_confidence_shift"),
     _p("H08","HIGH","Operational PIT separated from promotion-grade source attestation","tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_pit_distinguishes_operational_from_promotion_grade_capture"),
-    _p("H09","HIGH","Deep audit closure uses behavioral verification instead of token presence","tests.test_v1310_deep_audit_registry.V1310DeepAuditRegistryTests.test_registry_runs_behavioral_tests_and_separates_evidence"),
+    _p("H09","HIGH","Deep audit closure uses behavioral verification instead of token presence","tests.test_v1310_deep_audit_registry.V1310DeepAuditRegistryTests.test_registry_declares_behavioral_verification_contract"),
     _p("H10","HIGH","Rich/native promotion requires exact promotion-grade PIT evidence","tests.test_v13_rich_native_train.NativeRichTrainTests.test_requires_native_volume",evidence=">=300 promotion-grade FINAL games + WF/outer holdout/downstream market gates"),
 
     _p("M01","MEDIUM","Native uncertainty/calibration/book gates are market-specific","tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_native_evidence_never_pools_markets_for_activation"),
@@ -55,7 +55,7 @@ POINTS = [
     _p("M14","MEDIUM","Discord refuses incomplete eight-probability surface","tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_discord_blocks_incomplete_eight_probability_surface"),
     _p("M15","MEDIUM","Historical park data pipeline rebuilt from fixed provider before team history","tests.test_v1310_deep_audit_registry.V1310DeepAuditRegistryTests.test_free_data_workflow_collects_park_before_team_history",evidence="post-merge free-data refresh must show park_prior_coverage > 0"),
     _p("M16","MEDIUM","Unvalidated uncertainty is not labeled a 90% confidence interval","tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_uncertainty_band_is_not_labeled_validated_confidence"),
-    _p("M17","MEDIUM","Complex research challengers remain non-promotable by construction","tests.test_v138_audit_closure.AuditClosureTests.test_glm_gam_gbdt_hierarchy_and_ensemble_are_finite"),
+    _p("M17","MEDIUM","Complex research challengers remain non-promotable by construction","tests.test_v138_audit_closure.V138AuditClosureTests.test_glm_gam_gbdt_hierarchy_and_ensemble_are_finite"),
 
     # Low-severity items are compatibility/cleanup observations. Retaining
     # compatibility names is deliberate when removal would add migration risk;
@@ -98,7 +98,8 @@ def _evidence_status(point: dict[str, Any]) -> tuple[bool | None, str]:
             model=json.loads(Path("data/v13_baseball_calibration.json").read_text(encoding="utf-8"))
             c=model.get("calibrators") or {}
             required=("GLOBAL","MARKET:ML","MARKET:RUNLINE","MARKET:TOTAL","PHASE:FINAL:ML","PHASE:FINAL:RUNLINE","PHASE:FINAL:TOTAL")
-            return all(bool((c.get(k) or {}).get("active")) for k in required), "CALIBRATORS_ACTIVE" if all(bool((c.get(k) or {}).get("active")) for k in required) else "CALIBRATION_EVIDENCE_COLLECTING"
+            passed=all(bool((c.get(k) or {}).get("active")) for k in required)
+            return passed, "CALIBRATORS_ACTIVE" if passed else "CALIBRATION_EVIDENCE_COLLECTING"
         if fid in {"H05","H06"}:
             health=json.loads(Path("data/v13_model_health.json").read_text(encoding="utf-8"))
             edge=health.get("edge_evidence") or {}
