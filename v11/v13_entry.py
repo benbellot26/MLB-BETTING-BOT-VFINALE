@@ -6,7 +6,7 @@ from .v13_runtime import install
 install()
 
 from . import config, runner, discord_v13, core, selector, storage, journal, v13_daily_tracking, v13_analytics_only
-from . import v13_coverage_report, v13_probability_diagnostics
+from . import v13_coverage_report, v13_probability_diagnostics, v13_feature_store
 from . import calibration_baseball_v13 as calibration_v13
 from . import probability_contract_v13 as probability_contract
 runner.discord = discord_v13
@@ -52,14 +52,15 @@ def _assert_v135_calibration_artifact():
 
 def _write_postrun_diagnostics():
     """Persist non-actionable evidence views after the run without blocking Discord."""
-    try:
-        v13_coverage_report.main()
-    except Exception:
-        core.logging.exception("V13 coverage report impossible; analytics publication remains available")
-    try:
-        v13_probability_diagnostics.main()
-    except Exception:
-        core.logging.exception("V13 probability diagnostics impossible; analytics publication remains available")
+    for name, fn in (
+        ("coverage report", v13_coverage_report.main),
+        ("probability diagnostics", v13_probability_diagnostics.main),
+        ("feature store", v13_feature_store.main),
+    ):
+        try:
+            fn()
+        except Exception:
+            core.logging.exception("V13 %s impossible; analytics publication remains available", name)
 
 
 def _run_v135(*args, **kwargs):
