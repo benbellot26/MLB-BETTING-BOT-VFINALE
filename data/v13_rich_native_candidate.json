@@ -11,26 +11,34 @@
   "baseline_role": "heuristic_structural_champion",
   "minimum_games": 300,
   "native_feature_coverage": {
-    "bullpen_player": 0.0,
-    "lineup_player": 0.0,
-    "platoon": 0.0,
-    "starter_ip": 0.0,
-    "statcast": 0.0,
-    "weather_park": 0.0
+    "bullpen_player": 1.0,
+    "lineup_player": 1.0,
+    "platoon": 1.0,
+    "starter_ip": 1.0,
+    "statcast": 0.9,
+    "weather_park": 0.65
   },
-  "native_games": 0,
-  "replacement_policy": "Do not hand-tune production coefficients. Rich/native modules may replace or augment the heuristic champion only after exact current-generation point-in-time walk-forward and untouched holdout validation.",
+  "native_games": 1,
+  "native_rejection_reasons": {
+    "not_final_phase": 54,
+    "not_settled_final": 15,
+    "predictive_contract_mismatch": 525
+  },
+  "replacement_policy": "Do not hand-tune production coefficients. Rich/native modules may replace or augment the heuristic champion only after exact current-generation PIT walk-forward, untouched run holdout, and downstream ML/RL/TOTAL proper-score validation.",
   "safety": {
+    "downstream_probability_gate_required": true,
     "historical_reconstruction_used_for_promotion": false,
     "manual_structural_retuning_allowed_without_oos_evidence": false,
     "market_probability_used": false,
     "native_predictive_contract_required": true,
     "phase_specific_training": true,
     "point_in_time_required": true,
+    "point_in_time_validated_from_feature_provenance": true,
     "selector_unchanged_until_promotion": true,
     "weather_requires_native_pregame_snapshot": true
   },
-  "schema": "v13-rich-native-candidate-v3",
+  "schema": "v13-rich-native-candidate-v4",
+  "source_rows": 595,
   "status": "COLLECTING",
   "target_phase": "FINAL"
 }
