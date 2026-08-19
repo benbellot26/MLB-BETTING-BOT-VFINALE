@@ -1,4 +1,4 @@
-name: MLB Betting Bot V13.6 Evidence-Hardened Probability Production
+name: MLB Betting Bot V13.10 Evidence-Hardened Probability Production
 
 on:
   schedule:
@@ -38,7 +38,7 @@ jobs:
           fi
 
   run-bot:
-    name: Exécution du Bot V13.6
+    name: Exécution du Bot V13.10
     needs: gate
     if: needs.gate.outputs.run_needed == 'true'
     runs-on: ubuntu-latest
@@ -55,7 +55,7 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Validation V13.6 + V12 shadows
+      - name: Validation V13.10 + V12 shadows
         run: |
           python -m py_compile v11/*.py tests/*.py
           python -m unittest tests.test_v11 tests.test_historical_bootstrap
@@ -98,25 +98,25 @@ jobs:
           }, indent=2, sort_keys=True))
           PY
 
-      - name: Build V13.6 predictive artifacts
+      - name: Build V13.10 predictive artifacts
         run: |
           python -m v11.v13_train
           python -m v11.v13_posterior_policy
 
       - name: Persist pre-run predictive artifacts
         run: |
-          git config user.name 'MLB Betting Bot V13.6'
+          git config user.name 'MLB Betting Bot V13.10'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           [ -f data/v12_3_historical_bootstrap_model.json ] && git add data/v12_3_historical_bootstrap_model.json
           [ -f data/v13_baseball_calibration.json ] && git add -f data/v13_baseball_calibration.json
           [ -f data/v13_posterior_policy.json ] && git add -f data/v13_posterior_policy.json
           if ! git diff --cached --quiet; then
-            git commit -m 'data: persist V13.6 predictive artifacts [skip ci]'
+            git commit -m 'data: persist V13.10 predictive artifacts [skip ci]'
             git pull --rebase --autostash origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
 
-      - name: Run V13.6 without Discord
+      - name: Run V13.10 without Discord
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
@@ -136,7 +136,7 @@ jobs:
           mkdir -p data runtime/v11
           python -m v11.v13_entry
 
-      - name: Validate proposed V13.6 probability state
+      - name: Validate proposed V13.10 probability state
         run: |
           python - <<'PY'
           import json
@@ -183,7 +183,7 @@ jobs:
                   if execution.get('official_selected') or execution.get('selected') or float(execution.get('official_units') or 0.0) != 0.0:
                       bad.append({'game_pk':result.get('game_pk'),'reason':'analytics-only option became actionable'})
           if bad:
-              raise SystemExit(f'V13.6 probability invariant failure: {bad[:3]}')
+              raise SystemExit(f'V13.10 probability invariant failure: {bad[:3]}')
           live=Path('data/v11_3_live.jsonl')
           if live.exists():
               rows=[json.loads(x) for x in live.read_text(encoding='utf-8').splitlines() if x.strip()]
@@ -214,7 +214,7 @@ jobs:
       # Persist PROPOSED recommendations
       - name: Persist analytics probability journal and evidence views
         run: |
-          git config user.name 'MLB Betting Bot V13.6'
+          git config user.name 'MLB Betting Bot V13.10'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           [ -f data/v11_3_live.jsonl ] && git add data/v11_3_live.jsonl
           [ -f data/v11_3_live_report.json ] && git add data/v11_3_live_report.json
@@ -227,7 +227,7 @@ jobs:
           [ -f data/v13_market_tracking.jsonl ] && git add -f data/v13_market_tracking.jsonl
           [ -f data/v13_market_tracking_report.json ] && git add -f data/v13_market_tracking_report.json
           if ! git diff --cached --quiet; then
-            git commit -m 'data: persist V13.6 probability observations [skip ci]'
+            git commit -m 'data: persist V13.10 probability observations [skip ci]'
             git pull --rebase --autostash origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
@@ -243,7 +243,7 @@ jobs:
       - name: Persist Discord delivery checkpoint
         if: always()
         run: |
-          git config user.name 'MLB Betting Bot V13.6'
+          git config user.name 'MLB Betting Bot V13.10'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           [ -f data/v11_discord_delivery.json ] && git add -f data/v11_discord_delivery.json
           [ -f data/v13_discord_delivery.json ] && git add -f data/v13_discord_delivery.json
@@ -344,7 +344,7 @@ jobs:
       - name: Persist research evidence
         if: success()
         run: |
-          git config user.name 'MLB Betting Bot V13.6'
+          git config user.name 'MLB Betting Bot V13.10'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           [ -f data/v12_3_historical_bootstrap_model.json ] && git add data/v12_3_historical_bootstrap_model.json
           [ -f data/v11_candidate_model.json ] && git add data/v11_candidate_model.json
@@ -358,7 +358,7 @@ jobs:
           [ -f data/v13_feature_store.jsonl ] && git add -f data/v13_feature_store.jsonl
           [ -f data/v13_label_store.jsonl ] && git add -f data/v13_label_store.jsonl
           if ! git diff --cached --quiet; then
-            git commit -m 'data: update V13.6 research evidence [skip ci]'
+            git commit -m 'data: update V13.10 research evidence [skip ci]'
             git pull --rebase --autostash origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
