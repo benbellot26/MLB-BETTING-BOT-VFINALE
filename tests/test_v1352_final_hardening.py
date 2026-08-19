@@ -32,12 +32,23 @@ class V1352FinalHardeningTests(unittest.TestCase):
 
     def _distribution_artifact(self, generation="older-generation"):
         return {
-            "schema":"v13-distribution-prior-v1","active":True,"phase_scope":"FINAL","variant":"dispersion_only",
-            "dispersion":2.835691107635618,"environment_sigma":.08,"market_data_used":False,"historical_odds_used":False,
-            "warm_games":1724,"validation_games":341,"test_games":356,"exact_replay_games":29,
-            "validation_nll_gain":.05,"test_nll_gain":.06,"exact_replay_nll_gain":.04,
-            "historical_candidate_active":True,"model_generation":generation,"exact_final_games":20,
-            "exact_transfer_required_games":20,"exact_transfer_status":"PASS_FINAL_ONLY",
+            "schema":v13_distribution_prior.SCHEMA,
+            "active":True,
+            "historical_candidate_active":True,
+            "phase_scope":"FINAL",
+            "variant":"dispersion_only_2021_2026_walk_forward",
+            "dispersion":2.835691107635618,
+            "environment_sigma":.08,
+            "market_data_used":False,
+            "historical_odds_used":False,
+            "historical_games":13104,
+            "walk_forward":{"stable":True,"folds_total":5,"folds_passed":5},
+            "model_generation":generation,
+            "exact_final_games":60,
+            "exact_transfer_required_games":60,
+            "exact_transfer_status":"PASS_FINAL_ONLY",
+            "exact_transfer_bootstrap":{"passes":True,"nll_gain_positive_probability":.95},
+            "safety":{"exact_transfer_games_excluded_from_historical_fit":True},
         }
 
     def test_predictive_contract_requires_exact_model_generation(self):
