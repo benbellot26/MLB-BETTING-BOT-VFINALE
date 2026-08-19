@@ -88,8 +88,9 @@ jobs:
           echo "weather_start=$weather_start" >> "$GITHUB_OUTPUT"
           echo "weather_end=$weather_end" >> "$GITHUB_OUTPUT"
           echo "cutoff=$cutoff" >> "$GITHUB_OUTPUT"
-          printf 'team=%s..%s weather=%s..%s statcast_cutoff=%s\n' \
-            "$team_start" "$team_end" "$weather_start" "$weather_end" "$cutoff"
+          echo "season=$year" >> "$GITHUB_OUTPUT"
+          printf 'team=%s..%s weather=%s..%s statcast_cutoff=%s season=%s\n' \
+            "$team_start" "$team_end" "$weather_start" "$weather_end" "$cutoff" "$year"
 
       - name: V13.7 free-data preflight
         run: |
@@ -101,6 +102,18 @@ jobs:
           python -m v11.v137_statcast_daily \
             --cutoff "${{ steps.dates.outputs.cutoff }}" \
             --lookback-days 45
+
+      - name: Collect prior-only Statcast park factors
+        run: |
+          python -m v11.v137_park_factors \
+            --start-season 2021 \
+            --end-season "${{ steps.dates.outputs.season }}"
+
+      - name: Snapshot native MLB rosters and transactions
+        run: |
+          python -m v11.v137_mlb_state \
+            --transaction-lookback-days 14 \
+            --archive
 
       - name: Rebuild free team history
         run: |
@@ -159,10 +172,14 @@ jobs:
           team=h.get('team_history') or {}
           stat=h.get('statcast') or {}
           weather=h.get('weather') or {}
-          if team.get('promotion_eligible') or stat.get('promotion_eligible') or weather.get('promotion_eligible'):
-              raise SystemExit('historical reconstructed evidence became promotion eligible')
+          park=h.get('park_factors') or {}
+          native=h.get('mlb_native_state') or {}
+          if any(x.get('promotion_eligible') for x in (team, stat, weather, park, native)):
+              raise SystemExit('free data artifact bypassed model promotion gates')
           if stat and not stat.get('stable_id_only'):
               raise SystemExit('Statcast priors lost stable-ID-only contract')
+          if native and (not native.get('point_in_time') or not native.get('native_live')):
+              raise SystemExit('MLB native state lost point-in-time/native-live contract')
           print('V13.7 free-only + reconstructed/native separation OK')
           PY
 
@@ -173,6 +190,10 @@ jobs:
           [ -d data/v137 ] && git add -f data/v137
           [ -f data/v137_statcast_priors_latest.json.gz ] && git add -f data/v137_statcast_priors_latest.json.gz
           [ -f data/v137_statcast_priors_report.json ] && git add -f data/v137_statcast_priors_report.json
+          [ -f data/v137_park_factors.json ] && git add -f data/v137_park_factors.json
+          [ -f data/v137_park_factors_report.json ] && git add -f data/v137_park_factors_report.json
+          [ -f data/v137_mlb_state_latest.json.gz ] && git add -f data/v137_mlb_state_latest.json.gz
+          [ -f data/v137_mlb_state_report.json ] && git add -f data/v137_mlb_state_report.json
           [ -f data/v137_free_team_history_report.json ] && git add -f data/v137_free_team_history_report.json
           [ -f data/v137_weather_backfill_report.json ] && git add -f data/v137_weather_backfill_report.json
           [ -f data/v137_weather_cursor.json ] && git add -f data/v137_weather_cursor.json

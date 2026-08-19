@@ -3,9 +3,12 @@ from __future__ import annotations
 import json
 import unittest
 from datetime import datetime, timezone
+from unittest.mock import patch
 
 from v11 import v137_free_data as free
 from v11 import v137_team_history as team
+from v11 import v137_park_factors as park
+from v11 import v137_mlb_state as mlb_state
 
 
 class FreeDataFoundationTests(unittest.TestCase):
@@ -137,7 +140,78 @@ class FreeDataFoundationTests(unittest.TestCase):
         self.assertFalse(row["promotion_eligible"])
         self.assertFalse(row["target_labels_embedded"])
 
-    def test_team_history_keeps_target_label_separate_and_excludes_same_day(self):
+    def test_prior_park_factor_excludes_target_season_and_preserves_handedness(self):
+        calls = []
+        html = """
+        <table>
+          <tr><th>Team</th><th>Venue</th><th>Year</th><th>Park Factor</th><th>wOBAcon</th><th>xwOBAcon</th><th>HardHit</th><th>R</th><th>HR</th><th>PA</th></tr>
+          <tr><td>Rockies</td><td>Coors Field</td><td>2023-2025</td><td>113</td><td>112</td><td>101</td><td>100</td><td>128</td><td>106</td><td>48000</td></tr>
+        </table>
+        """
+
+        def fake_fetch(url, params, timeout=30):
+            calls.append((url, dict(params), timeout))
+            return html
+
+        result = park.fetch_prior_factors(2026, "L", fake_fetch)
+        self.assertEqual(result["target_season"], 2026)
+        self.assertEqual(result["source_window_years"], [2023, 2024, 2025])
+        self.assertNotIn(2026, result["source_window_years"])
+        self.assertEqual(calls[0][1]["year"], 2025)
+        self.assertEqual(calls[0][1]["rolling"], 3)
+        self.assertEqual(calls[0][1]["batSide"], "L")
+        self.assertEqual(result["rows"][0]["park_factor_index"], 113.0)
+        self.assertFalse(result["promotion_eligible"])
+
+        artifact = {"seasons": {"2026": {"L": result, "ALL": result, "R": result}}}
+        venue = park.venue_prior(artifact, 2026, "Coors Field")
+        self.assertTrue(venue["available"])
+        self.assertEqual(venue["source_window_end_season"], 2025)
+        self.assertEqual(venue["l"]["hr_index"], 106.0)
+
+    def test_mlb_native_state_uses_stable_roster_ids_and_conservative_il_signal(self):
+        def fake_mlb(path, params=None):
+            if path == "v1/teams":
+                return {"teams": [{"id": 99, "name": "Test Club", "abbreviation": "TST"}]}
+            if path == "v1/teams/99/roster":
+                return {
+                    "roster": [
+                        {
+                            "person": {"id": 123, "fullName": "Player One"},
+                            "position": {"code": "1", "abbreviation": "P"},
+                            "status": {"code": "A", "description": "Active"},
+                        }
+                    ]
+                }
+            if path == "v1/transactions":
+                return {
+                    "transactions": [
+                        {
+                            "id": 1,
+                            "person": {"id": 456, "fullName": "Player Two"},
+                            "toTeam": {"id": 99, "name": "Test Club"},
+                            "date": "2026-08-19",
+                            "effectiveDate": "2026-08-19",
+                            "typeCode": "SC",
+                            "typeDesc": "Status Change",
+                            "description": "Placed on the 10-day injured list",
+                        }
+                    ]
+                }
+            raise AssertionError(path)
+
+        with patch.object(mlb_state.core, "mlb", side_effect=fake_mlb):
+            artifact, report = mlb_state.collect("2026-08-19", 14)
+        self.assertTrue(artifact["point_in_time"])
+        self.assertTrue(artifact["native_live"])
+        self.assertFalse(artifact["promotion_eligible"])
+        self.assertEqual(artifact["active_rosters"]["99"]["players"][0]["person_id"], 123)
+        self.assertEqual(len(artifact["transactions"]), 1)
+        self.assertTrue(artifact["transactions"][0]["injured_list_signal"])
+        self.assertEqual(report["rosters_ok"], 1)
+        self.assertEqual(report["injured_list_transaction_signals"], 1)
+
+    def test_team_history_keeps_target_label_separate_excludes_same_day_and_uses_prior_park(self):
         def game(pk, when, official, home_id, home, away_id, away, hs, aws, game_type="R"):
             return {
                 "gamePk": pk,
@@ -152,18 +226,36 @@ class FreeDataFoundationTests(unittest.TestCase):
                 "venue": {"id": 1, "name": "Park"},
             }
 
+        park_payload = {
+            "source_window_end_season": 2025,
+            "rows": [
+                {
+                    "venue": "Park",
+                    "park_factor_index": 105.0,
+                    "hr_index": 102.0,
+                }
+            ],
+        }
+        park_artifact = {
+            "seasons": {
+                "2026": {"ALL": park_payload, "L": park_payload, "R": park_payload}
+            }
+        }
         games = [
             game(1, "2026-08-17T18:00:00Z", "2026-08-17", 1, "A", 2, "B", 5, 2),
             game(2, "2026-08-19T16:00:00Z", "2026-08-19", 1, "A", 2, "B", 1, 0),
             game(3, "2026-08-19T21:00:00Z", "2026-08-19", 1, "A", 2, "B", 3, 4),
             game(4, "2026-10-05T20:00:00Z", "2026-10-05", 1, "A", 2, "B", 9, 8, game_type="P"),
         ]
-        features, labels, report = team.build_from_games(games)
+        features, labels, report = team.build_from_games(games, park_artifact=park_artifact)
         self.assertEqual(len(features), 3)
         self.assertEqual(len(labels), 3)
         self.assertEqual(report["skipped"].get("non_regular_season"), 1)
+        self.assertEqual(report["park_prior_rows"], 3)
         target = next(r for r in features if str(r["game_pk"]) == "3")
         self.assertEqual(target["features"]["home_team_form"]["season_to_date"]["games"], 1)
+        self.assertTrue(target["features"]["park_prior"]["available"])
+        self.assertEqual(target["features"]["park_prior"]["source_window_end_season"], 2025)
         serialized = json.dumps(target)
         self.assertNotIn("home_score", serialized)
         self.assertNotIn("away_score", serialized)

@@ -10,9 +10,10 @@ from pathlib import Path
 from typing import Any
 
 from . import core
+from . import v137_park_factors as park_factors
 from .v137_free_data import COHORT, reconstructed_feature_envelope
 
-SCHEMA = "v13-7-free-team-history-v1"
+SCHEMA = "v13-7-free-team-history-v2"
 FEATURE_DIR = Path("data/v137")
 REPORT_FILE = Path("data/v137_free_team_history_report.json")
 
@@ -131,18 +132,20 @@ def _team_features(history: list[dict[str, Any]], official_day: str) -> dict[str
     }
 
 
-def build_from_games(games: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+def build_from_games(
+    games: list[dict[str, Any]],
+    park_artifact: dict[str, Any] | None = None,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
     """Create compact leakage-separated free historical team features and labels."""
     history: dict[tuple[int, str], list[dict[str, Any]]] = defaultdict(list)
     features: list[dict[str, Any]] = []
     labels: list[dict[str, Any]] = []
     skipped = defaultdict(int)
+    park_artifact = park_factors.load() if park_artifact is None else park_artifact
+    park_available = 0
 
     ordered = sorted(games, key=lambda g: (str(g.get("gameDate") or ""), str(g.get("gamePk") or "")))
     for game in ordered:
-        # Defense in depth: even if an upstream schedule endpoint ignores its
-        # gameTypes=R filter, Spring/Postseason/All-Star data cannot enter this
-        # regular-season research cohort.
         if str(game.get("gameType") or "").upper() != "R":
             skipped["non_regular_season"] += 1
             continue
@@ -162,12 +165,21 @@ def build_from_games(games: list[dict[str, Any]]) -> tuple[list[dict[str, Any]],
             skipped["missing_score_or_team"] += 1
             continue
 
+        venue = str(((game.get("venue") or {}).get("name")) or "")
+        park_prior = park_factors.venue_prior(park_artifact, season, venue) if venue else {
+            "available": False,
+            "target_season": season,
+            "venue": venue,
+            "point_in_time": True,
+        }
+        park_available += int(bool(park_prior.get("available")))
         home_hist = history[(season, home_id)]
         away_hist = history[(season, away_id)]
         as_of = game_time - timedelta(hours=2)
         feature_payload = {
             "home_team_form": _team_features(home_hist, official_day),
             "away_team_form": _team_features(away_hist, official_day),
+            "park_prior": park_prior,
             "home_field": True,
             "official_date": official_day,
         }
@@ -179,6 +191,13 @@ def build_from_games(games: list[dict[str, Any]]) -> tuple[list[dict[str, Any]],
                 "same_day_games_excluded": True,
             }
         }
+        if park_prior.get("available"):
+            provenance["park_prior"] = {
+                "provider": "Baseball Savant Statcast Park Factors",
+                "point_in_time": True,
+                "source_window_end_season": park_prior.get("source_window_end_season"),
+                "rule": "three completed seasons ending before target season",
+            }
         row = reconstructed_feature_envelope(
             game_pk=game.get("gamePk"),
             game_time=game_time,
@@ -196,7 +215,7 @@ def build_from_games(games: list[dict[str, Any]]) -> tuple[list[dict[str, Any]],
                 "season": season,
                 "official_date": official_day,
                 "venue_id": ((game.get("venue") or {}).get("id")),
-                "venue_name": ((game.get("venue") or {}).get("name")),
+                "venue_name": venue,
             }
         )
         features.append(row)
@@ -236,16 +255,18 @@ def build_from_games(games: list[dict[str, Any]]) -> tuple[list[dict[str, Any]],
         )
 
     report = {
-        "schema": "v13-7-free-team-history-report-v1",
+        "schema": "v13-7-free-team-history-report-v2",
         "cohort": COHORT,
         "feature_rows": len(features),
         "label_rows": len(labels),
         "unique_games": len({str(r.get("game_pk")) for r in features}),
         "seasons": sorted({int(r.get("season")) for r in features}),
+        "park_prior_rows": park_available,
+        "park_prior_coverage": park_available / len(features) if features else 0.0,
         "skipped": dict(sorted(skipped.items())),
         "native_live": False,
         "promotion_eligible": False,
-        "leakage_policy": "target labels separate; target and same-day scores never enter target feature row",
+        "leakage_policy": "target labels separate; target and same-day scores never enter target feature row; park factors end before target season",
     }
     return features, labels, report
 
