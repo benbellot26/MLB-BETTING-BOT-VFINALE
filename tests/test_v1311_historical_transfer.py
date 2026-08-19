@@ -42,9 +42,10 @@ def _exact(n=12):
     } for i in range(n)]
 
 
-def _distribution_history(seasons=range(2021, 2027), games_per_season=56):
+def _distribution_history(seasons=range(2021, 2027), games_per_season=520):
     # Deliberately overdispersed but stationary score pattern around realistic
-    # MLB means. The untouched future season should prefer a lower NB r than 7.5.
+    # MLB means. Each synthetic season clears the same 500-game floor used by
+    # the production walk-forward contract; tests never lower that volume gate.
     home_scores = (0, 1, 2, 3, 5, 7, 8, 10)
     away_scores = (0, 1, 2, 3, 4, 6, 8, 9)
     rows = []
