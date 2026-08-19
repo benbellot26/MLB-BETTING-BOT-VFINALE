@@ -1,0 +1,1 @@
+V13.8 scope: close the engineering implementation of all 52 remaining audit subprojects while preserving every statistical/PIT evidence gate. No reconstructed row, optional provider fallback, or research challenger may alter the V13 champion unless the existing/native promotion policy explicitly activates it after out-of-sample evidence.

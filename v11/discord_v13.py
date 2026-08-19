@@ -5,6 +5,7 @@ import os
 from . import core
 from . import discord_v123 as base
 from . import v13_discord_delivery as delivery
+from . import v138_live_change
 
 VERSION_LABEL = "V13.6 EVIDENCE ANALYTICS"
 base.VERSION_LABEL = VERSION_LABEL
@@ -87,9 +88,12 @@ def send_game(result, portfolio):
         core.logging.info("Discord V13 scheduled mode: phase %s supprimée gamePk=%s",result.get("phase"),gid)
         return True
     force=str(os.getenv("V13_FORCE_DISCORD_RESEND","0")).lower() in {"1","true","yes"}
-    if not force and delivery.sent(gid):
-        core.logging.info("Discord V13 déjà livré gamePk=%s; doublon inter-run supprimé",gid)
-        return True
+    decision={"send":True,"reason":"FORCED" if force else "NOT_SENT","critical_change":False}
+    if not force:
+        decision=delivery.delivery_decision(gid,result)
+        if not decision.get("send"):
+            core.logging.info("Discord V13 livraison supprimée gamePk=%s reason=%s",gid,decision.get("reason"))
+            return True
     ctx = result["ctx"]
     groups = {"ML": [], "RUNLINE": [], "TOTAL": []}
     for r in result.get("options") or []:
@@ -97,12 +101,15 @@ def send_game(result, portfolio):
     model, con, f = result.get("model") or {}, result.get("con") or {}, result.get("features") or {}
     bootstrap = model.get("historical_bootstrap") or {}
     dq=result.get("data_quality") or {}
+    correction = ""
+    if decision.get("critical_change"):
+        correction=f"\n🔄 **MISE À JOUR CRITIQUE** — {decision.get('reason')}"
     brief = (
         f"Phase **{result.get('phase')}** • modèle **{model.get('version') or 'structural-only'}**\n"
         f"Projection **{ctx['away']} {result['amu']:.1f} – {result['hmu']:.1f} {ctx['home']}**\n"
         f"Produit principal **baseball calibré** • marché et posterior **comparateurs/shadow uniquement**\n"
         f"DQ modèle **{100*core.num(dq.get('model_input_score')):.0f}/100** • Sharp ML refs **{int(core.num(con.get('n')))}**\n"
-        f"Dispersion **{core.num(model.get('dispersion')):.2f}** • env σ **{core.num(model.get('environment_sigma')):.3f}** • bootstrap **{bootstrap.get('status') or '—'}**"
+        f"Dispersion **{core.num(model.get('dispersion')):.2f}** • env σ **{core.num(model.get('environment_sigma')):.3f}** • bootstrap **{bootstrap.get('status') or '—'}**{correction}"
     )
     personnel = (
         f"**{ctx['away']}** • lineup {_lineup_status(ctx.get('away_lineup'))}\n"
@@ -124,7 +131,10 @@ def send_game(result, portfolio):
     ]
     ok=core.send_embed(f"⚾ MLB {VERSION_LABEL} • {ctx['away']} @ {ctx['home']}", fields, 5763719)
     if ok:
-        delivery.mark_sent(gid,phase=result.get("phase"),model_generation=result.get("model_generation"))
+        delivery.mark_sent(gid,phase=result.get("phase"),model_generation=result.get("model_generation"),
+                           analysis_signature=v138_live_change.signature(result),
+                           personnel_state=v138_live_change.personnel_state(result),
+                           delivery_reason=str(decision.get("reason") or "NORMAL"))
     return ok
 
 
