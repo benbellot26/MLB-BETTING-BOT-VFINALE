@@ -1,6 +1,9 @@
 name: MLB Betting Bot V13.6 Evidence-Hardened Probability Production
 
 on:
+  schedule:
+    # Cheap schedule-only gate. Paid odds/model work runs only for a new undelivered FINAL-phase game.
+    - cron: '7 0-6,14-23 * * *'
   workflow_dispatch:
 
 permissions:
@@ -11,8 +14,33 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  gate:
+    name: Gate production FINAL
+    runs-on: ubuntu-latest
+    outputs:
+      run_needed: ${{ steps.gate.outputs.run_needed }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Resolve production gate
+        id: gate
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo 'run_needed=true' >> "$GITHUB_OUTPUT"
+            echo '{"reason":"manual-dispatch","run_needed":true}'
+          else
+            python -m v11.v13_production_gate > /tmp/v13_production_gate.json
+            cat /tmp/v13_production_gate.json
+            run_needed=$(python -c "import json; d=json.load(open('/tmp/v13_production_gate.json')); print('true' if d.get('run_needed') else 'false')")
+            echo "run_needed=$run_needed" >> "$GITHUB_OUTPUT"
+          fi
+
   run-bot:
     name: Exécution du Bot V13.6
+    needs: gate
+    if: needs.gate.outputs.run_needed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 55
     steps:
@@ -205,6 +233,7 @@ jobs:
       - name: Publish Discord analytics
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          V13_DISCORD_FINAL_ONLY: ${{ github.event_name == 'schedule' && '1' || '0' }}
         run: python -m v11.v13_entry --send-persisted
 
       - name: Persist Discord delivery checkpoint
@@ -213,6 +242,7 @@ jobs:
           git config user.name 'MLB Betting Bot V13.6'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           [ -f data/v11_discord_delivery.json ] && git add -f data/v11_discord_delivery.json
+          [ -f data/v13_discord_delivery.json ] && git add -f data/v13_discord_delivery.json
           if ! git diff --cached --quiet; then
             git commit -m 'data: persist Discord delivery checkpoint [skip ci]'
             git pull --rebase --autostash origin "$GITHUB_REF_NAME"
