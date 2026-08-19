@@ -60,6 +60,10 @@ def _csv(path: Path,rows: list[dict[str,Any]]) -> None:
             w=csv.DictWriter(f,fieldnames=fields);w.writeheader();w.writerows(rows)
 
 
+def _sql_path(path: Path) -> str:
+    return str(path.resolve()).replace("'","''")
+
+
 def build_duckdb(features: list[dict[str,Any]],labels: list[dict[str,Any]],out_dir: Path=OUT_DIR) -> dict[str,Any]:
     """Materialize open-source DuckDB + Parquet analytical copies.
 
@@ -67,17 +71,19 @@ def build_duckdb(features: list[dict[str,Any]],labels: list[dict[str,Any]],out_d
     """
     try:import duckdb
     except Exception as exc:return {"status":"DEPENDENCY_NOT_INSTALLED","error":type(exc).__name__}
+    if not features or not labels:
+        return {"status":"NO_DATA","feature_rows":len(features),"label_rows":len(labels)}
     out_dir.mkdir(parents=True,exist_ok=True)
     fcsv=out_dir/"team_features.csv";lcsv=out_dir/"team_labels.csv";_csv(fcsv,features);_csv(lcsv,labels)
     db=out_dir/"v138.duckdb";fp=out_dir/"team_features.parquet";lp=out_dir/"team_labels.parquet"
     con=duckdb.connect(str(db))
     try:
         con.execute("DROP TABLE IF EXISTS team_features");con.execute("DROP TABLE IF EXISTS team_labels")
-        con.execute("CREATE TABLE team_features AS SELECT * FROM read_csv_auto(?)",[str(fcsv)])
-        con.execute("CREATE TABLE team_labels AS SELECT * FROM read_csv_auto(?)",[str(lcsv)])
-        con.execute("COPY team_features TO ? (FORMAT PARQUET, COMPRESSION ZSTD)",[str(fp)])
-        con.execute("COPY team_labels TO ? (FORMAT PARQUET, COMPRESSION ZSTD)",[str(lp)])
-        fc=con.execute("SELECT COUNT(*) FROM team_features").fetchone()[0];lc=con.execute("SELECT COUNT(*) FROM team_labels").fetchone()[0]
+        con.execute(f"CREATE TABLE team_features AS SELECT * FROM read_csv_auto('{_sql_path(fcsv)}')")
+        con.execute(f"CREATE TABLE team_labels AS SELECT * FROM read_csv_auto('{_sql_path(lcsv)}')")
+        con.execute(f"COPY team_features TO '{_sql_path(fp)}' (FORMAT PARQUET, COMPRESSION ZSTD)")
+        con.execute(f"COPY team_labels TO '{_sql_path(lp)}' (FORMAT PARQUET, COMPRESSION ZSTD)")
+        fc=int(con.execute("SELECT COUNT(*) FROM team_features").fetchone()[0]);lc=int(con.execute("SELECT COUNT(*) FROM team_labels").fetchone()[0])
     finally:con.close()
     fcsv.unlink(missing_ok=True);lcsv.unlink(missing_ok=True)
     return {"status":"BUILT","duckdb":str(db),"feature_parquet":str(fp),"label_parquet":str(lp),"feature_rows":fc,"label_rows":lc}
