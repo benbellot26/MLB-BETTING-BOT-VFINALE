@@ -1,4 +1,7 @@
+import tempfile
 import unittest
+from datetime import datetime, timezone
+from pathlib import Path
 from unittest.mock import patch
 
 from v11 import context
@@ -6,8 +9,10 @@ from v11 import data_quality
 from v11 import point_in_time_v13 as pit
 from v11 import uncertainty_v13
 from v11 import v13_coverage_report as coverage
+from v11 import v13_discord_delivery as discord_delivery
 from v11 import v13_feature_store as feature_store
 from v11 import v13_probability_diagnostics as diagnostics
+from v11 import v13_production_gate as production_gate
 from v11.probability_contract_v13 import attach_contract
 
 
@@ -111,6 +116,24 @@ class V136EvidenceHardeningTests(unittest.TestCase):
         self.assertEqual(report["feature_rows"],1);self.assertEqual(report["label_rows"],1)
         self.assertNotIn("home_score",fs[0]);self.assertNotIn("away_score",fs[0]);self.assertNotIn("winner",fs[0])
         self.assertEqual(ls[0]["home_score"],5)
+
+    def test_discord_delivery_checkpoint_is_cross_run_per_game(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path=Path(tmp)/"delivery.json"
+            self.assertFalse(discord_delivery.sent(123,path))
+            discord_delivery.mark_sent(123,phase="FINAL",model_generation="g",path=path)
+            self.assertTrue(discord_delivery.sent(123,path))
+            self.assertFalse(discord_delivery.sent(124,path))
+
+    def test_production_gate_runs_only_for_undelivered_final_games(self):
+        now=datetime(2026,8,19,18,0,tzinfo=timezone.utc)
+        games=[{"gamePk":1,"gameDate":"2026-08-19T19:00:00Z"},{"gamePk":2,"gameDate":"2026-08-19T22:00:00Z"}]
+        report=production_gate.build(now,games,{"schema":discord_delivery.SCHEMA,"games":{}})
+        self.assertTrue(report["run_needed"])
+        self.assertEqual([x["game_pk"] for x in report["undelivered_final_games"]],[1])
+        delivered={"schema":discord_delivery.SCHEMA,"games":{"1":{"sent":True}}}
+        report2=production_gate.build(now,games,delivered)
+        self.assertFalse(report2["run_needed"])
 
 
 if __name__ == "__main__":
