@@ -251,10 +251,10 @@
       "data_limited": false,
       "engineering_closed": true,
       "evidence_closed": false,
-      "evidence_note": "coverage validator implemented; native sample must still accumulate",
+      "evidence_note": "native/PIT n=15; active=False; >=300 independent targets, >=5 bins with n>=30, >=80% weighted empirical-rate coverage and calibration MAE <= mean half-width",
       "id": 23,
-      "implementation": "v138_validation.empirical_interval_coverage",
-      "implementation_status": "EVIDENCE_GATE_IMPLEMENTED",
+      "implementation": "v138_native_evidence.probability_band_validation",
+      "implementation_status": "AUTO_EVIDENCE_GATE",
       "name": "Empirical uncertainty coverage",
       "overall_closed": false
     },
@@ -262,10 +262,10 @@
       "data_limited": true,
       "engineering_closed": true,
       "evidence_closed": false,
-      "evidence_note": "learned book weights require >=300 authenticated PIT book/outcome rows and OOS confirmation",
+      "evidence_note": "native/PIT n=69; active=False; INSUFFICIENT_PIT_BOOK_TARGETS",
       "id": 24,
-      "implementation": "v138_validation.learn_bookmaker_weights",
-      "implementation_status": "EVIDENCE_GATE_IMPLEMENTED",
+      "implementation": "v138_book_telemetry + v138_native_evidence.bookmaker_weights_oos",
+      "implementation_status": "AUTO_EVIDENCE_GATE",
       "name": "Learned bookmaker weights",
       "overall_closed": false
     },
@@ -526,10 +526,10 @@
       "data_limited": false,
       "engineering_closed": true,
       "evidence_closed": false,
-      "evidence_note": "dynamic calibrator implemented research-only; production activation remains OOS-gated",
+      "evidence_note": "native/PIT n=69; active=False; INSUFFICIENT_NATIVE_TARGETS",
       "id": 48,
-      "implementation": "v138_advanced_research.dynamic_calibration",
-      "implementation_status": "RESEARCH_IMPLEMENTED",
+      "implementation": "v138_native_evidence.dynamic_calibration_oos",
+      "implementation_status": "AUTO_EVIDENCE_GATE",
       "name": "Dynamic calibration",
       "overall_closed": false
     },
@@ -578,7 +578,7 @@
       "overall_closed": true
     }
   ],
-  "policy": "A point is never called statistically closed merely because code exists. Engineering closure and evidence closure are reported separately; native/PIT sample floors are never lowered.",
-  "schema": "v13-8-52-point-closure-v2",
+  "policy": "A point is never called statistically closed merely because code exists. Engineering closure and evidence closure are reported separately; native/PIT sample floors are never lowered. V13.8.2 auto-evaluates every remaining evidence gate that can be evaluated from accumulated native telemetry.",
+  "schema": "v13-8-52-point-closure-v3",
   "total_points": 52
 }

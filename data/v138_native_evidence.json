@@ -1,0 +1,31 @@
+{
+  "bookmaker_weights": {
+    "active": false,
+    "minimum_n": 300,
+    "n": 0,
+    "reason": "INSUFFICIENT_PIT_BOOK_TARGETS"
+  },
+  "dynamic_calibration": {
+    "active": false,
+    "minimum_n": 300,
+    "n": 69,
+    "reason": "INSUFFICIENT_NATIVE_TARGETS"
+  },
+  "independent_native_targets": 69,
+  "policy": "all gates use independent canonical settled pregame observations; OOS gates are chronological and never alter production automatically",
+  "schema": "v13-8-native-evidence-gates-v1",
+  "uncertainty_coverage": {
+    "active": false,
+    "bins": [],
+    "calibration_mae": null,
+    "criterion": ">=300 independent targets, >=5 bins with n>=30, >=80% weighted empirical-rate coverage and calibration MAE <= mean half-width",
+    "evaluated_n": 0,
+    "frequentist_confidence_interval": false,
+    "mean_interval_half_width": null,
+    "minimum_n": 300,
+    "n": 15,
+    "usable_bins": 0,
+    "user_facing_type": "model_uncertainty_band",
+    "weighted_bin_coverage": null
+  }
+}
