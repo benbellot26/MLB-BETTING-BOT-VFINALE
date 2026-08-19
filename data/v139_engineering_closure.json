@@ -1,28 +1,1596 @@
 {
-  "schema": "v13-9-reconstructed-engineering-closure-v1",
-  "registry_kind": "reconstructed_from_previous_engineering_estimate",
-  "historical_original_275_registry_available": false,
-  "claim": "engineering closure only; statistical evidence gates remain independently governed",
-  "source_module": "v11/v139_engineering_closure.py",
-  "verification": {
-    "pull_request": 76,
-    "premerge_audit_workflow": "MLB V13.9 Audit Closure Research",
-    "premerge_audit_result": "SUCCESS",
-    "shared_preflight_result": "SUCCESS",
-    "direct_closure_suites_result": "SUCCESS",
-    "provider_live_smoke_result": "SUCCESS",
-    "main_probability_ci_result": "SUCCESS"
+  "category_summary": {
+    "architecture": {
+      "closed": 16,
+      "total": 16
+    },
+    "data_integrity": {
+      "closed": 16,
+      "total": 16
+    },
+    "models": {
+      "closed": 12,
+      "total": 12
+    },
+    "operations": {
+      "closed": 8,
+      "total": 8
+    },
+    "providers": {
+      "closed": 26,
+      "total": 26
+    },
+    "validation": {
+      "closed": 12,
+      "total": 12
+    }
   },
-  "total": 90,
+  "claim": "engineering closure only; statistical evidence gates remain independently governed",
   "engineering_closed": 90,
   "engineering_open": 0,
-  "category_summary": {
-    "architecture": {"total": 16, "closed": 16},
-    "providers": {"total": 26, "closed": 26},
-    "data_integrity": {"total": 16, "closed": 16},
-    "models": {"total": 12, "closed": 12},
-    "validation": {"total": 12, "closed": 12},
-    "operations": {"total": 8, "closed": 8}
-  },
-  "note": "The executable source registry contains the 90 individual controls and their checks. This persisted summary is generated from the successful PR #76 closure run; scheduled/main research automation may replace it with the full evaluated point list."
+  "historical_original_275_registry_available": false,
+  "points": [
+    {
+      "category": "architecture",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v13_engine.py",
+          "reason": "token_present",
+          "token": "class V13Engine"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 1,
+      "implementation": "v11/v13_engine.py",
+      "name": "Explicit V13 engine object"
+    },
+    {
+      "category": "architecture",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v13_runtime.py",
+          "reason": "token_present",
+          "token": "runner.engine = engine"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 2,
+      "implementation": "v11/v13_runtime.py",
+      "name": "Runner uses explicit V13 engine composition"
+    },
+    {
+      "category": "architecture",
+      "checks": [
+        {
+          "absent": true,
+          "passed": true,
+          "path": "v11/v13_runtime.py",
+          "reason": "forbidden_absent",
+          "token": "engine_v12.analyze ="
+        }
+      ],
+      "engineering_closed": true,
+      "id": 3,
+      "implementation": "v11/v13_runtime.py",
+      "name": "No V13 analyze monkey-patch"
+    },
+    {
+      "category": "architecture",
+      "checks": [
+        {
+          "absent": true,
+          "passed": true,
+          "path": "v11/v13_runtime.py",
+          "reason": "forbidden_absent",
+          "token": "engine_v12._analysis_points ="
+        }
+      ],
+      "engineering_closed": true,
+      "id": 4,
+      "implementation": "v11/v13_runtime.py",
+      "name": "No V13 analysis-points monkey-patch"
+    },
+    {
+      "category": "architecture",
+      "checks": [
+        {
+          "absent": true,
+          "passed": true,
+          "path": "v11/v13_runtime.py",
+          "reason": "forbidden_absent",
+          "token": "engine_v12.prob_home_win ="
+        }
+      ],
+      "engineering_closed": true,
+      "id": 5,
+      "implementation": "v11/v13_runtime.py",
+      "name": "No V13 extra-innings monkey-patch"
+    },
+    {
+      "category": "architecture",
+      "checks": [
+        {
+          "absent": true,
+          "passed": true,
+          "path": "v11/v13_runtime.py",
+          "reason": "forbidden_absent",
+          "token": "methodology_v123.bootstrap_prior_v123 ="
+        }
+      ],
+      "engineering_closed": true,
+      "id": 6,
+      "implementation": "v11/v13_runtime.py",
+      "name": "No V13 bootstrap monkey-patch"
+    },
+    {
+      "category": "architecture",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v13_engine.py",
+          "reason": "token_present",
+          "token": "v13_validation_baseline_home_mu"
+        },
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v13_runtime.py",
+          "reason": "token_present",
+          "token": "payload[\"v13_validation_baseline\"]"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 7,
+      "implementation": "v11/v13_engine.py + runtime",
+      "name": "Pre-candidate validation baseline preserved"
+    },
+    {
+      "category": "architecture",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v13_entry.py",
+          "reason": "token_present",
+          "token": "assert config.VERSION == ENGINE_VERSION"
+        },
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v13_entry.py",
+          "reason": "token_present",
+          "token": "MODEL_GENERATION_FINGERPRINT"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 8,
+      "implementation": "v11/v13_entry.py",
+      "name": "Software version decoupled from evidence generation"
+    },
+    {
+      "category": "architecture",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v13_engine.py",
+          "reason": "token_present",
+          "token": "def _apply_probability_contract"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 9,
+      "implementation": "v11/v13_engine.py",
+      "name": "Probability contract owned by V13 engine"
+    },
+    {
+      "category": "architecture",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v13_engine.py",
+          "reason": "token_present",
+          "token": "for home_point in (-1.5, 1.5):"
+        },
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v13_engine.py",
+          "reason": "token_present",
+          "token": "(away, \"away\", -home_point)"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 10,
+      "implementation": "v11/v13_engine.py",
+      "name": "Both standard runline pairs preserved"
+    },
+    {
+      "category": "architecture",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v13_engine.py",
+          "reason": "token_present",
+          "token": "extra_innings_v13.home_win_probability"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 11,
+      "implementation": "v11/v13_engine.py",
+      "name": "Extra innings owned explicitly by V13"
+    },
+    {
+      "category": "architecture",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v13_runtime.py",
+          "reason": "token_present",
+          "token": "_v13_runtime_adapter"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 12,
+      "implementation": "v11/v13_runtime.py",
+      "name": "Persistence adapter is explicit and marked"
+    },
+    {
+      "category": "architecture",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v13_runtime.py",
+          "reason": "token_present",
+          "token": "payload[\"v13_engine\"]"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 13,
+      "implementation": "v11/v13_runtime.py",
+      "name": "Engine architecture metadata persisted"
+    },
+    {
+      "category": "architecture",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v13_engine.py",
+          "reason": "token_present",
+          "token": "V12.3 compatibility primitives"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 14,
+      "implementation": "v11/v13_engine.py",
+      "name": "V12.3 declared as compatibility primitives only"
+    },
+    {
+      "category": "architecture",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v13_engine.py",
+          "reason": "token_present",
+          "token": "v13_rich_run_shadow.attach(result)"
+        },
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v13_engine.py",
+          "reason": "token_present",
+          "token": "\"affects_probability\": False"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 15,
+      "implementation": "v11/v13_engine.py",
+      "name": "Rich run challenger remains downstream shadow"
+    },
+    {
+      "category": "architecture",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v139_explicit_engine.py",
+          "reason": "token_present",
+          "token": "test_runtime_install_does_not_mark_v12_engine_as_v13_hooked"
+        },
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v13_preflight.py",
+          "reason": "token_present",
+          "token": "tests.test_v139_explicit_engine"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 16,
+      "implementation": "tests/test_v139_explicit_engine.py",
+      "name": "Explicit-engine behavior covered by preflight"
+    },
+    {
+      "category": "providers",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v137_free_data.py",
+          "reason": "token_present",
+          "token": "single-runs-api.open-meteo.com/v1/forecast"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 17,
+      "implementation": "v11/v137_free_data.py",
+      "name": "Single Runs remains primary historical weather source"
+    },
+    {
+      "category": "providers",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v137_free_data.py",
+          "reason": "token_present",
+          "token": "WEATHER_HOURLY"
+        },
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v137_free_data.py",
+          "reason": "token_present",
+          "token": "test_historical_weather_request_uses_supported_ecmwf_variables"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 18,
+      "implementation": "v11/v137_free_data.py",
+      "name": "Weather requests only supported deterministic variables"
+    },
+    {
+      "category": "providers",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v137_free_data.py",
+          "reason": "token_present",
+          "token": "safe_ecmwf_run"
+        },
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v137_free_data.py",
+          "reason": "token_present",
+          "token": "test_ecmwf_run_uses_conservative_publication_lag"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 19,
+      "implementation": "v11/v137_free_data.py",
+      "name": "Conservative ECMWF publication lag"
+    },
+    {
+      "category": "providers",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v137_free_data.py",
+          "reason": "token_present",
+          "token": "weather_run_is_point_in_time"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 20,
+      "implementation": "v11/v137_free_data.py",
+      "name": "Weather run PIT validation"
+    },
+    {
+      "category": "providers",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v137_weather_backfill.py",
+          "reason": "token_present",
+          "token": "previous-runs-api.open-meteo.com/v1/forecast"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 21,
+      "implementation": "v11/v137_weather_backfill.py",
+      "name": "Previous Runs weather fallback"
+    },
+    {
+      "category": "providers",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v137_weather_backfill.py",
+          "reason": "token_present",
+          "token": "def _previous_day_offset"
+        },
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v139_provider_hardening.py",
+          "reason": "token_present",
+          "token": "test_previous_runs_offset_is_conservative_for_two_hour_cutoff"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 22,
+      "implementation": "v11/v137_weather_backfill.py",
+      "name": "Previous Runs chooses conservative fixed lead"
+    },
+    {
+      "category": "providers",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v139_provider_hardening.py",
+          "reason": "token_present",
+          "token": "test_previous_runs_refuses_postgame_analysis"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 23,
+      "implementation": "v11/v137_weather_backfill.py",
+      "name": "Previous Runs rejects postgame analysis"
+    },
+    {
+      "category": "providers",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v137_weather_backfill.py",
+          "reason": "token_present",
+          "token": "\"provider_fallback\": True"
+        },
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v137_weather_backfill.py",
+          "reason": "token_present",
+          "token": "Open-Meteo Previous Runs / Best Match"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 24,
+      "implementation": "v11/v137_weather_backfill.py",
+      "name": "Weather fallback provenance is explicit"
+    },
+    {
+      "category": "providers",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v137_weather_backfill.py",
+          "reason": "token_present",
+          "token": "\"provider_counts\""
+        }
+      ],
+      "engineering_closed": true,
+      "id": 25,
+      "implementation": "v11/v137_weather_backfill.py",
+      "name": "Weather report separates provider counts"
+    },
+    {
+      "category": "providers",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v137_weather_backfill.py",
+          "reason": "token_present",
+          "token": "\"promotion_eligible\": False"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 26,
+      "implementation": "v11/v137_weather_backfill.py",
+      "name": "Reconstructed weather cannot promote"
+    },
+    {
+      "category": "providers",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": ".github/workflows/v13-provider-hardening-ci.yml",
+          "reason": "token_present",
+          "token": "Open-Meteo Previous Runs live smoke"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 27,
+      "implementation": ".github/workflows/v13-provider-hardening-ci.yml",
+      "name": "Weather fallback has live CI smoke"
+    },
+    {
+      "category": "providers",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v137_park_factors.py",
+          "reason": "token_present",
+          "token": "statcast-park-factors"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 28,
+      "implementation": "v11/v137_park_factors.py",
+      "name": "Savant remains preferred park-factor source"
+    },
+    {
+      "category": "providers",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v137_park_factors.py",
+          "reason": "token_present",
+          "token": "def _parse_embedded_park_data"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 29,
+      "implementation": "v11/v137_park_factors.py",
+      "name": "Savant embedded JSON parser retained"
+    },
+    {
+      "category": "providers",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v137_park_factors.py",
+          "reason": "token_present",
+          "token": "def _parse_park_table"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 30,
+      "implementation": "v11/v137_park_factors.py",
+      "name": "Savant static table parser retained"
+    },
+    {
+      "category": "providers",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v137_park_factors.py",
+          "reason": "token_present",
+          "token": "def _mlb_fallback_rows"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 31,
+      "implementation": "v11/v137_park_factors.py",
+      "name": "MLB Stats park fallback prevents zero coverage"
+    },
+    {
+      "category": "providers",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v137_park_factors.py",
+          "reason": "token_present",
+          "token": "source_years = [target - 3, target - 2, target - 1]"
+        },
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v139_provider_hardening.py",
+          "reason": "token_present",
+          "token": "test_park_fallback_uses_only_completed_source_seasons"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 32,
+      "implementation": "v11/v137_park_factors.py",
+      "name": "Park fallback uses only three completed seasons"
+    },
+    {
+      "category": "providers",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v137_park_factors.py",
+          "reason": "token_present",
+          "token": "def _fetch_completed_season_games"
+        },
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v137_park_factors.py",
+          "reason": "token_present",
+          "token": "\"gameTypes\": \"R\""
+        }
+      ],
+      "engineering_closed": true,
+      "id": 33,
+      "implementation": "v11/v137_park_factors.py",
+      "name": "Park fallback consumes final regular-season games only"
+    },
+    {
+      "category": "providers",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v137_park_factors.py",
+          "reason": "token_present",
+          "token": "MIN_FALLBACK_VENUE_GAMES = 20"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 34,
+      "implementation": "v11/v137_park_factors.py",
+      "name": "Park fallback enforces minimum venue sample"
+    },
+    {
+      "category": "providers",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v137_park_factors.py",
+          "reason": "token_present",
+          "token": "\"handedness_specific\": False"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 35,
+      "implementation": "v11/v137_park_factors.py",
+      "name": "Fallback never pretends handedness specificity"
+    },
+    {
+      "category": "providers",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v137_park_factors.py",
+          "reason": "token_present",
+          "token": "\"promotion_eligible\": False"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 36,
+      "implementation": "v11/v137_park_factors.py",
+      "name": "Reconstructed park factors cannot promote"
+    },
+    {
+      "category": "providers",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": ".github/workflows/v13-provider-hardening-ci.yml",
+          "reason": "token_present",
+          "token": "Park-factor live smoke with fallback allowed"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 37,
+      "implementation": ".github/workflows/v13-provider-hardening-ci.yml",
+      "name": "Park factors have live CI smoke"
+    },
+    {
+      "category": "providers",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v137_free_data_health.py",
+          "reason": "token_present",
+          "token": "status = \"FAIL\" if alerts else \"DEGRADED\" if warnings else \"HEALTHY\""
+        }
+      ],
+      "engineering_closed": true,
+      "id": 38,
+      "implementation": "v11/v137_free_data_health.py",
+      "name": "Free-provider health exposes explicit status"
+    },
+    {
+      "category": "providers",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v137_free_data_health.py",
+          "reason": "token_present",
+          "token": "warnings.append(\"weather_previous_runs_fallback_used\")"
+        },
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v137_free_data_health.py",
+          "reason": "token_present",
+          "token": "warnings.append(\"park_factor_mlb_stats_fallback_used\")"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 39,
+      "implementation": "v11/v137_free_data_health.py",
+      "name": "Provider fallbacks are warnings not hidden failures"
+    },
+    {
+      "category": "providers",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v138_monitoring.py",
+          "reason": "token_present",
+          "token": "\"park_rows\": park.get(\"total_venue_rows\")"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 40,
+      "implementation": "v11/v138_monitoring.py",
+      "name": "Monitoring reads canonical park row count"
+    },
+    {
+      "category": "providers",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v137_free_data.py",
+          "reason": "token_present",
+          "token": "test_statcast_is_stable_id_only_and_rejects_cutoff_day"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 41,
+      "implementation": "v11/v137_free_data.py",
+      "name": "Statcast priors are stable-ID only"
+    },
+    {
+      "category": "providers",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v137_free_data.py",
+          "reason": "token_present",
+          "token": "fetch_statcast_rows_adaptive"
+        },
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v137_free_data.py",
+          "reason": "token_present",
+          "token": "test_statcast_adaptive_fetch_splits_capped_ranges"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 42,
+      "implementation": "v11/v137_free_data.py",
+      "name": "Statcast row-cap responses split adaptively"
+    },
+    {
+      "category": "data_integrity",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v137_free_data.py",
+          "reason": "token_present",
+          "token": "test_statcast_single_day_cap_fails_closed"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 43,
+      "implementation": "v11/v137_free_data.py",
+      "name": "Single-day Statcast truncation fails closed"
+    },
+    {
+      "category": "data_integrity",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v137_free_data.py",
+          "reason": "token_present",
+          "token": "test_statcast_is_stable_id_only_and_rejects_cutoff_day"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 44,
+      "implementation": "v11/v137_free_data.py",
+      "name": "Statcast cutoff day cannot enter priors"
+    },
+    {
+      "category": "data_integrity",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v137_free_data.py",
+          "reason": "token_present",
+          "token": "test_reconstructed_envelope_can_never_be_native_promotion_evidence"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 45,
+      "implementation": "v11/v137_free_data.py",
+      "name": "Reconstructed envelopes cannot count as native evidence"
+    },
+    {
+      "category": "data_integrity",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v137_free_data.py",
+          "reason": "token_present",
+          "token": "test_team_history_keeps_target_label_separate_excludes_same_day_and_uses_prior_park"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 46,
+      "implementation": "v11/v137_team_history.py",
+      "name": "Historical feature and target labels remain separated"
+    },
+    {
+      "category": "data_integrity",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v137_free_data.py",
+          "reason": "token_present",
+          "token": "test_mlb_native_state_uses_stable_roster_ids_and_conservative_il_signal"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 47,
+      "implementation": "v11/v137_mlb_state.py",
+      "name": "MLB roster state is native point-in-time"
+    },
+    {
+      "category": "data_integrity",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v137_free_data.py",
+          "reason": "token_present",
+          "token": "person_id"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 48,
+      "implementation": "v11/v137_mlb_state.py",
+      "name": "Roster snapshots use stable player IDs"
+    },
+    {
+      "category": "data_integrity",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v137_free_data.py",
+          "reason": "token_present",
+          "token": "injured_list_signal"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 49,
+      "implementation": "v11/v137_mlb_state.py",
+      "name": "IL signal is explicitly conservative"
+    },
+    {
+      "category": "data_integrity",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v136_evidence_hardening.py",
+          "reason": "token_present",
+          "token": "test_same_day_finished_game_counts_for_doubleheader_bullpen"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 50,
+      "implementation": "v11",
+      "name": "Same-day final counts for doubleheader bullpen state"
+    },
+    {
+      "category": "data_integrity",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v136_evidence_hardening.py",
+          "reason": "token_present",
+          "token": "test_point_in_time_is_derived_not_trusted"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 51,
+      "implementation": "v11/point_in_time_v13.py",
+      "name": "Point-in-time state is derived not blindly trusted"
+    },
+    {
+      "category": "data_integrity",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v136_evidence_hardening.py",
+          "reason": "token_present",
+          "token": "test_live_snapshot_materialises_validated_point_in_time_state"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 52,
+      "implementation": "v11/point_in_time_v13.py",
+      "name": "Live snapshots materialize validated PIT state"
+    },
+    {
+      "category": "data_integrity",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v136_evidence_hardening.py",
+          "reason": "token_present",
+          "token": "test_feature_store_never_embeds_postgame_labels"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 53,
+      "implementation": "v11/v13_feature_store.py",
+      "name": "Feature store never embeds postgame labels"
+    },
+    {
+      "category": "data_integrity",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v136_evidence_hardening.py",
+          "reason": "token_present",
+          "token": "test_inactive_weather_and_rich_bullpen_do_not_artificially_raise_model_dq"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 54,
+      "implementation": "v11/data_quality.py",
+      "name": "Inactive weather/rich bullpen cannot inflate model DQ"
+    },
+    {
+      "category": "data_integrity",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v136_evidence_hardening.py",
+          "reason": "token_present",
+          "token": "test_learned_active_contract_can_use_weather_and_bullpen"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 55,
+      "implementation": "v11/data_quality.py",
+      "name": "Only learned-active context can affect DQ credit"
+    },
+    {
+      "category": "data_integrity",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v1351_audit_fixes.py",
+          "reason": "token_present",
+          "token": "test_tracking_key_is_immutable_by_phase_and_asof"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 56,
+      "implementation": "v11/v13_daily_tracking.py",
+      "name": "Tracking keys are immutable by phase/as-of"
+    },
+    {
+      "category": "data_integrity",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v1351_audit_fixes.py",
+          "reason": "token_present",
+          "token": "test_tracking_sync_keeps_latest_per_game_and_phase"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 57,
+      "implementation": "v11/v13_tracking_sync.py",
+      "name": "Tracking sync keeps latest per game and phase"
+    },
+    {
+      "category": "data_integrity",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v136_evidence_hardening.py",
+          "reason": "token_present",
+          "token": "test_coverage_report_explains_every_scheduled_game"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 58,
+      "implementation": "v11/v13_coverage_report.py",
+      "name": "Coverage report explains every scheduled game"
+    },
+    {
+      "category": "models",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v138_research_models.py",
+          "reason": "token_present",
+          "token": "def fit_glm"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 59,
+      "implementation": "v11/v138_research_models.py",
+      "name": "Log-link GLM challenger implemented"
+    },
+    {
+      "category": "models",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v138_research_models.py",
+          "reason": "token_present",
+          "token": "def fit_gam"
+        },
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v138_research_models.py",
+          "reason": "token_present",
+          "token": "GAM_NONLINEAR_INDICES"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 60,
+      "implementation": "v11/v138_research_models.py",
+      "name": "GAM challenger implemented with fixed basis"
+    },
+    {
+      "category": "models",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v138_research_models.py",
+          "reason": "token_present",
+          "token": "def fit_gbdt"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 61,
+      "implementation": "v11/v138_research_models.py",
+      "name": "Portable boosted-stump challenger implemented"
+    },
+    {
+      "category": "models",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v138_research_models.py",
+          "reason": "token_present",
+          "token": "def fit_hierarchical"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 62,
+      "implementation": "v11/v138_research_models.py",
+      "name": "Empirical-Bayes hierarchy implemented"
+    },
+    {
+      "category": "models",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v138_research_models.py",
+          "reason": "token_present",
+          "token": "def _ensemble_weights"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 63,
+      "implementation": "v11/v138_research_models.py",
+      "name": "Ensemble weights learned only among candidates"
+    },
+    {
+      "category": "models",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v138_research_models.py",
+          "reason": "token_present",
+          "token": "def naive_runs"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 64,
+      "implementation": "v11/v138_research_models.py",
+      "name": "Transparent naive run baseline retained"
+    },
+    {
+      "category": "models",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v138_audit_closure.py",
+          "reason": "token_present",
+          "token": "test_glm_gam_gbdt_hierarchy_and_ensemble_are_finite"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 65,
+      "implementation": "tests/test_v138_audit_closure.py",
+      "name": "Model family finiteness covered by tests"
+    },
+    {
+      "category": "models",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v13_rich_native_train.py",
+          "reason": "token_present",
+          "token": "test_requires_native_volume"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 66,
+      "implementation": "v11/v13_rich_native_train.py",
+      "name": "Rich-model promotion requires native volume"
+    },
+    {
+      "category": "models",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v1352_final_hardening.py",
+          "reason": "token_present",
+          "token": "test_final_run_mean_prior_is_gated_until_native_transfer_passes"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 67,
+      "implementation": "v11/v13_run_mean_runtime.py",
+      "name": "Run-mean candidate remains FINAL transfer-gated"
+    },
+    {
+      "category": "models",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v1352_final_hardening.py",
+          "reason": "token_present",
+          "token": "test_distribution_prior_rejects_stale_generation_and_allows_valid_current_generation"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 68,
+      "implementation": "v11/v13_distribution_prior.py",
+      "name": "Distribution candidate rejects stale generation"
+    },
+    {
+      "category": "models",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v1352_audit_hardening.py",
+          "reason": "token_present",
+          "token": "test_validated_posterior_can_move_shadow_but_not_primary"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 69,
+      "implementation": "v11/pipeline_v13.py",
+      "name": "Posterior remains shadow even when validated"
+    },
+    {
+      "category": "models",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v138_native_evidence.py",
+          "reason": "token_present",
+          "token": "test_dynamic_calibration_requires_chronological_oos_improvement"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 70,
+      "implementation": "v11/v138_native_evidence.py",
+      "name": "Dynamic calibration requires chronological OOS gain"
+    },
+    {
+      "category": "validation",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v13_probability_contract.py",
+          "reason": "token_present",
+          "token": "test_strict_validation_requires_positive_bootstrap_lower_bound"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 71,
+      "implementation": "v11/calibration_baseball_v13.py",
+      "name": "Calibration gain requires positive bootstrap lower bound"
+    },
+    {
+      "category": "validation",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v138_validation.py",
+          "reason": "token_present",
+          "token": "def walk_forward"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 72,
+      "implementation": "v11/v138_validation.py",
+      "name": "Multi-season walk-forward validation implemented"
+    },
+    {
+      "category": "validation",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v138_validation.py",
+          "reason": "token_present",
+          "token": "walk_forward"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 73,
+      "implementation": "v11/v138_validation.py",
+      "name": "Per-season chronological validation retained"
+    },
+    {
+      "category": "validation",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v138_validation.py",
+          "reason": "token_present",
+          "token": "def subgroup_validation"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 74,
+      "implementation": "v11/v138_validation.py",
+      "name": "Subgroup validation implemented"
+    },
+    {
+      "category": "validation",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v138_validation.py",
+          "reason": "token_present",
+          "token": "def ablation_report"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 75,
+      "implementation": "v11/v138_validation.py",
+      "name": "Feature ablation implemented"
+    },
+    {
+      "category": "validation",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v1351_audit_fixes.py",
+          "reason": "token_present",
+          "token": "test_reliability_lookup_stays_in_raw_probability_space"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 76,
+      "implementation": "v11",
+      "name": "Reliability lookup stays in raw probability space"
+    },
+    {
+      "category": "validation",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v135_professional_audit.py",
+          "reason": "token_present",
+          "token": "test_market_disagreement_does_not_widen_baseball_interval"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 77,
+      "implementation": "v11/uncertainty_v13.py",
+      "name": "Market disagreement cannot widen baseball-only interval"
+    },
+    {
+      "category": "validation",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v138_native_evidence.py",
+          "reason": "token_present",
+          "token": "test_probability_band_gate_uses_group_empirical_rates_not_binary_point_coverage"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 78,
+      "implementation": "v11/v138_native_evidence.py",
+      "name": "Empirical probability-band evidence uses grouped rates"
+    },
+    {
+      "category": "validation",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v138_native_evidence.py",
+          "reason": "token_present",
+          "token": "test_learned_book_weights_can_pass_only_on_oos"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 79,
+      "implementation": "v11/v138_native_evidence.py",
+      "name": "Book weights can activate only on OOS evidence"
+    },
+    {
+      "category": "validation",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v138_dataset_store.py",
+          "reason": "token_present",
+          "token": "duckdb"
+        },
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v138_dataset_store.py",
+          "reason": "token_present",
+          "token": "parquet"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 80,
+      "implementation": "v11/v138_dataset_store.py",
+      "name": "DuckDB and Parquet analytical store implemented"
+    },
+    {
+      "category": "validation",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v138_dataset_store.py",
+          "reason": "token_present",
+          "token": "def sha256_file"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 81,
+      "implementation": "v11/v138_dataset_store.py",
+      "name": "Per-artifact checksums implemented"
+    },
+    {
+      "category": "validation",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v138_audit_closure.py",
+          "reason": "token_present",
+          "token": "test_dataset_checksums_and_reproducibility_manifest"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 82,
+      "implementation": "v11/v138_validation.py",
+      "name": "Reproducibility manifest covered by regression test"
+    },
+    {
+      "category": "operations",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v1352_audit_hardening.py",
+          "reason": "token_present",
+          "token": "test_shared_preflight_is_used_by_ci_production_backfill_and_research"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 83,
+      "implementation": "v11/v13_preflight.py",
+      "name": "Shared preflight is used by critical workflows"
+    },
+    {
+      "category": "operations",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": ".github/workflows/v13-provider-hardening-ci.yml",
+          "reason": "token_present",
+          "token": "provider-contracts"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 84,
+      "implementation": ".github/workflows/v13-provider-hardening-ci.yml",
+      "name": "Provider live-smoke CI is dedicated and fail-closed"
+    },
+    {
+      "category": "operations",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": ".github/workflows/ci.yml",
+          "reason": "token_present",
+          "token": "python -m py_compile v11/*.py tests/*.py"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 85,
+      "implementation": ".github/workflows/ci.yml",
+      "name": "Main CI compiles all V11 and test modules"
+    },
+    {
+      "category": "operations",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v1352_audit_hardening.py",
+          "reason": "token_present",
+          "token": "test_production_is_gated_final_automation_and_research_version_check_is_fingerprint_based"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 86,
+      "implementation": "v11/v13_production_gate.py",
+      "name": "Production execution remains FINAL-gated"
+    },
+    {
+      "category": "operations",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v13_analytics_only.py",
+          "reason": "token_present",
+          "token": "test_v13_entry_wires_redundant_fail_closed_guards"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 87,
+      "implementation": "v11/v13_analytics_only.py",
+      "name": "Analytics-only payload is redundantly enforced"
+    },
+    {
+      "category": "operations",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v138_production_change_gate.py",
+          "reason": "token_present",
+          "token": "test_sent_game_reopens_when_probable_starter_changes"
+        },
+        {
+          "absent": false,
+          "passed": true,
+          "path": "tests/test_v138_production_change_gate.py",
+          "reason": "token_present",
+          "token": "test_sent_game_reopens_when_free_live_feed_lineup_personnel_changes"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 88,
+      "implementation": "v11/v138_live_change.py",
+      "name": "Critical starter/lineup changes reopen publication"
+    },
+    {
+      "category": "operations",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v138_monitoring.py",
+          "reason": "token_present",
+          "token": "validation.feature_drift"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 89,
+      "implementation": "v11/v138_monitoring.py",
+      "name": "Feature drift remains monitored"
+    },
+    {
+      "category": "operations",
+      "checks": [
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v13_preflight.py",
+          "reason": "token_present",
+          "token": "tests.test_v139_provider_hardening"
+        },
+        {
+          "absent": false,
+          "passed": true,
+          "path": "v11/v13_preflight.py",
+          "reason": "token_present",
+          "token": "tests.test_v139_explicit_engine"
+        }
+      ],
+      "engineering_closed": true,
+      "id": 90,
+      "implementation": "v11/v13_preflight.py",
+      "name": "New provider and engine controls are part of critical preflight"
+    }
+  ],
+  "registry_kind": "reconstructed_from_previous_engineering_estimate",
+  "schema": "v13-9-reconstructed-engineering-closure-v1",
+  "total": 90
 }

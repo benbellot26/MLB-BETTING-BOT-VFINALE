@@ -4,7 +4,7 @@
   ],
   "claim": "observability only; no automatic model retuning",
   "dataset": {
-    "dataset_version": "05e4a080450b13c8eff1792042c887f9981505d5",
+    "dataset_version": "75e5c050da555a41747ae1fe54a418c2e506b9c6",
     "feature_contract_sha256": "08b35bb22ea34adb3113de13d335975ca00e401b9c1d80deada2473a9b661a61",
     "feature_rows": 14043,
     "label_rows": 14043
@@ -129,17 +129,22 @@
       }
     }
   },
-  "generated_at": "2026-08-19T14:44:22.870930+00:00",
+  "generated_at": "2026-08-19T17:10:19.382779+00:00",
   "provider_current": {
+    "free_health_alerts": [],
     "free_health_status": null,
+    "free_health_warnings": [],
     "il_signals": 85,
-    "observed_at": "2026-08-19T14:44:21.880166+00:00",
+    "observed_at": "2026-08-19T17:10:18.421698+00:00",
+    "park_empty_parses": null,
+    "park_fallback_requests": null,
     "park_rows": null,
     "rosters_ok": 30,
     "statcast_failures": null,
     "statcast_rows": null,
     "transactions": 579,
     "weather_available": 0,
+    "weather_provider_counts": {},
     "weather_rows": 70
   },
   "provider_history": [
@@ -189,6 +194,23 @@
       "statcast_rows": null,
       "transactions": 579,
       "weather_available": 0,
+      "weather_rows": 70
+    },
+    {
+      "free_health_alerts": [],
+      "free_health_status": null,
+      "free_health_warnings": [],
+      "il_signals": 85,
+      "observed_at": "2026-08-19T17:10:18.421698+00:00",
+      "park_empty_parses": null,
+      "park_fallback_requests": null,
+      "park_rows": null,
+      "rosters_ok": 30,
+      "statcast_failures": null,
+      "statcast_rows": null,
+      "transactions": 579,
+      "weather_available": 0,
+      "weather_provider_counts": {},
       "weather_rows": 70
     }
   ],
@@ -241,7 +263,7 @@
     },
     "status": "TRAINED_RESEARCH_ONLY"
   },
-  "schema": "v13-8-monitoring-v1",
+  "schema": "v13-8-monitoring-v2",
   "validation": {
     "ablation": {
       "available": true,
@@ -1383,5 +1405,6 @@
       ],
       "strict_temporal_policy": "each test season is trained only on earlier seasons"
     }
-  }
+  },
+  "warnings": []
 }
