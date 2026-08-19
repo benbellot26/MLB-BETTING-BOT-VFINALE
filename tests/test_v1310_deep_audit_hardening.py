@@ -16,7 +16,6 @@ from v11 import uncertainty_v13
 from v11 import v13_model_health
 from v11 import v13_park_runtime
 from v11 import v13_probability_surface as surface
-from v11 import v137_park_factors as park
 from v11 import v138_native_evidence as native_evidence
 
 
@@ -133,11 +132,13 @@ class V1310DeepAuditHardeningTests(unittest.TestCase):
         states=[]
         for i in range(120):
             p=.51 if i<60 else .70
+            month="07" if i<60 else "08"
+            day=(i%30)+1
             states.append({"game_pk":str(i),"market":"ML","pick":"Home","home":"Home","p_model":p,
-                           "settled_result":"WIN" if i%2 else "LOSS","observation_at":f"2026-08-19T18:{i%60:02d}:00Z"})
+                           "settled_result":"WIN" if i%2 else "LOSS","observation_at":f"2026-{month}-{day:02d}T18:00:00Z"})
             # Complementary away side should be excluded from the drift sample.
             states.append({"game_pk":str(i),"market":"ML","pick":"Away","home":"Home","p_model":1-p,
-                           "settled_result":"LOSS" if i%2 else "WIN","observation_at":f"2026-08-19T18:{i%60:02d}:30Z"})
+                           "settled_result":"LOSS" if i%2 else "WIN","observation_at":f"2026-{month}-{day:02d}T18:00:30Z"})
         drift=v13_model_health._probability_drift(states)["ML"]
         self.assertEqual(drift["observations"],120)
         self.assertGreater(drift["confidence_shift"],.10)
