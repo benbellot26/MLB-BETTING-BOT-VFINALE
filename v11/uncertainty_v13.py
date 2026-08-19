@@ -35,10 +35,6 @@ def empirical_interval(p: float, *, calibration_n: int, phase_n: int | None = No
     dq_score = max(0.0,min(1.0,_num(data_quality,1.0)))
     dq = .065*max(0.0,1-dq_score)
 
-    # Reliability-bin sigma already contains that bin's sampling error.  When
-    # the caller supplies such a sigma, do not add a second sqrt(p(1-p)/n)
-    # term. This keeps the band conservative without systematically counting
-    # the same finite-sample uncertainty twice.
     sampling = 0.0 if empirical > 0 and empirical_includes_sampling else raw_sampling
     epistemic_floor = max(calibration, empirical)
     sigma = math.sqrt(sampling*sampling + epistemic_floor*epistemic_floor + dq*dq)
@@ -48,11 +44,16 @@ def empirical_interval(p: float, *, calibration_n: int, phase_n: int | None = No
         "sigma":sigma,
         "low":max(.001,p-z*sigma),
         "high":min(.999,p+z*sigma),
-        "confidence_level":.90,
-        "nominal_level":.90,
+        # z=1.645 is a construction target only. Until empirical coverage passes
+        # the native evidence gate this is not a calibrated 90% confidence or
+        # prediction interval and must not be labeled as one.
+        "confidence_level":None,
+        "nominal_level":None,
+        "construction_target_level":.90,
+        "construction_z":z,
         "coverage_validated":False,
         "user_facing_type":"model_uncertainty_band",
-        "method":"phase-aware-empirical-reliability-plus-active-data-quality-v4",
+        "method":"phase-aware-empirical-reliability-plus-active-data-quality-v5",
         "evidence_scope":evidence_scope,
         "effective_n":n,
         "phase_n":pn,
