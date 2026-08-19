@@ -45,7 +45,7 @@ jobs:
       - name: Shared V13.5.2 critical preflight
         run: |
           python -m v11.v13_preflight --verbose
-          python -m unittest tests.test_v13_rich_run_residual tests.test_v13_rich_native_train
+          python -m unittest tests.test_v13_rich_run_residual tests.test_v13_rich_native_train tests.test_v13_discord_visual
           python -m v11.v13_entry --self-test
           python -m v11.v13_train --dry-run >/tmp/v13_calibration_candidate.json
           python -m v11.v13_posterior_policy >/tmp/v13_posterior_policy.json
