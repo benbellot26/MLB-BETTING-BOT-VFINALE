@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import tempfile
@@ -17,6 +18,7 @@ from v11 import v13_model_health
 from v11 import v13_park_runtime
 from v11 import v13_probability_surface as surface
 from v11 import v138_native_evidence as native_evidence
+from v11 import v138_research_integrity
 
 
 class V1310DeepAuditHardeningTests(unittest.TestCase):
@@ -164,8 +166,24 @@ class V1310DeepAuditHardeningTests(unittest.TestCase):
         self.assertAlmostEqual(h,5.7*(1.10/1.14))
         self.assertAlmostEqual(a,4.56*(1.10/1.14))
 
+    def test_research_artifacts_bind_to_actual_dataset_content_hash(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            content_hash=hashlib.sha256(b"actual-feature-and-label-bytes").hexdigest()
+            manifest=root/"manifest.json"; model=root/"model.json"; validation=root/"validation.json"
+            manifest.write_text(json.dumps({"dataset_content_sha256":content_hash,"feature_rows":10,"label_rows":10,"feature_contract_sha256":"abc"}),encoding="utf-8")
+            model.write_text(json.dumps({"games":10,"dataset_fingerprint":"legacy-id-only","research_only":True}),encoding="utf-8")
+            validation.write_text(json.dumps({"games":10}),encoding="utf-8")
+            report=v138_research_integrity.bind(manifest,model,validation)
+            self.assertEqual(report["dataset_content_sha256"],content_hash)
+            rebound=json.loads(model.read_text(encoding="utf-8"))
+            self.assertEqual(rebound["dataset_content_sha256"],content_hash)
+            self.assertTrue(rebound["dataset_integrity"]["bound"])
+            self.assertFalse(rebound["dataset_integrity"]["legacy_identity_fingerprint_sufficient"])
+
     def test_generation_fingerprint_moves_with_predictive_behavior(self):
         self.assertTrue(contract.MODEL_GENERATION_FINGERPRINT.startswith("v13.10-gen-"))
+        self.assertIn("independent-transfer",contract.MODEL_GENERATION_FINGERPRINT)
         self.assertTrue(math.isfinite(contract.clip_probability(.5)))
 
 
