@@ -115,9 +115,6 @@ def _parse_embedded_park_data(html: str) -> list[dict[str, Any]]:
 
 
 def _parse_park_payload(html: str) -> tuple[list[dict[str, Any]], str]:
-    # Savant currently renders this leaderboard client-side. Prefer the
-    # embedded structured payload, retaining the static-table parser as a
-    # compatibility fallback if MLB changes the page again.
     embedded = _parse_embedded_park_data(html)
     if embedded:
         return embedded, "embedded_json"
@@ -143,7 +140,9 @@ def fetch_prior_factors(
         "batSide": side,
         "condition": "All",
         "parks": "mlb",
-        "rolling": 3,
+        # Savant uses this as a boolean flag: rolling=1 selects the
+        # three-season rolling view (e.g. 2023-2025 when year=2025).
+        "rolling": 1,
         "stat": "index_wOBA",
         "type": "year",
         "year": source_end,
@@ -151,7 +150,7 @@ def fetch_prior_factors(
     html = fetch_text(SOURCE_URL, params, timeout=30)
     rows, parse_mode = _parse_park_payload(html or "")
     return {
-        "schema": "v13-7-prior-park-factor-v2",
+        "schema": "v13-7-prior-park-factor-v3",
         "cohort": COHORT,
         "target_season": target,
         "source_window_end_season": source_end,
@@ -165,7 +164,7 @@ def fetch_prior_factors(
         "parse_mode": parse_mode,
         "rows": rows,
         "venue_count": len(rows),
-        "policy": "three completed seasons ending before target season; target-season results excluded",
+        "policy": "three completed seasons ending before target season; target-season results excluded; Savant rolling=1",
     }
 
 
@@ -190,7 +189,7 @@ def collect(start_season: int, end_season: int) -> tuple[dict[str, Any], dict[st
                     empty_parses.append({"season": season, "bat_side": label, "error": "empty_parse"})
             except Exception as exc:
                 side_payloads[label] = {
-                    "schema": "v13-7-prior-park-factor-v2",
+                    "schema": "v13-7-prior-park-factor-v3",
                     "target_season": season,
                     "bat_side": label,
                     "point_in_time": True,
@@ -203,7 +202,7 @@ def collect(start_season: int, end_season: int) -> tuple[dict[str, Any], dict[st
                 failures.append({"season": season, "bat_side": label, "error": type(exc).__name__})
         seasons[str(season)] = side_payloads
     artifact = {
-        "schema": "v13-7-prior-park-factors-store-v2",
+        "schema": "v13-7-prior-park-factors-store-v3",
         "cohort": COHORT,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "point_in_time_policy": True,
@@ -216,7 +215,7 @@ def collect(start_season: int, end_season: int) -> tuple[dict[str, Any], dict[st
         for season, sides in seasons.items()
     }
     report = {
-        "schema": "v13-7-prior-park-factors-report-v2",
+        "schema": "v13-7-prior-park-factors-report-v3",
         "start_season": start,
         "end_season": end,
         "season_count": len(seasons),
@@ -228,6 +227,7 @@ def collect(start_season: int, end_season: int) -> tuple[dict[str, Any], dict[st
         "parse_modes": parse_modes,
         "venue_counts": venue_counts,
         "total_venue_rows": sum(sum(sides.values()) for sides in venue_counts.values()),
+        "rolling_parameter": 1,
         "promotion_eligible": False,
     }
     return artifact, report
@@ -268,14 +268,14 @@ def main() -> None:
     parser.add_argument("--end-season", type=int, default=date.today().year)
     args = parser.parse_args()
     artifact, report = collect(args.start_season, args.end_season)
-    if int(report.get("failed_requests") or 0):
-        raise SystemExit(f"Park-factor provider failure: {report['failed_requests']} request(s) failed")
-    if int(report.get("total_venue_rows") or 0) == 0:
-        raise SystemExit("Park-factor provider failure: zero parsed venue rows")
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(artifact, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
     REPORT.write_text(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True), encoding="utf-8")
     print(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True))
+    if int(report.get("failed_requests") or 0):
+        raise SystemExit(f"Park-factor provider failure: {report['failed_requests']} request(s) failed")
+    if int(report.get("total_venue_rows") or 0) == 0:
+        raise SystemExit("Park-factor provider failure: zero parsed venue rows")
 
 
 if __name__ == "__main__":

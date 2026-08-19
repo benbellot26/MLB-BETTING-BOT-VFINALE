@@ -197,7 +197,7 @@ class FreeDataFoundationTests(unittest.TestCase):
         self.assertEqual(result["source_window_years"], [2023, 2024, 2025])
         self.assertNotIn(2026, result["source_window_years"])
         self.assertEqual(calls[0][1]["year"], 2025)
-        self.assertEqual(calls[0][1]["rolling"], 3)
+        self.assertEqual(calls[0][1]["rolling"], 1)
         self.assertEqual(calls[0][1]["batSide"], "L")
         self.assertEqual(result["parse_mode"], "html_table")
         self.assertEqual(result["rows"][0]["park_factor_index"], 113.0)
