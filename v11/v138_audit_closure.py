@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 OUT=Path("data/v138_audit_closure.json")
-SCHEMA="v13-8-52-point-closure-v2"
+SCHEMA="v13-8-52-point-closure-v3"
 
 POINTS=(
 (1,"Offense talent engine","v138_audit_features.offense_talent","RESEARCH_IMPLEMENTED"),
@@ -30,8 +30,8 @@ POINTS=(
 (20,"Contextual dispersion","v138_advanced_research.fit_contextual_dispersion","RESEARCH_IMPLEMENTED"),
 (21,"Learned extra-innings prior","v138_inning_history + v138_validation.learn_extra_innings_home_prior","FREE_EVIDENCE_IMPLEMENTED"),
 (22,"Calibration maturity","calibration_baseball_v13 + v138_advanced_research.dynamic_calibration","EVIDENCE_GATE_IMPLEMENTED"),
-(23,"Empirical uncertainty coverage","v138_validation.empirical_interval_coverage","EVIDENCE_GATE_IMPLEMENTED"),
-(24,"Learned bookmaker weights","v138_validation.learn_bookmaker_weights","EVIDENCE_GATE_IMPLEMENTED"),
+(23,"Empirical uncertainty coverage","v138_native_evidence.probability_band_validation","AUTO_EVIDENCE_GATE"),
+(24,"Learned bookmaker weights","v138_book_telemetry + v138_native_evidence.bookmaker_weights_oos","AUTO_EVIDENCE_GATE"),
 (25,"Posterior Sharp promotion","v13_posterior_policy","EVIDENCE_GATE_IMPLEMENTED"),
 (26,"CLV/model-market gap validation","v13_probability_diagnostics + v138_validation.gap_bins","VALIDATION_IMPLEMENTED"),
 (27,"Edge/gap bins","v138_validation.gap_bins","VALIDATION_IMPLEMENTED"),
@@ -55,7 +55,7 @@ POINTS=(
 (45,"Hierarchical Bayesian-style shrinkage","v138_research_models.fit_hierarchical","RESEARCH_IMPLEMENTED"),
 (46,"Learned ensemble","v138_research_models._ensemble_weights","RESEARCH_IMPLEMENTED"),
 (47,"Meta-model stacking","v138_advanced_research.fit_meta_model","RESEARCH_IMPLEMENTED"),
-(48,"Dynamic calibration","v138_advanced_research.dynamic_calibration","RESEARCH_IMPLEMENTED"),
+(48,"Dynamic calibration","v138_native_evidence.dynamic_calibration_oos","AUTO_EVIDENCE_GATE"),
 (49,"Inning-level model","v138_inning_history + v138_advanced_research.fit_inning_profile","FREE_EVIDENCE_IMPLEMENTED"),
 (50,"Conditional score dispersion","v138_advanced_research.fit_contextual_dispersion","RESEARCH_IMPLEMENTED"),
 (51,"Nonlinear SP x lineup x park x weather","v138_advanced_research.nonlinear_interactions","RESEARCH_IMPLEMENTED"),
@@ -73,6 +73,12 @@ def _load(path: str) -> dict[str,Any]:
     except Exception:return {}
 
 
+def _native_gate(name: str) -> tuple[bool,str]:
+    d=_load("data/v138_native_evidence.json");g=d.get(name) or {};n=int(g.get("n") or d.get("independent_native_targets") or 0)
+    active=bool(g.get("active"));reason=str(g.get("reason") or g.get("criterion") or "native OOS gate")
+    return active,f"native/PIT n={n}; active={active}; {reason}"
+
+
 def _evidence_status(pid: int) -> tuple[bool,str]:
     if pid==18:
         d=_load("data/v13_rich_native_candidate.json");n=int(d.get("native_games") or 0);req=int(d.get("minimum_games") or 300)
@@ -83,18 +89,15 @@ def _evidence_status(pid: int) -> tuple[bool,str]:
     if pid==22:
         d=_load("data/v13_baseball_calibration.json");c=d.get("calibrators") or {};active=sum(bool(x.get("active")) for x in c.values())
         return active>0,f"active_calibrators={active}; strict native thresholds retained"
-    if pid==23:
-        return False,"coverage validator implemented; native sample must still accumulate"
-    if pid==24:
-        return False,"learned book weights require >=300 authenticated PIT book/outcome rows and OOS confirmation"
+    if pid==23:return _native_gate("uncertainty_coverage")
+    if pid==24:return _native_gate("bookmaker_weights")
     if pid==25:
         d=_load("data/v13_posterior_policy.json");n=int(d.get("live_observations") or 0);affected=bool(d.get("primary_probability_affected"))
         return affected,f"live_observations={n}; primary_affected={affected}"
     if pid in {26,27}:
         d=_load("data/v13_probability_diagnostics.json");n=sum(int(x.get("n") or 0) for x in (d.get("by_market") or {}).values())
         return n>=300,f"independent_market_targets={n}; proof floor=300"
-    if pid==48:
-        return False,"dynamic calibrator implemented research-only; production activation remains OOS-gated"
+    if pid==48:return _native_gate("dynamic_calibration")
     if pid==49:
         d=_load("data/v138_inning_evidence.json");profile=d.get("inning_profile") or {};n=int(d.get("inning_profile_games") or profile.get("n") or 0)
         return bool(profile.get("active")),f"authenticated free MLB inning-profile games={n}; required=300"
@@ -114,7 +117,7 @@ def build() -> dict[str,Any]:
             "evidence_closed":evidence_closed,"overall_closed":sum(bool(x["overall_closed"]) for x in points),
             "engineering_open":len(points)-engineering_closed,"evidence_gates_pending":sum(not x["evidence_closed"] for x in points),
             "points":points,
-            "policy":"A point is never called statistically closed merely because code exists. Engineering closure and evidence closure are reported separately; native/PIT sample floors are never lowered."}
+            "policy":"A point is never called statistically closed merely because code exists. Engineering closure and evidence closure are reported separately; native/PIT sample floors are never lowered. V13.8.2 auto-evaluates every remaining evidence gate that can be evaluated from accumulated native telemetry."}
 
 
 def main() -> None:
