@@ -57,6 +57,7 @@ def _line(r):
     return (
         f"🎯 **{_label(r)}**\n"
         f"**MODEL {core.pct(primary)} | MARKET {core.pct(market)} | GAP {gap_txt}**\n"
+        f"Probabilité principale **{core.pct(primary)}** • ensemble candidat **{posterior_txt}** (shadow)\n"
         f"Fair modèle **{_fair_odds(primary)}** • fair marché **{_fair_odds(market)}** • réf. **{_price_text(ref_price)}** • Winamax **{_price_text(winamax_price)}**\n"
         f"Bande modèle **{interval}**{push_txt} • DQ modèle **{100*core.num(dq.get('model_input_score')):.0f}/100**\n"
         f"Calibration **{cal_status} / {cal_source}** • n phase **{phase_n}** • n marché **{market_n}**\n"
