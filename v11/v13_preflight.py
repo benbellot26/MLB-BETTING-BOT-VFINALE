@@ -27,6 +27,7 @@ CRITICAL_TEST_MODULES = (
     "tests.test_v138_native_evidence",
     "tests.test_v139_provider_hardening",
     "tests.test_v139_explicit_engine",
+    "tests.test_v139_engineering_closure",
 )
 
 
