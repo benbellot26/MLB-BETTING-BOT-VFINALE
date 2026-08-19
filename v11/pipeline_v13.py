@@ -39,6 +39,7 @@ class ProbabilityPipelineV13:
         # Reliability bins are fitted in raw-probability space. Query them with
         # the raw probability even after a Platt/Beta calibrator becomes active;
         # otherwise a transformed probability could be matched to the wrong bin.
+        # The returned sigma already contains reliability-bin sampling error.
         empirical_sigma, reliability_source = calibration.reliability_sigma(
             self.calibration_model, market_name, phase, raw
         )
@@ -53,6 +54,7 @@ class ProbabilityPipelineV13:
             phase_n=evidence["phase_n"],
             market_n=evidence["market_n"],
             empirical_sigma=empirical_sigma,
+            empirical_includes_sampling=empirical_sigma is not None,
             sharp_dispersion=option.get("sharp_dispersion"),
             data_quality=data_quality,
         )
