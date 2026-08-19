@@ -22,6 +22,7 @@ CRITICAL_TEST_MODULES = (
     "tests.test_v136_evidence_hardening",
     "tests.test_v137_free_data",
     "tests.test_v138_audit_closure",
+    "tests.test_v138_production_change_gate",
 )
 
 
