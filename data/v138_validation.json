@@ -1,0 +1,1093 @@
+{
+  "ablation": {
+    "available": true,
+    "full_rmse": 3.591472585723084,
+    "groups": [
+      {
+        "delta_rmse": 0.002510066097732633,
+        "group": "recent_14",
+        "rmse_full": 3.591472585723084,
+        "rmse_without": 3.5939826518208164
+      },
+      {
+        "delta_rmse": 0.001969192790004737,
+        "group": "talent_shrinkage",
+        "rmse_full": 3.591472585723084,
+        "rmse_without": 3.5934417785130885
+      },
+      {
+        "delta_rmse": 0.0006435388756029781,
+        "group": "recent_7",
+        "rmse_full": 3.591472585723084,
+        "rmse_without": 3.592116124598687
+      },
+      {
+        "delta_rmse": 0.0,
+        "group": "park",
+        "rmse_full": 3.591472585723084,
+        "rmse_without": 3.591472585723084
+      },
+      {
+        "delta_rmse": -0.00041423129075823795,
+        "group": "offense_defense_interaction",
+        "rmse_full": 3.591472585723084,
+        "rmse_without": 3.5910583544323256
+      },
+      {
+        "delta_rmse": -0.0005760065773499079,
+        "group": "rest",
+        "rmse_full": 3.591472585723084,
+        "rmse_without": 3.590896579145734
+      },
+      {
+        "delta_rmse": -0.0009672036211361146,
+        "group": "recent_30",
+        "rmse_full": 3.591472585723084,
+        "rmse_without": 3.5905053821019477
+      },
+      {
+        "delta_rmse": -0.00240699190430238,
+        "group": "team_season",
+        "rmse_full": 3.591472585723084,
+        "rmse_without": 3.5890655938187814
+      }
+    ],
+    "holdout_n": 2809,
+    "interpretation": "positive delta means the removed feature group helped on the temporal holdout",
+    "train_n": 11234
+  },
+  "baselines": {
+    "coin_flip": {
+      "brier": 0.25,
+      "logloss": 0.6931471805599453,
+      "n": 14043
+    },
+    "home_field_54": {
+      "brier": 0.24916462294381542,
+      "logloss": 0.6914762793223952,
+      "n": 14043
+    },
+    "market_if_present": {
+      "n": 0,
+      "status": "NO_PIT_MARKET_IN_FREE_DATA"
+    },
+    "naive_team_runs": {
+      "away_mae": 2.5310777897129793,
+      "away_rmse": 3.2345362166090914,
+      "calibration_bins": [
+        {
+          "empirical_rate": 0.35,
+          "high": 0.1,
+          "low": 0.0,
+          "mean_probability": 0.0644656202675319,
+          "n": 20
+        },
+        {
+          "empirical_rate": 0.4117647058823529,
+          "high": 0.2,
+          "low": 0.1,
+          "mean_probability": 0.1485881711471278,
+          "n": 34
+        },
+        {
+          "empirical_rate": 0.4489795918367347,
+          "high": 0.3,
+          "low": 0.2,
+          "mean_probability": 0.2624517953366794,
+          "n": 98
+        },
+        {
+          "empirical_rate": 0.3963585434173669,
+          "high": 0.4,
+          "low": 0.3,
+          "mean_probability": 0.3695211697542957,
+          "n": 714
+        },
+        {
+          "empirical_rate": 0.48202315661182205,
+          "high": 0.5,
+          "low": 0.4,
+          "mean_probability": 0.4604859648583681,
+          "n": 4923
+        },
+        {
+          "empirical_rate": 0.5537390251286709,
+          "high": 0.6,
+          "low": 0.5,
+          "mean_probability": 0.5428938958876575,
+          "n": 6606
+        },
+        {
+          "empirical_rate": 0.654532967032967,
+          "high": 0.7,
+          "low": 0.6,
+          "mean_probability": 0.6316847892597136,
+          "n": 1456
+        },
+        {
+          "empirical_rate": 0.6287878787878788,
+          "high": 0.8,
+          "low": 0.7,
+          "mean_probability": 0.7347040143284891,
+          "n": 132
+        },
+        {
+          "empirical_rate": 0.6666666666666666,
+          "high": 0.9,
+          "low": 0.8,
+          "mean_probability": 0.8375746060849264,
+          "n": 36
+        },
+        {
+          "empirical_rate": 0.4166666666666667,
+          "high": 1.0,
+          "low": 0.9,
+          "mean_probability": 0.9560162108750584,
+          "n": 24
+        }
+      ],
+      "home_mae": 2.4415009117652207,
+      "home_rmse": 3.117024000013092,
+      "ml_brier": 0.24669665784842057,
+      "ml_ece": 0.021086361105586416,
+      "ml_logloss": 0.6881526139640545,
+      "n": 14043
+    }
+  },
+  "claim": "research validation only; no automatic champion promotion",
+  "games": 14043,
+  "schema": "v13-8-validation-suite-v1",
+  "walk_forward": {
+    "folds": [
+      {
+        "baselines": {
+          "coin_flip": {
+            "brier": 0.25,
+            "logloss": 0.6931471805599453,
+            "n": 2430
+          },
+          "home_field_54": {
+            "brier": 0.2489662551440329,
+            "logloss": 0.6910786940885613,
+            "n": 2430
+          },
+          "market_if_present": {
+            "n": 0,
+            "status": "NO_PIT_MARKET_IN_FREE_DATA"
+          },
+          "naive_team_runs": {
+            "away_mae": 2.461770961801568,
+            "away_rmse": 3.171095903863573,
+            "calibration_bins": [
+              {
+                "empirical_rate": 0.5,
+                "high": 0.1,
+                "low": 0.0,
+                "mean_probability": 0.09145235241890794,
+                "n": 2
+              },
+              {
+                "empirical_rate": 0.3333333333333333,
+                "high": 0.2,
+                "low": 0.1,
+                "mean_probability": 0.1577809706523354,
+                "n": 3
+              },
+              {
+                "empirical_rate": 0.5,
+                "high": 0.3,
+                "low": 0.2,
+                "mean_probability": 0.26925716591286186,
+                "n": 14
+              },
+              {
+                "empirical_rate": 0.3493150684931507,
+                "high": 0.4,
+                "low": 0.3,
+                "mean_probability": 0.37055147189000176,
+                "n": 146
+              },
+              {
+                "empirical_rate": 0.4709236031927024,
+                "high": 0.5,
+                "low": 0.4,
+                "mean_probability": 0.45709570746293815,
+                "n": 877
+              },
+              {
+                "empirical_rate": 0.5686839577329491,
+                "high": 0.6,
+                "low": 0.5,
+                "mean_probability": 0.5460455733065082,
+                "n": 1041
+              },
+              {
+                "empirical_rate": 0.6740506329113924,
+                "high": 0.7,
+                "low": 0.6,
+                "mean_probability": 0.6297296637730122,
+                "n": 316
+              },
+              {
+                "empirical_rate": 0.5769230769230769,
+                "high": 0.8,
+                "low": 0.7,
+                "mean_probability": 0.7388064227530472,
+                "n": 26
+              },
+              {
+                "empirical_rate": 0.5,
+                "high": 0.9,
+                "low": 0.8,
+                "mean_probability": 0.821041711681384,
+                "n": 2
+              },
+              {
+                "empirical_rate": 0.3333333333333333,
+                "high": 1.0,
+                "low": 0.9,
+                "mean_probability": 0.9619246881512713,
+                "n": 3
+              }
+            ],
+            "home_mae": 2.3778006897964836,
+            "home_rmse": 3.0334383011439274,
+            "ml_brier": 0.2433829118749342,
+            "ml_ece": 0.02638293844708543,
+            "ml_logloss": 0.6810050148385859,
+            "n": 2430
+          }
+        },
+        "candidate": {
+          "away_mae": 2.491818188121676,
+          "away_rmse": 3.4318322246784323,
+          "calibration_bins": [
+            {
+              "empirical_rate": 0.0,
+              "high": 0.1,
+              "low": 0.0,
+              "mean_probability": 0.03401256492973752,
+              "n": 2
+            },
+            {
+              "empirical_rate": 0.0,
+              "high": 0.2,
+              "low": 0.1,
+              "mean_probability": 0.19757394178251936,
+              "n": 1
+            },
+            {
+              "empirical_rate": 0.3541666666666667,
+              "high": 0.3,
+              "low": 0.2,
+              "mean_probability": 0.26496783284130426,
+              "n": 96
+            },
+            {
+              "empirical_rate": 0.4254278728606357,
+              "high": 0.4,
+              "low": 0.3,
+              "mean_probability": 0.3577378864946688,
+              "n": 409
+            },
+            {
+              "empirical_rate": 0.5165441176470589,
+              "high": 0.5,
+              "low": 0.4,
+              "mean_probability": 0.4522856001460485,
+              "n": 544
+            },
+            {
+              "empirical_rate": 0.545271629778672,
+              "high": 0.6,
+              "low": 0.5,
+              "mean_probability": 0.5490488896806986,
+              "n": 497
+            },
+            {
+              "empirical_rate": 0.5626373626373626,
+              "high": 0.7,
+              "low": 0.6,
+              "mean_probability": 0.6488030326554113,
+              "n": 455
+            },
+            {
+              "empirical_rate": 0.673469387755102,
+              "high": 0.8,
+              "low": 0.7,
+              "mean_probability": 0.745715195567278,
+              "n": 343
+            },
+            {
+              "empirical_rate": 0.5783132530120482,
+              "high": 0.9,
+              "low": 0.8,
+              "mean_probability": 0.8284987113645421,
+              "n": 83
+            }
+          ],
+          "home_mae": 2.413175894332314,
+          "home_rmse": 3.2519244491650965,
+          "ml_brier": 0.2486828043567244,
+          "ml_ece": 0.06506127910101218,
+          "ml_logloss": 0.6926259228234729,
+          "n": 2430
+        },
+        "candidate_vs_naive_brier_bootstrap": {
+          "available": true,
+          "ci95_high": 0.010051752925825774,
+          "ci95_low": 0.000893994413234761,
+          "difference": 0.005299892481790219,
+          "iterations": 600,
+          "n": 2430,
+          "probability_a_better": 0.01
+        },
+        "season": 2022,
+        "status": "PASS",
+        "test_games": 2430,
+        "train_games": 2429
+      },
+      {
+        "baselines": {
+          "coin_flip": {
+            "brier": 0.25,
+            "logloss": 0.6931471805599453,
+            "n": 2430
+          },
+          "home_field_54": {
+            "brier": 0.249920987654321,
+            "logloss": 0.6929922483487178,
+            "n": 2430
+          },
+          "market_if_present": {
+            "n": 0,
+            "status": "NO_PIT_MARKET_IN_FREE_DATA"
+          },
+          "naive_team_runs": {
+            "away_mae": 2.551269484328016,
+            "away_rmse": 3.2754726000900294,
+            "calibration_bins": [
+              {
+                "empirical_rate": 0.25,
+                "high": 0.1,
+                "low": 0.0,
+                "mean_probability": 0.08273962716570366,
+                "n": 4
+              },
+              {
+                "empirical_rate": 0.36363636363636365,
+                "high": 0.2,
+                "low": 0.1,
+                "mean_probability": 0.13888136991716404,
+                "n": 11
+              },
+              {
+                "empirical_rate": 0.4,
+                "high": 0.3,
+                "low": 0.2,
+                "mean_probability": 0.26564324063729866,
+                "n": 25
+              },
+              {
+                "empirical_rate": 0.40939597315436244,
+                "high": 0.4,
+                "low": 0.3,
+                "mean_probability": 0.3643504477406516,
+                "n": 149
+              },
+              {
+                "empirical_rate": 0.4621212121212121,
+                "high": 0.5,
+                "low": 0.4,
+                "mean_probability": 0.4613589583642799,
+                "n": 792
+              },
+              {
+                "empirical_rate": 0.5469026548672566,
+                "high": 0.6,
+                "low": 0.5,
+                "mean_probability": 0.5435531577494327,
+                "n": 1130
+              },
+              {
+                "empirical_rate": 0.6370370370370371,
+                "high": 0.7,
+                "low": 0.6,
+                "mean_probability": 0.6336805598902773,
+                "n": 270
+              },
+              {
+                "empirical_rate": 0.7419354838709677,
+                "high": 0.8,
+                "low": 0.7,
+                "mean_probability": 0.7315715285764448,
+                "n": 31
+              },
+              {
+                "empirical_rate": 0.8888888888888888,
+                "high": 0.9,
+                "low": 0.8,
+                "mean_probability": 0.8345176285063877,
+                "n": 9
+              },
+              {
+                "empirical_rate": 0.3333333333333333,
+                "high": 1.0,
+                "low": 0.9,
+                "mean_probability": 0.9447378473847566,
+                "n": 9
+              }
+            ],
+            "home_mae": 2.490532739571767,
+            "home_rmse": 3.1481357388146463,
+            "ml_brier": 0.24654285970417963,
+            "ml_ece": 0.01021407359063821,
+            "ml_logloss": 0.688796799080912,
+            "n": 2430
+          }
+        },
+        "candidate": {
+          "away_mae": 2.705327065115315,
+          "away_rmse": 3.6806367486415077,
+          "calibration_bins": [
+            {
+              "empirical_rate": 0.36363636363636365,
+              "high": 0.2,
+              "low": 0.1,
+              "mean_probability": 0.17468867492237583,
+              "n": 22
+            },
+            {
+              "empirical_rate": 0.43434343434343436,
+              "high": 0.3,
+              "low": 0.2,
+              "mean_probability": 0.26044986712000934,
+              "n": 99
+            },
+            {
+              "empirical_rate": 0.46710526315789475,
+              "high": 0.4,
+              "low": 0.3,
+              "mean_probability": 0.35368375899125915,
+              "n": 304
+            },
+            {
+              "empirical_rate": 0.46823956442831216,
+              "high": 0.5,
+              "low": 0.4,
+              "mean_probability": 0.45446802235646927,
+              "n": 551
+            },
+            {
+              "empirical_rate": 0.5,
+              "high": 0.6,
+              "low": 0.5,
+              "mean_probability": 0.5494489922006333,
+              "n": 612
+            },
+            {
+              "empirical_rate": 0.5684210526315789,
+              "high": 0.7,
+              "low": 0.6,
+              "mean_probability": 0.6472848432234721,
+              "n": 570
+            },
+            {
+              "empirical_rate": 0.6610169491525424,
+              "high": 0.8,
+              "low": 0.7,
+              "mean_probability": 0.7390018262574668,
+              "n": 236
+            },
+            {
+              "empirical_rate": 0.8055555555555556,
+              "high": 0.9,
+              "low": 0.8,
+              "mean_probability": 0.8238780787933008,
+              "n": 36
+            }
+          ],
+          "home_mae": 2.5582398857615907,
+          "home_rmse": 3.4494513582075292,
+          "ml_brier": 0.249688136623224,
+          "ml_ece": 0.0649052489516696,
+          "ml_logloss": 0.6936854838247221,
+          "n": 2430
+        },
+        "candidate_vs_naive_brier_bootstrap": {
+          "available": true,
+          "ci95_high": 0.006443535647842585,
+          "ci95_low": -0.0002490017734086414,
+          "difference": 0.003145276919044371,
+          "iterations": 600,
+          "n": 2430,
+          "probability_a_better": 0.028333333333333332
+        },
+        "season": 2023,
+        "status": "PASS",
+        "test_games": 2430,
+        "train_games": 4859
+      },
+      {
+        "baselines": {
+          "coin_flip": {
+            "brier": 0.25,
+            "logloss": 0.6931471805599453,
+            "n": 2429
+          },
+          "home_field_54": {
+            "brier": 0.24987089337175789,
+            "logloss": 0.6928918452234706,
+            "n": 2429
+          },
+          "market_if_present": {
+            "n": 0,
+            "status": "NO_PIT_MARKET_IN_FREE_DATA"
+          },
+          "naive_team_runs": {
+            "away_mae": 2.4921247629122774,
+            "away_rmse": 3.1554042805649125,
+            "calibration_bins": [
+              {
+                "empirical_rate": 0.6,
+                "high": 0.1,
+                "low": 0.0,
+                "mean_probability": 0.06842291053830592,
+                "n": 5
+              },
+              {
+                "empirical_rate": 0.25,
+                "high": 0.2,
+                "low": 0.1,
+                "mean_probability": 0.14818822832577264,
+                "n": 8
+              },
+              {
+                "empirical_rate": 0.2631578947368421,
+                "high": 0.3,
+                "low": 0.2,
+                "mean_probability": 0.2514741720737683,
+                "n": 19
+              },
+              {
+                "empirical_rate": 0.41044776119402987,
+                "high": 0.4,
+                "low": 0.3,
+                "mean_probability": 0.37255364349411435,
+                "n": 134
+              },
+              {
+                "empirical_rate": 0.46199524940617576,
+                "high": 0.5,
+                "low": 0.4,
+                "mean_probability": 0.4583968104587154,
+                "n": 842
+              },
+              {
+                "empirical_rate": 0.5535714285714286,
+                "high": 0.6,
+                "low": 0.5,
+                "mean_probability": 0.5434713241196322,
+                "n": 1120
+              },
+              {
+                "empirical_rate": 0.6431226765799256,
+                "high": 0.7,
+                "low": 0.6,
+                "mean_probability": 0.6319425162951118,
+                "n": 269
+              },
+              {
+                "empirical_rate": 0.6666666666666666,
+                "high": 0.8,
+                "low": 0.7,
+                "mean_probability": 0.7338932105807716,
+                "n": 18
+              },
+              {
+                "empirical_rate": 0.6666666666666666,
+                "high": 0.9,
+                "low": 0.8,
+                "mean_probability": 0.8345870852223716,
+                "n": 9
+              },
+              {
+                "empirical_rate": 0.4,
+                "high": 1.0,
+                "low": 0.9,
+                "mean_probability": 0.9607800291961736,
+                "n": 5
+              }
+            ],
+            "home_mae": 2.390414513419931,
+            "home_rmse": 3.0264894647487375,
+            "ml_brier": 0.24597649551422643,
+            "ml_ece": 0.013028781195106639,
+            "ml_logloss": 0.6874043403642502,
+            "n": 2429
+          }
+        },
+        "candidate": {
+          "away_mae": 2.6001001579109615,
+          "away_rmse": 3.5083471990591297,
+          "calibration_bins": [
+            {
+              "empirical_rate": 1.0,
+              "high": 0.1,
+              "low": 0.0,
+              "mean_probability": 0.0814115772078702,
+              "n": 2
+            },
+            {
+              "empirical_rate": 0.5,
+              "high": 0.2,
+              "low": 0.1,
+              "mean_probability": 0.19947231666008247,
+              "n": 2
+            },
+            {
+              "empirical_rate": 0.38461538461538464,
+              "high": 0.3,
+              "low": 0.2,
+              "mean_probability": 0.26804408490257675,
+              "n": 65
+            },
+            {
+              "empirical_rate": 0.4383116883116883,
+              "high": 0.4,
+              "low": 0.3,
+              "mean_probability": 0.36051791214472506,
+              "n": 308
+            },
+            {
+              "empirical_rate": 0.46616541353383456,
+              "high": 0.5,
+              "low": 0.4,
+              "mean_probability": 0.45314195064814095,
+              "n": 665
+            },
+            {
+              "empirical_rate": 0.5175675675675676,
+              "high": 0.6,
+              "low": 0.5,
+              "mean_probability": 0.5478710253097134,
+              "n": 740
+            },
+            {
+              "empirical_rate": 0.6304347826086957,
+              "high": 0.7,
+              "low": 0.6,
+              "mean_probability": 0.6433194198766258,
+              "n": 460
+            },
+            {
+              "empirical_rate": 0.6379310344827587,
+              "high": 0.8,
+              "low": 0.7,
+              "mean_probability": 0.734253193410402,
+              "n": 174
+            },
+            {
+              "empirical_rate": 0.7692307692307693,
+              "high": 0.9,
+              "low": 0.8,
+              "mean_probability": 0.8237666933595281,
+              "n": 13
+            }
+          ],
+          "home_mae": 2.4403066417880463,
+          "home_rmse": 3.307044135505229,
+          "ml_brier": 0.24812013195156346,
+          "ml_ece": 0.03641703051112684,
+          "ml_logloss": 0.6905395259307663,
+          "n": 2429
+        },
+        "candidate_vs_naive_brier_bootstrap": {
+          "available": true,
+          "ci95_high": 0.005024079660419761,
+          "ci95_low": -0.0010384403046818924,
+          "difference": 0.002143636437337032,
+          "iterations": 600,
+          "n": 2429,
+          "probability_a_better": 0.09
+        },
+        "season": 2024,
+        "status": "PASS",
+        "test_games": 2429,
+        "train_games": 7289
+      },
+      {
+        "baselines": {
+          "coin_flip": {
+            "brier": 0.25,
+            "logloss": 0.6931471805599453,
+            "n": 2430
+          },
+          "home_field_54": {
+            "brier": 0.24817613168724278,
+            "logloss": 0.6894950629767077,
+            "n": 2430
+          },
+          "market_if_present": {
+            "n": 0,
+            "status": "NO_PIT_MARKET_IN_FREE_DATA"
+          },
+          "naive_team_runs": {
+            "away_mae": 2.6089823559734784,
+            "away_rmse": 3.3413656574255035,
+            "calibration_bins": [
+              {
+                "empirical_rate": 1.0,
+                "high": 0.1,
+                "low": 0.0,
+                "mean_probability": 0.02216018308503938,
+                "n": 1
+              },
+              {
+                "empirical_rate": 0.6,
+                "high": 0.2,
+                "low": 0.1,
+                "mean_probability": 0.1771690515063463,
+                "n": 5
+              },
+              {
+                "empirical_rate": 0.4666666666666667,
+                "high": 0.3,
+                "low": 0.2,
+                "mean_probability": 0.27158879134744873,
+                "n": 15
+              },
+              {
+                "empirical_rate": 0.4076923076923077,
+                "high": 0.4,
+                "low": 0.3,
+                "mean_probability": 0.36611961578023233,
+                "n": 130
+              },
+              {
+                "empirical_rate": 0.5163934426229508,
+                "high": 0.5,
+                "low": 0.4,
+                "mean_probability": 0.4629620391998468,
+                "n": 854
+              },
+              {
+                "empirical_rate": 0.5446660884648742,
+                "high": 0.6,
+                "low": 0.5,
+                "mean_probability": 0.5424652151152597,
+                "n": 1153
+              },
+              {
+                "empirical_rate": 0.6808510638297872,
+                "high": 0.7,
+                "low": 0.6,
+                "mean_probability": 0.6330166762894005,
+                "n": 235
+              },
+              {
+                "empirical_rate": 0.7777777777777778,
+                "high": 0.8,
+                "low": 0.7,
+                "mean_probability": 0.7387533000157094,
+                "n": 27
+              },
+              {
+                "empirical_rate": 0.625,
+                "high": 0.9,
+                "low": 0.8,
+                "mean_probability": 0.8421708054074679,
+                "n": 8
+              },
+              {
+                "empirical_rate": 0.0,
+                "high": 1.0,
+                "low": 0.9,
+                "mean_probability": 0.9517775998611349,
+                "n": 2
+              }
+            ],
+            "home_mae": 2.4180741813317552,
+            "home_rmse": 3.1244254632947666,
+            "ml_brier": 0.24779701888701086,
+            "ml_ece": 0.031080782612233085,
+            "ml_logloss": 0.6907160438074027,
+            "n": 2430
+          }
+        },
+        "candidate": {
+          "away_mae": 2.6645985999649344,
+          "away_rmse": 3.6652110839511023,
+          "calibration_bins": [
+            {
+              "empirical_rate": 0.25,
+              "high": 0.2,
+              "low": 0.1,
+              "mean_probability": 0.17829769857855446,
+              "n": 12
+            },
+            {
+              "empirical_rate": 0.36507936507936506,
+              "high": 0.3,
+              "low": 0.2,
+              "mean_probability": 0.2629068672499451,
+              "n": 63
+            },
+            {
+              "empirical_rate": 0.4937106918238994,
+              "high": 0.4,
+              "low": 0.3,
+              "mean_probability": 0.3599112807076743,
+              "n": 318
+            },
+            {
+              "empirical_rate": 0.5125184094256259,
+              "high": 0.5,
+              "low": 0.4,
+              "mean_probability": 0.4557423467372295,
+              "n": 679
+            },
+            {
+              "empirical_rate": 0.561662198391421,
+              "high": 0.6,
+              "low": 0.5,
+              "mean_probability": 0.5453510204324623,
+              "n": 746
+            },
+            {
+              "empirical_rate": 0.5733333333333334,
+              "high": 0.7,
+              "low": 0.6,
+              "mean_probability": 0.6425105149311826,
+              "n": 450
+            },
+            {
+              "empirical_rate": 0.6643835616438356,
+              "high": 0.8,
+              "low": 0.7,
+              "mean_probability": 0.7379574090836242,
+              "n": 146
+            },
+            {
+              "empirical_rate": 0.875,
+              "high": 0.9,
+              "low": 0.8,
+              "mean_probability": 0.8348713424218716,
+              "n": 16
+            }
+          ],
+          "home_mae": 2.5455805708205848,
+          "home_rmse": 3.468098052646139,
+          "ml_brier": 0.24903603170121183,
+          "ml_ece": 0.05887990329406008,
+          "ml_logloss": 0.6914923758556871,
+          "n": 2430
+        },
+        "candidate_vs_naive_brier_bootstrap": {
+          "available": true,
+          "ci95_high": 0.004295893144165119,
+          "ci95_low": -0.0013914234603225606,
+          "difference": 0.0012390128142009682,
+          "iterations": 600,
+          "n": 2430,
+          "probability_a_better": 0.215
+        },
+        "season": 2025,
+        "status": "PASS",
+        "test_games": 2430,
+        "train_games": 9718
+      },
+      {
+        "baselines": {
+          "coin_flip": {
+            "brier": 0.25,
+            "logloss": 0.6931471805599453,
+            "n": 1895
+          },
+          "home_field_54": {
+            "brier": 0.24963693931398415,
+            "logloss": 0.6924229350532295,
+            "n": 1895
+          },
+          "market_if_present": {
+            "n": 0,
+            "status": "NO_PIT_MARKET_IN_FREE_DATA"
+          },
+          "naive_team_runs": {
+            "away_mae": 2.6177288461467536,
+            "away_rmse": 3.29097470983184,
+            "calibration_bins": [
+              {
+                "empirical_rate": 0.2,
+                "high": 0.1,
+                "low": 0.0,
+                "mean_probability": 0.04796031217468917,
+                "n": 5
+              },
+              {
+                "empirical_rate": 1.0,
+                "high": 0.2,
+                "low": 0.1,
+                "mean_probability": 0.11902249084631795,
+                "n": 3
+              },
+              {
+                "empirical_rate": 0.6,
+                "high": 0.3,
+                "low": 0.2,
+                "mean_probability": 0.26679508363020105,
+                "n": 15
+              },
+              {
+                "empirical_rate": 0.47761194029850745,
+                "high": 0.4,
+                "low": 0.3,
+                "mean_probability": 0.37325170338327646,
+                "n": 67
+              },
+              {
+                "empirical_rate": 0.496996996996997,
+                "high": 0.5,
+                "low": 0.4,
+                "mean_probability": 0.46408256217745375,
+                "n": 666
+              },
+              {
+                "empirical_rate": 0.5316718587746625,
+                "high": 0.6,
+                "low": 0.5,
+                "mean_probability": 0.5381385429292538,
+                "n": 963
+              },
+              {
+                "empirical_rate": 0.6066666666666667,
+                "high": 0.7,
+                "low": 0.6,
+                "mean_probability": 0.6315312111292035,
+                "n": 150
+              },
+              {
+                "empirical_rate": 0.5263157894736842,
+                "high": 0.8,
+                "low": 0.7,
+                "mean_probability": 0.726894093305468,
+                "n": 19
+              },
+              {
+                "empirical_rate": 0.5,
+                "high": 0.9,
+                "low": 0.8,
+                "mean_probability": 0.8260370967778782,
+                "n": 2
+              },
+              {
+                "empirical_rate": 0.8,
+                "high": 1.0,
+                "low": 0.9,
+                "mean_probability": 0.9697038048763286,
+                "n": 5
+              }
+            ],
+            "home_mae": 2.500949221521644,
+            "home_rmse": 3.2067829619100334,
+            "ml_brier": 0.25199420835152847,
+            "ml_ece": 0.02774830273153778,
+            "ml_logloss": 0.6985434453338878,
+            "n": 1895
+          }
+        },
+        "candidate": {
+          "away_mae": 2.652325533492687,
+          "away_rmse": 3.6150060106897826,
+          "calibration_bins": [
+            {
+              "empirical_rate": 0.5,
+              "high": 0.2,
+              "low": 0.1,
+              "mean_probability": 0.19495527614037012,
+              "n": 2
+            },
+            {
+              "empirical_rate": 0.2926829268292683,
+              "high": 0.3,
+              "low": 0.2,
+              "mean_probability": 0.2641999316216387,
+              "n": 41
+            },
+            {
+              "empirical_rate": 0.4864864864864865,
+              "high": 0.4,
+              "low": 0.3,
+              "mean_probability": 0.3581895857146305,
+              "n": 185
+            },
+            {
+              "empirical_rate": 0.5087040618955513,
+              "high": 0.5,
+              "low": 0.4,
+              "mean_probability": 0.45988257995447507,
+              "n": 517
+            },
+            {
+              "empirical_rate": 0.5265888456549935,
+              "high": 0.6,
+              "low": 0.5,
+              "mean_probability": 0.5477968229518683,
+              "n": 771
+            },
+            {
+              "empirical_rate": 0.5922330097087378,
+              "high": 0.7,
+              "low": 0.6,
+              "mean_probability": 0.6390073131042955,
+              "n": 309
+            },
+            {
+              "empirical_rate": 0.5454545454545454,
+              "high": 0.8,
+              "low": 0.7,
+              "mean_probability": 0.73267495876726,
+              "n": 66
+            },
+            {
+              "empirical_rate": 0.75,
+              "high": 0.9,
+              "low": 0.8,
+              "mean_probability": 0.8110422265807953,
+              "n": 4
+            }
+          ],
+          "home_mae": 2.572486325594079,
+          "home_rmse": 3.5104660289417007,
+          "ml_brier": 0.2506570122032366,
+          "ml_ece": 0.049688048278439007,
+          "ml_logloss": 0.6950539631247054,
+          "n": 1895
+        },
+        "candidate_vs_naive_brier_bootstrap": {
+          "available": true,
+          "ci95_high": 0.0012814869337598456,
+          "ci95_low": -0.003994495576784218,
+          "difference": -0.0013371961482918637,
+          "iterations": 600,
+          "n": 1895,
+          "probability_a_better": 0.8583333333333333
+        },
+        "season": 2026,
+        "status": "PASS",
+        "test_games": 1895,
+        "train_games": 12148
+      }
+    ],
+    "schema": "v13-8-validation-suite-v1",
+    "seasons": [
+      2021,
+      2022,
+      2023,
+      2024,
+      2025,
+      2026
+    ],
+    "strict_temporal_policy": "each test season is trained only on earlier seasons"
+  }
+}
