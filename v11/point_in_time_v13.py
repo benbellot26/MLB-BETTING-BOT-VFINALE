@@ -106,12 +106,47 @@ def provenance_entry(
     }
 
 
+def _effective_snapshot_as_of(result: dict[str, Any], requested_as_of: str) -> str:
+    """Return the latest timestamp of any predictive input actually used.
+
+    A production run fixes ``requested_as_of`` before network collection begins.
+    Providers such as Open-Meteo are necessarily retrieved a few seconds later.
+    Calling that normal collection delay leakage would be a false positive. The
+    persisted snapshot therefore uses the latest real input-observation time as
+    its final ``as_of``. This does not weaken PIT safety: if that latest time is
+    at/after first pitch, ``validate_pregame_row`` still rejects the row.
+    """
+    requested = _dt(requested_as_of)
+    candidates = [requested] if requested is not None else []
+
+    features = result.get("features") or {}
+    weather = features.get("weather") or {}
+    for value in (weather.get("retrieved_at"), weather.get("forecast_reference_at")):
+        parsed = _dt(value)
+        if parsed is not None:
+            candidates.append(parsed)
+
+    for meta in (result.get("feature_provenance") or {}).values():
+        meta = meta or {}
+        parsed = _dt(meta.get("observed_at") or meta.get("recorded_at"))
+        if parsed is not None:
+            candidates.append(parsed)
+
+    if not candidates:
+        return requested_as_of
+    return max(candidates).isoformat()
+
+
 def mark_live_snapshot(result: dict[str, Any], as_of: str) -> dict[str, Any]:
     """Attach conservative provenance and materialise the PIT validation result.
 
     Durable raw/source replay files prove the response existed by the analysis
     capture time. When no durable source is present, rows remain operationally
     PIT-valid but are not promotion-grade evidence.
+
+    ``as_of`` supplied by the runner is the requested collection cutoff. The
+    final persisted snapshot time is advanced only to the latest predictive
+    input timestamp actually used, never to an arbitrary tolerance window.
     """
     p = result.setdefault("feature_provenance", {})
     durable_source = bool(result.get("source_replay") or result.get("raw_snapshot"))
@@ -120,6 +155,7 @@ def mark_live_snapshot(result: dict[str, Any], as_of: str) -> dict[str, Any]:
     features = result.get("features") or {}
     weather = features.get("weather") or {}
     weather_observed = weather.get("retrieved_at") or weather.get("forecast_reference_at")
+    effective_as_of = _effective_snapshot_as_of(result, as_of)
 
     defaults = {
         "team_stats": None,
@@ -131,17 +167,20 @@ def mark_live_snapshot(result: dict[str, Any], as_of: str) -> dict[str, Any]:
     for name, observed in defaults.items():
         if name in p:
             continue
-        source_time = observed or as_of
+        source_time = observed or effective_as_of
         p[name] = provenance_entry(
             "recorded-live-source",
-            as_of=as_of,
+            as_of=effective_as_of,
             observed_at=source_time,
             snapshot=True,
             timestamp_basis="source_observed_at" if observed else basis,
             source_timestamp_attested=bool(observed) or durable_source,
         )
-    result["as_of"] = as_of
-    result.setdefault("analyzed_at", as_of)
+
+    result["requested_as_of"] = result.get("requested_as_of") or as_of
+    result["as_of"] = effective_as_of
+    result["analyzed_at"] = effective_as_of
+    result["snapshot_as_of_basis"] = "latest_predictive_input_observed_at"
     result["features_from_postgame"] = False
     valid, reasons = validate_pregame_row(result)
     promotion_valid, promotion_reasons = validate_promotion_grade_row(result)
@@ -151,6 +190,6 @@ def mark_live_snapshot(result: dict[str, Any], as_of: str) -> dict[str, Any]:
         "reasons": reasons,
         "promotion_grade_valid": bool(promotion_valid),
         "promotion_grade_reasons": promotion_reasons,
-        "source": "feature-provenance-validator-v3",
+        "source": "feature-provenance-validator-v4",
     }
     return result

@@ -31,6 +31,7 @@ CRITICAL_TEST_MODULES = (
     "tests.test_v139_engineering_closure",
     "tests.test_v1310_deep_audit_hardening",
     "tests.test_v1310_deep_audit_registry",
+    "tests.test_v1310_pit_weather_hotfix",
     "tests.test_v1311_historical_transfer",
 )
 
