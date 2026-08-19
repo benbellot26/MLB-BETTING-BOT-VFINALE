@@ -59,6 +59,27 @@ class ProviderHardeningTests(unittest.TestCase):
         self.assertNotIn("models", calls[0][1])
         self.assertEqual(result["request_model"], "best_match")
 
+    def test_savant_park_request_uses_true_three_season_rolling_window(self):
+        calls = []
+        derived = [{
+            "team": "Colorado Rockies", "venue": "Coors Field", "venue_id": 19,
+            "year_label": "2023-2025", "park_factor_index": 112.0, "runs_index": 112.0,
+            "source_method": "venue total runs per game divided by MLB total runs per game",
+            "handedness_specific": False,
+        }]
+
+        def fake_fetch(url, params, timeout=30):
+            calls.append(dict(params))
+            return "<html></html>"
+
+        with patch.object(park, "_mlb_fallback_rows", return_value=derived):
+            result = park.fetch_prior_factors(2026, "", fake_fetch)
+        self.assertEqual(calls[0]["rolling"], 3)
+        self.assertEqual(calls[0]["year"], 2025)
+        self.assertEqual(result["source_window_years"], [2023, 2024, 2025])
+        self.assertEqual(result["request_contract"]["rolling"], 3)
+        self.assertEqual(result["savant_rolling_seasons"], 3)
+
     def test_park_provider_falls_back_when_savant_payload_is_empty(self):
         derived = [
             {

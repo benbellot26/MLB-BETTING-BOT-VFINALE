@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import math
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from . import v13_daily_tracking as tracking
 from . import v138_advanced_research as calibration
@@ -11,8 +11,9 @@ from . import v138_book_telemetry as book_telemetry
 from . import v138_validation as validation
 
 OUT=Path("data/v138_native_evidence.json")
-SCHEMA="v13-8-native-evidence-gates-v1"
+SCHEMA="v13-10-native-evidence-gates-v2"
 MIN_NATIVE=300
+MARKETS=("ML","RUNLINE","TOTAL")
 
 
 def _num(v: Any,d: float | None=None) -> float | None:
@@ -45,7 +46,7 @@ def independent_settled(states: list[dict[str,Any]] | None=None) -> list[dict[st
         if not _canonical_side(s):continue
         if _num(s.get("p_model")) is None:continue
         key=(str(s.get("game_pk") or ""),str(s.get("market") or "").upper())
-        if not key[0]:continue
+        if not key[0] or key[1] not in MARKETS:continue
         if key not in best or _rank(s)>_rank(best[key]):best[key]=s
     return sorted(best.values(),key=lambda s:(str(s.get("game_date") or ""),str(s.get("game_pk") or ""),str(s.get("market") or "")))
 
@@ -55,14 +56,7 @@ def _outcome(s: dict[str,Any]) -> int:
 
 
 def probability_band_validation(rows: list[dict[str,Any]],min_n: int=MIN_NATIVE,min_bin: int=30) -> dict[str,Any]:
-    """Validate model-probability uncertainty bands against grouped empirical rates.
-
-    Binary outcomes cannot meaningfully be checked one-by-one against a
-    probability interval. Instead, independent targets are grouped into fixed
-    5pp probability bins; each bin's empirical win rate is compared with the
-    mean model interval. This validates calibration-scale coverage without
-    pretending the interval is a frequentist confidence interval for outcomes.
-    """
+    """Validate model uncertainty bands against grouped empirical rates."""
     usable=[r for r in rows if _num(r.get("probability_interval_low")) is not None and _num(r.get("probability_interval_high")) is not None]
     bins={}
     for r in usable:
@@ -81,16 +75,18 @@ def probability_band_validation(rows: list[dict[str,Any]],min_n: int=MIN_NATIVE,
     half=weighted_half_width/weighted_total if weighted_total else None
     enough=len(usable)>=min_n and weighted_total>=min_n and len(details)>=5
     passed=bool(enough and coverage is not None and coverage>=.80 and mae is not None and half is not None and mae<=half)
+    reason=None if enough else "INSUFFICIENT_MARKET_SPECIFIC_NATIVE_TARGETS"
     return {"active":passed,"n":len(usable),"evaluated_n":weighted_total,"minimum_n":min_n,"usable_bins":len(details),
             "weighted_bin_coverage":coverage,"calibration_mae":mae,"mean_interval_half_width":half,"bins":details,
-            "criterion":">=300 independent targets, >=5 bins with n>=30, >=80% weighted empirical-rate coverage and calibration MAE <= mean half-width",
+            "reason":reason,
+            "criterion":">=300 independent targets in this market, >=5 bins with n>=30, >=80% weighted empirical-rate coverage and calibration MAE <= mean half-width",
             "user_facing_type":"model_uncertainty_band","frequentist_confidence_interval":False}
 
 
 def dynamic_calibration_oos(rows: list[dict[str,Any]],min_n: int=MIN_NATIVE) -> dict[str,Any]:
     usable=[r for r in rows if _num(r.get("p_model")) is not None]
     usable.sort(key=lambda r:str(r.get("game_date") or r.get("observation_at") or ""))
-    if len(usable)<min_n:return {"active":False,"n":len(usable),"minimum_n":min_n,"reason":"INSUFFICIENT_NATIVE_TARGETS"}
+    if len(usable)<min_n:return {"active":False,"n":len(usable),"minimum_n":min_n,"reason":"INSUFFICIENT_MARKET_SPECIFIC_NATIVE_TARGETS"}
     cut=max(200,int(len(usable)*.70));train=usable[:cut];test=usable[cut:]
     if len(test)<60:return {"active":False,"n":len(usable),"minimum_n":min_n,"reason":"INSUFFICIENT_OOS_HOLDOUT"}
     p_train=[float(x["p_model"]) for x in train];y_train=[_outcome(x) for x in train]
@@ -104,7 +100,7 @@ def dynamic_calibration_oos(rows: list[dict[str,Any]],min_n: int=MIN_NATIVE) -> 
             "calibrator":model,"raw_brier":raw_b,"calibrated_brier":cal_b,"raw_logloss":raw_ll,"calibrated_logloss":cal_ll,
             "brier_gain":None if raw_b is None or cal_b is None else raw_b-cal_b,
             "logloss_gain":None if raw_ll is None or cal_ll is None else raw_ll-cal_ll,
-            "criterion":"chronological OOS holdout; calibrated Brier non-worse and LogLoss strictly better",
+            "criterion":"market-specific chronological OOS holdout; calibrated Brier non-worse and LogLoss strictly better",
             "production_applied":False}
 
 
@@ -133,7 +129,7 @@ def bookmaker_weights_oos(states: list[dict[str,Any]],telemetry: list[dict[str,A
         if len(probs)<2:continue
         joined.append({"game_date":state.get("game_date"),"outcome":_outcome(state),"p_market":state.get("p_market"),"book_probs":probs})
     joined.sort(key=lambda r:str(r.get("game_date") or ""))
-    if len(joined)<min_n:return {"active":False,"n":len(joined),"minimum_n":min_n,"reason":"INSUFFICIENT_PIT_BOOK_TARGETS"}
+    if len(joined)<min_n:return {"active":False,"n":len(joined),"minimum_n":min_n,"reason":"INSUFFICIENT_MARKET_SPECIFIC_PIT_BOOK_TARGETS"}
     cut=max(200,int(len(joined)*.70));train=joined[:cut];test=joined[cut:]
     if len(test)<60:return {"active":False,"n":len(joined),"minimum_n":min_n,"reason":"INSUFFICIENT_OOS_HOLDOUT"}
     learned=validation.learn_bookmaker_weights(train,min_games=min(200,len(train)))
@@ -150,22 +146,54 @@ def bookmaker_weights_oos(states: list[dict[str,Any]],telemetry: list[dict[str,A
     return {"active":passed,"n":len(joined),"minimum_n":min_n,"train_n":len(train),"holdout_n":len(y),"weights":weights,
             "learned_brier":lb,"configured_consensus_brier":bb,"learned_logloss":lll,"configured_consensus_logloss":bll,
             "brier_gain":None if lb is None or bb is None else bb-lb,"logloss_gain":None if lll is None or bll is None else bll-lll,
-            "criterion":">=300 PIT canonical targets; chronological OOS learned weights must be non-worse on both Brier and LogLoss",
+            "criterion":">=300 PIT canonical targets in this market; chronological OOS learned weights must be non-worse on both Brier and LogLoss",
             "production_applied":False}
+
+
+def _market_split(rows: list[dict[str,Any]]) -> dict[str,list[dict[str,Any]]]:
+    return {market:[row for row in rows if str(row.get("market") or "").upper()==market] for market in MARKETS}
+
+
+def _market_gate(
+    rows_by_market: dict[str,list[dict[str,Any]]],
+    evaluator: Callable[[list[dict[str,Any]]],dict[str,Any]],
+) -> dict[str,Any]:
+    by_market={market:evaluator(rows_by_market[market]) for market in MARKETS}
+    return {
+        "active":all(bool(by_market[m].get("active")) for m in MARKETS),
+        "minimum_n_per_market":MIN_NATIVE,
+        "n":sum(int(by_market[m].get("n") or 0) for m in MARKETS),
+        "by_market":by_market,
+        "activation_scope":"per-market; aggregate active only when ML, RUNLINE and TOTAL each pass independently",
+        "production_applied":False,
+    }
 
 
 def build(states: list[dict[str,Any]] | None=None,telemetry: list[dict[str,Any]] | None=None) -> dict[str,Any]:
     rows=independent_settled(states);books=book_telemetry.read() if telemetry is None else list(telemetry)
-    return {"schema":SCHEMA,"independent_native_targets":len(rows),
-            "uncertainty_coverage":probability_band_validation(rows),
-            "dynamic_calibration":dynamic_calibration_oos(rows),
-            "bookmaker_weights":bookmaker_weights_oos(rows,books),
-            "policy":"all gates use independent canonical settled pregame observations; OOS gates are chronological and never alter production automatically"}
+    rows_by_market=_market_split(rows)
+    market_counts={market:len(rows_by_market[market]) for market in MARKETS}
+    uncertainty=_market_gate(rows_by_market,probability_band_validation)
+    dynamic=_market_gate(rows_by_market,dynamic_calibration_oos)
+    book_by_market={market:bookmaker_weights_oos(rows_by_market[market],books) for market in MARKETS}
+    book_gate={
+        "active":all(bool(book_by_market[m].get("active")) for m in MARKETS),
+        "minimum_n_per_market":MIN_NATIVE,
+        "n":sum(int(book_by_market[m].get("n") or 0) for m in MARKETS),
+        "by_market":book_by_market,
+        "activation_scope":"per-market; weights are never learned from a pooled ML/RUNLINE/TOTAL sample",
+        "production_applied":False,
+    }
+    return {"schema":SCHEMA,"independent_native_targets":len(rows),"market_counts":market_counts,
+            "uncertainty_coverage":uncertainty,
+            "dynamic_calibration":dynamic,
+            "bookmaker_weights":book_gate,
+            "policy":"all gates use independent canonical settled pregame observations; every learned gate is market-specific, chronological OOS and never alters production automatically"}
 
 
 def main() -> None:
     report=build();OUT.parent.mkdir(parents=True,exist_ok=True);OUT.write_text(json.dumps(report,ensure_ascii=False,indent=2,sort_keys=True),encoding="utf-8")
-    print(json.dumps({"schema":SCHEMA,"independent_native_targets":report["independent_native_targets"],
+    print(json.dumps({"schema":SCHEMA,"independent_native_targets":report["independent_native_targets"],"market_counts":report["market_counts"],
         "uncertainty_active":report["uncertainty_coverage"].get("active"),
         "book_weights_active":report["bookmaker_weights"].get("active"),
         "dynamic_calibration_active":report["dynamic_calibration"].get("active")},indent=2,sort_keys=True))
