@@ -22,7 +22,9 @@ class V1352AuditHardeningTests(unittest.TestCase):
         band=uncertainty_v13.empirical_interval(.60,calibration_n=0,phase_n=50,market_n=50,data_quality=.9)
         self.assertEqual(band["user_facing_type"],"model_uncertainty_band")
         self.assertFalse(band["coverage_validated"])
-        self.assertEqual(band["nominal_level"],.90)
+        self.assertIsNone(band["nominal_level"])
+        self.assertIsNone(band["confidence_level"])
+        self.assertEqual(band["construction_target_level"],.90)
 
     def test_market_tracking_polls_only_t60_and_close_once(self):
         now=datetime(2026,8,18,12,0,tzinfo=timezone.utc)
