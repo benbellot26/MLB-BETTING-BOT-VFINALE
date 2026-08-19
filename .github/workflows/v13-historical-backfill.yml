@@ -1,6 +1,11 @@
 name: V13 Historical Point-in-Time Backfill
 
 on:
+  # Run in the quiet gap between the overnight and evening production windows.
+  # This turns durable pregame source replays into current-generation FINAL
+  # transfer evidence before the daily historical-transfer validator runs.
+  schedule:
+    - cron: '20 7 * * *'
   workflow_dispatch:
 
 permissions:
@@ -27,7 +32,7 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Shared V13.10 critical preflight
+      - name: Shared V13.10+ critical preflight
         run: |
           python -m py_compile v11/*.py tests/*.py
           python -m v11.v13_preflight --verbose
@@ -43,7 +48,7 @@ jobs:
           echo "Downloaded $count source replays"
           test "$count" -gt 0
 
-      - name: Reconstruct V13 probabilities point-in-time
+      - name: Reconstruct current-generation V13 probabilities point-in-time
         run: |
           python -m v11.v13_historical_backfill --dir runtime/v13/replays \
             --output data/v13_historical_backfill.jsonl \
@@ -89,10 +94,10 @@ jobs:
           print('V13 baseline preflight OK:', canonical, 'rows /', options, 'settled baseline options / push-parity options=',checked)
           PY
 
-      - name: Rebuild current-generation FINAL run-mean candidate
+      - name: Rebuild 2021-2026 FINAL run-mean transfer candidate
         run: python -m v11.v13_run_mean_prior
 
-      - name: Rebuild current-generation FINAL distribution transfer
+      - name: Rebuild 2021-2026 FINAL score-distribution transfer
         run: python -m v11.v13_distribution_prior
 
       - name: Rebuild baseball calibration from native + exact replay evidence
@@ -104,12 +109,13 @@ jobs:
       - name: Build learned posterior shadow policy
         run: python -m v11.v13_posterior_policy
 
-      - name: Validate leakage boundary and historical transfer states
+      - name: Validate leakage boundary and strict historical transfer states
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
           from v11 import probability_contract_v13 as contract
+          from v11 import v13_distribution_prior, v13_run_mean_prior
 
           report=json.loads(Path('data/v13_historical_backfill_report.json').read_text())
           assert report['source_replays'] > 0, report
@@ -149,23 +155,32 @@ jobs:
                            and r.get('calibration_evidence_candidate')})
 
           prior=json.loads(Path('data/v13_run_mean_prior.json').read_text())
+          assert prior['schema'] == v13_run_mean_prior.SCHEMA, prior
           assert prior['model_generation'] == contract.MODEL_GENERATION_FINGERPRINT, prior
           assert int(prior.get('exact_final_games') or 0) <= final_games
-          assert (prior.get('safety') or {}).get('independent_pre_candidate_baseline_required') is True
+          assert set(prior.get('historical_seasons') or []) >= {2021,2022,2023,2024,2025,2026}, prior
           if prior.get('active'):
               assert prior.get('historical_candidate_active') is True, prior
-              assert int(prior.get('exact_final_games') or 0) >= int(prior.get('exact_transfer_required_games') or 20), prior
+              assert (prior.get('walk_forward') or {}).get('stable') is True, prior
+              assert int(prior.get('exact_final_games') or 0) >= max(v13_run_mean_prior.MIN_EXACT_FINAL, int(prior.get('exact_transfer_required_games') or 0)), prior
               assert prior.get('exact_transfer_status') == 'PASS_FINAL_ONLY', prior
+              assert (prior.get('exact_transfer_bootstrap') or {}).get('passes') is True, prior
+              assert (prior.get('safety') or {}).get('exact_transfer_games_excluded_from_historical_fit') is True, prior
 
           dist=json.loads(Path('data/v13_distribution_prior.json').read_text())
+          assert dist['schema'] == v13_distribution_prior.SCHEMA, dist
           assert dist['model_generation'] == contract.MODEL_GENERATION_FINGERPRINT, dist
           assert dist.get('historical_candidate_active') is True, dist
-          assert dist.get('independent_pre_candidate_baseline_required') is True, dist
+          assert (dist.get('walk_forward') or {}).get('stable') is True, dist
+          assert int((dist.get('walk_forward') or {}).get('folds_passed') or 0) == int((dist.get('walk_forward') or {}).get('folds_total') or 0), dist
+          assert set(dist.get('historical_seasons') or []) >= {2021,2022,2023,2024,2025,2026}, dist
           assert int(dist.get('exact_final_games') or 0) <= final_games
           if dist.get('active'):
-              assert int(dist.get('exact_final_games') or 0) >= int(dist.get('exact_transfer_required_games') or 20), dist
+              assert int(dist.get('exact_final_games') or 0) >= max(v13_distribution_prior.MIN_EXACT_FINAL, int(dist.get('exact_transfer_required_games') or 0)), dist
               assert dist.get('exact_transfer_status') == 'PASS_FINAL_ONLY', dist
               assert float((dist.get('current_generation_transfer') or {}).get('nll_gain') or 0) > 0, dist
+              assert (dist.get('exact_transfer_bootstrap') or {}).get('passes') is True, dist
+              assert (dist.get('safety') or {}).get('exact_transfer_games_excluded_from_historical_fit') is True, dist
 
           calibration=json.loads(Path('data/v13_baseball_calibration.json').read_text())
           assert calibration['model_generation'] == contract.MODEL_GENERATION_FINGERPRINT, calibration
@@ -216,7 +231,7 @@ jobs:
 
       - name: Persist backfill evidence and rebuilt predictive artifacts
         run: |
-          git config user.name 'MLB Betting Bot V13.10'
+          git config user.name 'MLB Betting Bot V13.10 Historical Transfer'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           git add -f data/v13_historical_backfill.jsonl data/v13_historical_backfill_report.json data/v13_run_mean_prior.json data/v13_distribution_prior.json data/v13_baseball_calibration.json data/v13_historical_validation.json data/v13_posterior_policy.json
           if ! git diff --cached --quiet; then
