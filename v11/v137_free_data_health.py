@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 OUT = Path("data/v137_free_data_health.json")
-SCHEMA = "v13-7-free-data-health-v1"
+SCHEMA = "v13-7-free-data-health-v2"
 
 
 def _load(path: str) -> dict[str, Any]:
@@ -22,6 +22,8 @@ def build() -> dict[str, Any]:
     statcast = _load("data/v137_statcast_priors_report.json")
     team = _load("data/v137_free_team_history_report.json")
     weather = _load("data/v137_weather_backfill_report.json")
+    park = _load("data/v137_park_factors_report.json")
+    mlb_state = _load("data/v137_mlb_state_report.json")
     alerts: list[str] = []
 
     if statcast:
@@ -52,20 +54,41 @@ def build() -> dict[str, Any]:
     else:
         alerts.append("weather_backfill_not_collected_yet")
 
+    if park:
+        if park.get("promotion_eligible"):
+            alerts.append("prior_park_factors_must_not_be_native")
+        if int(park.get("failed_requests") or 0):
+            alerts.append("park_factor_request_failures")
+    else:
+        alerts.append("prior_park_factors_not_collected_yet")
+
+    if mlb_state:
+        if not mlb_state.get("point_in_time") or not mlb_state.get("native_live"):
+            alerts.append("mlb_state_snapshot_not_native_pit")
+        if mlb_state.get("roster_failures"):
+            alerts.append("mlb_roster_snapshot_failures")
+        if mlb_state.get("transaction_error"):
+            alerts.append("mlb_transaction_snapshot_failure")
+    else:
+        alerts.append("mlb_native_state_not_collected_yet")
+
     return {
         "schema": SCHEMA,
         "providers": {
             "mlb": "MLB Stats API (free)",
             "statcast": "Baseball Savant / Statcast Search CSV (free)",
+            "park_factors": "Baseball Savant Statcast Park Factors (free)",
             "weather": "Open-Meteo Single Runs / ECMWF IFS (free)",
         },
         "paid_sources_required": False,
         "cohort_policy": {
             "historical_reconstructed": "research/challenger evidence only",
-            "native_live": "remains separate and is still required for production promotion gates",
+            "native_live": "authenticated live snapshots stay separate and may become eligible only through existing promotion gates",
         },
         "team_history": team,
         "statcast": statcast,
+        "park_factors": park,
+        "mlb_native_state": mlb_state,
         "weather": weather,
         "alerts": sorted(set(alerts)),
         "claim": "data-health artifact only; reconstructed free data cannot masquerade as native-live evidence",
