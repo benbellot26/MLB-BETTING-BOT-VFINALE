@@ -4,7 +4,8 @@ import math
 from typing import Any, Callable
 
 from . import config, core, data_quality, engine_v12 as base_engine, market, methodology_v123, pro_model
-from . import extra_innings_v13, v13_distribution_prior, v13_rich_run_shadow, v13_run_mean_runtime
+from . import extra_innings_v13, v13_distribution_prior, v13_park_runtime, v13_probability_surface
+from . import v13_rich_run_shadow, v13_run_mean_runtime
 from .pipeline_v13 import ProbabilityPipelineV13
 from .probability_contract_v13 import (
     MODEL_GENERATION_FINGERPRINT,
@@ -12,7 +13,7 @@ from .probability_contract_v13 import (
     assert_no_market_leakage,
 )
 
-VERSION = "13.9-explicit-engine-v1"
+VERSION = "13.10-deep-audit-hardening-v1"
 
 
 def _num(value: Any, default: float = 0.0) -> float:
@@ -38,10 +39,10 @@ def _option_key(option: dict[str, Any]) -> tuple[str, str, str]:
 class V13Engine:
     """Explicit V13 orchestration over the mature V12.3 baseball primitives.
 
-    V12.3 still supplies the structural projection, data collection, score-matrix
-    primitives and research shadows. V13 owns the current-generation run-prior,
-    distribution, extra-innings and probability-contract layers without
-    monkey-patching ``engine_v12`` globals.
+    V12.3 still supplies structural/data primitives and research shadows. V13
+    owns the current-generation prior, park, distribution, extra-innings,
+    calibration and probability-surface contracts without monkey-patching the
+    underlying engine globals.
     """
 
     version = VERSION
@@ -75,7 +76,8 @@ class V13Engine:
             dispersion=dispersion,
             env_sigma=env_sigma,
         )
-        return extra_innings_v13.home_win_probability(joint, extra_innings_home_prior=None)
+        prior, _meta = extra_innings_v13.validated_home_prior()
+        return extra_innings_v13.home_win_probability(joint, extra_innings_home_prior=prior)
 
     @staticmethod
     def _validated_historical_priors(
@@ -131,6 +133,13 @@ class V13Engine:
         if shmu is None or samu is None:
             raise ValueError("V13Engine requires structural_hmu/structural_amu from V12.3")
 
+        # Replace the legacy static park multiplier only when a leakage-safe
+        # prior-season venue factor exists. Missing/invalid priors retain the
+        # established static baseline exactly.
+        shmu, samu, park_meta = v13_park_runtime.apply(result, float(shmu), float(samu))
+        result["structural_hmu"] = shmu
+        result["structural_amu"] = samu
+
         champion = pro_model.load_model()
         values = self._validated_historical_priors(float(shmu), float(samu), champion, phase)
         prior_hmu, prior_amu = float(values[0]), float(values[1])
@@ -170,6 +179,7 @@ class V13Engine:
             previous_bootstrap["v13_run_mean_prior"] = bootstrap.get("v13_run_mean_prior")
         if bootstrap.get("v13_distribution_prior") is not None:
             previous_bootstrap["v13_distribution_prior"] = bootstrap.get("v13_distribution_prior")
+        extra_prior, extra_meta = extra_innings_v13.validated_home_prior()
         features.update(
             {
                 "historical_bootstrap": previous_bootstrap,
@@ -182,6 +192,10 @@ class V13Engine:
                 "run_environment_source": env_source,
                 "distribution": "correlated-negative-binomial-mixture",
                 "v13_engine_architecture": self.architecture,
+                "park_factor_runtime": park_meta,
+                "park_factor": park_meta.get("factor"),
+                "extra_innings_prior": extra_meta,
+                "extra_innings_home_probability": extra_prior,
             }
         )
 
@@ -217,42 +231,46 @@ class V13Engine:
     def _recompute_existing_baseball_options(self, result: dict[str, Any]) -> None:
         home = str((result.get("ctx") or {}).get("home") or "")
         hmu, amu = float(result["hmu"]), float(result["amu"])
+        shmu, samu = float(result["structural_hmu"]), float(result["structural_amu"])
         dispersion = _num((result.get("features") or {}).get("run_dispersion"), config.RUN_DISPERSION)
         env_sigma = _num((result.get("features") or {}).get("run_environment_sigma"), config.RUN_ENV_SIGMA)
         home_ml = self.prob_home_win(hmu, amu, dispersion, env_sigma)
+        structural_home_ml = self.prob_home_win(shmu, samu, config.RUN_DISPERSION, config.RUN_ENV_SIGMA)
 
         for option in result.get("options") or []:
             market_name = str(option.get("market") or "").upper()
             name = str(option.get("name") or "")
-            push = 0.0
-            probability = None
+            push = structural_push = 0.0
+            probability = structural_probability = None
             if market_name == "ML":
-                probability = home_ml if _norm(name) == _norm(home) else 1.0 - home_ml
+                is_home = _norm(name) == _norm(home)
+                probability = home_ml if is_home else 1.0 - home_ml
+                structural_probability = structural_home_ml if is_home else 1.0 - structural_home_ml
             elif market_name == "RUNLINE" and option.get("point") is not None:
                 side = "home" if _norm(name) == _norm(home) else "away"
-                win, push = base_engine.prob_cover_parts(
-                    hmu,
-                    amu,
-                    side,
-                    _num(option.get("point")),
-                    dispersion,
-                    env_sigma,
+                structural_win, structural_push = base_engine.prob_cover_parts(
+                    shmu, samu, side, _num(option.get("point")), config.RUN_DISPERSION, config.RUN_ENV_SIGMA
                 )
+                win, push = base_engine.prob_cover_parts(
+                    hmu, amu, side, _num(option.get("point")), dispersion, env_sigma
+                )
+                structural_probability = structural_win / max(1e-9, 1.0 - structural_push)
                 probability = win / max(1e-9, 1.0 - push)
             elif market_name == "TOTAL" and option.get("point") is not None:
                 side = str(name).lower()
                 if side in {"over", "under"}:
-                    win, push = base_engine.prob_total_parts(
-                        hmu,
-                        amu,
-                        side,
-                        _num(option.get("point")),
-                        dispersion,
-                        env_sigma,
+                    structural_win, structural_push = base_engine.prob_total_parts(
+                        shmu, samu, side, _num(option.get("point")), config.RUN_DISPERSION, config.RUN_ENV_SIGMA
                     )
+                    win, push = base_engine.prob_total_parts(
+                        hmu, amu, side, _num(option.get("point")), dispersion, env_sigma
+                    )
+                    structural_probability = structural_win / max(1e-9, 1.0 - structural_push)
                     probability = win / max(1e-9, 1.0 - push)
             if probability is None:
                 continue
+            if structural_probability is not None:
+                option["p_structural"] = round(core.clamp(structural_probability), 6)
             option["p_learned"] = round(core.clamp(probability), 6)
             option["p_push_model"] = round(max(0.0, min(1.0, push)), 6)
 
@@ -275,9 +293,6 @@ class V13Engine:
         canonical = (result.get("canonical_lines") or {}).get("RUNLINE")
         champion = pro_model.load_model()
 
-        # A home point creates its complementary away point. Iterating both
-        # standard home lines preserves the old V13 analysis surface:
-        # Home -1.5 / Away +1.5 AND Home +1.5 / Away -1.5.
         for home_point in (-1.5, 1.5):
             for name, side, point in (
                 (home, "home", home_point),
@@ -379,6 +394,15 @@ class V13Engine:
                 option["v13_probability_error"] = f"{type(exc).__name__}:{exc}"
                 option["v13_probability_eligible"] = False
 
+        surface = v13_probability_surface.reconcile(result)
+        result["probability_surface_valid"] = bool(surface.get("valid"))
+        result["probability_surface_display_complete"] = bool(surface.get("display_complete"))
+        if not surface.get("valid"):
+            error = "surface:" + ",".join(surface.get("errors") or [])
+            for option in result.get("options") or []:
+                option["v13_probability_error"] = option.get("v13_probability_error") or error
+                option["v13_probability_eligible"] = False
+
         hm = next(
             (
                 option
@@ -406,8 +430,9 @@ class V13Engine:
         result["market_blend_allowed_for_edge"] = False
         result["market_blend_allowed_for_forecast_only"] = True
         result["probability_pipeline"] = (
-            "PregameSnapshot->V12.3StructuralBase->V13RunStack->ScoreDistribution->"
-            "BaseballCalibration->ValidatedPosteriorShadow"
+            "PregameSnapshot->V12.3StructuralBase->PriorParkFactor->V13RunStack->"
+            "ScoreDistribution->ValidatedExtraInnings->BaseballCalibration->"
+            "ComplementReconciliation->ValidatedPosteriorShadow"
         )
         return result
 
