@@ -1,0 +1,116 @@
+name: V13 Historical Transfer Validation
+
+on:
+  pull_request:
+    paths:
+      - 'v11/v13_run_mean_prior.py'
+      - 'v11/v13_run_mean_runtime.py'
+      - 'v11/v13_preflight.py'
+      - 'tests/test_v1311_historical_transfer.py'
+      - '.github/workflows/v13-11-historical-transfer.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'v11/v13_run_mean_prior.py'
+      - 'v11/v13_run_mean_runtime.py'
+      - 'v11/v13_preflight.py'
+      - 'tests/test_v1311_historical_transfer.py'
+      - '.github/workflows/v13-11-historical-transfer.yml'
+  schedule:
+    - cron: '17 13 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mlb-betting-bot-state
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Compile transfer modules
+        run: python -m py_compile v11/v13_run_mean_prior.py v11/v13_run_mean_runtime.py tests/test_v1311_historical_transfer.py
+
+      - name: Behavioral transfer tests
+        run: python -m unittest -v tests.test_v1311_historical_transfer
+
+      - name: Shared critical preflight
+        run: python -m v11.v13_preflight
+
+      - name: Build 2021-2026 historical transfer candidate
+        run: |
+          python -m v11.v13_run_mean_prior | tee /tmp/v13_historical_transfer_summary.json
+
+      - name: Enforce historical transfer safety contract
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from v11.probability_contract_v13 import MODEL_GENERATION_FINGERPRINT
+          from v11.v13_run_mean_prior import SCHEMA, MIN_EXACT_FINAL, MAX_ADJ
+
+          path = Path('data/v13_run_mean_prior.json')
+          artifact = json.loads(path.read_text(encoding='utf-8'))
+          if artifact.get('schema') != SCHEMA:
+              raise SystemExit('historical transfer schema mismatch')
+          if artifact.get('model_generation') != MODEL_GENERATION_FINGERPRINT:
+              raise SystemExit('historical transfer model-generation mismatch')
+          seasons = set(artifact.get('historical_seasons') or [])
+          if not {2021, 2022, 2023, 2024, 2025, 2026}.issubset(seasons):
+              raise SystemExit(f'2021-2026 historical coverage incomplete: {sorted(seasons)}')
+          if int(artifact.get('historical_games') or 0) < 10000:
+              raise SystemExit('historical transfer unexpectedly lost the large reconstructed cohort')
+          safety = artifact.get('safety') or {}
+          if safety.get('market_probability_used') is not False or safety.get('historical_odds_used') is not False:
+              raise SystemExit('market data entered baseball historical transfer')
+          if safety.get('reconstructed_history_is_native_evidence') is not False:
+              raise SystemExit('reconstructed history masqueraded as native evidence')
+          if safety.get('exact_transfer_games_excluded_from_historical_fit') is not True:
+              raise SystemExit('exact V13 transfer games were not excluded from historical fitting')
+          if float(safety.get('runtime_adjustment_cap_runs') or 99) > MAX_ADJ + 1e-12:
+              raise SystemExit('historical transfer runtime cap expanded')
+          if artifact.get('active'):
+              if not artifact.get('historical_candidate_active'):
+                  raise SystemExit('active transfer lacks stable historical walk-forward')
+              if not (artifact.get('walk_forward') or {}).get('stable'):
+                  raise SystemExit('active transfer lacks stable nested walk-forward')
+              if int(artifact.get('exact_final_games') or 0) < MIN_EXACT_FINAL:
+                  raise SystemExit('active transfer bypassed exact FINAL minimum')
+              if artifact.get('exact_transfer_status') != 'PASS_FINAL_ONLY':
+                  raise SystemExit('active transfer lacks exact FINAL pass')
+              if (artifact.get('exact_transfer_bootstrap') or {}).get('passes') is not True:
+                  raise SystemExit('active transfer lacks exact bootstrap evidence')
+          print(json.dumps({
+              'historical_games': artifact.get('historical_games'),
+              'historical_seasons': artifact.get('historical_seasons'),
+              'walk_forward': artifact.get('walk_forward'),
+              'historical_candidate_active': artifact.get('historical_candidate_active'),
+              'exact_final_games': artifact.get('exact_final_games'),
+              'exact_transfer_status': artifact.get('exact_transfer_status'),
+              'active': artifact.get('active'),
+          }, indent=2, sort_keys=True))
+          PY
+
+      - name: Persist validated transfer artifact
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        run: |
+          git config user.name 'MLB Betting Bot V13 Historical Transfer'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add -f data/v13_run_mean_prior.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'data: refresh strict historical transfer evidence [skip ci]'
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
