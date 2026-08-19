@@ -30,7 +30,7 @@ def _feature_row(r: dict[str,Any]) -> dict[str,Any] | None:
         "game_pk":r.get("game_pk"),"game_date":r.get("game_date"),"as_of":r.get("analyzed_at") or r.get("as_of"),
         "phase":str(r.get("phase") or "EARLY").upper(),
         "model_generation":r.get("model_generation") or r.get("model_generation_fingerprint"),
-        "feature_contract":((r.get("predictive_contract") or {}).get("feature_contract_version")),
+        "feature_contract":((r.get("predictive_contract") or {}).get("feature_contract")),
         "point_in_time":True,"point_in_time_validation_reasons":reasons,
         "home":r.get("home") or ctx.get("home"),"away":r.get("away") or ctx.get("away"),
         "context":{
