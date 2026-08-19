@@ -17,6 +17,12 @@ def _dt(value: Any) -> datetime | None:
 
 
 def validate_pregame_row(row: dict[str, Any]) -> tuple[bool, list[str]]:
+    """Validate that every predictive input was genuinely available at ``as_of``.
+
+    The top-level ``point_in_time`` flag is deliberately *not* trusted as proof.
+    Eligibility is derived from timestamps and per-feature provenance.  This
+    prevents a stale/manual boolean from silently admitting post-game evidence.
+    """
     reasons: list[str] = []
     analyzed = _dt(row.get("analyzed_at") or row.get("as_of"))
     game_time = _dt(row.get("game_date") or ((row.get("game") or {}).get("gameDate")))
@@ -26,6 +32,8 @@ def validate_pregame_row(row: dict[str, Any]) -> tuple[bool, list[str]]:
         reasons.append("game_timestamp_missing")
     if analyzed is not None and game_time is not None and analyzed >= game_time:
         reasons.append("not_pregame")
+    if row.get("features_from_postgame") is True:
+        reasons.append("features_from_postgame")
 
     provenance = row.get("feature_provenance") or {}
     if not provenance:
@@ -36,6 +44,8 @@ def validate_pregame_row(row: dict[str, Any]) -> tuple[bool, list[str]]:
             if meta.get("point_in_time") is not True:
                 reasons.append(f"feature_not_point_in_time:{name}")
             observed = _dt(meta.get("observed_at") or meta.get("recorded_at"))
+            if observed is None:
+                reasons.append(f"feature_timestamp_missing:{name}")
             if analyzed is not None and observed is not None and observed > analyzed:
                 reasons.append(f"feature_observed_after_as_of:{name}")
             if meta.get("postgame_identity") is True:
@@ -68,13 +78,23 @@ def provenance_entry(
 
 
 def mark_live_snapshot(result: dict[str, Any], as_of: str) -> dict[str, Any]:
-    """Attach conservative provenance to a live/replay result.
+    """Attach conservative provenance and materialise the PIT validation result.
 
-    HTTP replayed/current pregame payloads are accepted as snapshots. Historical
-    reconstructed season aggregates must be marked separately by the reconstructor.
+    HTTP replay/current pregame payloads are accepted as immutable snapshots.
+    Historical reconstructions must provide their own provenance instead of
+    inheriting this marker.
     """
     p = result.setdefault("feature_provenance", {})
     for name in ("team_stats", "starter_stats", "bullpen", "weather", "lineup"):
         p.setdefault(name, provenance_entry("recorded-live-source", as_of=as_of, snapshot=True))
     result["as_of"] = as_of
+    result.setdefault("analyzed_at", as_of)
+    result["features_from_postgame"] = False
+    valid, reasons = validate_pregame_row(result)
+    result["point_in_time"] = bool(valid)
+    result["point_in_time_validation"] = {
+        "valid": bool(valid),
+        "reasons": reasons,
+        "source": "feature-provenance-validator-v2",
+    }
     return result
