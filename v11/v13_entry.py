@@ -90,10 +90,8 @@ runner.send_persisted = _send_persisted_v135
 
 
 def _summary_v13(report):
-    if int(report.get("ledger_settled_this_run") or 0) <= 0: return True
-    fin = report.get("finance") or {}
-    return core.send_embed("📊 BILAN V13", [("Ledger confirmé",
-        f"{fin.get('wins',0)}V-{fin.get('losses',0)}D-{fin.get('pushes',0)}P • P/L **{core.num(fin.get('profit_units')):+.2f}u** • ROI **{core.pct(fin.get('roi'))}**")], 5763719)
+    """Per-game analytics mode deliberately emits no separate portfolio/result card."""
+    return True
 
 
 def self_test_v13():
