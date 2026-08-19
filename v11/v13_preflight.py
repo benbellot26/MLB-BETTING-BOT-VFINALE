@@ -13,6 +13,7 @@ CRITICAL_TEST_MODULES = (
     "tests.test_v13_posterior_policy",
     "tests.test_v13_research_gate",
     "tests.test_v13_analytics_only",
+    "tests.test_v13_discord_visual",
     "tests.test_v135_professional_audit",
     "tests.test_v1351_audit_fixes",
     "tests.test_v1352_final_hardening",
@@ -28,6 +29,7 @@ CRITICAL_TEST_MODULES = (
     "tests.test_v139_provider_hardening",
     "tests.test_v139_explicit_engine",
     "tests.test_v139_engineering_closure",
+    "tests.test_v1310_deep_audit_hardening",
 )
 
 
