@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import os
+
 from . import core
 from . import discord_v123 as base
+from . import v13_discord_delivery as delivery
 
 VERSION_LABEL = "V13.6 EVIDENCE ANALYTICS"
 base.VERSION_LABEL = VERSION_LABEL
@@ -77,6 +80,11 @@ def _starter_status(name):
 
 
 def send_game(result, portfolio):
+    gid=result.get("game_pk")
+    force=str(os.getenv("V13_FORCE_DISCORD_RESEND","0")).lower() in {"1","true","yes"}
+    if not force and delivery.sent(gid):
+        core.logging.info("Discord V13 déjà livré gamePk=%s; doublon inter-run supprimé",gid)
+        return True
     ctx = result["ctx"]
     groups = {"ML": [], "RUNLINE": [], "TOTAL": []}
     for r in result.get("options") or []:
@@ -109,7 +117,10 @@ def send_game(result, portfolio):
         ("⚾ Run Line", "\n\n".join(_line(x) for x in groups["RUNLINE"][:6]) or "—"),
         ("📊 Totals", "\n\n".join(_line(x) for x in groups["TOTAL"][:6]) or "—"),
     ]
-    return core.send_embed(f"⚾ MLB {VERSION_LABEL} • {ctx['away']} @ {ctx['home']}", fields, 5763719)
+    ok=core.send_embed(f"⚾ MLB {VERSION_LABEL} • {ctx['away']} @ {ctx['home']}", fields, 5763719)
+    if ok:
+        delivery.mark_sent(gid,phase=result.get("phase"),model_generation=result.get("model_generation"))
+    return ok
 
 
 def send_top(results):
@@ -122,9 +133,13 @@ def send_plan(chosen, combo, portfolio, pool):
     return True
 
 
+def send_health(health):
+    """Per-game analytics mode keeps Discord to one message per game."""
+    return True
+
+
 base._line = _line
 base._label = _label
 base._price_text = _price_text
 
-send_health = base.send_health
 send_research_monitor = base.send_research_monitor
