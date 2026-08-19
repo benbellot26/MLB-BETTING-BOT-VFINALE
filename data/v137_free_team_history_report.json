@@ -1,39 +1,24 @@
 {
   "cohort": "HISTORICAL_RECONSTRUCTED_FREE",
   "end": "2026-08-18",
-  "feature_rows": 14043,
+  "feature_rows": 1895,
   "files": [
-    "data/v137/team_features_2021.jsonl.gz",
-    "data/v137/team_labels_2021.jsonl.gz",
-    "data/v137/team_features_2022.jsonl.gz",
-    "data/v137/team_labels_2022.jsonl.gz",
-    "data/v137/team_features_2023.jsonl.gz",
-    "data/v137/team_labels_2023.jsonl.gz",
-    "data/v137/team_features_2024.jsonl.gz",
-    "data/v137/team_labels_2024.jsonl.gz",
-    "data/v137/team_features_2025.jsonl.gz",
-    "data/v137/team_labels_2025.jsonl.gz",
     "data/v137/team_features_2026.jsonl.gz",
     "data/v137/team_labels_2026.jsonl.gz"
   ],
-  "label_rows": 14043,
+  "label_rows": 1895,
   "leakage_policy": "target labels separate; target and same-day scores never enter target feature row; park factors end before target season",
   "native_live": false,
-  "park_prior_coverage": 0.0,
-  "park_prior_rows": 0,
+  "park_prior_coverage": 0.9313984168865436,
+  "park_prior_rows": 1765,
   "promotion_eligible": false,
   "schema": "v13-7-free-team-history-report-v2",
   "seasons": [
-    2021,
-    2022,
-    2023,
-    2024,
-    2025,
     2026
   ],
   "skipped": {
-    "missing_score_or_team": 7
+    "missing_score_or_team": 5
   },
-  "start": "2021-03-01",
-  "unique_games": 14043
+  "start": "2026-03-01",
+  "unique_games": 1895
 }

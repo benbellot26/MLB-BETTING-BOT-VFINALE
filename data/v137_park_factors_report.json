@@ -1,42 +1,81 @@
 {
+  "empty_parse_count": 0,
+  "empty_parses": [],
   "end_season": 2026,
   "failed_requests": 0,
   "failures": [],
-  "promotion_eligible": false,
-  "requests_expected": 18,
-  "schema": "v13-7-prior-park-factors-report-v1",
-  "season_count": 6,
-  "start_season": 2021,
-  "venue_counts": {
+  "fallback_policy": "Savant first; prior completed-season MLB venue run environment if client-rendered Savant payload is unavailable",
+  "fallback_requests": 0,
+  "parse_modes": {
     "2021": {
-      "ALL": 0,
-      "L": 0,
-      "R": 0
+      "ALL": "embedded_json",
+      "L": "embedded_json",
+      "R": "embedded_json"
     },
     "2022": {
-      "ALL": 0,
-      "L": 0,
-      "R": 0
+      "ALL": "embedded_json",
+      "L": "embedded_json",
+      "R": "embedded_json"
     },
     "2023": {
-      "ALL": 0,
-      "L": 0,
-      "R": 0
+      "ALL": "embedded_json",
+      "L": "embedded_json",
+      "R": "embedded_json"
     },
     "2024": {
-      "ALL": 0,
-      "L": 0,
-      "R": 0
+      "ALL": "embedded_json",
+      "L": "embedded_json",
+      "R": "embedded_json"
     },
     "2025": {
-      "ALL": 0,
-      "L": 0,
-      "R": 0
+      "ALL": "embedded_json",
+      "L": "embedded_json",
+      "R": "embedded_json"
     },
     "2026": {
-      "ALL": 0,
-      "L": 0,
-      "R": 0
+      "ALL": "embedded_json",
+      "L": "embedded_json",
+      "R": "embedded_json"
+    }
+  },
+  "promotion_eligible": false,
+  "requests_expected": 18,
+  "rolling_contract": "Baseball Savant 3-year rolling window",
+  "rolling_parameter": 3,
+  "schema": "v13-7-prior-park-factors-report-v5",
+  "season_count": 6,
+  "start_season": 2021,
+  "total_venue_rows": 525,
+  "venue_counts": {
+    "2021": {
+      "ALL": 28,
+      "L": 28,
+      "R": 28
+    },
+    "2022": {
+      "ALL": 29,
+      "L": 29,
+      "R": 29
+    },
+    "2023": {
+      "ALL": 30,
+      "L": 30,
+      "R": 30
+    },
+    "2024": {
+      "ALL": 30,
+      "L": 30,
+      "R": 30
+    },
+    "2025": {
+      "ALL": 30,
+      "L": 30,
+      "R": 30
+    },
+    "2026": {
+      "ALL": 28,
+      "L": 28,
+      "R": 28
     }
   }
 }

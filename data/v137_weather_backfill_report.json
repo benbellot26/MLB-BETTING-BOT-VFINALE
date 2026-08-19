@@ -1,19 +1,23 @@
 {
   "archive_available_from": "2024-03-14",
-  "available_rows": 0,
+  "available_rows": 70,
   "cohort": "HISTORICAL_RECONSTRUCTED_FREE",
   "end": "2026-08-18",
+  "fallback_policy": "Single Runs first; documented Previous Runs fixed lead selected conservatively when exact run is unavailable",
   "files": [
     "data/v137/weather_2026-08.jsonl.gz"
   ],
-  "generated_at": "2026-08-19T12:29:20.580912+00:00",
+  "generated_at": "2026-08-19T18:24:05.526704+00:00",
   "lead_hours": 2,
   "point_in_time_rows": 70,
   "promotion_eligible": false,
+  "provider_counts": {
+    "Open-Meteo Previous Runs / Best Match": 70
+  },
   "rows": 70,
-  "schema": "v13-7-free-weather-backfill-report-v1",
+  "schema": "v13-7-free-weather-backfill-report-v2",
   "start": "2026-08-14",
   "status_counts": {
-    "single_run_error:HTTPError": 70
+    "available": 70
   }
 }

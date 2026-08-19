@@ -1,11 +1,10 @@
 {
   "alerts": [
-    "free_data:park_factor_zero_venue_rows",
-    "free_data:weather_zero_available_rows",
     "ml_brier_worse_than_market",
     "ml_model_market_gap_not_informative",
     "v138:weather_zero_coverage"
   ],
+  "any_market_edge_claim_allowed": false,
   "calibration": {
     "GLOBAL": {
       "active": false,
@@ -57,7 +56,7 @@
       "strict_required_n": 300
     }
   },
-  "claim": "monitoring artifact only; alerts indicate evidence to investigate, not automatic model retuning",
+  "claim": "monitoring artifact only; market-edge claims are blocked until each market independently clears proper-score and sample-size evidence",
   "daily_coverage": {
     "complete_future_coverage": true,
     "future_coverage_rate": 1.0,
@@ -66,11 +65,37 @@
       "SKIPPED_ALREADY_STARTED": 3
     }
   },
+  "edge_evidence": {
+    "ML": {
+      "brier_gain_vs_market": -0.006080881075637651,
+      "claim_allowed": false,
+      "gap_residual_slope": -1.440409125953063,
+      "logloss_gain_vs_market": -0.01247700924349612,
+      "minimum_n": 300,
+      "n": 69,
+      "reason": "INSUFFICIENT_INDEPENDENT_MARKET_TARGETS"
+    },
+    "RUNLINE": {
+      "brier_gain_vs_market": null,
+      "claim_allowed": false,
+      "gap_residual_slope": null,
+      "logloss_gain_vs_market": null,
+      "minimum_n": 300,
+      "n": 0,
+      "reason": "INSUFFICIENT_INDEPENDENT_MARKET_TARGETS"
+    },
+    "TOTAL": {
+      "brier_gain_vs_market": null,
+      "claim_allowed": false,
+      "gap_residual_slope": null,
+      "logloss_gain_vs_market": null,
+      "minimum_n": 300,
+      "n": 0,
+      "reason": "INSUFFICIENT_INDEPENDENT_MARKET_TARGETS"
+    }
+  },
   "free_data_foundation": {
-    "alerts": [
-      "park_factor_zero_venue_rows",
-      "weather_zero_available_rows"
-    ],
+    "alerts": [],
     "claim": "data-health artifact only; reconstructed free data cannot masquerade as native-live evidence",
     "cohort_policy": {
       "historical_reconstructed": "research/challenger evidence only",
@@ -78,9 +103,9 @@
     },
     "mlb_native_state": {
       "archive": "data/v137/mlb_state/mlb_state_2026-08-19.json.gz",
-      "injured_list_transaction_signals": 85,
+      "injured_list_transaction_signals": 86,
       "native_live": true,
-      "observed_at": "2026-08-19T12:26:50.407056+00:00",
+      "observed_at": "2026-08-19T18:17:42.857477+00:00",
       "point_in_time": true,
       "promotion_eligible": false,
       "roster_failures": [],
@@ -89,48 +114,87 @@
       "snapshot_day": "2026-08-19",
       "teams": 30,
       "transaction_error": null,
-      "transactions": 579
+      "transactions": 585
     },
     "paid_sources_required": false,
     "park_factors": {
+      "empty_parse_count": 0,
+      "empty_parses": [],
       "end_season": 2026,
       "failed_requests": 0,
       "failures": [],
-      "promotion_eligible": false,
-      "requests_expected": 18,
-      "schema": "v13-7-prior-park-factors-report-v1",
-      "season_count": 6,
-      "start_season": 2021,
-      "venue_counts": {
+      "fallback_policy": "Savant first; prior completed-season MLB venue run environment if client-rendered Savant payload is unavailable",
+      "fallback_requests": 0,
+      "parse_modes": {
         "2021": {
-          "ALL": 0,
-          "L": 0,
-          "R": 0
+          "ALL": "embedded_json",
+          "L": "embedded_json",
+          "R": "embedded_json"
         },
         "2022": {
-          "ALL": 0,
-          "L": 0,
-          "R": 0
+          "ALL": "embedded_json",
+          "L": "embedded_json",
+          "R": "embedded_json"
         },
         "2023": {
-          "ALL": 0,
-          "L": 0,
-          "R": 0
+          "ALL": "embedded_json",
+          "L": "embedded_json",
+          "R": "embedded_json"
         },
         "2024": {
-          "ALL": 0,
-          "L": 0,
-          "R": 0
+          "ALL": "embedded_json",
+          "L": "embedded_json",
+          "R": "embedded_json"
         },
         "2025": {
-          "ALL": 0,
-          "L": 0,
-          "R": 0
+          "ALL": "embedded_json",
+          "L": "embedded_json",
+          "R": "embedded_json"
         },
         "2026": {
-          "ALL": 0,
-          "L": 0,
-          "R": 0
+          "ALL": "embedded_json",
+          "L": "embedded_json",
+          "R": "embedded_json"
+        }
+      },
+      "promotion_eligible": false,
+      "requests_expected": 18,
+      "rolling_contract": "Baseball Savant 3-year rolling window",
+      "rolling_parameter": 3,
+      "schema": "v13-7-prior-park-factors-report-v5",
+      "season_count": 6,
+      "start_season": 2021,
+      "total_venue_rows": 525,
+      "venue_counts": {
+        "2021": {
+          "ALL": 28,
+          "L": 28,
+          "R": 28
+        },
+        "2022": {
+          "ALL": 29,
+          "L": 29,
+          "R": 29
+        },
+        "2023": {
+          "ALL": 30,
+          "L": 30,
+          "R": 30
+        },
+        "2024": {
+          "ALL": 30,
+          "L": 30,
+          "R": 30
+        },
+        "2025": {
+          "ALL": 30,
+          "L": 30,
+          "R": 30
+        },
+        "2026": {
+          "ALL": 28,
+          "L": 28,
+          "R": 28
         }
       }
     },
@@ -142,126 +206,320 @@
     },
     "schema": "v13-7-free-data-health-v4",
     "statcast": {
+      "adaptive_splits": 0,
+      "cap_hits": 0,
+      "chunk_days": 3,
       "chunks": [
         {
-          "end": "2026-07-11",
-          "rows": 25000,
+          "cap_hits": 0,
+          "end": "2026-07-07",
+          "requests": [
+            {
+              "cap_hit": false,
+              "end": "2026-07-07",
+              "rows": 11828,
+              "start": "2026-07-05"
+            }
+          ],
+          "rows": 11828,
+          "splits": 0,
           "start": "2026-07-05",
           "status": "OK"
         },
         {
-          "end": "2026-07-18",
-          "rows": 13290,
-          "start": "2026-07-12",
+          "cap_hits": 0,
+          "end": "2026-07-10",
+          "requests": [
+            {
+              "cap_hit": false,
+              "end": "2026-07-10",
+              "rows": 12155,
+              "start": "2026-07-08"
+            }
+          ],
+          "rows": 12155,
+          "splits": 0,
+          "start": "2026-07-08",
           "status": "OK"
         },
         {
+          "cap_hits": 0,
+          "end": "2026-07-13",
+          "requests": [
+            {
+              "cap_hit": false,
+              "end": "2026-07-13",
+              "rows": 8996,
+              "start": "2026-07-11"
+            }
+          ],
+          "rows": 8996,
+          "splits": 0,
+          "start": "2026-07-11",
+          "status": "OK"
+        },
+        {
+          "cap_hits": 0,
+          "end": "2026-07-16",
+          "requests": [
+            {
+              "cap_hit": false,
+              "end": "2026-07-16",
+              "rows": 262,
+              "start": "2026-07-14"
+            }
+          ],
+          "rows": 262,
+          "splits": 0,
+          "start": "2026-07-14",
+          "status": "OK"
+        },
+        {
+          "cap_hits": 0,
+          "end": "2026-07-19",
+          "requests": [
+            {
+              "cap_hit": false,
+              "end": "2026-07-19",
+              "rows": 13375,
+              "start": "2026-07-17"
+            }
+          ],
+          "rows": 13375,
+          "splits": 0,
+          "start": "2026-07-17",
+          "status": "OK"
+        },
+        {
+          "cap_hits": 0,
+          "end": "2026-07-22",
+          "requests": [
+            {
+              "cap_hit": false,
+              "end": "2026-07-22",
+              "rows": 13178,
+              "start": "2026-07-20"
+            }
+          ],
+          "rows": 13178,
+          "splits": 0,
+          "start": "2026-07-20",
+          "status": "OK"
+        },
+        {
+          "cap_hits": 0,
           "end": "2026-07-25",
-          "rows": 25000,
-          "start": "2026-07-19",
+          "requests": [
+            {
+              "cap_hit": false,
+              "end": "2026-07-25",
+              "rows": 10050,
+              "start": "2026-07-23"
+            }
+          ],
+          "rows": 10050,
+          "splits": 0,
+          "start": "2026-07-23",
           "status": "OK"
         },
         {
-          "end": "2026-08-01",
-          "rows": 25000,
+          "cap_hits": 0,
+          "end": "2026-07-28",
+          "requests": [
+            {
+              "cap_hit": false,
+              "end": "2026-07-28",
+              "rows": 12425,
+              "start": "2026-07-26"
+            }
+          ],
+          "rows": 12425,
+          "splits": 0,
           "start": "2026-07-26",
           "status": "OK"
         },
         {
-          "end": "2026-08-08",
-          "rows": 25000,
-          "start": "2026-08-02",
+          "cap_hits": 0,
+          "end": "2026-07-31",
+          "requests": [
+            {
+              "cap_hit": false,
+              "end": "2026-07-31",
+              "rows": 11985,
+              "start": "2026-07-29"
+            }
+          ],
+          "rows": 11985,
+          "splits": 0,
+          "start": "2026-07-29",
           "status": "OK"
         },
         {
+          "cap_hits": 0,
+          "end": "2026-08-03",
+          "requests": [
+            {
+              "cap_hit": false,
+              "end": "2026-08-03",
+              "rows": 11115,
+              "start": "2026-08-01"
+            }
+          ],
+          "rows": 11115,
+          "splits": 0,
+          "start": "2026-08-01",
+          "status": "OK"
+        },
+        {
+          "cap_hits": 0,
+          "end": "2026-08-06",
+          "requests": [
+            {
+              "cap_hit": false,
+              "end": "2026-08-06",
+              "rows": 12073,
+              "start": "2026-08-04"
+            }
+          ],
+          "rows": 12073,
+          "splits": 0,
+          "start": "2026-08-04",
+          "status": "OK"
+        },
+        {
+          "cap_hits": 0,
+          "end": "2026-08-09",
+          "requests": [
+            {
+              "cap_hit": false,
+              "end": "2026-08-09",
+              "rows": 13433,
+              "start": "2026-08-07"
+            }
+          ],
+          "rows": 13433,
+          "splits": 0,
+          "start": "2026-08-07",
+          "status": "OK"
+        },
+        {
+          "cap_hits": 0,
+          "end": "2026-08-12",
+          "requests": [
+            {
+              "cap_hit": false,
+              "end": "2026-08-12",
+              "rows": 11724,
+              "start": "2026-08-10"
+            }
+          ],
+          "rows": 11724,
+          "splits": 0,
+          "start": "2026-08-10",
+          "status": "OK"
+        },
+        {
+          "cap_hits": 0,
           "end": "2026-08-15",
-          "rows": 25000,
-          "start": "2026-08-09",
+          "requests": [
+            {
+              "cap_hit": false,
+              "end": "2026-08-15",
+              "rows": 10965,
+              "start": "2026-08-13"
+            }
+          ],
+          "rows": 10965,
+          "splits": 0,
+          "start": "2026-08-13",
           "status": "OK"
         },
         {
+          "cap_hits": 0,
           "end": "2026-08-18",
+          "requests": [
+            {
+              "cap_hit": false,
+              "end": "2026-08-18",
+              "rows": 12116,
+              "start": "2026-08-16"
+            }
+          ],
           "rows": 12116,
+          "splits": 0,
           "start": "2026-08-16",
           "status": "OK"
         }
       ],
       "chunks_failed": 0,
-      "chunks_ok": 7,
-      "claim": "free ID-first Statcast priors for research/challenger development; no automatic production promotion",
+      "chunks_ok": 15,
+      "claim": "free ID-first Statcast priors; any observed server row-cap is split and unresolved truncation fails closed",
       "cohort": "HISTORICAL_RECONSTRUCTED_FREE",
       "cutoff_day": "2026-08-19",
-      "hitter_ids": 519,
+      "hitter_ids": 521,
       "lookback_days": 45,
-      "pitcher_ids": 602,
+      "pitcher_ids": 611,
       "point_in_time": true,
       "promotion_eligible": false,
-      "raw_rows": 150406,
-      "schema": "v13-7-statcast-priors-report-v1",
-      "stable_id_only": true
+      "raw_rows": 165680,
+      "requests_made": 15,
+      "schema": "v13-7-statcast-priors-report-v2",
+      "stable_id_only": true,
+      "unresolved_truncation": false
     },
-    "status": "FAIL",
+    "status": "DEGRADED",
     "team_history": {
       "cohort": "HISTORICAL_RECONSTRUCTED_FREE",
       "end": "2026-08-18",
-      "feature_rows": 14043,
+      "feature_rows": 1895,
       "files": [
-        "data/v137/team_features_2021.jsonl.gz",
-        "data/v137/team_labels_2021.jsonl.gz",
-        "data/v137/team_features_2022.jsonl.gz",
-        "data/v137/team_labels_2022.jsonl.gz",
-        "data/v137/team_features_2023.jsonl.gz",
-        "data/v137/team_labels_2023.jsonl.gz",
-        "data/v137/team_features_2024.jsonl.gz",
-        "data/v137/team_labels_2024.jsonl.gz",
-        "data/v137/team_features_2025.jsonl.gz",
-        "data/v137/team_labels_2025.jsonl.gz",
         "data/v137/team_features_2026.jsonl.gz",
         "data/v137/team_labels_2026.jsonl.gz"
       ],
-      "label_rows": 14043,
+      "label_rows": 1895,
       "leakage_policy": "target labels separate; target and same-day scores never enter target feature row; park factors end before target season",
       "native_live": false,
-      "park_prior_coverage": 0.0,
-      "park_prior_rows": 0,
+      "park_prior_coverage": 0.9313984168865436,
+      "park_prior_rows": 1765,
       "promotion_eligible": false,
       "schema": "v13-7-free-team-history-report-v2",
       "seasons": [
-        2021,
-        2022,
-        2023,
-        2024,
-        2025,
         2026
       ],
       "skipped": {
-        "missing_score_or_team": 7
+        "missing_score_or_team": 5
       },
-      "start": "2021-03-01",
-      "unique_games": 14043
+      "start": "2026-03-01",
+      "unique_games": 1895
     },
-    "warnings": [],
+    "warnings": [
+      "weather_previous_runs_fallback_used"
+    ],
     "weather": {
       "archive_available_from": "2024-03-14",
-      "available_rows": 0,
+      "available_rows": 70,
       "cohort": "HISTORICAL_RECONSTRUCTED_FREE",
       "end": "2026-08-18",
+      "fallback_policy": "Single Runs first; documented Previous Runs fixed lead selected conservatively when exact run is unavailable",
       "files": [
         "data/v137/weather_2026-08.jsonl.gz"
       ],
-      "generated_at": "2026-08-19T12:29:20.580912+00:00",
+      "generated_at": "2026-08-19T18:24:05.526704+00:00",
       "lead_hours": 2,
       "point_in_time_rows": 70,
       "promotion_eligible": false,
+      "provider_counts": {
+        "Open-Meteo Previous Runs / Best Match": 70
+      },
       "rows": 70,
-      "schema": "v13-7-free-weather-backfill-report-v1",
+      "schema": "v13-7-free-weather-backfill-report-v2",
       "start": "2026-08-14",
       "status_counts": {
-        "single_run_error:HTTPError": 70
+        "available": 70
       }
     }
   },
-  "model_generation": "v13.5.2-gen-structural-nb-independent-transfer-v2",
+  "model_generation": "v13.10-gen-structural-nb-independent-transfer-park-extra-surface-v3",
   "posterior": {
     "historical_observations": 255,
     "live_observations": 90,
@@ -269,28 +527,40 @@
   },
   "probability_drift": {
     "ML": {
-      "mean_probability_shift": 0.0,
-      "observations": 448,
-      "prior_mean_probability": 0.5,
+      "confidence_shift": 0.03367018,
+      "mean_probability_shift": 0.0010681799999999742,
+      "observations": 224,
+      "prior_mean_abs_edge_from_50": 0.037012960000000004,
+      "prior_mean_probability": 0.5155734000000001,
       "prior_n": 50,
-      "recent_mean_probability": 0.5,
-      "recent_n": 50
+      "recent_mean_abs_edge_from_50": 0.07068314,
+      "recent_mean_probability": 0.51664158,
+      "recent_n": 50,
+      "sample_policy": "one canonical settled side per game/market"
     },
     "RUNLINE": {
-      "mean_probability_shift": 0.0,
-      "observations": 724,
-      "prior_mean_probability": 0.5,
-      "prior_n": 50,
-      "recent_mean_probability": 0.5,
-      "recent_n": 50
+      "confidence_shift": null,
+      "mean_probability_shift": null,
+      "observations": 0,
+      "prior_mean_abs_edge_from_50": null,
+      "prior_mean_probability": null,
+      "prior_n": 0,
+      "recent_mean_abs_edge_from_50": null,
+      "recent_mean_probability": null,
+      "recent_n": 0,
+      "sample_policy": "one canonical settled side per game/market"
     },
     "TOTAL": {
-      "mean_probability_shift": 0.0,
-      "observations": 448,
-      "prior_mean_probability": 0.5,
-      "prior_n": 50,
-      "recent_mean_probability": 0.5,
-      "recent_n": 50
+      "confidence_shift": null,
+      "mean_probability_shift": null,
+      "observations": 0,
+      "prior_mean_abs_edge_from_50": null,
+      "prior_mean_probability": null,
+      "prior_n": 0,
+      "recent_mean_abs_edge_from_50": null,
+      "recent_mean_probability": null,
+      "recent_n": 0,
+      "sample_policy": "one canonical settled side per game/market"
     }
   },
   "proper_scoring_vs_market": {
@@ -332,7 +602,7 @@
     },
     "status": "COLLECTING"
   },
-  "schema": "v13-model-health-v3",
+  "schema": "v13-model-health-v4",
   "v138_audit_research": {
     "alerts": [
       "weather_zero_coverage"
