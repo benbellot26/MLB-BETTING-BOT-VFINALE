@@ -9,10 +9,11 @@ from . import calibration_baseball_v13 as calibration
 from . import v13_daily_tracking as tracking
 from . import v13_rich_native_train as rich_native
 from . import v137_free_data_health as free_data_health
+from . import v138_model_health_bridge as v138_health
 from .probability_contract_v13 import MODEL_GENERATION_FINGERPRINT
 
 OUT=Path("data/v13_model_health.json")
-SCHEMA="v13-model-health-v2"
+SCHEMA="v13-model-health-v3"
 
 
 def _load(path: str):
@@ -46,7 +47,7 @@ def build() -> dict[str,Any]:
     cal=calibration.load_model();rich=_load("data/v13_rich_native_candidate.json") or rich_native.build()
     diag=_load("data/v13_probability_diagnostics.json");coverage=_load("data/v13_coverage_report.json")
     posterior=_load("data/v13_posterior_policy.json")
-    free_data=free_data_health.build()
+    free_data=free_data_health.build();closure_health=v138_health.build()
     states=list(tracking.fold().values())
     calibrators=cal.get("calibrators") or {}
     calibration_status={key:{"active":bool(v.get("active")),"method":v.get("method"),"n":int(v.get("n") or 0),
@@ -58,8 +59,8 @@ def build() -> dict[str,Any]:
     for market,m in (diag.get("by_market") or {}).items():
         if int(m.get("n") or 0)>=30 and _num(m.get("brier_gain_vs_market"),0)<0:alerts.append(f"{market.lower()}_brier_worse_than_market")
         if int(m.get("n") or 0)>=30 and m.get("gap_residual_slope") is not None and _num(m.get("gap_residual_slope"))<=0:alerts.append(f"{market.lower()}_model_market_gap_not_informative")
-    for alert in free_data.get("alerts") or []:
-        alerts.append(f"free_data:{alert}")
+    for alert in free_data.get("alerts") or []:alerts.append(f"free_data:{alert}")
+    for alert in closure_health.get("alerts") or []:alerts.append(f"v138:{alert}")
     return {"schema":SCHEMA,"model_generation":MODEL_GENERATION_FINGERPRINT,
             "calibration":calibration_status,
             "rich_native":{"status":rich.get("status"),"native_games":rich.get("native_games"),"minimum_games":rich.get("minimum_games"),
@@ -70,8 +71,7 @@ def build() -> dict[str,Any]:
             "proper_scoring_vs_market":diag.get("by_market") or {},
             "daily_coverage":{"complete_future_coverage":coverage.get("complete_future_coverage"),"status_counts":coverage.get("status_counts"),
                               "future_coverage_rate":coverage.get("future_coverage_rate")},
-            "probability_drift":_probability_drift(states),
-            "free_data_foundation":free_data,
+            "probability_drift":_probability_drift(states),"free_data_foundation":free_data,"v138_audit_research":closure_health,
             "alerts":sorted(set(alerts)),
             "claim":"monitoring artifact only; alerts indicate evidence to investigate, not automatic model retuning"}
 
