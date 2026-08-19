@@ -24,6 +24,16 @@ def _probable_id(game: dict[str,Any],side: str) -> str:
     return str(p.get("id") or p.get("fullName") or "")
 
 
+def _starter_changed(old: Any,new: Any) -> bool:
+    """Compare only compatible identities; ID-vs-name is treated as unknown."""
+    a=str(old or "").strip();b=str(new or "").strip()
+    if not a or not b:return False
+    a_id=a.isdigit();b_id=b.isdigit()
+    if a_id != b_id:return False
+    if a_id:return a!=b
+    return core.norm_name(a)!=core.norm_name(b)
+
+
 def _feed_lineups(game_pk: Any) -> dict[str,list[str]]:
     """Read official batting order from the free MLB live feed when published."""
     try:
@@ -44,8 +54,8 @@ def _critical_change(game: dict[str,Any],previous: dict[str,Any]) -> dict[str,An
         return {"critical":False,"reason":"NO_PREVIOUS_PERSONNEL_STATE"}
     reasons=[]
     for side in ("home","away"):
-        old=str(state.get(f"{side}_starter") or "");new=_probable_id(game,side)
-        if old and new and old!=new:reasons.append(f"{side.upper()}_STARTER_CHANGED")
+        old=state.get(f"{side}_starter");new=_probable_id(game,side)
+        if _starter_changed(old,new):reasons.append(f"{side.upper()}_STARTER_CHANGED")
     # Only spend the extra free MLB feed call if a prior confirmed/partial lineup
     # was persisted. Empty pregame lineups cannot create a false change.
     has_old_lineup=any(state.get(f"{side}_lineup") for side in ("home","away"))
