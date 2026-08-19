@@ -6,6 +6,7 @@ from .v13_runtime import install
 install()
 
 from . import config, runner, discord_v13, core, selector, storage, journal, v13_daily_tracking, v13_analytics_only
+from . import v13_coverage_report, v13_probability_diagnostics, v13_feature_store, v13_model_health
 from . import calibration_baseball_v13 as calibration_v13
 from . import probability_contract_v13 as probability_contract
 runner.discord = discord_v13
@@ -49,9 +50,25 @@ def _assert_v135_calibration_artifact():
         raise SystemExit("V13.5.2 calibration artifact stale/incompatible: run `python -m v11.v13_train` before analysis")
 
 
+def _write_postrun_diagnostics():
+    """Persist non-actionable evidence views after the run without blocking Discord."""
+    for name, fn in (
+        ("coverage report", v13_coverage_report.main),
+        ("probability diagnostics", v13_probability_diagnostics.main),
+        ("feature store", v13_feature_store.main),
+        ("model health", v13_model_health.main),
+    ):
+        try:
+            fn()
+        except Exception:
+            core.logging.exception("V13 %s impossible; analytics publication remains available", name)
+
+
 def _run_v135(*args, **kwargs):
     _assert_v135_calibration_artifact()
-    return _original_run(*args, **kwargs)
+    report = _original_run(*args, **kwargs)
+    _write_postrun_diagnostics()
+    return report
 
 
 def _send_persisted_v135():
@@ -73,10 +90,8 @@ runner.send_persisted = _send_persisted_v135
 
 
 def _summary_v13(report):
-    if int(report.get("ledger_settled_this_run") or 0) <= 0: return True
-    fin = report.get("finance") or {}
-    return core.send_embed("📊 BILAN V13", [("Ledger confirmé",
-        f"{fin.get('wins',0)}V-{fin.get('losses',0)}D-{fin.get('pushes',0)}P • P/L **{core.num(fin.get('profit_units')):+.2f}u** • ROI **{core.pct(fin.get('roi'))}**")], 5763719)
+    """Per-game analytics mode deliberately emits no separate portfolio/result card."""
+    return True
 
 
 def self_test_v13():
@@ -138,7 +153,7 @@ def self_test_v13():
     assert abs(selector.conservative_probability(rec)-.52)<1e-12
     assert storage.record_selected_bets([], {}, "test", "test", core.TARGET_DATE) == 0
     v13_analytics_only.assert_payload({"results": [], "chosen": [], "combo": {}})
-    print("SELF-TEST V13.5.2 GENERATION-FINGERPRINT + NATIVE CALIBRATION + ANALYTICS-ONLY GATES OK")
+    print("SELF-TEST V13.6 EVIDENCE + GENERATION-FINGERPRINT + NATIVE CALIBRATION + ANALYTICS-ONLY GATES OK")
 
 
 runner._summary = _summary_v13

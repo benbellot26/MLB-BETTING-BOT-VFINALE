@@ -20,6 +20,29 @@ def decision_sharp_age_limit(phase):
     return config.MAX_SHARP_AGE_EARLY_MIN
 
 
+def active_model_feature_contract(result):
+    """Return only data families that can affect the active production forecast.
+
+    Weather and the enriched three-day bullpen state exist in the research
+    payload even when the production champion is purely structural. They must
+    not make the production probability look more certain until a learned
+    model that actually consumes them is active.
+    """
+    active = ["starter_identity", "starter_stats", "lineup_identity", "lineup_stats", "team_stats"]
+    model = result.get("model") or {}
+    learned_active = bool(model.get("active"))
+    learned_features = set((model.get("features") or []) if isinstance(model.get("features"), list) else [])
+    features = result.get("features") or {}
+    learned = features.get("learned_run_adjustment") or {}
+    learned_active = learned_active or bool(learned.get("active"))
+    if learned_active:
+        if not learned_features or any(k in learned_features for k in ("temperature_c","wind_kph","humidity_pct")):
+            active.append("weather")
+        if not learned_features or any("bullpen" in k for k in learned_features):
+            active.append("bullpen")
+    return tuple(active)
+
+
 def assess(result, rec=None):
     ctx = result.get("ctx") or {}
     phase = str(result.get("phase") or "EARLY").upper()
@@ -74,12 +97,15 @@ def assess(result, rec=None):
     if rec is not None:
         components["execution_price"] = 1.0 if _num(price) > 1.0 else 0.0
 
-    # This score is allowed to influence the baseball probability interval. It
-    # deliberately excludes sharp-market and execution-price information so
-    # epistemic model uncertainty cannot improve merely because more books are
-    # available.
-    model_weights = {"starter_identity": .12, "starter_stats": .19, "lineup_identity": .10,
-                     "lineup_stats": .19, "team_stats": .15, "weather": .09, "bullpen": .16}
+    # Base weights describe the structural production model. Optional research
+    # inputs join only when an active learned production artifact actually uses
+    # them. This keeps epistemic confidence tied to the active feature contract.
+    base_model_weights = {"starter_identity": .15, "starter_stats": .24, "lineup_identity": .12,
+                          "lineup_stats": .24, "team_stats": .25}
+    optional_model_weights = {"weather": .08, "bullpen": .14}
+    active_contract = active_model_feature_contract(result)
+    model_weights = {k:v for k,v in base_model_weights.items() if k in active_contract}
+    model_weights.update({k:v for k,v in optional_model_weights.items() if k in active_contract})
     model_denom = sum(model_weights.values()) or 1.0
     model_input_score = sum(model_weights[k]*components.get(k,0.0) for k in model_weights)/model_denom
 
@@ -116,6 +142,8 @@ def assess(result, rec=None):
 
     return {"score": round(max(0.0, min(1.0, score)), 4),
             "model_input_score": round(max(0.0, min(1.0, model_input_score)), 4),
+            "model_input_contract": list(active_contract),
+            "model_input_weights": {k:round(v,4) for k,v in model_weights.items()},
             "components": {k: round(v, 4) for k, v in components.items()}, "blockers": blockers,
             "eligible": score >= config.MIN_DATA_QUALITY and not blockers,
             "lineup_players": lineup_count, "usable_lineup_stats": usable_lineup,

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import importlib
-import sys
 import unittest
 
 CRITICAL_TEST_MODULES = (
@@ -19,6 +18,8 @@ CRITICAL_TEST_MODULES = (
     "tests.test_v1352_final_hardening",
     "tests.test_v1352_runtime_hook",
     "tests.test_v1352_audit_hardening",
+    "tests.test_v13_rich_native_train",
+    "tests.test_v136_evidence_hardening",
 )
 
 
@@ -33,12 +34,12 @@ def run(modules: tuple[str, ...] = CRITICAL_TEST_MODULES, verbosity: int = 1) ->
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run the shared V13.5.2 critical preflight suite")
+    parser = argparse.ArgumentParser(description="Run the shared V13.6 critical preflight suite")
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args()
     if not run(verbosity=2 if args.verbose else 1):
         raise SystemExit(1)
-    print("V13.5.2 shared critical preflight OK")
+    print("V13.6 shared critical preflight OK")
 
 
 if __name__ == "__main__":

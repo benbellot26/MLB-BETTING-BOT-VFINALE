@@ -1,6 +1,9 @@
-name: MLB Betting Bot V13.5 Professional Probability Production
+name: MLB Betting Bot V13.6 Evidence-Hardened Probability Production
 
 on:
+  schedule:
+    # Cheap schedule-only gate. Paid odds/model work runs only for a new undelivered FINAL-phase game.
+    - cron: '7 0-6,14-23 * * *'
   workflow_dispatch:
 
 permissions:
@@ -11,8 +14,33 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  gate:
+    name: Gate production FINAL
+    runs-on: ubuntu-latest
+    outputs:
+      run_needed: ${{ steps.gate.outputs.run_needed }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Resolve production gate
+        id: gate
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo 'run_needed=true' >> "$GITHUB_OUTPUT"
+            echo '{"reason":"manual-dispatch","run_needed":true}'
+          else
+            python -m v11.v13_production_gate > /tmp/v13_production_gate.json
+            cat /tmp/v13_production_gate.json
+            run_needed=$(python -c "import json; d=json.load(open('/tmp/v13_production_gate.json')); print('true' if d.get('run_needed') else 'false')")
+            echo "run_needed=$run_needed" >> "$GITHUB_OUTPUT"
+          fi
+
   run-bot:
-    name: Exécution du Bot V13.5
+    name: Exécution du Bot V13.6
+    needs: gate
+    if: needs.gate.outputs.run_needed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 55
     steps:
@@ -27,14 +55,14 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Validation V13.5 + V12 shadows
+      - name: Validation V13.6 + V12 shadows
         run: |
           python -m py_compile v11/*.py tests/*.py
           python -m unittest tests.test_v11 tests.test_historical_bootstrap
           python -m unittest tests.test_v123 tests.test_v1231_runlines tests.test_safe_singles_v1231
           python -m unittest tests.test_v1233_audit_hardening tests.test_shadow_v115 tests.test_calibration_v1232
           python -m unittest tests.test_predictive_v124 tests.test_v124_statcast_provider
-          python -m unittest tests.test_v13_rich_run_residual tests.test_v13_rich_native_train
+          python -m unittest tests.test_v13_rich_run_residual tests.test_v13_rich_native_train tests.test_v136_evidence_hardening
           python -m v11.v13_preflight
           python -m v11.v13_entry --self-test
           python -m v11.v123_bootstrap --dry-run >/tmp/v12_3_historical_bootstrap.json
@@ -70,25 +98,25 @@ jobs:
           }, indent=2, sort_keys=True))
           PY
 
-      - name: Build V13.5 predictive artifacts
+      - name: Build V13.6 predictive artifacts
         run: |
           python -m v11.v13_train
           python -m v11.v13_posterior_policy
 
       - name: Persist pre-run predictive artifacts
         run: |
-          git config user.name 'MLB Betting Bot V13.5'
+          git config user.name 'MLB Betting Bot V13.6'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           [ -f data/v12_3_historical_bootstrap_model.json ] && git add data/v12_3_historical_bootstrap_model.json
           [ -f data/v13_baseball_calibration.json ] && git add -f data/v13_baseball_calibration.json
           [ -f data/v13_posterior_policy.json ] && git add -f data/v13_posterior_policy.json
           if ! git diff --cached --quiet; then
-            git commit -m 'data: persist V13.5 predictive artifacts [skip ci]'
+            git commit -m 'data: persist V13.6 predictive artifacts [skip ci]'
             git pull --rebase --autostash origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
 
-      - name: Run V13.5 without Discord
+      - name: Run V13.6 without Discord
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
@@ -108,14 +136,15 @@ jobs:
           mkdir -p data runtime/v11
           python -m v11.v13_entry
 
-      - name: Validate proposed V13.5 probability state
+      - name: Validate proposed V13.6 probability state
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
           from v11.professional_probability_checks_v13 import check_result
           from v11.probability_contract_v13 import MODEL_GENERATION_FINGERPRINT
-          for name in ('data/v11_3_live.jsonl','data/v11_bet_ledger.jsonl'):
+          from v11.point_in_time_v13 import validate_pregame_row
+          for name in ('data/v11_3_live.jsonl','data/v11_bet_ledger.jsonl','data/v13_feature_store.jsonl','data/v13_label_store.jsonl'):
               p=Path(name)
               if p.exists():
                   for line in p.read_text(encoding='utf-8').splitlines():
@@ -154,14 +183,26 @@ jobs:
                   if execution.get('official_selected') or execution.get('selected') or float(execution.get('official_units') or 0.0) != 0.0:
                       bad.append({'game_pk':result.get('game_pk'),'reason':'analytics-only option became actionable'})
           if bad:
-              raise SystemExit(f'V13.5 probability invariant failure: {bad[:3]}')
+              raise SystemExit(f'V13.6 probability invariant failure: {bad[:3]}')
+          live=Path('data/v11_3_live.jsonl')
+          if live.exists():
+              rows=[json.loads(x) for x in live.read_text(encoding='utf-8').splitlines() if x.strip()]
+              current=[r for r in rows if r.get('model_generation') == MODEL_GENERATION_FINGERPRINT and r.get('result_status') != 'FINAL']
+              invalid=[(r.get('game_pk'),validate_pregame_row(r)[1]) for r in current if not validate_pregame_row(r)[0]]
+              if invalid: raise SystemExit(f'PIT provenance invalid: {invalid[:3]}')
+          feature_store=Path('data/v13_feature_store.jsonl')
+          if feature_store.exists():
+              for line in feature_store.read_text(encoding='utf-8').splitlines():
+                  if not line.strip(): continue
+                  row=json.loads(line)
+                  for forbidden in ('home_score','away_score','winner'):
+                      if forbidden in row: raise SystemExit(f'Feature-label leakage: {forbidden}')
           run_id=report.get('run_id')
           ledger=Path('data/v11_bet_ledger.jsonl')
           action_events=[]
           if run_id and ledger.exists():
               for line in ledger.read_text(encoding='utf-8').splitlines():
-                  if not line.strip():
-                      continue
+                  if not line.strip(): continue
                   event=json.loads(line)
                   if event.get('run_id') == run_id and event.get('event_type') in {'PROPOSED','PUBLISHED','CONFIRMED_PLACED'}:
                       action_events.append({'event_type':event.get('event_type'),'bet_key':event.get('bet_key')})
@@ -169,41 +210,50 @@ jobs:
               raise SystemExit(f'V13 analytics-only run wrote betting ledger events: {action_events[:3]}')
           PY
 
-      # Legacy ordering marker only; V13 does NOT persist betting recommendations:
+      # Legacy ordering marker retained for shared V12 regression semantics only.
       # Persist PROPOSED recommendations
-      - name: Persist analytics probability journal
+      - name: Persist analytics probability journal and evidence views
         run: |
-          git config user.name 'MLB Betting Bot V13.5'
+          git config user.name 'MLB Betting Bot V13.6'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           [ -f data/v11_3_live.jsonl ] && git add data/v11_3_live.jsonl
           [ -f data/v11_3_live_report.json ] && git add data/v11_3_live_report.json
           [ -f data/v11_bet_ledger.jsonl ] && git add -f data/v11_bet_ledger.jsonl
+          [ -f data/v13_probability_diagnostics.json ] && git add -f data/v13_probability_diagnostics.json
+          [ -f data/v13_coverage_report.json ] && git add -f data/v13_coverage_report.json
+          [ -f data/v13_model_health.json ] && git add -f data/v13_model_health.json
+          [ -f data/v13_feature_store.jsonl ] && git add -f data/v13_feature_store.jsonl
+          [ -f data/v13_label_store.jsonl ] && git add -f data/v13_label_store.jsonl
+          [ -f data/v13_market_tracking.jsonl ] && git add -f data/v13_market_tracking.jsonl
+          [ -f data/v13_market_tracking_report.json ] && git add -f data/v13_market_tracking_report.json
           if ! git diff --cached --quiet; then
-            git commit -m 'data: persist V13.5 probability observations [skip ci]'
+            git commit -m 'data: persist V13.6 probability observations [skip ci]'
             git pull --rebase --autostash origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
 
-      # Legacy ordering marker only; V13 publishes analytics, not recommendations:
+      # Legacy ordering marker retained for shared V12 regression semantics only.
       # Publish Discord recommendations
       - name: Publish Discord analytics
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          V13_DISCORD_FINAL_ONLY: ${{ github.event_name == 'schedule' && '1' || '0' }}
         run: python -m v11.v13_entry --send-persisted
 
       - name: Persist Discord delivery checkpoint
         if: always()
         run: |
-          git config user.name 'MLB Betting Bot V13.5'
+          git config user.name 'MLB Betting Bot V13.6'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           [ -f data/v11_discord_delivery.json ] && git add -f data/v11_discord_delivery.json
+          [ -f data/v13_discord_delivery.json ] && git add -f data/v13_discord_delivery.json
           if ! git diff --cached --quiet; then
             git commit -m 'data: persist Discord delivery checkpoint [skip ci]'
             git pull --rebase --autostash origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
 
-      # Legacy ordering marker only; there is no V13 PUBLISHED betting lifecycle:
+      # Legacy ordering marker retained for shared V12 regression semantics only.
       # Persist PUBLISHED lifecycle state
       - name: Assert analytics-only lifecycle after Discord
         run: |
@@ -232,13 +282,19 @@ jobs:
           python -m v11.v13_train
           python -m v11.v13_posterior_policy
           python -m v11.v13_rich_native_train
+          python -m v11.v13_feature_store
+          python -m v11.v13_probability_diagnostics
+          python -m v11.v13_coverage_report
+          python -m v11.v13_model_health
 
       - name: Validate research artifacts
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
-          for name in ('data/v12_3_historical_bootstrap_model.json','data/v11_candidate_model.json','data/v11_point_in_time_backtest.json','data/v13_baseball_calibration.json','data/v13_posterior_policy.json','data/v13_rich_native_candidate.json'):
+          for name in ('data/v12_3_historical_bootstrap_model.json','data/v11_candidate_model.json','data/v11_point_in_time_backtest.json',
+                       'data/v13_baseball_calibration.json','data/v13_posterior_policy.json','data/v13_rich_native_candidate.json',
+                       'data/v13_probability_diagnostics.json','data/v13_coverage_report.json','data/v13_model_health.json'):
               p=Path(name)
               if p.exists(): json.loads(p.read_text(encoding='utf-8'))
           native=Path('data/v13_rich_native_candidate.json')
@@ -246,6 +302,8 @@ jobs:
               d=json.loads(native.read_text(encoding='utf-8'))
               if d.get('active_for_production') and int(d.get('native_games') or 0) < 300:
                   raise SystemExit('rich challenger cannot promote below native volume floor')
+              if d.get('active_for_production') and not (d.get('downstream_probability_holdout') or {}).get('passes'):
+                  raise SystemExit('rich challenger cannot promote without downstream proper-score gate')
           posterior=Path('data/v13_posterior_policy.json')
           if posterior.exists():
               d=json.loads(posterior.read_text(encoding='utf-8'))
@@ -286,7 +344,7 @@ jobs:
       - name: Persist research evidence
         if: success()
         run: |
-          git config user.name 'MLB Betting Bot V13.5'
+          git config user.name 'MLB Betting Bot V13.6'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           [ -f data/v12_3_historical_bootstrap_model.json ] && git add data/v12_3_historical_bootstrap_model.json
           [ -f data/v11_candidate_model.json ] && git add data/v11_candidate_model.json
@@ -294,8 +352,13 @@ jobs:
           [ -f data/v13_baseball_calibration.json ] && git add -f data/v13_baseball_calibration.json
           [ -f data/v13_posterior_policy.json ] && git add -f data/v13_posterior_policy.json
           [ -f data/v13_rich_native_candidate.json ] && git add -f data/v13_rich_native_candidate.json
+          [ -f data/v13_probability_diagnostics.json ] && git add -f data/v13_probability_diagnostics.json
+          [ -f data/v13_coverage_report.json ] && git add -f data/v13_coverage_report.json
+          [ -f data/v13_model_health.json ] && git add -f data/v13_model_health.json
+          [ -f data/v13_feature_store.jsonl ] && git add -f data/v13_feature_store.jsonl
+          [ -f data/v13_label_store.jsonl ] && git add -f data/v13_label_store.jsonl
           if ! git diff --cached --quiet; then
-            git commit -m 'data: update V13.5 research evidence [skip ci]'
+            git commit -m 'data: update V13.6 research evidence [skip ci]'
             git pull --rebase --autostash origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
