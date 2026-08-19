@@ -10,7 +10,7 @@ from typing import Any
 
 from . import v138_research_models as rm
 
-SCHEMA="v13-8-versioned-dataset-store-v1"
+SCHEMA="v13-10-versioned-dataset-store-v2"
 OUT_DIR=Path("data/v138")
 MANIFEST=Path("data/v138_dataset_manifest.json")
 
@@ -19,6 +19,17 @@ def sha256_file(path: Path) -> str:
     h=hashlib.sha256()
     with path.open("rb") as f:
         for chunk in iter(lambda:f.read(1024*1024),b""):h.update(chunk)
+    return h.hexdigest()
+
+
+def dataset_content_sha256(paths: list[Path]) -> str:
+    """Fingerprint the actual source bytes, not only game ids/timestamps."""
+    h=hashlib.sha256()
+    for path in sorted((Path(p) for p in paths),key=lambda p:str(p)):
+        if not path.exists():
+            continue
+        h.update(str(path).encode("utf-8"));h.update(b"\0")
+        h.update(sha256_file(path).encode("ascii"));h.update(b"\n")
     return h.hexdigest()
 
 
@@ -91,11 +102,15 @@ def build_duckdb(features: list[dict[str,Any]],labels: list[dict[str,Any]],out_d
 
 def manifest(source_paths: list[Path],generated: dict[str,Any],feature_rows: int,label_rows: int) -> dict[str,Any]:
     files=[]
+    source_paths=[Path(p) for p in source_paths]
     for p in source_paths+[Path(x) for x in (generated.get("duckdb"),generated.get("feature_parquet"),generated.get("label_parquet")) if x]:
         if p.exists():files.append({"path":str(p),"bytes":p.stat().st_size,"sha256":sha256_file(p)})
     contract=json.dumps({"schema":rm.SCHEMA,"features":list(rm.FEATURE_NAMES)},sort_keys=True,separators=(",",":"))
     return {"schema":SCHEMA,"dataset_version":os.getenv("GITHUB_SHA") or "local","code_sha":os.getenv("GITHUB_SHA"),
-        "feature_contract_sha256":hashlib.sha256(contract.encode()).hexdigest(),"feature_rows":feature_rows,"label_rows":label_rows,
+        "feature_contract_sha256":hashlib.sha256(contract.encode()).hexdigest(),
+        "dataset_content_sha256":dataset_content_sha256(source_paths),
+        "dataset_fingerprint_policy":"SHA256 over path + SHA256 of every compressed source feature/label file; any feature or label byte changes the fingerprint",
+        "feature_rows":feature_rows,"label_rows":label_rows,
         "files":files,"storage":generated,"training_seed":138,"split_policy":"strict temporal / walk-forward",
         "separation_policy":"features and labels remain separate physical tables"}
 
@@ -105,7 +120,7 @@ def main() -> None:
     sources=sorted(Path("data/v137").glob("team_features_*.jsonl.gz"))+sorted(Path("data/v137").glob("team_labels_*.jsonl.gz"))
     m=manifest(sources,generated,len(features),len(labels));MANIFEST.parent.mkdir(parents=True,exist_ok=True)
     MANIFEST.write_text(json.dumps(m,ensure_ascii=False,indent=2,sort_keys=True),encoding="utf-8")
-    print(json.dumps({"schema":SCHEMA,"feature_rows":len(features),"label_rows":len(labels),"storage":generated,"files":len(m["files"])},indent=2,sort_keys=True))
+    print(json.dumps({"schema":SCHEMA,"feature_rows":len(features),"label_rows":len(labels),"dataset_content_sha256":m.get("dataset_content_sha256"),"storage":generated,"files":len(m["files"])},indent=2,sort_keys=True))
 
 
 if __name__=="__main__":main()
