@@ -1,4 +1,4 @@
-name: MLB V13.8 Audit Closure Research
+name: MLB V13.8.1 Audit Closure Research
 
 on:
   pull_request:
@@ -7,7 +7,7 @@ on:
       - 'v11/v13_discord_delivery.py'
       - 'v11/discord_v13.py'
       - 'v11/v13_preflight.py'
-      - 'tests/test_v138_audit_closure.py'
+      - 'tests/test_v138_*.py'
       - '.github/workflows/v13-8-audit-closure.yml'
   push:
     branches: [main]
@@ -16,7 +16,7 @@ on:
       - 'v11/v13_discord_delivery.py'
       - 'v11/discord_v13.py'
       - 'v11/v13_preflight.py'
-      - 'tests/test_v138_audit_closure.py'
+      - 'tests/test_v138_*.py'
       - '.github/workflows/v13-8-audit-closure.yml'
   schedule:
     - cron: '47 12 * * *'
@@ -38,12 +38,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Compile V13.8 closure modules
+      - name: Compile V13.8.1 closure modules
         run: python -m py_compile v11/*.py tests/*.py
       - name: Shared critical preflight
         run: python -m v11.v13_preflight
-      - name: Direct V13.8 closure suite
-        run: python -m unittest -v tests.test_v138_audit_closure
+      - name: Direct V13.8 closure suites
+        run: python -m unittest -v tests.test_v138_audit_closure tests.test_v138_inning_history tests.test_v138_production_change_gate
 
   research-artifacts:
     if: github.event_name != 'pull_request'
@@ -60,6 +60,12 @@ jobs:
           python-version: '3.12'
       - name: Install free analytical storage dependency
         run: python -m pip install --disable-pip-version-check 'duckdb>=1.0,<2'
+      - name: Backfill free MLB inning and extra-inning evidence
+        run: |
+          python -m v11.v138_inning_history \
+            --start 2021-04-01 \
+            --end "$(date -u -d 'yesterday' +%F)" \
+            --per-season 60
       - name: Train reconstructed-data challengers
         run: python -m v11.v138_research_models
       - name: Run strict temporal validation
@@ -72,7 +78,7 @@ jobs:
         run: python -m v11.v138_monitoring
       - name: Refresh truthful 52-point closure registry
         run: python -m v11.v138_audit_closure
-      - name: Assert no reconstructed evidence can promote production
+      - name: Assert validation isolation and evidence integrity
         run: |
           python - <<'PY'
           import json
@@ -81,17 +87,23 @@ jobs:
           a=json.loads(Path('data/v138_audit_closure.json').read_text())
           if m.get('promotion_eligible') is not False or m.get('research_only') is not True:
               raise SystemExit('reconstructed V13.8 model became promotion eligible')
+          if m.get('holdout_isolation') is not True:
+              raise SystemExit('ensemble selection leaked into final holdout')
+          if 'naive' not in (m.get('ensemble_weights') or {}):
+              raise SystemExit('research ensemble lost transparent baseline guardrail')
           if a.get('engineering_closed') != 52 or a.get('engineering_open') != 0:
               raise SystemExit('52-point engineering closure registry incomplete')
           if a.get('evidence_gates_pending',0) <= 0:
               raise SystemExit('evidence gates were incorrectly bypassed')
-          print('V13.8 engineering closure complete; statistical evidence gates remain fail-closed')
+          print('V13.8.1 validation isolation + engineering closure + evidence gates OK')
           PY
-      - name: Persist V13.8 research artifacts
+      - name: Persist V13.8.1 research artifacts
         if: github.ref == 'refs/heads/main'
         run: |
           git config user.name 'MLB Betting Bot V13.8 Research'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
+          [ -f data/v138_inning_history.json.gz ] && git add -f data/v138_inning_history.json.gz
+          [ -f data/v138_inning_evidence.json ] && git add -f data/v138_inning_evidence.json
           [ -f data/v138_research_models.json ] && git add -f data/v138_research_models.json
           [ -f data/v138_validation.json ] && git add -f data/v138_validation.json
           [ -f data/v138_dataset_manifest.json ] && git add -f data/v138_dataset_manifest.json
@@ -101,7 +113,7 @@ jobs:
           [ -f data/v138_audit_closure.json ] && git add -f data/v138_audit_closure.json
           [ -d data/v138 ] && git add -f data/v138
           if ! git diff --cached --quiet; then
-            git commit -m 'data: refresh V13.8 audit closure research [skip ci]'
+            git commit -m 'data: refresh V13.8.1 validated research [skip ci]'
             git pull --rebase origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
