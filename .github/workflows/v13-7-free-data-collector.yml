@@ -19,7 +19,7 @@ on:
         required: false
         type: string
       weather_start_date:
-        description: 'Optional archived-weather backfill start; blank = yesterday'
+        description: 'Optional archived-weather backfill start; blank = retry failed window or use cursor'
         required: false
         type: string
       weather_end_date:
@@ -62,7 +62,6 @@ jobs:
           if [ -n "$INPUT_START" ]; then
             team_start="$INPUT_START"
           elif [ ! -f data/v137/team_features_2021.jsonl.gz ]; then
-            # One-time free bootstrap. Later scheduled runs rebuild only the current season.
             team_start="2021-03-01"
           else
             team_start="${year}-03-01"
@@ -72,6 +71,15 @@ jobs:
           if [ -n "$INPUT_WEATHER_START" ]; then
             weather_start="$INPUT_WEATHER_START"
             weather_end="${INPUT_WEATHER_END:-$INPUT_WEATHER_START}"
+          elif [ -f data/v137_weather_backfill_report.json ] && python - <<'PY'
+          import json
+          r=json.load(open('data/v137_weather_backfill_report.json'))
+          raise SystemExit(0 if int(r.get('rows') or 0)>0 and int(r.get('available_rows') or 0)==0 else 1)
+          PY
+          then
+            # A failed provider window is retried before the cursor is allowed to move.
+            weather_start="$(python -c "import json; print(json.load(open('data/v137_weather_backfill_report.json'))['start'])")"
+            weather_end="$(python -c "import json; print(json.load(open('data/v137_weather_backfill_report.json'))['end'])")"
           else
             if [ -f data/v137_weather_cursor.json ]; then
               weather_end="$(python -c "import json; print(json.load(open('data/v137_weather_cursor.json')).get('next_end') or '$yesterday')")"
@@ -134,35 +142,12 @@ jobs:
             --lead-hours 2 \
             --persist
 
-      - name: Advance archived-weather backfill cursor
-        if: ${{ inputs.weather_start_date == '' || inputs.weather_start_date == null }}
-        env:
-          WEATHER_START: ${{ steps.dates.outputs.weather_start }}
-        run: |
-          python - <<'PY'
-          import json, os
-          from datetime import date, timedelta
-          from pathlib import Path
-          floor=date(2024,3,14)
-          start=date.fromisoformat(os.environ['WEATHER_START'])
-          next_end=start-timedelta(days=1)
-          complete=next_end < floor
-          payload={
-              "schema":"v13-7-free-weather-cursor-v1",
-              "next_end": floor.isoformat() if complete else next_end.isoformat(),
-              "complete_through_archive_start": complete,
-              "archive_start": floor.isoformat(),
-          }
-          Path('data/v137_weather_cursor.json').write_text(json.dumps(payload,indent=2,sort_keys=True),encoding='utf-8')
-          print(json.dumps(payload,indent=2,sort_keys=True))
-          PY
-
       - name: Refresh free-data and model health
         run: |
           python -m v11.v137_free_data_health
           python -m v11.v13_model_health
 
-      - name: Assert free-only cohort boundaries
+      - name: Assert free-only provider integrity and cohort boundaries
         run: |
           python - <<'PY'
           import json
@@ -183,9 +168,38 @@ jobs:
               raise SystemExit('free data artifact bypassed model promotion gates')
           if stat and not stat.get('stable_id_only'):
               raise SystemExit('Statcast priors lost stable-ID-only contract')
+          if stat.get('unresolved_truncation') or int(stat.get('chunks_failed') or 0):
+              raise SystemExit('Statcast provider integrity is incomplete/truncated')
+          if park and int(park.get('total_venue_rows') or 0)==0:
+              raise SystemExit('Savant park-factor provider parsed zero venue rows')
+          if weather and int(weather.get('rows') or 0)>0 and int(weather.get('available_rows') or 0)==0:
+              raise SystemExit('Open-Meteo historical run produced zero available weather rows')
           if native and (not native.get('point_in_time') or not native.get('native_live')):
               raise SystemExit('MLB native state lost point-in-time/native-live contract')
-          print('V13.7 free-only + reconstructed/native separation OK')
+          print('V13.7 free provider integrity + reconstructed/native separation OK')
+          PY
+
+      - name: Advance archived-weather backfill cursor only after valid provider data
+        if: ${{ inputs.weather_start_date == '' || inputs.weather_start_date == null }}
+        env:
+          WEATHER_START: ${{ steps.dates.outputs.weather_start }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from datetime import date, timedelta
+          from pathlib import Path
+          floor=date(2024,3,14)
+          start=date.fromisoformat(os.environ['WEATHER_START'])
+          next_end=start-timedelta(days=1)
+          complete=next_end < floor
+          payload={
+              "schema":"v13-7-free-weather-cursor-v2",
+              "next_end": floor.isoformat() if complete else next_end.isoformat(),
+              "complete_through_archive_start": complete,
+              "archive_start": floor.isoformat(),
+          }
+          Path('data/v137_weather_cursor.json').write_text(json.dumps(payload,indent=2,sort_keys=True),encoding='utf-8')
+          print(json.dumps(payload,indent=2,sort_keys=True))
           PY
 
       - name: Persist free-data foundation

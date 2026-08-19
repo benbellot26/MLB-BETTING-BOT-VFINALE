@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import io
 import math
+import urllib.error
 from collections import Counter, defaultdict
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Callable
@@ -10,15 +11,20 @@ from typing import Any, Callable
 from . import core
 from . import predictive_v124 as v124
 
-VERSION = "13.7-free-data-foundation-v1"
+VERSION = "13.7-free-data-foundation-v2"
 COHORT = "HISTORICAL_RECONSTRUCTED_FREE"
 WEATHER_ARCHIVE_START = date(2024, 3, 14)
 DEFAULT_WEATHER_PUBLICATION_LAG_HOURS = 6
-STATCAST_MAX_CHUNK_DAYS = 7
+STATCAST_MAX_CHUNK_DAYS = 3
+STATCAST_ROW_CAP = 25_000
 
+# ECMWF IFS HRES deterministic runs expose accumulated precipitation, but not
+# precipitation_probability. Keep the request to variables authenticated by
+# the deterministic model contract so historical single-run calls fail closed
+# only for genuine provider/data gaps.
 WEATHER_HOURLY = (
     "temperature_2m,relative_humidity_2m,dew_point_2m,surface_pressure,"
-    "precipitation_probability,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m"
+    "precipitation,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m"
 )
 
 
@@ -111,7 +117,10 @@ def weather_from_single_run_payload(
         "humidity_pct": _num(_hourly_value(hourly, "relative_humidity_2m", idx)),
         "dew_point_c": _num(_hourly_value(hourly, "dew_point_2m", idx)),
         "surface_pressure_hpa": _num(_hourly_value(hourly, "surface_pressure", idx)),
-        "precip_probability": _num(_hourly_value(hourly, "precipitation_probability", idx)),
+        "precipitation_mm": _num(_hourly_value(hourly, "precipitation", idx)),
+        # Kept for downstream schema compatibility. Deterministic ECMWF HRES
+        # does not provide a precipitation-probability field here.
+        "precip_probability": None,
         "cloud_cover_pct": _num(_hourly_value(hourly, "cloud_cover", idx)),
         "wind_kph": _num(_hourly_value(hourly, "wind_speed_10m", idx)),
         "wind_direction_deg": _num(_hourly_value(hourly, "wind_direction_10m", idx)),
@@ -157,6 +166,14 @@ def historical_weather_for_game(
         out = weather_from_single_run_payload(payload, game_dt, run, asof_dt, publication_lag_hours)
         out["request_model"] = "ecmwf_ifs"
         return out
+    except urllib.error.HTTPError as exc:
+        return {
+            "available": False,
+            "point_in_time": True,
+            "reason": f"single_run_http_error:{int(exc.code)}",
+            "forecast_run": run.isoformat(),
+            "as_of": asof_dt.isoformat(),
+        }
     except Exception as exc:
         return {
             "available": False,
@@ -168,13 +185,13 @@ def historical_weather_for_game(
 
 
 def statcast_query_params(start_day: str, end_day: str, season: int | None = None) -> dict[str, Any]:
-    """Bounded pitch-level request; caller must keep windows <= 7 calendar days."""
+    """Bounded pitch-level request; caller must keep windows <= 3 calendar days."""
     s = date.fromisoformat(start_day)
     e = date.fromisoformat(end_day)
     if e < s:
         raise ValueError("statcast end_day before start_day")
     if (e - s).days + 1 > STATCAST_MAX_CHUNK_DAYS:
-        raise ValueError("statcast query window exceeds seven days")
+        raise ValueError(f"statcast query window exceeds {STATCAST_MAX_CHUNK_DAYS} days")
     season = int(season or e.year)
     return {
         "all": "true",
@@ -204,6 +221,57 @@ def fetch_statcast_rows(
     if rows and not {"game_date", "batter", "pitcher"}.issubset({str(k) for k in rows[0].keys()}):
         raise ValueError("unexpected Statcast CSV schema")
     return rows
+
+
+def fetch_statcast_rows_adaptive(
+    start_day: str,
+    end_day: str,
+    fetch_text: Callable[..., str] | None = None,
+    season: int | None = None,
+    row_cap: int = STATCAST_ROW_CAP,
+) -> tuple[list[dict[str, str]], dict[str, Any]]:
+    """Fail-safe Statcast fetch that recursively splits responses at the server cap.
+
+    A response exactly at the observed 25k ceiling is never trusted as complete.
+    Multi-day ranges are split until each leaf is below the cap. A one-day leaf
+    still at the cap is rejected rather than silently training on truncated data.
+    """
+    start = date.fromisoformat(start_day)
+    end = date.fromisoformat(end_day)
+    if end < start:
+        raise ValueError("statcast end_day before start_day")
+    if (end - start).days + 1 > STATCAST_MAX_CHUNK_DAYS:
+        raise ValueError(f"adaptive statcast root exceeds {STATCAST_MAX_CHUNK_DAYS} days")
+    diagnostics: dict[str, Any] = {
+        "requests": [],
+        "cap_hits": 0,
+        "splits": 0,
+        "unresolved_truncation": False,
+    }
+
+    def _fetch(a: date, b: date) -> list[dict[str, str]]:
+        rows = fetch_statcast_rows(a.isoformat(), b.isoformat(), fetch_text=fetch_text, season=season)
+        capped = len(rows) >= int(row_cap)
+        diagnostics["requests"].append(
+            {"start": a.isoformat(), "end": b.isoformat(), "rows": len(rows), "cap_hit": capped}
+        )
+        if not capped:
+            return rows
+        diagnostics["cap_hits"] += 1
+        if a >= b:
+            diagnostics["unresolved_truncation"] = True
+            raise RuntimeError(f"statcast_single_day_row_cap:{a.isoformat()}:{len(rows)}")
+        span = (b - a).days + 1
+        left_days = max(1, span // 2)
+        left_end = a + timedelta(days=left_days - 1)
+        right_start = left_end + timedelta(days=1)
+        diagnostics["splits"] += 1
+        return _fetch(a, left_end) + _fetch(right_start, b)
+
+    rows = dedupe_statcast_rows(_fetch(start, end))
+    diagnostics["deduped_rows"] = len(rows)
+    diagnostics["requests_made"] = len(diagnostics["requests"])
+    return rows, diagnostics
 
 
 def _event(row: dict[str, Any]) -> str:

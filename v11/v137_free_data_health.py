@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 OUT = Path("data/v137_free_data_health.json")
-SCHEMA = "v13-7-free-data-health-v2"
+SCHEMA = "v13-7-free-data-health-v3"
 
 
 def _load(path: str) -> dict[str, Any]:
@@ -33,6 +33,8 @@ def build() -> dict[str, Any]:
             alerts.append("statcast_not_point_in_time")
         if int(statcast.get("chunks_failed") or 0):
             alerts.append("statcast_chunk_failures")
+        if statcast.get("unresolved_truncation"):
+            alerts.append("statcast_unresolved_row_cap_truncation")
     else:
         alerts.append("statcast_priors_not_collected_yet")
 
@@ -47,8 +49,11 @@ def build() -> dict[str, Any]:
     if weather:
         rows = int(weather.get("rows") or 0)
         pit = int(weather.get("point_in_time_rows") or 0)
+        available = int(weather.get("available_rows") or 0)
         if rows and pit < rows:
             alerts.append("weather_point_in_time_gap")
+        if rows and available == 0:
+            alerts.append("weather_zero_available_rows")
         if weather.get("promotion_eligible"):
             alerts.append("reconstructed_weather_must_not_be_native")
     else:
@@ -59,6 +64,10 @@ def build() -> dict[str, Any]:
             alerts.append("prior_park_factors_must_not_be_native")
         if int(park.get("failed_requests") or 0):
             alerts.append("park_factor_request_failures")
+        if int(park.get("total_venue_rows") or 0) == 0:
+            alerts.append("park_factor_zero_venue_rows")
+        if int(park.get("empty_parse_count") or 0):
+            alerts.append("park_factor_empty_parses")
     else:
         alerts.append("prior_park_factors_not_collected_yet")
 
