@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 OUT=Path("data/v138_audit_closure.json")
-SCHEMA="v13-8-52-point-closure-v1"
+SCHEMA="v13-8-52-point-closure-v2"
 
 POINTS=(
 (1,"Offense talent engine","v138_audit_features.offense_talent","RESEARCH_IMPLEMENTED"),
@@ -28,7 +28,7 @@ POINTS=(
 (18,"Rich-model promotion gate","v13_rich_native_train","EVIDENCE_GATE_IMPLEMENTED"),
 (19,"Bootstrap CI for gains","v138_validation.bootstrap_difference","VALIDATION_IMPLEMENTED"),
 (20,"Contextual dispersion","v138_advanced_research.fit_contextual_dispersion","RESEARCH_IMPLEMENTED"),
-(21,"Learned extra-innings prior","v138_validation.learn_extra_innings_home_prior","EVIDENCE_GATE_IMPLEMENTED"),
+(21,"Learned extra-innings prior","v138_inning_history + v138_validation.learn_extra_innings_home_prior","FREE_EVIDENCE_IMPLEMENTED"),
 (22,"Calibration maturity","calibration_baseball_v13 + v138_advanced_research.dynamic_calibration","EVIDENCE_GATE_IMPLEMENTED"),
 (23,"Empirical uncertainty coverage","v138_validation.empirical_interval_coverage","EVIDENCE_GATE_IMPLEMENTED"),
 (24,"Learned bookmaker weights","v138_validation.learn_bookmaker_weights","EVIDENCE_GATE_IMPLEMENTED"),
@@ -56,7 +56,7 @@ POINTS=(
 (46,"Learned ensemble","v138_research_models._ensemble_weights","RESEARCH_IMPLEMENTED"),
 (47,"Meta-model stacking","v138_advanced_research.fit_meta_model","RESEARCH_IMPLEMENTED"),
 (48,"Dynamic calibration","v138_advanced_research.dynamic_calibration","RESEARCH_IMPLEMENTED"),
-(49,"Inning-level model","v138_advanced_research.fit_inning_profile","DATA_OPTIONAL_RESEARCH_IMPLEMENTED"),
+(49,"Inning-level model","v138_inning_history + v138_advanced_research.fit_inning_profile","FREE_EVIDENCE_IMPLEMENTED"),
 (50,"Conditional score dispersion","v138_advanced_research.fit_contextual_dispersion","RESEARCH_IMPLEMENTED"),
 (51,"Nonlinear SP x lineup x park x weather","v138_advanced_research.nonlinear_interactions","RESEARCH_IMPLEMENTED"),
 (52,"Season-regime learning","v138_advanced_research.fit_season_regimes","RESEARCH_IMPLEMENTED"),
@@ -77,25 +77,27 @@ def _evidence_status(pid: int) -> tuple[bool,str]:
     if pid==18:
         d=_load("data/v13_rich_native_candidate.json");n=int(d.get("native_games") or 0);req=int(d.get("minimum_games") or 300)
         return bool(d.get("active_for_production")),f"native_games={n}/{req}"
+    if pid==21:
+        d=_load("data/v138_inning_evidence.json");prior=d.get("extra_inning_prior") or {};n=int(d.get("extra_inning_examples") or prior.get("n") or 0)
+        return bool(prior.get("active")),f"authenticated free MLB extra-inning examples={n}; required=200"
     if pid==22:
         d=_load("data/v13_baseball_calibration.json");c=d.get("calibrators") or {};active=sum(bool(x.get("active")) for x in c.values())
         return active>0,f"active_calibrators={active}; strict native thresholds retained"
+    if pid==23:
+        return False,"coverage validator implemented; native sample must still accumulate"
+    if pid==24:
+        return False,"learned book weights require >=300 authenticated PIT book/outcome rows and OOS confirmation"
     if pid==25:
         d=_load("data/v13_posterior_policy.json");n=int(d.get("live_observations") or 0);affected=bool(d.get("primary_probability_affected"))
         return affected,f"live_observations={n}; primary_affected={affected}"
     if pid in {26,27}:
         d=_load("data/v13_probability_diagnostics.json");n=sum(int(x.get("n") or 0) for x in (d.get("by_market") or {}).values())
         return n>=300,f"independent_market_targets={n}; proof floor=300"
-    if pid==24:
-        return False,"learned book weights require >=300 authenticated PIT book/outcome rows and OOS confirmation"
-    if pid==23:
-        return False,"coverage validator implemented; native sample must still accumulate"
-    if pid==21:
-        return False,"extra-inning prior remains neutral until >=200 authenticated examples"
     if pid==48:
         return False,"dynamic calibrator implemented research-only; production activation remains OOS-gated"
     if pid==49:
-        return False,"inning learner requires authenticated inning-level labels"
+        d=_load("data/v138_inning_evidence.json");profile=d.get("inning_profile") or {};n=int(d.get("inning_profile_games") or profile.get("n") or 0)
+        return bool(profile.get("active")),f"authenticated free MLB inning-profile games={n}; required=300"
     return True,"engineering/validation implementation is sufficient"
 
 
