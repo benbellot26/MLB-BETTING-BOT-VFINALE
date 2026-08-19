@@ -71,6 +71,7 @@ jobs:
           import json
           from pathlib import Path
           from v11.probability_contract_v13 import MODEL_GENERATION_FINGERPRINT, row_is_predictively_compatible
+          from v11.point_in_time_v13 import validate_pregame_row
           p = Path('runtime/v11/discord_payload.json')
           if not p.exists():
               raise SystemExit('research payload missing')
@@ -93,10 +94,22 @@ jobs:
           current=[r for r in rows if r.get('model_generation') == MODEL_GENERATION_FINGERPRINT]
           if current and not all(row_is_predictively_compatible(r) for r in current):
               raise SystemExit('native V13 current-generation row missing predictive contract')
-          print('V13 research-only safety + exact predictive generation OK; results=',len(results),'current_rows=',len(current))
+          current_pregame=[r for r in current if str(r.get('result_status') or '') != 'FINAL']
+          invalid=[(r.get('game_pk'),validate_pregame_row(r)[1]) for r in current_pregame if not validate_pregame_row(r)[0]]
+          if invalid:
+              raise SystemExit(f'current-generation row failed PIT provenance validation: {invalid[:3]}')
+          print('V13 research-only safety + predictive generation + PIT provenance OK; results=',len(results),'current_rows=',len(current))
           PY
 
-      - name: Persist V13 phase observations
+      - name: Refresh evidence and diagnostic artifacts after collection
+        if: steps.gate.outputs.run_needed == 'true'
+        run: |
+          python -m v11.v13_train
+          python -m v11.v13_posterior_policy
+          python -m v11.v13_rich_native_train
+          python -m v11.v13_probability_diagnostics
+
+      - name: Persist V13 phase observations and evidence
         if: steps.gate.outputs.run_needed == 'true'
         run: |
           git config user.name 'MLB Betting Bot V13 Research'
@@ -106,6 +119,10 @@ jobs:
           [ -f data/v11_bet_ledger.jsonl ] && git add -f data/v11_bet_ledger.jsonl
           [ -f data/v13_baseball_calibration.json ] && git add -f data/v13_baseball_calibration.json
           [ -f data/v13_posterior_policy.json ] && git add -f data/v13_posterior_policy.json
+          [ -f data/v13_rich_native_candidate.json ] && git add -f data/v13_rich_native_candidate.json
+          [ -f data/v13_probability_diagnostics.json ] && git add -f data/v13_probability_diagnostics.json
+          [ -f data/v13_market_tracking.jsonl ] && git add -f data/v13_market_tracking.jsonl
+          [ -f data/v13_market_tracking_report.json ] && git add -f data/v13_market_tracking_report.json
           if ! git diff --cached --quiet; then
             git commit -m 'data: collect native V13 phase snapshot [skip ci]'
             git pull --rebase origin "$GITHUB_REF_NAME"
