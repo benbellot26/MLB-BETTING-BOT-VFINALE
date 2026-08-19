@@ -8,7 +8,7 @@ PREDICTIVE_CONTRACT_VERSION = "v13-predictive-contract-v3"
 FEATURE_CONTRACT_VERSION = "v13-baseball-features-v1"
 TARGET_CONTRACT_VERSION = "v13-market-targets-v1"
 CALIBRATION_CONTRACT_VERSION = "v13-baseball-calibration-v3"
-MODEL_GENERATION_FINGERPRINT = "v13.10-gen-park-extra-surface-v3"
+MODEL_GENERATION_FINGERPRINT = "v13.10-gen-structural-nb-independent-transfer-park-extra-surface-v3"
 
 
 def _finite_probability(p: Any) -> float:
