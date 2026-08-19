@@ -13,7 +13,7 @@ from . import v13_rich_run_residual as rich
 from .probability_contract_v13 import row_is_predictively_compatible
 
 OUT = Path("data/v13_rich_native_candidate.json")
-SCHEMA = "v13-rich-native-candidate-v4"
+SCHEMA = "v13-rich-native-candidate-v5"
 TARGET_PHASE = "FINAL"
 MIN_GAMES = 300
 MIN_HOLDOUT = 100
@@ -51,8 +51,8 @@ def _reject_reason(r: dict[str,Any]) -> str | None:
     if r.get("result_status") != "FINAL": return "not_settled_final"
     if r.get("home_score") is None or r.get("away_score") is None: return "scores_missing"
     if str(r.get("phase") or "").upper() != TARGET_PHASE: return "not_final_phase"
-    valid,reasons=pit.validate_pregame_row(r)
-    if not valid: return "pit:"+"|".join(reasons[:4])
+    valid,reasons=pit.validate_promotion_grade_row(r)
+    if not valid: return "pit_promotion_grade:"+"|".join(reasons[:4])
     mods=(r.get("shadow_v124") or {}).get("modules") or {}
     if not mods: return "rich_modules_missing"
     hm,am,_=_means(r)
@@ -184,10 +184,11 @@ def build(rows: list[dict[str,Any]] | None = None) -> dict[str,Any]:
     coverage={name:(sum(max(0.0,min(1.0,rich._num((r.get("modules") or {}).get(name,{}).get("coverage"),0.0))) for r in native)/len(native) if native else 0.0) for name in NATIVE_MODULES}
     base={"schema":SCHEMA,"target_phase":TARGET_PHASE,"native_games":len(native),"minimum_games":MIN_GAMES,"active_for_production":False,"status":"COLLECTING",
           "baseline_role":"heuristic_structural_champion","native_rejection_reasons":rejections,"source_rows":len(source),
-          "replacement_policy":"Do not hand-tune production coefficients. Rich/native modules may replace or augment the heuristic champion only after exact current-generation PIT walk-forward, untouched run holdout, and downstream ML/RL/TOTAL proper-score validation.",
+          "replacement_policy":"Do not hand-tune production coefficients. Rich/native modules may replace or augment the heuristic champion only after exact current-generation promotion-grade PIT walk-forward, untouched run holdout, and downstream ML/RL/TOTAL proper-score validation.",
           "native_feature_coverage":coverage,"available_native_modules":list(NATIVE_MODULES),
           "safety":{"market_probability_used":False,"historical_reconstruction_used_for_promotion":False,"point_in_time_required":True,
-                    "point_in_time_validated_from_feature_provenance":True,"native_predictive_contract_required":True,"phase_specific_training":True,
+                    "point_in_time_validated_from_feature_provenance":True,"promotion_grade_source_attestation_required":True,
+                    "native_predictive_contract_required":True,"phase_specific_training":True,
                     "selector_unchanged_until_promotion":True,"manual_structural_retuning_allowed_without_oos_evidence":False,
                     "weather_requires_native_pregame_snapshot":True,"downstream_probability_gate_required":True}}
     if len(native)<MIN_GAMES:return base
@@ -212,7 +213,7 @@ def build(rows: list[dict[str,Any]] | None = None) -> dict[str,Any]:
     base.update({"status":status,"active_for_production":passed,"train_games":len(train),"holdout_games":len(hold),
                  "selection":{"selected_modules":list(selected),"ridge":ridge,"walk_forward":wf},"model":model,
                  "outer_holdout":outer,"downstream_probability_holdout":downstream,
-                 "promotion_rule":"FINAL only; >=300 exact PIT V13-contract games; train-only walk-forward >=75%; >=100-game untouched run holdout improves RMSE and NB-NLL with MAE regression <=0.01; same untouched holdout must also improve Brier and not worsen LogLoss for ML, RUNLINE and TOTAL with >=75 independent targets each."})
+                 "promotion_rule":"FINAL only; >=300 exact promotion-grade PIT V13-contract games; every feature source timestamp must be attested/durable; train-only walk-forward >=75%; >=100-game untouched run holdout improves RMSE and NB-NLL with MAE regression <=0.01; same untouched holdout must also improve Brier and not worsen LogLoss for ML, RUNLINE and TOTAL with >=75 independent targets each."})
     return base
 
 
