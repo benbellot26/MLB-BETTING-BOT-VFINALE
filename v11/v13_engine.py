@@ -257,7 +257,7 @@ class V13Engine:
             option["p_push_model"] = round(max(0.0, min(1.0, push)), 6)
 
     def _ensure_standard_runlines(self, result: dict[str, Any]) -> None:
-        """Preserve the V13 +/-1.5 analysis surface without mutating V12 globals."""
+        """Guarantee both standard +/-1.5 pairs without mutating V12 globals."""
         ctx = result.get("ctx") or {}
         home = str(ctx.get("home") or "")
         away = str(ctx.get("away") or "")
@@ -273,73 +273,82 @@ class V13Engine:
         dispersion = _num((result.get("features") or {}).get("run_dispersion"), config.RUN_DISPERSION)
         env_sigma = _num((result.get("features") or {}).get("run_environment_sigma"), config.RUN_ENV_SIGMA)
         canonical = (result.get("canonical_lines") or {}).get("RUNLINE")
+        champion = pro_model.load_model()
 
-        for name, side, point in ((home, "home", -1.5), (away, "away", 1.5)):
-            key = ("RUNLINE", _norm(name), str(point))
-            if key in existing:
-                continue
-            structural_win, structural_push = base_engine.prob_cover_parts(
-                shmu,
-                samu,
-                side,
-                point,
-                config.RUN_DISPERSION,
-                config.RUN_ENV_SIGMA,
-            )
-            learned_win, learned_push = base_engine.prob_cover_parts(
-                hmu,
-                amu,
-                side,
-                point,
-                dispersion,
-                env_sigma,
-            )
-            p_structural = structural_win / max(1e-9, 1.0 - structural_push)
-            p_learned = learned_win / max(1e-9, 1.0 - learned_push)
-            sharp = market.sharp_consensus(event, "RUNLINE", name, point, as_of=as_of)
-            price = core.winamax_price(event, "RUNLINE", name, point)
-            uncertainty = pro_model.model_uncertainty(
-                "RUNLINE",
-                p_learned,
-                phase,
-                sharp.get("dispersion"),
-                1.0,
-                pro_model.load_model(),
-            )
-            result.setdefault("options", []).append(
-                {
-                    "market": "RUNLINE",
-                    "name": name,
-                    "point": point,
-                    "is_canonical_line": canonical is not None and abs(_num(canonical) - point) <= 1e-6,
-                    "line_source": "v13-standard-1.5",
-                    "execution_available": bool(price and price > 1),
-                    "p_structural": round(core.clamp(p_structural), 6),
-                    "p_learned": round(core.clamp(p_learned), 6),
-                    "p_model": round(core.clamp(p_learned), 6),
-                    "p_effective": round(core.clamp(p_learned), 6),
-                    "p_win": round(learned_win, 6),
-                    "p_push": round(learned_push, 6),
-                    "p_push_model": round(learned_push, 6),
-                    "p_market": round(float(sharp["p"]), 6) if sharp.get("p") is not None else None,
-                    "refs": int(sharp.get("n") or 0),
-                    "sharp_books": sharp.get("books", []),
-                    "sharp_weight": 0.0,
-                    "sharp_dispersion": sharp.get("dispersion"),
-                    "sharp_robustness": sharp.get("robustness"),
-                    "sharp_max_age_min": sharp.get("max_age_min"),
-                    "sharp_effective_n": sharp.get("effective_n"),
-                    "quality": quality,
-                    "model_uncertainty": round(_num(uncertainty), 6),
-                    "calibration_source": "v13-baseball-only",
-                    "phase_model": phase,
-                    "winamax_eval": {
-                        "price": price,
-                        "official_selected": False,
-                        "official_units": 0,
-                    },
-                }
-            )
+        # A home point creates its complementary away point. Iterating both
+        # standard home lines preserves the old V13 analysis surface:
+        # Home -1.5 / Away +1.5 AND Home +1.5 / Away -1.5.
+        for home_point in (-1.5, 1.5):
+            for name, side, point in (
+                (home, "home", home_point),
+                (away, "away", -home_point),
+            ):
+                key = ("RUNLINE", _norm(name), str(point))
+                if key in existing:
+                    continue
+                structural_win, structural_push = base_engine.prob_cover_parts(
+                    shmu,
+                    samu,
+                    side,
+                    point,
+                    config.RUN_DISPERSION,
+                    config.RUN_ENV_SIGMA,
+                )
+                learned_win, learned_push = base_engine.prob_cover_parts(
+                    hmu,
+                    amu,
+                    side,
+                    point,
+                    dispersion,
+                    env_sigma,
+                )
+                p_structural = structural_win / max(1e-9, 1.0 - structural_push)
+                p_learned = learned_win / max(1e-9, 1.0 - learned_push)
+                sharp = market.sharp_consensus(event, "RUNLINE", name, point, as_of=as_of)
+                price = core.winamax_price(event, "RUNLINE", name, point)
+                uncertainty = pro_model.model_uncertainty(
+                    "RUNLINE",
+                    p_learned,
+                    phase,
+                    sharp.get("dispersion"),
+                    1.0,
+                    champion,
+                )
+                result.setdefault("options", []).append(
+                    {
+                        "market": "RUNLINE",
+                        "name": name,
+                        "point": point,
+                        "is_canonical_line": canonical is not None and abs(_num(canonical) - point) <= 1e-6,
+                        "line_source": "v13-standard-1.5",
+                        "execution_available": bool(price and price > 1),
+                        "p_structural": round(core.clamp(p_structural), 6),
+                        "p_learned": round(core.clamp(p_learned), 6),
+                        "p_model": round(core.clamp(p_learned), 6),
+                        "p_effective": round(core.clamp(p_learned), 6),
+                        "p_win": round(learned_win, 6),
+                        "p_push": round(learned_push, 6),
+                        "p_push_model": round(learned_push, 6),
+                        "p_market": round(float(sharp["p"]), 6) if sharp.get("p") is not None else None,
+                        "refs": int(sharp.get("n") or 0),
+                        "sharp_books": sharp.get("books", []),
+                        "sharp_weight": 0.0,
+                        "sharp_dispersion": sharp.get("dispersion"),
+                        "sharp_robustness": sharp.get("robustness"),
+                        "sharp_max_age_min": sharp.get("max_age_min"),
+                        "sharp_effective_n": sharp.get("effective_n"),
+                        "quality": quality,
+                        "model_uncertainty": round(_num(uncertainty), 6),
+                        "calibration_source": "v13-baseball-only",
+                        "phase_model": phase,
+                        "winamax_eval": {
+                            "price": price,
+                            "official_selected": False,
+                            "official_units": 0,
+                        },
+                    }
+                )
+                existing.add(key)
 
     def _apply_probability_contract(self, result: dict[str, Any]) -> dict[str, Any]:
         pipeline = self._pipeline or ProbabilityPipelineV13.from_artifact()
