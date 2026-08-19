@@ -15,6 +15,7 @@ def _num(x: Any, d: float = 0.0) -> float:
 def empirical_interval(p: float, *, calibration_n: int, phase_n: int | None = None,
                        market_n: int | None = None, reliability_gap: float | None = None,
                        empirical_sigma: float | None = None,
+                       empirical_includes_sampling: bool = False,
                        sharp_dispersion: float | None = None, data_quality: float = 1.0,
                        z: float = 1.645) -> dict[str,float | int | str | bool | None]:
     p = max(.001,min(.999,_num(p,.5)))
@@ -28,15 +29,17 @@ def empirical_interval(p: float, *, calibration_n: int, phase_n: int | None = No
     else:
         n = 1; evidence_scope = "none"; scope_penalty = 1.0
 
-    sampling = scope_penalty*math.sqrt(max(.01,p*(1-p))/max(1,n))
+    raw_sampling = scope_penalty*math.sqrt(max(.01,p*(1-p))/max(1,n))
     calibration = abs(_num(reliability_gap,0.0))
     empirical = max(0.0,_num(empirical_sigma,0.0))
     dq_score = max(0.0,min(1.0,_num(data_quality,1.0)))
     dq = .065*max(0.0,1-dq_score)
 
-    # This is an engineering uncertainty band, not a frequentist confidence
-    # interval with empirically demonstrated 90% coverage. The z=1.645 scaling
-    # remains a nominal width convention only until coverage is validated.
+    # Reliability-bin sigma already contains that bin's sampling error.  When
+    # the caller supplies such a sigma, do not add a second sqrt(p(1-p)/n)
+    # term. This keeps the band conservative without systematically counting
+    # the same finite-sample uncertainty twice.
+    sampling = 0.0 if empirical > 0 and empirical_includes_sampling else raw_sampling
     epistemic_floor = max(calibration, empirical)
     sigma = math.sqrt(sampling*sampling + epistemic_floor*epistemic_floor + dq*dq)
     sigma = max(.018,min(.14,sigma))
@@ -45,17 +48,20 @@ def empirical_interval(p: float, *, calibration_n: int, phase_n: int | None = No
         "sigma":sigma,
         "low":max(.001,p-z*sigma),
         "high":min(.999,p+z*sigma),
-        "confidence_level":.90,  # backward-compatible nominal width metadata
+        "confidence_level":.90,
         "nominal_level":.90,
         "coverage_validated":False,
         "user_facing_type":"model_uncertainty_band",
-        "method":"phase-aware-empirical-reliability-plus-data-quality-v3",
+        "method":"phase-aware-empirical-reliability-plus-active-data-quality-v4",
         "evidence_scope":evidence_scope,
         "effective_n":n,
         "phase_n":pn,
         "market_n":mn,
         "data_quality":dq_score,
+        "raw_sampling_sigma":raw_sampling,
+        "sampling_sigma_added":sampling,
         "empirical_reliability_sigma": empirical if empirical > 0 else None,
+        "empirical_sigma_includes_sampling":bool(empirical_includes_sampling),
         "market_disagreement_sigma": market_disagreement,
         "market_disagreement_affects_baseball_interval": False,
     }
