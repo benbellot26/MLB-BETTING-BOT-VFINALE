@@ -1,38 +1,169 @@
 {
-  "activation_rule": "historical validation/test candidate must remain valid AND >=20 current-generation genuine FINAL replays, evaluated from a persisted pre-candidate dispersion baseline, must improve NB NLL",
+  "activation_rule": "every expanding-season 2022-2026 walk-forward fold must improve untouched-season NB NLL by >0.002; then >=60 current-generation genuine FINAL V13 games excluded from historical fitting must show positive NLL gain with >=90% bootstrap probability",
   "active": false,
+  "baseline_dispersion": 7.5,
   "calibration_effect": "none",
   "current_generation_transfer": {
-    "baseline_nb_nll": 2.5781257640331123,
+    "baseline_nb_nll": null,
     "baseline_source": "persisted pre-distribution-candidate dispersion",
-    "candidate_nb_nll": 2.5465065684268233,
-    "games": 12,
-    "nll_gain": 0.03161919560628901,
-    "team_observations": 24
+    "candidate_nb_nll": null,
+    "games": 0,
+    "nll_gain": null,
+    "team_observations": 0
   },
-  "dispersion": 2.835691107635618,
+  "dataset_content_sha256": "8121851fbece22b3f79b1c1188622ebe574fc38d54d29020ed4763195dac7e64",
+  "dispersion": 3.5,
   "environment_sigma": 0.08,
-  "evidence_boundary": "Applies only to score-distribution dispersion in FINAL phase. Historical evidence establishes candidacy; production activation additionally requires independent current-generation FINAL transfer.",
-  "exact_final_games": 12,
-  "exact_replay_games": 29,
-  "exact_replay_nll_gain": 0.05000676869249698,
-  "exact_transfer_required_games": 20,
+  "evidence_boundary": "Applies only to score-distribution dispersion in FINAL phase. Historical evidence cannot masquerade as native V13 evidence.",
+  "exact_final_games": 0,
+  "exact_replay_games": 0,
+  "exact_replay_nll_gain": null,
+  "exact_transfer_bootstrap": {
+    "draws": 0,
+    "nll_gain_positive_probability": null,
+    "passes": false
+  },
+  "exact_transfer_required_games": 60,
   "exact_transfer_status": "COLLECTING_FINAL_ONLY",
+  "excluded_exact_transfer_game_ids": [],
+  "full_history_nb_nll": 2.454128880769345,
   "generation_gate": true,
   "historical_candidate_active": true,
+  "historical_games": 13104,
   "historical_odds_used": false,
+  "historical_seasons": [
+    2021,
+    2022,
+    2023,
+    2024,
+    2025,
+    2026
+  ],
   "independent_pre_candidate_baseline_required": true,
   "market_data_used": false,
-  "model_generation": "v13.5.2-gen-structural-nb-independent-transfer-v2",
+  "model_generation": "v13.10-gen-structural-nb-independent-transfer-park-extra-surface-v3",
   "phase_scope": "FINAL",
-  "schema": "v13-distribution-prior-v1",
-  "selection_rule": "Least-complexity distribution variant improving chronological validation, untouched future test, and historical exact replay transfer cohort.",
-  "source_games": 1801,
-  "test_games": 356,
-  "test_nll_gain": 0.06059977835222963,
-  "transfer_caveat": "The historical dispersion is a candidate until it independently transfers to the exact current predictive generation.",
-  "validation_games": 341,
-  "validation_nll_gain": 0.056771002736314635,
-  "variant": "dispersion_only",
-  "warm_games": 1724
+  "safety": {
+    "environment_sigma_learned_from_reconstructed_history": false,
+    "exact_transfer_games_excluded_from_historical_fit": true,
+    "exact_transfer_generation_locked": true,
+    "exact_transfer_required_for_activation": true,
+    "historical_odds_used": false,
+    "market_probability_used": false,
+    "reconstructed_history_is_native_evidence": false
+  },
+  "schema": "v13-distribution-prior-v2",
+  "selection_rule": "fit the single NB dispersion on strictly prior seasons; no market feature or target-season outcome is available during fitting",
+  "source": "2021-2026 leakage-separated free reconstructed team history",
+  "source_games": 14043,
+  "test_games": 1743,
+  "test_nll_gain": 0.03640828792373085,
+  "transfer_caveat": "Reconstructed history establishes a distribution candidate only; production activation still requires independent current-generation FINAL transfer.",
+  "validation_games": 2276,
+  "validation_nll_gain": 0.039381066360032246,
+  "variant": "dispersion_only_2021_2026_walk_forward",
+  "walk_forward": {
+    "folds": [
+      {
+        "baseline_dispersion": 7.5,
+        "baseline_nb_nll": 2.456968318327616,
+        "candidate_nb_nll": 2.4261526605205384,
+        "fitted_dispersion": 3.7,
+        "nll_gain": 0.030815657807077734,
+        "passes": true,
+        "test_games": 2270,
+        "test_season": 2022,
+        "train_games": 2271,
+        "train_nb_nll": 2.457777963524685,
+        "train_seasons": [
+          2021
+        ]
+      },
+      {
+        "baseline_dispersion": 7.5,
+        "baseline_nb_nll": 2.499192452566265,
+        "candidate_nb_nll": 2.472972222205438,
+        "fitted_dispersion": 3.6,
+        "nll_gain": 0.026220230360827212,
+        "passes": true,
+        "test_games": 2273,
+        "test_season": 2023,
+        "train_games": 4541,
+        "train_nb_nll": 2.4419011571142026,
+        "train_seasons": [
+          2021,
+          2022
+        ]
+      },
+      {
+        "baseline_dispersion": 7.5,
+        "baseline_nb_nll": 2.4627139734278543,
+        "candidate_nb_nll": 2.435779131950413,
+        "fitted_dispersion": 3.6,
+        "nll_gain": 0.026934841477441296,
+        "passes": true,
+        "test_games": 2271,
+        "test_season": 2024,
+        "train_games": 6814,
+        "train_nb_nll": 2.4522657786217428,
+        "train_seasons": [
+          2021,
+          2022,
+          2023
+        ]
+      },
+      {
+        "baseline_dispersion": 7.5,
+        "baseline_nb_nll": 2.5067119026450526,
+        "candidate_nb_nll": 2.4673308362850204,
+        "fitted_dispersion": 3.6,
+        "nll_gain": 0.039381066360032246,
+        "passes": true,
+        "test_games": 2276,
+        "test_season": 2025,
+        "train_games": 9085,
+        "train_nb_nll": 2.4481445706315843,
+        "train_seasons": [
+          2021,
+          2022,
+          2023,
+          2024
+        ]
+      },
+      {
+        "baseline_dispersion": 7.5,
+        "baseline_nb_nll": 2.5046954499131586,
+        "candidate_nb_nll": 2.4682871619894278,
+        "fitted_dispersion": 3.55,
+        "nll_gain": 0.03640828792373085,
+        "passes": true,
+        "test_games": 1743,
+        "test_season": 2026,
+        "train_games": 11361,
+        "train_nb_nll": 2.451967312610153,
+        "train_seasons": [
+          2021,
+          2022,
+          2023,
+          2024,
+          2025
+        ]
+      }
+    ],
+    "folds_passed": 5,
+    "folds_total": 5,
+    "minimum_nll_gain_per_fold": 0.002,
+    "minimum_passing_folds": 4,
+    "policy": "expanding-season walk-forward: fit dispersion only on seasons strictly earlier than each untouched test season",
+    "seasons": [
+      2021,
+      2022,
+      2023,
+      2024,
+      2025,
+      2026
+    ],
+    "stable": true
+  },
+  "warm_games": 13104
 }

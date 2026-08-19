@@ -1,96 +1,244 @@
 {
-  "activation_rule": "historical chronological validation/test must pass AND >=20 current-generation genuine FINAL V13 transfer games, evaluated from an independent pre-prior mean baseline and its actual baseline dispersion, must pass RMSE/NB-NLL with MAE regression <=0.01",
+  "activation_rule": "all nested season walk-forward folds must pass, then >=60 current-generation genuine FINAL V13 transfer games excluded from historical fitting must improve RMSE and NB-NLL with MAE regression <=0.01 and >=90% bootstrap probability of positive NLL gain",
   "active": false,
-  "exact_final_games": 12,
-  "exact_games": 12,
+  "dataset_content_sha256": "8121851fbece22b3f79b1c1188622ebe574fc38d54d29020ed4763195dac7e64",
+  "exact_final_games": 0,
+  "exact_games": 0,
   "exact_phase_counts": {
-    "FINAL": 12
+    "FINAL": 0
   },
   "exact_transfer": {
-    "baseline": {
-      "mae": 2.6339376852283634,
-      "nb_nll": 2.5781257640331123,
-      "rmse": 3.2984638007463327,
-      "team_observations": 24
-    },
-    "candidate": {
-      "mae": 2.593659974081992,
-      "nb_nll": 2.5695368256122904,
-      "rmse": 3.2813423747354395,
-      "team_observations": 24
-    },
-    "games": 12,
-    "mae_gain": 0.04027771114637124,
-    "nll_gain": 0.008588938420821979,
-    "rmse_gain": 0.01712142601089317
+    "baseline": {},
+    "candidate": {},
+    "games": 0,
+    "mae_gain": null,
+    "nll_gain": null,
+    "rmse_gain": null
   },
-  "exact_transfer_required_games": 20,
+  "exact_transfer_bootstrap": {
+    "draws": 0,
+    "nll_gain_positive_probability": null,
+    "passes": false
+  },
+  "exact_transfer_required_games": 60,
   "exact_transfer_status": "COLLECTING_FINAL_ONLY",
-  "historical_candidate_active": true,
-  "historical_games": 1724,
+  "excluded_exact_transfer_game_ids": [],
+  "historical_candidate_active": false,
+  "historical_games": 13104,
+  "historical_seasons": [
+    2021,
+    2022,
+    2023,
+    2024,
+    2025,
+    2026
+  ],
   "model": {
-    "away_bias": 1.7889096574516503,
+    "away_bias": 0.4037917950438048,
     "formula": "mu + side_bias + slope_delta*mu",
-    "home_bias": 1.7461393951673727,
-    "max_adjustment": 0.75,
+    "home_bias": 0.33354738661877914,
+    "max_adjustment": 0.15,
     "ridge": 10.0,
-    "slope_delta": -0.3978879088468419
+    "slope_delta": -0.08683459097057715
   },
-  "model_generation": "v13.5.2-gen-structural-nb-independent-transfer-v2",
+  "model_generation": "v13.10-gen-structural-nb-independent-transfer-park-extra-surface-v3",
   "phase_scope": "FINAL",
   "safety": {
     "applies_only_when_native_residual_and_legacy_run_bootstrap_are_inactive": true,
+    "exact_transfer_games_excluded_from_historical_fit": true,
     "exact_transfer_generation_locked": true,
     "exact_transfer_required_for_activation": true,
-    "exact_transfer_uses_baseline_dispersion": true,
-    "feature_vector_fabricated": false,
     "historical_odds_used": false,
     "independent_pre_candidate_baseline_required": true,
-    "market_probability_used": false
+    "market_probability_used": false,
+    "reconstructed_history_is_native_evidence": false,
+    "runtime_adjustment_cap_runs": 0.15
   },
-  "schema": "v13-run-mean-prior-v1",
+  "schema": "v13-run-mean-prior-v2",
   "selected_variant": "side_bias_shared_slope",
-  "source": "1801-game leakage-safe reconstructed FINAL cohort",
-  "split": {
-    "test": 356,
-    "train": 1027,
-    "validation": 341
-  },
-  "test": {
-    "baseline": {
-      "mae": 2.480167415730337,
-      "nb_nll": 2.4424923683006368,
-      "rmse": 3.1629787628679917,
-      "team_observations": 712
-    },
-    "candidate": {
-      "mae": 2.475621788874816,
-      "nb_nll": 2.440010247651874,
-      "rmse": 3.1573631198632968,
-      "team_observations": 712
-    },
-    "games": 356,
-    "mae_gain": 0.004545626855521068,
-    "nll_gain": 0.0024821206487626313,
-    "rmse_gain": 0.00561564300469497
-  },
-  "transfer_caveat": "The historical model is only a candidate until current-generation native FINAL transfer is independently validated from a baseline captured before the candidate layer.",
-  "validation": {
-    "baseline": {
-      "mae": 2.5562277126099704,
-      "nb_nll": 2.486710408381761,
-      "rmse": 3.3495456403063986,
-      "team_observations": 682
-    },
-    "candidate": {
-      "mae": 2.537092902121904,
-      "nb_nll": 2.4849507080513513,
-      "rmse": 3.3471387170394364,
-      "team_observations": 682
-    },
-    "games": 341,
-    "mae_gain": 0.0191348104880662,
-    "nll_gain": 0.0017597003304095082,
-    "rmse_gain": 0.0024069232669621243
+  "source": "2021-2026 leakage-separated free reconstructed team history",
+  "source_games": 14043,
+  "transfer_caveat": "Reconstructed history may propose a small run-mean correction, but it cannot alter V13 until independent current-generation FINAL transfer proves that the correction improves the pre-candidate V13 baseline.",
+  "walk_forward": {
+    "folds": [
+      {
+        "passes": false,
+        "reason": "NO_VALIDATION_PASSING_VARIANT",
+        "test_games": 2273,
+        "test_season": 2023,
+        "train_games": 2271,
+        "train_seasons": [
+          2021
+        ],
+        "validation_games": 2270,
+        "validation_season": 2022
+      },
+      {
+        "passes": true,
+        "selected_ridge": 10.0,
+        "selected_variant": "side_bias",
+        "test": {
+          "baseline": {
+            "mae": 2.4237578205594565,
+            "nb_nll": 2.4400532470366674,
+            "rmse": 3.0700689435510995,
+            "team_observations": 4542
+          },
+          "candidate": {
+            "mae": 2.422030086437708,
+            "nb_nll": 2.4398759841801665,
+            "rmse": 3.0693341033128783,
+            "team_observations": 4542
+          },
+          "games": 2271,
+          "mae_gain": 0.0017277341217485365,
+          "nll_gain": 0.00017726285650088158,
+          "rmse_gain": 0.0007348402382212349
+        },
+        "test_games": 2271,
+        "test_season": 2024,
+        "train_games": 4541,
+        "train_seasons": [
+          2021,
+          2022
+        ],
+        "validation": {
+          "baseline": {
+            "mae": 2.494330168324244,
+            "nb_nll": 2.4781458653256405,
+            "rmse": 3.1736063378829296,
+            "team_observations": 4546
+          },
+          "candidate": {
+            "mae": 2.4948728179706703,
+            "nb_nll": 2.4780997966043325,
+            "rmse": 3.1734174889014866,
+            "team_observations": 4546
+          },
+          "games": 2273,
+          "mae_gain": -0.000542649646426252,
+          "nll_gain": 4.606872130796802e-05,
+          "rmse_gain": 0.00018884898144300166
+        },
+        "validation_games": 2273,
+        "validation_season": 2023
+      },
+      {
+        "passes": false,
+        "selected_ridge": 10.0,
+        "selected_variant": "side_bias",
+        "test": {
+          "baseline": {
+            "mae": 2.512225279964039,
+            "nb_nll": 2.467690813261177,
+            "rmse": 3.2239602564120697,
+            "team_observations": 4552
+          },
+          "candidate": {
+            "mae": 2.5095194655191992,
+            "nb_nll": 2.467770892705369,
+            "rmse": 3.2239747437391295,
+            "team_observations": 4552
+          },
+          "games": 2276,
+          "mae_gain": 0.002705814444839749,
+          "nll_gain": -8.00794441921937e-05,
+          "rmse_gain": -1.4487327059775623e-05
+        },
+        "test_games": 2276,
+        "test_season": 2025,
+        "train_games": 6814,
+        "train_seasons": [
+          2021,
+          2022,
+          2023
+        ],
+        "validation": {
+          "baseline": {
+            "mae": 2.4237578205594565,
+            "nb_nll": 2.4400532470366674,
+            "rmse": 3.0700689435510995,
+            "team_observations": 4542
+          },
+          "candidate": {
+            "mae": 2.422030086437708,
+            "nb_nll": 2.4398759841801665,
+            "rmse": 3.0693341033128783,
+            "team_observations": 4542
+          },
+          "games": 2271,
+          "mae_gain": 0.0017277341217485365,
+          "nll_gain": 0.00017726285650088158,
+          "rmse_gain": 0.0007348402382212349
+        },
+        "validation_games": 2271,
+        "validation_season": 2024
+      },
+      {
+        "passes": true,
+        "selected_ridge": 10.0,
+        "selected_variant": "side_bias_shared_slope",
+        "test": {
+          "baseline": {
+            "mae": 2.5307544058710656,
+            "nb_nll": 2.4700891948784447,
+            "rmse": 3.2200108724536225,
+            "team_observations": 3486
+          },
+          "candidate": {
+            "mae": 2.527503028969883,
+            "nb_nll": 2.4697696957419395,
+            "rmse": 3.2187699253589916,
+            "team_observations": 3486
+          },
+          "games": 1743,
+          "mae_gain": 0.003251376901182379,
+          "nll_gain": 0.0003194991365051969,
+          "rmse_gain": 0.001240947094630851
+        },
+        "test_games": 1743,
+        "test_season": 2026,
+        "train_games": 9085,
+        "train_seasons": [
+          2021,
+          2022,
+          2023,
+          2024
+        ],
+        "validation": {
+          "baseline": {
+            "mae": 2.512225279964039,
+            "nb_nll": 2.467690813261177,
+            "rmse": 3.2239602564120697,
+            "team_observations": 4552
+          },
+          "candidate": {
+            "mae": 2.50989696904936,
+            "nb_nll": 2.4676657076560504,
+            "rmse": 3.223748653442297,
+            "team_observations": 4552
+          },
+          "games": 2276,
+          "mae_gain": 0.0023283109146787773,
+          "nll_gain": 2.5105605126363173e-05,
+          "rmse_gain": 0.00021160296977251747
+        },
+        "validation_games": 2276,
+        "validation_season": 2025
+      }
+    ],
+    "folds_passed": 2,
+    "folds_total": 4,
+    "minimum_passing_folds": 3,
+    "policy": "nested expanding-season walk-forward: choose hyperparameters on season t-1 using only seasons <t-1, refit through t-1, score untouched season t",
+    "seasons": [
+      2021,
+      2022,
+      2023,
+      2024,
+      2025,
+      2026
+    ],
+    "stable": false
   }
 }
