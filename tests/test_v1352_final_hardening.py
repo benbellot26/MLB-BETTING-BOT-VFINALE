@@ -147,8 +147,11 @@ class V1352FinalHardeningTests(unittest.TestCase):
         self.assertIn("PASS_FINAL_ONLY", text)
         self.assertIn("MODEL_GENERATION_FINGERPRINT", text)
         self.assertIn("workflow_dispatch:", text)
-        self.assertNotIn("schedule:", text)
-        self.assertNotIn("cron:", text)
+        self.assertIn("schedule:", text)
+        self.assertIn("- cron: '20 7 * * *'", text)
+        self.assertIn("group: mlb-betting-bot-state", text)
+        self.assertIn("exact_transfer_bootstrap", text)
+        self.assertIn("MIN_EXACT_FINAL", text)
 
     def test_transfer_backfill_uses_persisted_pre_candidate_baseline(self):
         runtime=Path("v11/v13_runtime.py").read_text(encoding="utf-8")
@@ -195,6 +198,8 @@ class V1352FinalHardeningTests(unittest.TestCase):
         self.assertIn('assert status == "PASS_FINAL_ONLY"', text)
         self.assertIn('if dist.get("active"):', text)
         self.assertIn('MODEL_GENERATION_FINGERPRINT', text)
+        self.assertIn('exact_transfer_bootstrap', text)
+        self.assertIn('walk_forward', text)
 
     def test_runtime_restores_both_standard_runline_pairs(self):
         engine=Path("v11/v13_engine.py").read_text(encoding="utf-8")
