@@ -81,6 +81,10 @@ def _starter_status(name):
 
 def send_game(result, portfolio):
     gid=result.get("game_pk")
+    final_only=str(os.getenv("V13_DISCORD_FINAL_ONLY","0")).lower() in {"1","true","yes"}
+    if final_only and str(result.get("phase") or "").upper()!="FINAL":
+        core.logging.info("Discord V13 scheduled mode: phase %s supprimée gamePk=%s",result.get("phase"),gid)
+        return True
     force=str(os.getenv("V13_FORCE_DISCORD_RESEND","0")).lower() in {"1","true","yes"}
     if not force and delivery.sent(gid):
         core.logging.info("Discord V13 déjà livré gamePk=%s; doublon inter-run supprimé",gid)
