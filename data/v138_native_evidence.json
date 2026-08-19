@@ -1,31 +1,118 @@
 {
   "bookmaker_weights": {
+    "activation_scope": "per-market; weights are never learned from a pooled ML/RUNLINE/TOTAL sample",
     "active": false,
-    "minimum_n": 300,
+    "by_market": {
+      "ML": {
+        "active": false,
+        "minimum_n": 300,
+        "n": 0,
+        "reason": "INSUFFICIENT_MARKET_SPECIFIC_PIT_BOOK_TARGETS"
+      },
+      "RUNLINE": {
+        "active": false,
+        "minimum_n": 300,
+        "n": 0,
+        "reason": "INSUFFICIENT_MARKET_SPECIFIC_PIT_BOOK_TARGETS"
+      },
+      "TOTAL": {
+        "active": false,
+        "minimum_n": 300,
+        "n": 0,
+        "reason": "INSUFFICIENT_MARKET_SPECIFIC_PIT_BOOK_TARGETS"
+      }
+    },
+    "minimum_n_per_market": 300,
     "n": 0,
-    "reason": "INSUFFICIENT_PIT_BOOK_TARGETS"
+    "production_applied": false
   },
   "dynamic_calibration": {
+    "activation_scope": "per-market; aggregate active only when ML, RUNLINE and TOTAL each pass independently",
     "active": false,
-    "minimum_n": 300,
+    "by_market": {
+      "ML": {
+        "active": false,
+        "minimum_n": 300,
+        "n": 69,
+        "reason": "INSUFFICIENT_MARKET_SPECIFIC_NATIVE_TARGETS"
+      },
+      "RUNLINE": {
+        "active": false,
+        "minimum_n": 300,
+        "n": 0,
+        "reason": "INSUFFICIENT_MARKET_SPECIFIC_NATIVE_TARGETS"
+      },
+      "TOTAL": {
+        "active": false,
+        "minimum_n": 300,
+        "n": 0,
+        "reason": "INSUFFICIENT_MARKET_SPECIFIC_NATIVE_TARGETS"
+      }
+    },
+    "minimum_n_per_market": 300,
     "n": 69,
-    "reason": "INSUFFICIENT_NATIVE_TARGETS"
+    "production_applied": false
   },
   "independent_native_targets": 69,
-  "policy": "all gates use independent canonical settled pregame observations; OOS gates are chronological and never alter production automatically",
-  "schema": "v13-8-native-evidence-gates-v1",
+  "market_counts": {
+    "ML": 69,
+    "RUNLINE": 0,
+    "TOTAL": 0
+  },
+  "policy": "all gates use independent canonical settled pregame observations; every learned gate is market-specific, chronological OOS and never alters production automatically",
+  "schema": "v13-10-native-evidence-gates-v2",
   "uncertainty_coverage": {
+    "activation_scope": "per-market; aggregate active only when ML, RUNLINE and TOTAL each pass independently",
     "active": false,
-    "bins": [],
-    "calibration_mae": null,
-    "criterion": ">=300 independent targets, >=5 bins with n>=30, >=80% weighted empirical-rate coverage and calibration MAE <= mean half-width",
-    "evaluated_n": 0,
-    "frequentist_confidence_interval": false,
-    "mean_interval_half_width": null,
-    "minimum_n": 300,
+    "by_market": {
+      "ML": {
+        "active": false,
+        "bins": [],
+        "calibration_mae": null,
+        "criterion": ">=300 independent targets in this market, >=5 bins with n>=30, >=80% weighted empirical-rate coverage and calibration MAE <= mean half-width",
+        "evaluated_n": 0,
+        "frequentist_confidence_interval": false,
+        "mean_interval_half_width": null,
+        "minimum_n": 300,
+        "n": 15,
+        "reason": "INSUFFICIENT_MARKET_SPECIFIC_NATIVE_TARGETS",
+        "usable_bins": 0,
+        "user_facing_type": "model_uncertainty_band",
+        "weighted_bin_coverage": null
+      },
+      "RUNLINE": {
+        "active": false,
+        "bins": [],
+        "calibration_mae": null,
+        "criterion": ">=300 independent targets in this market, >=5 bins with n>=30, >=80% weighted empirical-rate coverage and calibration MAE <= mean half-width",
+        "evaluated_n": 0,
+        "frequentist_confidence_interval": false,
+        "mean_interval_half_width": null,
+        "minimum_n": 300,
+        "n": 0,
+        "reason": "INSUFFICIENT_MARKET_SPECIFIC_NATIVE_TARGETS",
+        "usable_bins": 0,
+        "user_facing_type": "model_uncertainty_band",
+        "weighted_bin_coverage": null
+      },
+      "TOTAL": {
+        "active": false,
+        "bins": [],
+        "calibration_mae": null,
+        "criterion": ">=300 independent targets in this market, >=5 bins with n>=30, >=80% weighted empirical-rate coverage and calibration MAE <= mean half-width",
+        "evaluated_n": 0,
+        "frequentist_confidence_interval": false,
+        "mean_interval_half_width": null,
+        "minimum_n": 300,
+        "n": 0,
+        "reason": "INSUFFICIENT_MARKET_SPECIFIC_NATIVE_TARGETS",
+        "usable_bins": 0,
+        "user_facing_type": "model_uncertainty_band",
+        "weighted_bin_coverage": null
+      }
+    },
+    "minimum_n_per_market": 300,
     "n": 15,
-    "usable_bins": 0,
-    "user_facing_type": "model_uncertainty_band",
-    "weighted_bin_coverage": null
+    "production_applied": false
   }
 }

@@ -2,9 +2,10 @@
   "alerts": [
     "weather_zero_coverage"
   ],
-  "claim": "observability only; no automatic model retuning",
+  "claim": "observability only; provider freshness is explicit and stale artifacts cannot look silently current",
   "dataset": {
-    "dataset_version": "75e5c050da555a41747ae1fe54a418c2e506b9c6",
+    "dataset_content_sha256": "5fd8ca72257419fe841e8e9025ad2eacf931ebbb4fe755773f71e784f16dcb54",
+    "dataset_version": "81c3c33072e03b312dde248ae11e504f88eacfe2",
     "feature_contract_sha256": "08b35bb22ea34adb3113de13d335975ca00e401b9c1d80deada2473a9b661a61",
     "feature_rows": 14043,
     "label_rows": 14043
@@ -129,19 +130,27 @@
       }
     }
   },
-  "generated_at": "2026-08-19T17:10:19.382779+00:00",
+  "generated_at": "2026-08-19T18:13:30.936699+00:00",
   "provider_current": {
     "free_health_alerts": [],
     "free_health_status": null,
     "free_health_warnings": [],
+    "freshness": {
+      "mlb_state_age_hours": 5.777659289722223,
+      "park_age_hours": 5.777686815555555,
+      "provider_stale_threshold_hours": 36.0,
+      "statcast_age_hours": 18.224994583055555,
+      "statcast_stale_threshold_hours": 72.0,
+      "weather_age_hours": 5.735944329722222
+    },
     "il_signals": 85,
-    "observed_at": "2026-08-19T17:10:18.421698+00:00",
+    "observed_at": "2026-08-19T18:13:29.980499+00:00",
     "park_empty_parses": null,
     "park_fallback_requests": null,
     "park_rows": null,
     "rosters_ok": 30,
-    "statcast_failures": null,
-    "statcast_rows": null,
+    "statcast_failures": 0,
+    "statcast_rows": 150406,
     "transactions": 579,
     "weather_available": 0,
     "weather_provider_counts": {},
@@ -212,6 +221,31 @@
       "weather_available": 0,
       "weather_provider_counts": {},
       "weather_rows": 70
+    },
+    {
+      "free_health_alerts": [],
+      "free_health_status": null,
+      "free_health_warnings": [],
+      "freshness": {
+        "mlb_state_age_hours": 5.777659289722223,
+        "park_age_hours": 5.777686815555555,
+        "provider_stale_threshold_hours": 36.0,
+        "statcast_age_hours": 18.224994583055555,
+        "statcast_stale_threshold_hours": 72.0,
+        "weather_age_hours": 5.735944329722222
+      },
+      "il_signals": 85,
+      "observed_at": "2026-08-19T18:13:29.980499+00:00",
+      "park_empty_parses": null,
+      "park_fallback_requests": null,
+      "park_rows": null,
+      "rosters_ok": 30,
+      "statcast_failures": 0,
+      "statcast_rows": 150406,
+      "transactions": 579,
+      "weather_available": 0,
+      "weather_provider_counts": {},
+      "weather_rows": 70
     }
   ],
   "research_model": {
@@ -263,7 +297,7 @@
     },
     "status": "TRAINED_RESEARCH_ONLY"
   },
-  "schema": "v13-8-monitoring-v2",
+  "schema": "v13-10-monitoring-v3",
   "validation": {
     "ablation": {
       "available": true,
@@ -421,6 +455,19 @@
       }
     },
     "claim": "research validation only; no automatic champion promotion",
+    "dataset_content_sha256": "5fd8ca72257419fe841e8e9025ad2eacf931ebbb4fe755773f71e784f16dcb54",
+    "dataset_integrity": {
+      "bound": true,
+      "content_sha256": "5fd8ca72257419fe841e8e9025ad2eacf931ebbb4fe755773f71e784f16dcb54",
+      "feature_contract_sha256": "08b35bb22ea34adb3113de13d335975ca00e401b9c1d80deada2473a9b661a61",
+      "feature_rows": 14043,
+      "label_rows": 14043,
+      "legacy_identity_fingerprint": null,
+      "legacy_identity_fingerprint_sufficient": false,
+      "policy": "model/validation evidence is bound to SHA256 of every compressed source feature/label file",
+      "schema": "v13-10-research-dataset-integrity-v1",
+      "source": "data/v138_dataset_manifest.json"
+    },
     "games": 14043,
     "schema": "v13-8-validation-suite-v1",
     "walk_forward": {

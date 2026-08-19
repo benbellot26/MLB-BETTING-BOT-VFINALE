@@ -1,0 +1,683 @@
+{
+  "behaviorally_verified": 27,
+  "claim": "35-point V13.10 audit ledger; engineering closure uses executable behavioral tests. Statistical evidence gates remain open until real independent observations pass their declared floors.",
+  "compatibility_retained": 8,
+  "engineering_closed": 35,
+  "engineering_open": 0,
+  "evidence_closed": 0,
+  "evidence_gate_total": 5,
+  "evidence_pending": 5,
+  "legacy_v139_registry_role": "coverage inventory only; token presence is not accepted here as behavioral proof",
+  "points": [
+    {
+      "compatibility_retained": false,
+      "engineering_closed": true,
+      "evidence_closed": null,
+      "evidence_requirement": null,
+      "evidence_status": "NOT_AN_EVIDENCE_GATE",
+      "id": "H01",
+      "name": "Savant true three-season rolling contract",
+      "severity": "HIGH",
+      "test_id": "tests.test_v139_provider_hardening.ProviderHardeningTests.test_savant_park_request_uses_true_three_season_rolling_window",
+      "verification": {
+        "errors": 0,
+        "failures": 0,
+        "output": "----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nOK\n",
+        "passed": true,
+        "test_id": "tests.test_v139_provider_hardening.ProviderHardeningTests.test_savant_park_request_uses_true_three_season_rolling_window",
+        "tests_run": 1,
+        "type": "behavioral_test"
+      }
+    },
+    {
+      "compatibility_retained": false,
+      "engineering_closed": true,
+      "evidence_closed": null,
+      "evidence_requirement": null,
+      "evidence_status": "NOT_AN_EVIDENCE_GATE",
+      "id": "H02",
+      "name": "Prior-season park factor wired to V13 runtime",
+      "severity": "HIGH",
+      "test_id": "tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_park_runtime_uses_prior_completed_season_ratio",
+      "verification": {
+        "errors": 0,
+        "failures": 0,
+        "output": "----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nOK\n",
+        "passed": true,
+        "test_id": "tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_park_runtime_uses_prior_completed_season_ratio",
+        "tests_run": 1,
+        "type": "behavioral_test"
+      }
+    },
+    {
+      "compatibility_retained": false,
+      "engineering_closed": true,
+      "evidence_closed": null,
+      "evidence_requirement": null,
+      "evidence_status": "NOT_AN_EVIDENCE_GATE",
+      "id": "H03",
+      "name": "Post-calibration complementary probability surface",
+      "severity": "HIGH",
+      "test_id": "tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_probability_surface_reconciles_every_complementary_pair",
+      "verification": {
+        "errors": 0,
+        "failures": 0,
+        "output": "----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nOK\n",
+        "passed": true,
+        "test_id": "tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_probability_surface_reconciles_every_complementary_pair",
+        "tests_run": 1,
+        "type": "behavioral_test"
+      }
+    },
+    {
+      "compatibility_retained": false,
+      "engineering_closed": true,
+      "evidence_closed": false,
+      "evidence_requirement": "GLOBAL>=600, MARKET>=400, FINAL market>=300 plus strict OOS gain",
+      "evidence_status": "CALIBRATION_EVIDENCE_COLLECTING",
+      "id": "H04",
+      "name": "Calibration remains fail-closed until strict volume/evidence",
+      "severity": "HIGH",
+      "test_id": "tests.test_v13_probability_contract.V13ProbabilityContractTests.test_calibration_identity_when_evidence_is_insufficient",
+      "verification": {
+        "errors": 0,
+        "failures": 0,
+        "output": "----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nOK\n",
+        "passed": true,
+        "test_id": "tests.test_v13_probability_contract.V13ProbabilityContractTests.test_calibration_identity_when_evidence_is_insufficient",
+        "tests_run": 1,
+        "type": "behavioral_test"
+      }
+    },
+    {
+      "compatibility_retained": false,
+      "engineering_closed": true,
+      "evidence_closed": false,
+      "evidence_requirement": "ML >=300 independent comparable targets, positive Brier gain, non-worse LogLoss, positive gap signal",
+      "evidence_status": "EDGE_EVIDENCE_PENDING",
+      "id": "H05",
+      "name": "ML edge claim blocked until model beats market",
+      "severity": "HIGH",
+      "test_id": "tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_probability_drift_uses_canonical_side_and_detects_confidence_shift",
+      "verification": {
+        "errors": 0,
+        "failures": 0,
+        "output": "----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nOK\n",
+        "passed": true,
+        "test_id": "tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_probability_drift_uses_canonical_side_and_detects_confidence_shift",
+        "tests_run": 1,
+        "type": "behavioral_test"
+      }
+    },
+    {
+      "compatibility_retained": false,
+      "engineering_closed": true,
+      "evidence_closed": false,
+      "evidence_requirement": "RUNLINE and TOTAL each >=300 independent comparable targets with proper-score pass",
+      "evidence_status": "EDGE_EVIDENCE_PENDING",
+      "id": "H06",
+      "name": "RUNLINE/TOTAL market evidence cannot be inferred from missing targets",
+      "severity": "HIGH",
+      "test_id": "tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_native_evidence_never_pools_markets_for_activation",
+      "verification": {
+        "errors": 0,
+        "failures": 0,
+        "output": "----------------------------------------------------------------------\nRan 1 test in 0.004s\n\nOK\n",
+        "passed": true,
+        "test_id": "tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_native_evidence_never_pools_markets_for_activation",
+        "tests_run": 1,
+        "type": "behavioral_test"
+      }
+    },
+    {
+      "compatibility_retained": false,
+      "engineering_closed": true,
+      "evidence_closed": null,
+      "evidence_requirement": null,
+      "evidence_status": "NOT_AN_EVIDENCE_GATE",
+      "id": "H07",
+      "name": "Probability drift no longer averages complementary sides",
+      "severity": "HIGH",
+      "test_id": "tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_probability_drift_uses_canonical_side_and_detects_confidence_shift",
+      "verification": {
+        "errors": 0,
+        "failures": 0,
+        "output": "----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nOK\n",
+        "passed": true,
+        "test_id": "tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_probability_drift_uses_canonical_side_and_detects_confidence_shift",
+        "tests_run": 1,
+        "type": "behavioral_test"
+      }
+    },
+    {
+      "compatibility_retained": false,
+      "engineering_closed": true,
+      "evidence_closed": null,
+      "evidence_requirement": null,
+      "evidence_status": "NOT_AN_EVIDENCE_GATE",
+      "id": "H08",
+      "name": "Operational PIT separated from promotion-grade source attestation",
+      "severity": "HIGH",
+      "test_id": "tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_pit_distinguishes_operational_from_promotion_grade_capture",
+      "verification": {
+        "errors": 0,
+        "failures": 0,
+        "output": "----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nOK\n",
+        "passed": true,
+        "test_id": "tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_pit_distinguishes_operational_from_promotion_grade_capture",
+        "tests_run": 1,
+        "type": "behavioral_test"
+      }
+    },
+    {
+      "compatibility_retained": false,
+      "engineering_closed": true,
+      "evidence_closed": null,
+      "evidence_requirement": null,
+      "evidence_status": "NOT_AN_EVIDENCE_GATE",
+      "id": "H09",
+      "name": "Deep audit closure uses behavioral verification instead of token presence",
+      "severity": "HIGH",
+      "test_id": "tests.test_v1310_deep_audit_registry.V1310DeepAuditRegistryTests.test_registry_declares_behavioral_verification_contract",
+      "verification": {
+        "errors": 0,
+        "failures": 0,
+        "output": "----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nOK\n",
+        "passed": true,
+        "test_id": "tests.test_v1310_deep_audit_registry.V1310DeepAuditRegistryTests.test_registry_declares_behavioral_verification_contract",
+        "tests_run": 1,
+        "type": "behavioral_test"
+      }
+    },
+    {
+      "compatibility_retained": false,
+      "engineering_closed": true,
+      "evidence_closed": false,
+      "evidence_requirement": ">=300 promotion-grade FINAL games + WF/outer holdout/downstream market gates",
+      "evidence_status": "RICH_NATIVE_EVIDENCE_PENDING",
+      "id": "H10",
+      "name": "Rich/native promotion requires exact promotion-grade PIT evidence",
+      "severity": "HIGH",
+      "test_id": "tests.test_v13_rich_native_train.NativeRichTrainTests.test_requires_native_volume",
+      "verification": {
+        "errors": 0,
+        "failures": 0,
+        "output": "----------------------------------------------------------------------\nRan 1 test in 0.002s\n\nOK\n",
+        "passed": true,
+        "test_id": "tests.test_v13_rich_native_train.NativeRichTrainTests.test_requires_native_volume",
+        "tests_run": 1,
+        "type": "behavioral_test"
+      }
+    },
+    {
+      "compatibility_retained": false,
+      "engineering_closed": true,
+      "evidence_closed": null,
+      "evidence_requirement": null,
+      "evidence_status": "NOT_AN_EVIDENCE_GATE",
+      "id": "M01",
+      "name": "Native uncertainty/calibration/book gates are market-specific",
+      "severity": "MEDIUM",
+      "test_id": "tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_native_evidence_never_pools_markets_for_activation",
+      "verification": {
+        "errors": 0,
+        "failures": 0,
+        "output": "----------------------------------------------------------------------\nRan 1 test in 0.004s\n\nOK\n",
+        "passed": true,
+        "test_id": "tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_native_evidence_never_pools_markets_for_activation",
+        "tests_run": 1,
+        "type": "behavioral_test"
+      }
+    },
+    {
+      "compatibility_retained": false,
+      "engineering_closed": true,
+      "evidence_closed": null,
+      "evidence_requirement": null,
+      "evidence_status": "NOT_AN_EVIDENCE_GATE",
+      "id": "M02",
+      "name": "Validated extra-innings prior is usable only above evidence floor",
+      "severity": "MEDIUM",
+      "test_id": "tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_validated_extra_innings_prior_uses_mature_evidence_only",
+      "verification": {
+        "errors": 0,
+        "failures": 0,
+        "output": "----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nOK\n",
+        "passed": true,
+        "test_id": "tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_validated_extra_innings_prior_uses_mature_evidence_only",
+        "tests_run": 1,
+        "type": "behavioral_test"
+      }
+    },
+    {
+      "compatibility_retained": false,
+      "engineering_closed": true,
+      "evidence_closed": null,
+      "evidence_requirement": null,
+      "evidence_status": "NOT_AN_EVIDENCE_GATE",
+      "id": "M03",
+      "name": "Explicit probability-surface invariants",
+      "severity": "MEDIUM",
+      "test_id": "tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_probability_surface_reconciles_every_complementary_pair",
+      "verification": {
+        "errors": 0,
+        "failures": 0,
+        "output": "----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nOK\n",
+        "passed": true,
+        "test_id": "tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_probability_surface_reconciles_every_complementary_pair",
+        "tests_run": 1,
+        "type": "behavioral_test"
+      }
+    },
+    {
+      "compatibility_retained": false,
+      "engineering_closed": true,
+      "evidence_closed": null,
+      "evidence_requirement": null,
+      "evidence_status": "NOT_AN_EVIDENCE_GATE",
+      "id": "M04",
+      "name": "Non-finite probability fails closed",
+      "severity": "MEDIUM",
+      "test_id": "tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_invalid_probability_fails_closed_instead_of_becoming_fifty_percent",
+      "verification": {
+        "errors": 0,
+        "failures": 0,
+        "output": "----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nOK\n",
+        "passed": true,
+        "test_id": "tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_invalid_probability_fails_closed_instead_of_becoming_fifty_percent",
+        "tests_run": 1,
+        "type": "behavioral_test"
+      }
+    },
+    {
+      "compatibility_retained": false,
+      "engineering_closed": true,
+      "evidence_closed": null,
+      "evidence_requirement": null,
+      "evidence_status": "NOT_AN_EVIDENCE_GATE",
+      "id": "M05",
+      "name": "Market-derived source rejected from baseball probability",
+      "severity": "MEDIUM",
+      "test_id": "tests.test_v13_probability_contract.V13ProbabilityContractTests.test_contract_rejects_market_derived_baseball_source",
+      "verification": {
+        "errors": 0,
+        "failures": 0,
+        "output": "----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nOK\n",
+        "passed": true,
+        "test_id": "tests.test_v13_probability_contract.V13ProbabilityContractTests.test_contract_rejects_market_derived_baseball_source",
+        "tests_run": 1,
+        "type": "behavioral_test"
+      }
+    },
+    {
+      "compatibility_retained": false,
+      "engineering_closed": true,
+      "evidence_closed": null,
+      "evidence_requirement": null,
+      "evidence_status": "NOT_AN_EVIDENCE_GATE",
+      "id": "M06",
+      "name": "Provider artifact freshness is explicit",
+      "severity": "MEDIUM",
+      "test_id": "tests.test_v1310_deep_audit_registry.V1310DeepAuditRegistryTests.test_monitoring_exposes_provider_freshness_contract",
+      "verification": {
+        "errors": 0,
+        "failures": 0,
+        "output": "----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nOK\n",
+        "passed": true,
+        "test_id": "tests.test_v1310_deep_audit_registry.V1310DeepAuditRegistryTests.test_monitoring_exposes_provider_freshness_contract",
+        "tests_run": 1,
+        "type": "behavioral_test"
+      }
+    },
+    {
+      "compatibility_retained": false,
+      "engineering_closed": true,
+      "evidence_closed": null,
+      "evidence_requirement": null,
+      "evidence_status": "NOT_AN_EVIDENCE_GATE",
+      "id": "M07",
+      "name": "Research evidence bound to actual dataset bytes",
+      "severity": "MEDIUM",
+      "test_id": "tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_research_artifacts_bind_to_actual_dataset_content_hash",
+      "verification": {
+        "errors": 0,
+        "failures": 0,
+        "output": "----------------------------------------------------------------------\nRan 1 test in 0.001s\n\nOK\n",
+        "passed": true,
+        "test_id": "tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_research_artifacts_bind_to_actual_dataset_content_hash",
+        "tests_run": 1,
+        "type": "behavioral_test"
+      }
+    },
+    {
+      "compatibility_retained": false,
+      "engineering_closed": true,
+      "evidence_closed": null,
+      "evidence_requirement": null,
+      "evidence_status": "NOT_AN_EVIDENCE_GATE",
+      "id": "M08",
+      "name": "Predictive fingerprint advances with changed behavior",
+      "severity": "MEDIUM",
+      "test_id": "tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_generation_fingerprint_moves_with_predictive_behavior",
+      "verification": {
+        "errors": 0,
+        "failures": 0,
+        "output": "----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nOK\n",
+        "passed": true,
+        "test_id": "tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_generation_fingerprint_moves_with_predictive_behavior",
+        "tests_run": 1,
+        "type": "behavioral_test"
+      }
+    },
+    {
+      "compatibility_retained": false,
+      "engineering_closed": true,
+      "evidence_closed": null,
+      "evidence_requirement": null,
+      "evidence_status": "NOT_AN_EVIDENCE_GATE",
+      "id": "M09",
+      "name": "Backfill evidence writer shares repository-state concurrency lock",
+      "severity": "MEDIUM",
+      "test_id": "tests.test_v1310_deep_audit_registry.V1310DeepAuditRegistryTests.test_state_writing_workflows_share_concurrency_lock",
+      "verification": {
+        "errors": 0,
+        "failures": 0,
+        "output": "----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nOK\n",
+        "passed": true,
+        "test_id": "tests.test_v1310_deep_audit_registry.V1310DeepAuditRegistryTests.test_state_writing_workflows_share_concurrency_lock",
+        "tests_run": 1,
+        "type": "behavioral_test"
+      }
+    },
+    {
+      "compatibility_retained": false,
+      "engineering_closed": true,
+      "evidence_closed": null,
+      "evidence_requirement": null,
+      "evidence_status": "NOT_AN_EVIDENCE_GATE",
+      "id": "M10",
+      "name": "Weather replay cache is scoped by analysis as-of",
+      "severity": "MEDIUM",
+      "test_id": "tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_weather_cache_is_scoped_to_replay_as_of",
+      "verification": {
+        "errors": 0,
+        "failures": 0,
+        "output": "----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nOK\n",
+        "passed": true,
+        "test_id": "tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_weather_cache_is_scoped_to_replay_as_of",
+        "tests_run": 1,
+        "type": "behavioral_test"
+      }
+    },
+    {
+      "compatibility_retained": false,
+      "engineering_closed": true,
+      "evidence_closed": null,
+      "evidence_requirement": null,
+      "evidence_status": "NOT_AN_EVIDENCE_GATE",
+      "id": "M11",
+      "name": "Weather timestamp basis is explicit",
+      "severity": "MEDIUM",
+      "test_id": "tests.test_v1310_deep_audit_registry.V1310DeepAuditRegistryTests.test_weather_provenance_exposes_timestamp_basis",
+      "verification": {
+        "errors": 0,
+        "failures": 0,
+        "output": "----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nOK\n",
+        "passed": true,
+        "test_id": "tests.test_v1310_deep_audit_registry.V1310DeepAuditRegistryTests.test_weather_provenance_exposes_timestamp_basis",
+        "tests_run": 1,
+        "type": "behavioral_test"
+      }
+    },
+    {
+      "compatibility_retained": false,
+      "engineering_closed": true,
+      "evidence_closed": null,
+      "evidence_requirement": null,
+      "evidence_status": "NOT_AN_EVIDENCE_GATE",
+      "id": "M12",
+      "name": "Deep-audit regressions are behavioral and in shared preflight",
+      "severity": "MEDIUM",
+      "test_id": "tests.test_v1310_deep_audit_registry.V1310DeepAuditRegistryTests.test_deep_audit_behavior_suite_is_in_shared_preflight",
+      "verification": {
+        "errors": 0,
+        "failures": 0,
+        "output": "----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nOK\n",
+        "passed": true,
+        "test_id": "tests.test_v1310_deep_audit_registry.V1310DeepAuditRegistryTests.test_deep_audit_behavior_suite_is_in_shared_preflight",
+        "tests_run": 1,
+        "type": "behavioral_test"
+      }
+    },
+    {
+      "compatibility_retained": false,
+      "engineering_closed": true,
+      "evidence_closed": null,
+      "evidence_requirement": null,
+      "evidence_status": "NOT_AN_EVIDENCE_GATE",
+      "id": "M13",
+      "name": "Discord visual contract is in shared preflight",
+      "severity": "MEDIUM",
+      "test_id": "tests.test_v1310_deep_audit_registry.V1310DeepAuditRegistryTests.test_discord_visual_suite_is_in_shared_preflight",
+      "verification": {
+        "errors": 0,
+        "failures": 0,
+        "output": "----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nOK\n",
+        "passed": true,
+        "test_id": "tests.test_v1310_deep_audit_registry.V1310DeepAuditRegistryTests.test_discord_visual_suite_is_in_shared_preflight",
+        "tests_run": 1,
+        "type": "behavioral_test"
+      }
+    },
+    {
+      "compatibility_retained": false,
+      "engineering_closed": true,
+      "evidence_closed": null,
+      "evidence_requirement": null,
+      "evidence_status": "NOT_AN_EVIDENCE_GATE",
+      "id": "M14",
+      "name": "Discord refuses incomplete eight-probability surface",
+      "severity": "MEDIUM",
+      "test_id": "tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_discord_blocks_incomplete_eight_probability_surface",
+      "verification": {
+        "errors": 0,
+        "failures": 0,
+        "output": "----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nOK\n",
+        "passed": true,
+        "test_id": "tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_discord_blocks_incomplete_eight_probability_surface",
+        "tests_run": 1,
+        "type": "behavioral_test"
+      }
+    },
+    {
+      "compatibility_retained": false,
+      "engineering_closed": true,
+      "evidence_closed": false,
+      "evidence_requirement": "post-merge free-data refresh must show park_prior_coverage > 0",
+      "evidence_status": "PARK_HISTORY_REFRESH_PENDING",
+      "id": "M15",
+      "name": "Historical park data pipeline rebuilt from fixed provider before team history",
+      "severity": "MEDIUM",
+      "test_id": "tests.test_v1310_deep_audit_registry.V1310DeepAuditRegistryTests.test_free_data_workflow_collects_park_before_team_history",
+      "verification": {
+        "errors": 0,
+        "failures": 0,
+        "output": "----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nOK\n",
+        "passed": true,
+        "test_id": "tests.test_v1310_deep_audit_registry.V1310DeepAuditRegistryTests.test_free_data_workflow_collects_park_before_team_history",
+        "tests_run": 1,
+        "type": "behavioral_test"
+      }
+    },
+    {
+      "compatibility_retained": false,
+      "engineering_closed": true,
+      "evidence_closed": null,
+      "evidence_requirement": null,
+      "evidence_status": "NOT_AN_EVIDENCE_GATE",
+      "id": "M16",
+      "name": "Unvalidated uncertainty is not labeled a 90% confidence interval",
+      "severity": "MEDIUM",
+      "test_id": "tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_uncertainty_band_is_not_labeled_validated_confidence",
+      "verification": {
+        "errors": 0,
+        "failures": 0,
+        "output": "----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nOK\n",
+        "passed": true,
+        "test_id": "tests.test_v1310_deep_audit_hardening.V1310DeepAuditHardeningTests.test_uncertainty_band_is_not_labeled_validated_confidence",
+        "tests_run": 1,
+        "type": "behavioral_test"
+      }
+    },
+    {
+      "compatibility_retained": false,
+      "engineering_closed": true,
+      "evidence_closed": null,
+      "evidence_requirement": null,
+      "evidence_status": "NOT_AN_EVIDENCE_GATE",
+      "id": "M17",
+      "name": "Complex research challengers remain non-promotable by construction",
+      "severity": "MEDIUM",
+      "test_id": "tests.test_v138_audit_closure.V138AuditClosureTests.test_glm_gam_gbdt_hierarchy_and_ensemble_are_finite",
+      "verification": {
+        "errors": 0,
+        "failures": 0,
+        "output": "----------------------------------------------------------------------\nRan 1 test in 0.174s\n\nOK\n",
+        "passed": true,
+        "test_id": "tests.test_v138_audit_closure.V138AuditClosureTests.test_glm_gam_gbdt_hierarchy_and_ensemble_are_finite",
+        "tests_run": 1,
+        "type": "behavioral_test"
+      }
+    },
+    {
+      "compatibility_retained": true,
+      "engineering_closed": true,
+      "evidence_closed": null,
+      "evidence_requirement": null,
+      "evidence_status": "NOT_AN_EVIDENCE_GATE",
+      "id": "L01",
+      "name": "Legacy V11/V12 config names retained only as compatibility surface",
+      "severity": "LOW",
+      "test_id": null,
+      "verification": {
+        "note": "intentional backwards-compatible surface; not a predictive correctness defect",
+        "passed": true,
+        "type": "compatibility_disposition"
+      }
+    },
+    {
+      "compatibility_retained": true,
+      "engineering_closed": true,
+      "evidence_closed": null,
+      "evidence_requirement": null,
+      "evidence_status": "NOT_AN_EVIDENCE_GATE",
+      "id": "L02",
+      "name": "Legacy workflow filenames retained while visible workflow/runtime labels move to V13.10",
+      "severity": "LOW",
+      "test_id": null,
+      "verification": {
+        "note": "intentional backwards-compatible surface; not a predictive correctness defect",
+        "passed": true,
+        "type": "compatibility_disposition"
+      }
+    },
+    {
+      "compatibility_retained": true,
+      "engineering_closed": true,
+      "evidence_closed": null,
+      "evidence_requirement": null,
+      "evidence_status": "NOT_AN_EVIDENCE_GATE",
+      "id": "L03",
+      "name": "Broad exceptions retained only in non-blocking observability/research paths",
+      "severity": "LOW",
+      "test_id": null,
+      "verification": {
+        "note": "intentional backwards-compatible surface; not a predictive correctness defect",
+        "passed": true,
+        "type": "compatibility_disposition"
+      }
+    },
+    {
+      "compatibility_retained": true,
+      "engineering_closed": true,
+      "evidence_closed": null,
+      "evidence_requirement": null,
+      "evidence_status": "NOT_AN_EVIDENCE_GATE",
+      "id": "L04",
+      "name": "Legacy diagnostic helpers retained but excluded from promotion decisions",
+      "severity": "LOW",
+      "test_id": null,
+      "verification": {
+        "note": "intentional backwards-compatible surface; not a predictive correctness defect",
+        "passed": true,
+        "type": "compatibility_disposition"
+      }
+    },
+    {
+      "compatibility_retained": true,
+      "engineering_closed": true,
+      "evidence_closed": null,
+      "evidence_requirement": null,
+      "evidence_status": "NOT_AN_EVIDENCE_GATE",
+      "id": "L05",
+      "name": "Legacy option-name persistence compatibility retained",
+      "severity": "LOW",
+      "test_id": null,
+      "verification": {
+        "note": "intentional backwards-compatible surface; not a predictive correctness defect",
+        "passed": true,
+        "type": "compatibility_disposition"
+      }
+    },
+    {
+      "compatibility_retained": true,
+      "engineering_closed": true,
+      "evidence_closed": null,
+      "evidence_requirement": null,
+      "evidence_status": "NOT_AN_EVIDENCE_GATE",
+      "id": "L06",
+      "name": "shadow_v124 compatibility payload name retained alongside V13 ownership",
+      "severity": "LOW",
+      "test_id": null,
+      "verification": {
+        "note": "intentional backwards-compatible surface; not a predictive correctness defect",
+        "passed": true,
+        "type": "compatibility_disposition"
+      }
+    },
+    {
+      "compatibility_retained": true,
+      "engineering_closed": true,
+      "evidence_closed": null,
+      "evidence_requirement": null,
+      "evidence_status": "NOT_AN_EVIDENCE_GATE",
+      "id": "L07",
+      "name": "Legacy source-contract comments/tests retained only for backwards regression compatibility",
+      "severity": "LOW",
+      "test_id": null,
+      "verification": {
+        "note": "intentional backwards-compatible surface; not a predictive correctness defect",
+        "passed": true,
+        "type": "compatibility_disposition"
+      }
+    },
+    {
+      "compatibility_retained": true,
+      "engineering_closed": true,
+      "evidence_closed": null,
+      "evidence_requirement": null,
+      "evidence_status": "NOT_AN_EVIDENCE_GATE",
+      "id": "L08",
+      "name": "Book-target and native-target counts reported separately",
+      "severity": "LOW",
+      "test_id": null,
+      "verification": {
+        "note": "intentional backwards-compatible surface; not a predictive correctness defect",
+        "passed": true,
+        "type": "compatibility_disposition"
+      }
+    }
+  ],
+  "schema": "v13-10-deep-audit-closure-v1",
+  "total_findings": 35
+}
