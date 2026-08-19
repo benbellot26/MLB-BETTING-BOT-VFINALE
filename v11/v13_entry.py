@@ -7,6 +7,7 @@ install()
 
 from . import config, runner, discord_v13, core, selector, storage, journal, v13_daily_tracking, v13_analytics_only
 from . import v13_coverage_report, v13_probability_diagnostics, v13_feature_store, v13_model_health
+from . import v138_book_telemetry, v138_native_evidence
 from . import calibration_baseball_v13 as calibration_v13
 from . import probability_contract_v13 as probability_contract
 runner.discord = discord_v13
@@ -24,6 +25,12 @@ _original_send_persisted = runner.send_persisted
 def _tracked_allocate(results, *args, **kwargs):
     out = _original_allocate(results, *args, **kwargs)
     v13_daily_tracking.capture_results(results, target_date=core.TARGET_DATE)
+    # Store canonical per-book no-vig probabilities separately from the baseball
+    # feature path. This telemetry is used only for future OOS book-weight learning.
+    try:
+        v138_book_telemetry.capture(results)
+    except Exception:
+        core.logging.exception("V13.8.2 book telemetry capture failed; production probabilities remain unchanged")
     return v13_analytics_only.suppress_allocation(results, out)
 
 
@@ -55,6 +62,7 @@ def _write_postrun_diagnostics():
     for name, fn in (
         ("coverage report", v13_coverage_report.main),
         ("probability diagnostics", v13_probability_diagnostics.main),
+        ("native evidence gates", v138_native_evidence.main),
         ("feature store", v13_feature_store.main),
         ("model health", v13_model_health.main),
     ):
@@ -153,7 +161,7 @@ def self_test_v13():
     assert abs(selector.conservative_probability(rec)-.52)<1e-12
     assert storage.record_selected_bets([], {}, "test", "test", core.TARGET_DATE) == 0
     v13_analytics_only.assert_payload({"results": [], "chosen": [], "combo": {}})
-    print("SELF-TEST V13.6 EVIDENCE + GENERATION-FINGERPRINT + NATIVE CALIBRATION + ANALYTICS-ONLY GATES OK")
+    print("SELF-TEST V13.8.2 EVIDENCE + GENERATION-FINGERPRINT + NATIVE CALIBRATION + ANALYTICS-ONLY GATES OK")
 
 
 runner._summary = _summary_v13
