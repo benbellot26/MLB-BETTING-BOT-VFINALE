@@ -78,14 +78,19 @@ class V1352FinalHardeningTests(unittest.TestCase):
 
     def test_final_run_mean_prior_is_gated_until_native_transfer_passes(self):
         collecting={
+            "schema":v13_run_mean_runtime.SCHEMA,
             "active":True,"historical_candidate_active":True,"phase_scope":"FINAL",
+            "walk_forward":{"stable":True,"folds_total":4,"folds_passed":4},
             "model_generation":contract.MODEL_GENERATION_FINGERPRINT,
-            "exact_final_games":5,"exact_transfer_required_games":20,"exact_transfer_status":"COLLECTING_FINAL_ONLY",
-            "model":{"home_bias":.1,"away_bias":.1,"slope_delta":0,"max_adjustment":.75},
+            "exact_final_games":59,"exact_transfer_required_games":60,"exact_transfer_status":"COLLECTING_FINAL_ONLY",
+            "exact_transfer_bootstrap":{"passes":True,"nll_gain_positive_probability":.95},
+            "safety":{"exact_transfer_games_excluded_from_historical_fit":True},
+            "model":{"home_bias":.1,"away_bias":.1,"slope_delta":0,"max_adjustment":.15},
         }
         h,a,meta=v13_run_mean_runtime.apply_pair(5.0,4.0,"FINAL",collecting)
         self.assertEqual((h,a),(5.0,4.0)); self.assertFalse(meta["active"])
-        passed=dict(collecting); passed.update({"exact_final_games":20,"exact_transfer_status":"PASS_FINAL_ONLY"})
+        passed=dict(collecting)
+        passed.update({"exact_final_games":60,"exact_transfer_status":"PASS_FINAL_ONLY"})
         h2,a2,meta2=v13_run_mean_runtime.apply_pair(5.0,4.0,"FINAL",passed)
         self.assertTrue(meta2["active"]); self.assertNotEqual((h2,a2),(5.0,4.0))
 
@@ -144,8 +149,11 @@ class V1352FinalHardeningTests(unittest.TestCase):
         self.assertIn("p_replay_baseline_raw", backfill)
         self.assertIn("v13-pre-candidate-score-distribution", backfill)
         self.assertIn("validation_baseline_home_runs", backfill)
-        self.assertIn('hm=r.get("validation_baseline_home_runs")', run_mean)
-        self.assertNotIn('hm=r.get("projected_home_runs"); am=r.get("projected_away_runs")', run_mean)
+        self.assertIn('row.get("validation_baseline_home_runs")', run_mean)
+        self.assertIn('row.get("validation_baseline_away_runs")', run_mean)
+        self.assertIn('row.get("validation_baseline_dispersion")', run_mean)
+        self.assertNotIn('row.get("projected_home_runs")', run_mean)
+        self.assertNotIn('row.get("projected_away_runs")', run_mean)
 
     def test_historical_posterior_validation_is_blocked_walk_forward(self):
         text=Path("v11/v13_historical_validation.py").read_text(encoding="utf-8")
