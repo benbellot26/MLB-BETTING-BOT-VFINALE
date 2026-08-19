@@ -119,7 +119,7 @@ jobs:
 
       - name: Collect prior-only Statcast park factors
         run: |
-          # v137_park_factors maps Savant's rolling=1 flag to the 3-season view.
+          # Baseball Savant's three-season leaderboard is requested explicitly with rolling=3.
           python -m v11.v137_park_factors \
             --start-season 2021 \
             --end-season "${{ steps.dates.outputs.season }}"
@@ -172,8 +172,17 @@ jobs:
               raise SystemExit('Statcast priors lost stable-ID-only contract')
           if stat.get('unresolved_truncation') or int(stat.get('chunks_failed') or 0):
               raise SystemExit('Statcast provider integrity is incomplete/truncated')
-          if park and int(park.get('total_venue_rows') or 0)==0:
-              raise SystemExit('Savant park-factor provider parsed zero venue rows')
+          if park:
+              if int(park.get('rolling_parameter') or 0) != 3:
+                  raise SystemExit(f"Savant park-factor rolling window drifted: {park.get('rolling_parameter')}")
+              if int(park.get('failed_requests') or 0):
+                  raise SystemExit('Savant park-factor provider has failed requests')
+              if int(park.get('empty_parse_count') or 0):
+                  raise SystemExit('Savant park-factor provider has empty parses')
+              if int(park.get('window_rejection_count') or 0):
+                  raise SystemExit('Savant park-factor rows failed the expected three-season window contract')
+              if int(park.get('total_venue_rows') or 0)==0:
+                  raise SystemExit('Savant park-factor provider parsed zero venue rows')
           if weather and int(weather.get('rows') or 0)>0 and int(weather.get('available_rows') or 0)==0:
               raise SystemExit('Open-Meteo historical run produced zero available weather rows')
           if native and (not native.get('point_in_time') or not native.get('native_live')):
