@@ -138,12 +138,12 @@ class FreeDataFoundationTests(unittest.TestCase):
         self.assertFalse(row["target_labels_embedded"])
 
     def test_team_history_keeps_target_label_separate_and_excludes_same_day(self):
-        def game(pk, when, official, home_id, home, away_id, away, hs, aws):
+        def game(pk, when, official, home_id, home, away_id, away, hs, aws, game_type="R"):
             return {
                 "gamePk": pk,
                 "gameDate": when,
                 "officialDate": official,
-                "gameType": "R",
+                "gameType": game_type,
                 "status": {"abstractGameState": "Final"},
                 "teams": {
                     "home": {"team": {"id": home_id, "name": home}, "score": hs},
@@ -156,10 +156,12 @@ class FreeDataFoundationTests(unittest.TestCase):
             game(1, "2026-08-17T18:00:00Z", "2026-08-17", 1, "A", 2, "B", 5, 2),
             game(2, "2026-08-19T16:00:00Z", "2026-08-19", 1, "A", 2, "B", 1, 0),
             game(3, "2026-08-19T21:00:00Z", "2026-08-19", 1, "A", 2, "B", 3, 4),
+            game(4, "2026-10-05T20:00:00Z", "2026-10-05", 1, "A", 2, "B", 9, 8, game_type="P"),
         ]
         features, labels, report = team.build_from_games(games)
         self.assertEqual(len(features), 3)
         self.assertEqual(len(labels), 3)
+        self.assertEqual(report["skipped"].get("non_regular_season"), 1)
         target = next(r for r in features if str(r["game_pk"]) == "3")
         self.assertEqual(target["features"]["home_team_form"]["season_to_date"]["games"], 1)
         serialized = json.dumps(target)

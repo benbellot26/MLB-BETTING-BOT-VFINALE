@@ -38,7 +38,7 @@ def _chunks(start: date, end: date, days: int = 31):
 
 
 def fetch_schedule_span(start: str, end: str) -> list[dict[str, Any]]:
-    """Fetch only free MLB schedule/results data in bounded chunks."""
+    """Fetch only free MLB regular-season schedule/results data in bounded chunks."""
     s, e = _parse_day(start), _parse_day(end)
     games: dict[str, dict[str, Any]] = {}
     for a, b in _chunks(s, e):
@@ -48,7 +48,7 @@ def fetch_schedule_span(start: str, end: str) -> list[dict[str, Any]]:
                 "sportId": 1,
                 "startDate": a.isoformat(),
                 "endDate": b.isoformat(),
-                "gameType": "R",
+                "gameTypes": "R",
                 "hydrate": "venue",
             },
         ) or {}
@@ -140,6 +140,12 @@ def build_from_games(games: list[dict[str, Any]]) -> tuple[list[dict[str, Any]],
 
     ordered = sorted(games, key=lambda g: (str(g.get("gameDate") or ""), str(g.get("gamePk") or "")))
     for game in ordered:
+        # Defense in depth: even if an upstream schedule endpoint ignores its
+        # gameTypes=R filter, Spring/Postseason/All-Star data cannot enter this
+        # regular-season research cohort.
+        if str(game.get("gameType") or "").upper() != "R":
+            skipped["non_regular_season"] += 1
+            continue
         if not _is_final(game):
             skipped["not_final"] += 1
             continue

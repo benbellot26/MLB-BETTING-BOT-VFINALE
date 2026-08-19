@@ -54,10 +54,34 @@ jobs:
         run: |
           yesterday="$(date -u -d 'yesterday' +%F)"
           year="$(date -u +%Y)"
-          team_start="${INPUT_START:-${year}-03-01}"
+
+          if [ -n "$INPUT_START" ]; then
+            team_start="$INPUT_START"
+          elif [ ! -f data/v137/team_features_2021.jsonl.gz ]; then
+            # One-time free bootstrap. Later scheduled runs rebuild only the current season.
+            team_start="2021-03-01"
+          else
+            team_start="${year}-03-01"
+          fi
           team_end="${INPUT_END:-$yesterday}"
-          weather_start="${INPUT_WEATHER_START:-$yesterday}"
-          weather_end="${INPUT_WEATHER_END:-$weather_start}"
+
+          if [ -n "$INPUT_WEATHER_START" ]; then
+            weather_start="$INPUT_WEATHER_START"
+            weather_end="${INPUT_WEATHER_END:-$INPUT_WEATHER_START}"
+          else
+            if [ -f data/v137_weather_cursor.json ]; then
+              weather_end="$(python -c "import json; print(json.load(open('data/v137_weather_cursor.json')).get('next_end') or '$yesterday')")"
+            else
+              weather_end="$yesterday"
+            fi
+            if [[ "$weather_end" < "2024-03-14" ]]; then
+              weather_end="2024-03-14"
+            fi
+            weather_start="$(date -u -d "$weather_end - 4 days" +%F)"
+            if [[ "$weather_start" < "2024-03-14" ]]; then
+              weather_start="2024-03-14"
+            fi
+          fi
           cutoff="$(date -u +%F)"
           echo "team_start=$team_start" >> "$GITHUB_OUTPUT"
           echo "team_end=$team_end" >> "$GITHUB_OUTPUT"
@@ -91,6 +115,29 @@ jobs:
             --end "${{ steps.dates.outputs.weather_end }}" \
             --lead-hours 2 \
             --persist
+
+      - name: Advance archived-weather backfill cursor
+        if: ${{ inputs.weather_start_date == '' || inputs.weather_start_date == null }}
+        env:
+          WEATHER_START: ${{ steps.dates.outputs.weather_start }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from datetime import date, timedelta
+          from pathlib import Path
+          floor=date(2024,3,14)
+          start=date.fromisoformat(os.environ['WEATHER_START'])
+          next_end=start-timedelta(days=1)
+          complete=next_end < floor
+          payload={
+              "schema":"v13-7-free-weather-cursor-v1",
+              "next_end": floor.isoformat() if complete else next_end.isoformat(),
+              "complete_through_archive_start": complete,
+              "archive_start": floor.isoformat(),
+          }
+          Path('data/v137_weather_cursor.json').write_text(json.dumps(payload,indent=2,sort_keys=True),encoding='utf-8')
+          print(json.dumps(payload,indent=2,sort_keys=True))
+          PY
 
       - name: Refresh free-data and model health
         run: |
@@ -128,6 +175,7 @@ jobs:
           [ -f data/v137_statcast_priors_report.json ] && git add -f data/v137_statcast_priors_report.json
           [ -f data/v137_free_team_history_report.json ] && git add -f data/v137_free_team_history_report.json
           [ -f data/v137_weather_backfill_report.json ] && git add -f data/v137_weather_backfill_report.json
+          [ -f data/v137_weather_cursor.json ] && git add -f data/v137_weather_cursor.json
           [ -f data/v137_free_data_health.json ] && git add -f data/v137_free_data_health.json
           [ -f data/v13_model_health.json ] && git add -f data/v13_model_health.json
           if ! git diff --cached --quiet; then
