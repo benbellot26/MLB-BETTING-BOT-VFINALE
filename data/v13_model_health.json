@@ -1,6 +1,10 @@
 {
   "alerts": [
-    "rich_native_games_zero"
+    "free_data:park_factor_zero_venue_rows",
+    "free_data:weather_zero_available_rows",
+    "ml_brier_worse_than_market",
+    "ml_model_market_gap_not_informative",
+    "v138:weather_zero_coverage"
   ],
   "calibration": {
     "GLOBAL": {
@@ -55,12 +59,17 @@
   },
   "claim": "monitoring artifact only; alerts indicate evidence to investigate, not automatic model retuning",
   "daily_coverage": {
-    "complete_future_coverage": null,
-    "future_coverage_rate": null,
-    "status_counts": null
+    "complete_future_coverage": true,
+    "future_coverage_rate": 1.0,
+    "status_counts": {
+      "ANALYZED": 15
+    }
   },
   "free_data_foundation": {
-    "alerts": [],
+    "alerts": [
+      "park_factor_zero_venue_rows",
+      "weather_zero_available_rows"
+    ],
     "claim": "data-health artifact only; reconstructed free data cannot masquerade as native-live evidence",
     "cohort_policy": {
       "historical_reconstructed": "research/challenger evidence only",
@@ -130,7 +139,7 @@
       "statcast": "Baseball Savant / Statcast Search CSV (free)",
       "weather": "Open-Meteo Single Runs / ECMWF IFS (free)"
     },
-    "schema": "v13-7-free-data-health-v2",
+    "schema": "v13-7-free-data-health-v3",
     "statcast": {
       "chunks": [
         {
@@ -252,7 +261,7 @@
   "model_generation": "v13.5.2-gen-structural-nb-independent-transfer-v2",
   "posterior": {
     "historical_observations": 255,
-    "live_observations": 0,
+    "live_observations": 90,
     "primary_probability_affected": false
   },
   "probability_drift": {
@@ -281,21 +290,229 @@
       "recent_n": 50
     }
   },
-  "proper_scoring_vs_market": {},
+  "proper_scoring_vs_market": {
+    "ML": {
+      "brier_gain_vs_market": -0.006080881075637651,
+      "gap_residual_slope": -1.440409125953063,
+      "logloss_gain_vs_market": -0.01247700924349612,
+      "market_brier": 0.2405948283363189,
+      "market_logloss": 0.6737262014622828,
+      "mean_model_minus_market": -0.01585410144927536,
+      "model_brier": 0.24667570941195655,
+      "model_logloss": 0.6862032107057789,
+      "n": 69,
+      "outcome_residual_vs_market": -0.04364249275362319
+    },
+    "RUNLINE": {
+      "n": 0
+    },
+    "TOTAL": {
+      "n": 0
+    }
+  },
   "rich_native": {
     "active_for_production": false,
     "feature_coverage": {
-      "bullpen_player": 0.0,
-      "lineup_player": 0.0,
-      "platoon": 0.0,
-      "starter_ip": 0.0,
-      "statcast": 0.0,
-      "weather_park": 0.0
+      "bullpen_player": 1.0,
+      "lineup_player": 1.0,
+      "platoon": 1.0,
+      "starter_ip": 1.0,
+      "statcast": 0.9,
+      "weather_park": 0.65
     },
     "minimum_games": 300,
-    "native_games": 0,
-    "rejection_reasons": null,
+    "native_games": 1,
+    "rejection_reasons": {
+      "not_final_phase": 9,
+      "not_settled_final": 45,
+      "predictive_contract_mismatch": 525
+    },
     "status": "COLLECTING"
   },
-  "schema": "v13-model-health-v2"
+  "schema": "v13-model-health-v3",
+  "v138_audit_research": {
+    "alerts": [
+      "weather_zero_coverage"
+    ],
+    "audit_closure": {
+      "engineering_closed": 52,
+      "engineering_open": 0,
+      "evidence_gates_pending": 8,
+      "overall_closed": 44
+    },
+    "feature_drift": {
+      "alerts": [],
+      "available": true,
+      "features": {
+        "away_l14_rpg": {
+          "alert": false,
+          "recent_mean": 4.434142857142857,
+          "reference_mean": 4.468112136987202,
+          "standardized_shift": -0.033493334128415965
+        },
+        "away_l30_rpg": {
+          "alert": false,
+          "recent_mean": 4.539133333333333,
+          "reference_mean": 4.4593710575253045,
+          "standardized_shift": 0.09628813813407362
+        },
+        "away_l7_rpg": {
+          "alert": false,
+          "recent_mean": 4.450285714285715,
+          "reference_mean": 4.476817579280106,
+          "standardized_shift": -0.020161979633572222
+        },
+        "away_offense_talent": {
+          "alert": false,
+          "recent_mean": 4.480071206464242,
+          "reference_mean": 4.451494216468508,
+          "standardized_shift": 0.0743976812463439
+        },
+        "away_offense_x_home_defense": {
+          "alert": false,
+          "recent_mean": 4.520614772222173,
+          "reference_mean": 4.4313904541415985,
+          "standardized_shift": 0.0992382551582343
+        },
+        "away_ra_pg": {
+          "alert": false,
+          "recent_mean": 4.505911174263963,
+          "reference_mean": 4.415791403115744,
+          "standardized_shift": 0.11578527789574808
+        },
+        "away_rest": {
+          "alert": false,
+          "recent_mean": 0.256,
+          "reference_mean": 0.1768441261168131,
+          "standardized_shift": 0.1619910122221003
+        },
+        "away_season_rpg": {
+          "alert": false,
+          "recent_mean": 4.509769125266791,
+          "reference_mean": 4.415822965482917,
+          "standardized_shift": 0.13087427873252222
+        },
+        "away_win_pct": {
+          "alert": false,
+          "recent_mean": 0.5001542854428022,
+          "reference_mean": 0.49949730596323466,
+          "standardized_shift": 0.005638681219270033
+        },
+        "home_l14_rpg": {
+          "alert": false,
+          "recent_mean": 4.446714285714285,
+          "reference_mean": 4.466952653825946,
+          "standardized_shift": -0.01956251339633071
+        },
+        "home_l30_rpg": {
+          "alert": false,
+          "recent_mean": 4.513066666666667,
+          "reference_mean": 4.4657490366457,
+          "standardized_shift": 0.05586611541299941
+        },
+        "home_l7_rpg": {
+          "alert": false,
+          "recent_mean": 4.327428571428571,
+          "reference_mean": 4.455196850947424,
+          "standardized_shift": -0.09737685750508732
+        },
+        "home_offense_talent": {
+          "alert": false,
+          "recent_mean": 4.465670979834275,
+          "reference_mean": 4.448469302624336,
+          "standardized_shift": 0.04535852478858049
+        },
+        "home_offense_x_away_defense": {
+          "alert": false,
+          "recent_mean": 4.519292897300776,
+          "reference_mean": 4.421747156342804,
+          "standardized_shift": 0.10646655125778193
+        },
+        "home_ra_pg": {
+          "alert": false,
+          "recent_mean": 4.488525227298702,
+          "reference_mean": 4.421570865531148,
+          "standardized_shift": 0.08816804728506698
+        },
+        "home_rest": {
+          "alert": false,
+          "recent_mean": 0.264,
+          "reference_mean": 0.18348962563686036,
+          "standardized_shift": 0.16184683251601137
+        },
+        "home_season_rpg": {
+          "alert": false,
+          "recent_mean": 4.494723679232032,
+          "reference_mean": 4.419514295868443,
+          "standardized_shift": 0.10164950283722152
+        },
+        "home_win_pct": {
+          "alert": false,
+          "recent_mean": 0.50118138267686,
+          "reference_mean": 0.5002634599299187,
+          "standardized_shift": 0.007898083383421997
+        },
+        "park_run_factor": {
+          "alert": false,
+          "recent_mean": 1.0,
+          "reference_mean": 1.0,
+          "standardized_shift": 0.0
+        }
+      }
+    },
+    "native_evidence": {
+      "bookmaker_weights": {
+        "active": false,
+        "minimum_n": 300,
+        "n": 0,
+        "reason": "INSUFFICIENT_PIT_BOOK_TARGETS"
+      },
+      "dynamic_calibration": {
+        "active": false,
+        "minimum_n": 300,
+        "n": 69,
+        "reason": "INSUFFICIENT_NATIVE_TARGETS"
+      },
+      "independent_targets": 69,
+      "uncertainty_coverage": {
+        "active": false,
+        "bins": [],
+        "calibration_mae": null,
+        "criterion": ">=300 independent targets, >=5 bins with n>=30, >=80% weighted empirical-rate coverage and calibration MAE <= mean half-width",
+        "evaluated_n": 0,
+        "frequentist_confidence_interval": false,
+        "mean_interval_half_width": null,
+        "minimum_n": 300,
+        "n": 15,
+        "usable_bins": 0,
+        "user_facing_type": "model_uncertainty_band",
+        "weighted_bin_coverage": null
+      }
+    },
+    "research_challengers": {
+      "ensemble_weights": {
+        "gam": 0.0,
+        "gbdt": 2.7755575615628914e-17,
+        "glm": 0.0,
+        "hierarchical": 0.10000000000000003,
+        "naive": 0.8999999999999999
+      },
+      "games": 14043,
+      "holdout_games": 2809,
+      "holdout_isolation": true,
+      "promotion_eligible": false,
+      "status": "TRAINED_RESEARCH_ONLY"
+    },
+    "walk_forward": {
+      "folds": 5,
+      "seasons": [
+        2021,
+        2022,
+        2023,
+        2024,
+        2025,
+        2026
+      ]
+    }
+  }
 }
