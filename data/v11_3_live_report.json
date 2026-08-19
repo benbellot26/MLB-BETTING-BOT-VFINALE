@@ -1,5 +1,5 @@
 {
-  "analyzed_at": "2026-08-19T21:43:38.511194+00:00",
+  "analyzed_at": "2026-08-19T23:02:32.580286+00:00",
   "calibration_health": {
     "by_phase": {
       "EARLY": {
@@ -326,21 +326,21 @@
     "schema": "v12-calibration-diagnostics-v2"
   },
   "data_health": {
-    "analyzed_games": 10,
-    "confirmed_lineups": 9,
-    "confirmed_starters": 10,
+    "analyzed_games": 5,
+    "confirmed_lineups": 5,
+    "confirmed_starters": 5,
     "matched_events": 11,
-    "mean_data_quality": 0.9583,
+    "mean_data_quality": 0.9698,
     "scheduled_games": 15,
     "sharp_coverage": {
-      "ML": 10,
-      "RUNLINE": 10,
-      "TOTAL": 10
+      "ML": 5,
+      "RUNLINE": 5,
+      "TOTAL": 5
     },
-    "usable_lineups": 9,
-    "usable_starters": 8,
+    "usable_lineups": 5,
+    "usable_starters": 4,
     "winamax_coverage": {
-      "ML": 10,
+      "ML": 5,
       "RUNLINE": 0,
       "TOTAL": 0
     }
@@ -399,14 +399,14 @@
     "generation": "V12.3.2 value-selection-v1 + V12.4 predictive shadow",
     "historical_evidence": "legacy V10 1,801-game data are diagnostic only until a V12.3 structural baseline exists",
     "ledger": "PROPOSED -> PUBLISHED -> CONFIRMED_PLACED -> SETTLED",
-    "raw_archive": "runtime/v11/snapshots/2026-08-19_988df722ded34b0f.json.gz",
+    "raw_archive": "runtime/v11/snapshots/2026-08-19_65d9e203efb19b5c.json.gz",
     "runs_model": "immutable structural baseline + validated FINAL historical prior fallback + phase-specific live residual",
     "selection": "informational recommendations use model confidence + conservative EV/edge + DQ + uncertainty + Kelly; Winamax never decides eligibility",
     "selection_confidence": "RL >= 55%; ML/TOTAL >= 58%",
     "selection_price_floor": "reference decimal odds >= 1.40",
     "selection_reference_price": "fresh configured sharp books; exact side/point; second-best effective quote when >=2 books, otherwise single fresh sharp quote",
     "sharp_disagreement": "large model-vs-sharp disagreement reduces selection score but is not a hard directional veto",
-    "source_replay": "runtime/v11/source_replays/2026-08-19_988df722ded34b0f_sources.json.gz",
+    "source_replay": "runtime/v11/source_replays/2026-08-19_65d9e203efb19b5c_sources.json.gz",
     "staking": "bankroll-aware fractional Kelly; official combos disabled",
     "starter_model": "current season + N-1/N-2 prior affects structural run means",
     "uncertainty": "empirical phase/market reliability bins + market disagreement + DQ penalty",
@@ -1497,7 +1497,7 @@
     "status": "COLLECTING",
     "volume_ready": false
   },
-  "remaining_games_analyzed": 10,
+  "remaining_games_analyzed": 5,
   "research_monitor_v124": {
     "ablations": {
       "bullpen_player": {
@@ -1784,7 +1784,7 @@
       }
     },
     "affects_v12_selection": false,
-    "analyzed_at": "2026-08-19T21:43:38.511194+00:00",
+    "analyzed_at": "2026-08-19T23:02:32.580286+00:00",
     "canonicalization": "latest settled pre-game snapshot per game_pk",
     "convergence": {
       "affects_v12_selection": false,
@@ -1807,180 +1807,6 @@
         {
           "affects_v12_selection": false,
           "available": 8,
-          "directional": 6,
-          "game": "Toronto Blue Jays @ Tampa Bay Rays",
-          "game_pk": 822937,
-          "grade": "STRONG",
-          "market": "ML",
-          "name": "Tampa Bay Rays",
-          "net_support": 6,
-          "neutral": 2,
-          "normalized_support": 0.75,
-          "oppose": 0,
-          "p_effective": 0.64907,
-          "p_market": 0.646014,
-          "point": null,
-          "research_only": true,
-          "schema": "v12-4-convergence-score-v1",
-          "score_8": 6,
-          "signals": {
-            "attack": {
-              "detail": {
-                "projected_margin": 1.4242923393997078,
-                "required_margin": 0.0
-              },
-              "state": "SUPPORT",
-              "value": 1.4242923393997078
-            },
-            "bullpen": {
-              "detail": {
-                "opponent_factor": 0.9674752915367898,
-                "own_factor": 1.0112088223318525
-              },
-              "state": "SUPPORT",
-              "value": 0.04520377024367628
-            },
-            "lineup": {
-              "detail": {
-                "opponent_factor": 0.9962926971701855,
-                "own_factor": 1.006285607658557
-              },
-              "state": "SUPPORT",
-              "value": 0.01003009508827546
-            },
-            "model": {
-              "detail": {
-                "p": 0.64907
-              },
-              "state": "SUPPORT",
-              "value": 0.14907000000000004
-            },
-            "sharp": {
-              "detail": {
-                "p_market": 0.646014
-              },
-              "state": "SUPPORT",
-              "value": 0.14601399999999998
-            },
-            "starter": {
-              "detail": {
-                "opponent_factor": 0.9936115777030841,
-                "own_factor": 0.9916731639885596
-              },
-              "state": "NEUTRAL",
-              "value": -0.00195087673898231
-            },
-            "statcast": {
-              "detail": {
-                "opponent_factor": 0.9779150763358779,
-                "own_factor": 0.9939370229007634
-              },
-              "state": "SUPPORT",
-              "value": 0.01638378112025607
-            },
-            "weather_park": {
-              "detail": {
-                "opponent_factor": 1.0169574759716518,
-                "own_factor": 1.0169574759716518
-              },
-              "state": "NEUTRAL",
-              "value": 0.0
-            }
-          },
-          "support": 6,
-          "unavailable": 0,
-          "version": "v12.4-convergence-score-v1"
-        },
-        {
-          "affects_v12_selection": false,
-          "available": 8,
-          "directional": 6,
-          "game": "San Francisco Giants @ Cleveland Guardians",
-          "game_pk": 824394,
-          "grade": "STRONG",
-          "market": "ML",
-          "name": "Cleveland Guardians",
-          "net_support": 6,
-          "neutral": 2,
-          "normalized_support": 0.75,
-          "oppose": 0,
-          "p_effective": 0.630628,
-          "p_market": 0.673794,
-          "point": null,
-          "research_only": true,
-          "schema": "v12-4-convergence-score-v1",
-          "score_8": 6,
-          "signals": {
-            "attack": {
-              "detail": {
-                "projected_margin": 1.0370741056005914,
-                "required_margin": 0.0
-              },
-              "state": "SUPPORT",
-              "value": 1.0370741056005914
-            },
-            "bullpen": {
-              "detail": {
-                "opponent_factor": 0.9917353908082982,
-                "own_factor": 0.9997152776096627
-              },
-              "state": "SUPPORT",
-              "value": 0.008046387045702375
-            },
-            "lineup": {
-              "detail": {
-                "opponent_factor": 0.9996666038885041,
-                "own_factor": 1.0006702447583684
-              },
-              "state": "NEUTRAL",
-              "value": 0.0010039755914224013
-            },
-            "model": {
-              "detail": {
-                "p": 0.630628
-              },
-              "state": "SUPPORT",
-              "value": 0.13062799999999997
-            },
-            "sharp": {
-              "detail": {
-                "p_market": 0.673794
-              },
-              "state": "SUPPORT",
-              "value": 0.173794
-            },
-            "starter": {
-              "detail": {
-                "opponent_factor": 0.987861463124273,
-                "own_factor": 1.0
-              },
-              "state": "SUPPORT",
-              "value": 0.012287691471774664
-            },
-            "statcast": {
-              "detail": {
-                "opponent_factor": 0.9822719465648855,
-                "own_factor": 0.9958606870229008
-              },
-              "state": "SUPPORT",
-              "value": 0.013833990175059485
-            },
-            "weather_park": {
-              "detail": {
-                "opponent_factor": 1.0098532466551917,
-                "own_factor": 1.0098532466551917
-              },
-              "state": "NEUTRAL",
-              "value": 0.0
-            }
-          },
-          "support": 6,
-          "unavailable": 0,
-          "version": "v12.4-convergence-score-v1"
-        },
-        {
-          "affects_v12_selection": false,
-          "available": 8,
           "directional": 7,
           "game": "Washington Nationals @ Texas Rangers",
           "game_pk": 822860,
@@ -1991,8 +1817,8 @@
           "neutral": 1,
           "normalized_support": 0.75,
           "oppose": 1,
-          "p_effective": 0.661185,
-          "p_market": 0.641229,
+          "p_effective": 0.66131,
+          "p_market": 0.641608,
           "point": 1.5,
           "research_only": true,
           "schema": "v12-4-convergence-score-v1",
@@ -2000,11 +1826,11 @@
           "signals": {
             "attack": {
               "detail": {
-                "projected_margin": 0.17327275758500438,
+                "projected_margin": 0.17327137815868454,
                 "required_margin": -1.5
               },
               "state": "SUPPORT",
-              "value": 1.6732727575850044
+              "value": 1.6732713781586845
             },
             "bullpen": {
               "detail": {
@@ -2016,33 +1842,33 @@
             },
             "lineup": {
               "detail": {
-                "opponent_factor": 0.9984230699681002,
-                "own_factor": 1.005947848126764
+                "opponent_factor": 0.9984277885113775,
+                "own_factor": 1.005952870208469
               },
               "state": "SUPPORT",
-              "value": 0.0075366629488082815
+              "value": 0.007536931347144504
             },
             "model": {
               "detail": {
-                "p": 0.661185
+                "p": 0.66131
               },
               "state": "SUPPORT",
-              "value": 0.16118500000000002
+              "value": 0.16130999999999995
             },
             "sharp": {
               "detail": {
-                "p_market": 0.641229
+                "p_market": 0.641608
               },
               "state": "SUPPORT",
-              "value": 0.14122900000000005
+              "value": 0.14160799999999996
             },
             "starter": {
               "detail": {
-                "opponent_factor": 0.9987626859935267,
-                "own_factor": 1.003929622945951
+                "opponent_factor": 0.9987625063407759,
+                "own_factor": 1.0039294461708772
               },
               "state": "SUPPORT",
-              "value": 0.005173337995986849
+              "value": 0.005173341807785503
             },
             "statcast": {
               "detail": {
@@ -2069,93 +1895,6 @@
           "affects_v12_selection": false,
           "available": 8,
           "directional": 5,
-          "game": "Los Angeles Dodgers @ Colorado Rockies",
-          "game_pk": 824318,
-          "grade": "GOOD",
-          "market": "ML",
-          "name": "Los Angeles Dodgers",
-          "net_support": 5,
-          "neutral": 3,
-          "normalized_support": 0.625,
-          "oppose": 0,
-          "p_effective": 0.612763,
-          "p_market": 0.642328,
-          "point": null,
-          "research_only": true,
-          "schema": "v12-4-convergence-score-v1",
-          "score_8": 5,
-          "signals": {
-            "attack": {
-              "detail": {
-                "projected_margin": 1.2068445982502212,
-                "required_margin": 0.0
-              },
-              "state": "SUPPORT",
-              "value": 1.2068445982502212
-            },
-            "bullpen": {
-              "detail": {
-                "opponent_factor": 0.9835909298891268,
-                "own_factor": 1.0337510372729357
-              },
-              "state": "SUPPORT",
-              "value": 0.05099691940984363
-            },
-            "lineup": {
-              "detail": {
-                "opponent_factor": 1.0,
-                "own_factor": 1.0010011599451931
-              },
-              "state": "NEUTRAL",
-              "value": 0.0010011599451931197
-            },
-            "model": {
-              "detail": {
-                "p": 0.612763
-              },
-              "state": "SUPPORT",
-              "value": 0.11276299999999995
-            },
-            "sharp": {
-              "detail": {
-                "p_market": 0.642328
-              },
-              "state": "SUPPORT",
-              "value": 0.142328
-            },
-            "starter": {
-              "detail": {
-                "opponent_factor": 1.0024231411594497,
-                "own_factor": 1.00104824062173
-              },
-              "state": "NEUTRAL",
-              "value": -0.0013715770130061644
-            },
-            "statcast": {
-              "detail": {
-                "opponent_factor": 1.0,
-                "own_factor": 1.0128072979493365
-              },
-              "state": "SUPPORT",
-              "value": 0.012807297949336549
-            },
-            "weather_park": {
-              "detail": {
-                "opponent_factor": 1.03510664608,
-                "own_factor": 1.03510664608
-              },
-              "state": "NEUTRAL",
-              "value": 0.0
-            }
-          },
-          "support": 5,
-          "unavailable": 0,
-          "version": "v12.4-convergence-score-v1"
-        },
-        {
-          "affects_v12_selection": false,
-          "available": 8,
-          "directional": 5,
           "game": "Athletics @ Kansas City Royals",
           "game_pk": 824076,
           "grade": "GOOD",
@@ -2165,8 +1904,8 @@
           "neutral": 3,
           "normalized_support": 0.625,
           "oppose": 0,
-          "p_effective": 0.604956,
-          "p_market": 0.629326,
+          "p_effective": 0.604937,
+          "p_market": 0.62935,
           "point": null,
           "research_only": true,
           "schema": "v12-4-convergence-score-v1",
@@ -2174,11 +1913,11 @@
           "signals": {
             "attack": {
               "detail": {
-                "projected_margin": 1.0207743819187245,
+                "projected_margin": 1.02112873940988,
                 "required_margin": 0.0
               },
               "state": "SUPPORT",
-              "value": 1.0207743819187245
+              "value": 1.02112873940988
             },
             "bullpen": {
               "detail": {
@@ -2190,33 +1929,33 @@
             },
             "lineup": {
               "detail": {
-                "opponent_factor": 0.9984466805237169,
-                "own_factor": 1.0003854363651348
+                "opponent_factor": 0.9984512826333671,
+                "own_factor": 1.0003902132152347
               },
               "state": "NEUTRAL",
-              "value": 0.0019417720337364663
+              "value": 0.0019419380951204435
             },
             "model": {
               "detail": {
-                "p": 0.604956
+                "p": 0.604937
               },
               "state": "SUPPORT",
-              "value": 0.10495600000000005
+              "value": 0.10493699999999995
             },
             "sharp": {
               "detail": {
-                "p_market": 0.629326
+                "p_market": 0.62935
               },
               "state": "SUPPORT",
-              "value": 0.12932600000000005
+              "value": 0.12934999999999997
             },
             "starter": {
               "detail": {
-                "opponent_factor": 0.9974755057236824,
-                "own_factor": 0.9986289570998299
+                "opponent_factor": 0.997475268407265,
+                "own_factor": 0.9986291599911534
               },
               "state": "NEUTRAL",
-              "value": 0.0011563706271771057
+              "value": 0.0011568122242580081
             },
             "statcast": {
               "detail": {
@@ -2228,95 +1967,8 @@
             },
             "weather_park": {
               "detail": {
-                "opponent_factor": 1.0126243584979069,
-                "own_factor": 1.0126243584979069
-              },
-              "state": "NEUTRAL",
-              "value": 0.0
-            }
-          },
-          "support": 5,
-          "unavailable": 0,
-          "version": "v12.4-convergence-score-v1"
-        },
-        {
-          "affects_v12_selection": false,
-          "available": 8,
-          "directional": 5,
-          "game": "New York Yankees @ Baltimore Orioles",
-          "game_pk": 824801,
-          "grade": "GOOD",
-          "market": "ML",
-          "name": "New York Yankees",
-          "net_support": 5,
-          "neutral": 3,
-          "normalized_support": 0.625,
-          "oppose": 0,
-          "p_effective": 0.526994,
-          "p_market": 0.505535,
-          "point": null,
-          "research_only": true,
-          "schema": "v12-4-convergence-score-v1",
-          "score_8": 5,
-          "signals": {
-            "attack": {
-              "detail": {
-                "projected_margin": 0.3783780162490471,
-                "required_margin": 0.0
-              },
-              "state": "SUPPORT",
-              "value": 0.3783780162490471
-            },
-            "bullpen": {
-              "detail": {
-                "opponent_factor": 0.9613486338997678,
-                "own_factor": 0.9983341304433897
-              },
-              "state": "SUPPORT",
-              "value": 0.03847251167725507
-            },
-            "lineup": {
-              "detail": {
-                "opponent_factor": 0.9969820469458305,
-                "own_factor": 1.0017385771267582
-              },
-              "state": "SUPPORT",
-              "value": 0.004770928619526327
-            },
-            "model": {
-              "detail": {
-                "p": 0.526994
-              },
-              "state": "SUPPORT",
-              "value": 0.026993999999999962
-            },
-            "sharp": {
-              "detail": {
-                "p_market": 0.505535
-              },
-              "state": "NEUTRAL",
-              "value": 0.005534999999999957
-            },
-            "starter": {
-              "detail": {
-                "opponent_factor": 1.000369170282089,
-                "own_factor": 1.0025693755184102
-              },
-              "state": "NEUTRAL",
-              "value": 0.002199393285681639
-            },
-            "statcast": {
-              "detail": {
-                "opponent_factor": 0.9976765267175572,
-                "own_factor": 1.0038053435114505
-              },
-              "state": "SUPPORT",
-              "value": 0.006143090099611337
-            },
-            "weather_park": {
-              "detail": {
-                "opponent_factor": 1.0210049543029895,
-                "own_factor": 1.0210049543029895
+                "opponent_factor": 1.0220218816681126,
+                "own_factor": 1.0220218816681126
               },
               "state": "NEUTRAL",
               "value": 0.0
@@ -2330,80 +1982,167 @@
           "affects_v12_selection": false,
           "available": 8,
           "directional": 6,
-          "game": "Miami Marlins @ Philadelphia Phillies",
-          "game_pk": 823424,
+          "game": "Athletics @ Kansas City Royals",
+          "game_pk": 824076,
           "grade": "GOOD",
-          "market": "RUNLINE",
-          "name": "Miami Marlins",
+          "market": "TOTAL",
+          "name": "Over",
           "net_support": 4,
           "neutral": 2,
           "normalized_support": 0.625,
           "oppose": 1,
-          "p_effective": 0.673013,
-          "p_market": 0.603602,
-          "point": 1.5,
+          "p_effective": 0.61761,
+          "p_market": 0.520778,
+          "point": 8.5,
           "research_only": true,
           "schema": "v12-4-convergence-score-v1",
           "score_8": 5,
           "signals": {
             "attack": {
               "detail": {
-                "projected_margin": 0.48789309339868847,
-                "required_margin": -1.5
+                "line": 8.5,
+                "projected_total": 10.571623840617574
               },
               "state": "SUPPORT",
-              "value": 1.9878930933986885
+              "value": 2.0716238406175744
             },
             "bullpen": {
               "detail": {
-                "opponent_factor": 1.005605350822173,
-                "own_factor": 0.9827009957360103
+                "away_factor": 1.0078397643245771,
+                "home_factor": 1.0244633816946107
               },
-              "state": "OPPOSE",
-              "value": -0.022776683782993246
+              "state": "SUPPORT",
+              "value": 0.0161515730095938
             },
             "lineup": {
               "detail": {
-                "opponent_factor": 1.0016151169251348,
-                "own_factor": 1.0066535525545328
+                "away_factor": 0.9984512826333671,
+                "home_factor": 1.0003902132152347
               },
-              "state": "SUPPORT",
-              "value": 0.005030311088819683
+              "state": "NEUTRAL",
+              "value": -0.0005792520756990882
             },
             "model": {
               "detail": {
-                "p": 0.673013
+                "p": 0.61761
               },
               "state": "SUPPORT",
-              "value": 0.17301299999999997
+              "value": 0.11760999999999999
             },
             "sharp": {
               "detail": {
-                "p_market": 0.603602
+                "p_market": 0.520778
               },
               "state": "SUPPORT",
-              "value": 0.10360199999999997
+              "value": 0.020777999999999963
             },
             "starter": {
               "detail": {
-                "opponent_factor": 0.9923996833931807,
-                "own_factor": 1.0016828611577453
+                "away_factor": 0.997475268407265,
+                "home_factor": 0.9986291599911534
               },
-              "state": "SUPPORT",
-              "value": 0.009354273202530461
+              "state": "NEUTRAL",
+              "value": -0.0019477858007908022
             },
             "statcast": {
               "detail": {
-                "opponent_factor": 0.9978635496183206,
-                "own_factor": 1.0010515267175573
+                "away_factor": 0.9869208015267176,
+                "home_factor": 0.9958454198473282
               },
-              "state": "NEUTRAL",
-              "value": 0.0031948026365489213
+              "state": "OPPOSE",
+              "value": -0.008616889312977105
             },
             "weather_park": {
               "detail": {
-                "opponent_factor": 1.023420887001341,
-                "own_factor": 1.023420887001341
+                "away_factor": 1.0220218816681126,
+                "home_factor": 1.0220218816681126
+              },
+              "state": "SUPPORT",
+              "value": 0.022021881668112586
+            }
+          },
+          "support": 5,
+          "unavailable": 0,
+          "version": "v12.4-convergence-score-v1"
+        },
+        {
+          "affects_v12_selection": false,
+          "available": 8,
+          "directional": 6,
+          "game": "Los Angeles Dodgers @ Colorado Rockies",
+          "game_pk": 824318,
+          "grade": "GOOD",
+          "market": "ML",
+          "name": "Los Angeles Dodgers",
+          "net_support": 4,
+          "neutral": 2,
+          "normalized_support": 0.625,
+          "oppose": 1,
+          "p_effective": 0.600016,
+          "p_market": 0.649741,
+          "point": null,
+          "research_only": true,
+          "schema": "v12-4-convergence-score-v1",
+          "score_8": 5,
+          "signals": {
+            "attack": {
+              "detail": {
+                "projected_margin": 0.970649814546829,
+                "required_margin": 0.0
+              },
+              "state": "SUPPORT",
+              "value": 0.970649814546829
+            },
+            "bullpen": {
+              "detail": {
+                "opponent_factor": 0.9835909298891268,
+                "own_factor": 1.0337510372729357
+              },
+              "state": "SUPPORT",
+              "value": 0.05099691940984363
+            },
+            "lineup": {
+              "detail": {
+                "opponent_factor": 1.0180427088138682,
+                "own_factor": 1.0010056701511334
+              },
+              "state": "OPPOSE",
+              "value": -0.016735092266006002
+            },
+            "model": {
+              "detail": {
+                "p": 0.600016
+              },
+              "state": "SUPPORT",
+              "value": 0.100016
+            },
+            "sharp": {
+              "detail": {
+                "p_market": 0.649741
+              },
+              "state": "SUPPORT",
+              "value": 0.149741
+            },
+            "starter": {
+              "detail": {
+                "opponent_factor": 1.0024230253117867,
+                "own_factor": 1.0010478797185989
+              },
+              "state": "NEUTRAL",
+              "value": -0.0013718216346438883
+            },
+            "statcast": {
+              "detail": {
+                "opponent_factor": 0.9993530534351145,
+                "own_factor": 1.0128072979493365
+              },
+              "state": "SUPPORT",
+              "value": 0.013462954326276755
+            },
+            "weather_park": {
+              "detail": {
+                "opponent_factor": 1.03517114608,
+                "own_factor": 1.03517114608
               },
               "state": "NEUTRAL",
               "value": 0.0
@@ -2426,8 +2165,8 @@
           "neutral": 4,
           "normalized_support": 0.5,
           "oppose": 0,
-          "p_effective": 0.51603,
-          "p_market": 0.583253,
+          "p_effective": 0.515622,
+          "p_market": 0.5819,
           "point": null,
           "research_only": true,
           "schema": "v12-4-convergence-score-v1",
@@ -2435,11 +2174,11 @@
           "signals": {
             "attack": {
               "detail": {
-                "projected_margin": -0.14488908925474853,
+                "projected_margin": -0.14487483698243508,
                 "required_margin": 0.0
               },
               "state": "NEUTRAL",
-              "value": -0.14488908925474853
+              "value": -0.14487483698243508
             },
             "bullpen": {
               "detail": {
@@ -2451,33 +2190,33 @@
             },
             "lineup": {
               "detail": {
-                "opponent_factor": 0.9960912292978689,
-                "own_factor": 1.0061034499588324
+                "opponent_factor": 0.9960954959866694,
+                "own_factor": 1.006108420272063
               },
               "state": "SUPPORT",
-              "value": 0.01005150970762081
+              "value": 0.010052173035352885
             },
             "model": {
               "detail": {
-                "p": 0.51603
+                "p": 0.515622
               },
               "state": "NEUTRAL",
-              "value": 0.01602999999999999
+              "value": 0.015622000000000025
             },
             "sharp": {
               "detail": {
-                "p_market": 0.583253
+                "p_market": 0.5819
               },
               "state": "SUPPORT",
-              "value": 0.08325300000000002
+              "value": 0.08189999999999997
             },
             "starter": {
               "detail": {
                 "opponent_factor": 1.0,
-                "own_factor": 0.9988214190813692
+                "own_factor": 0.9988211588814986
               },
               "state": "NEUTRAL",
-              "value": -0.0011785809186307672
+              "value": -0.001178841118501417
             },
             "statcast": {
               "detail": {
@@ -2503,267 +2242,6 @@
         {
           "affects_v12_selection": false,
           "available": 8,
-          "directional": 5,
-          "game": "Athletics @ Kansas City Royals",
-          "game_pk": 824076,
-          "grade": "MIXED",
-          "market": "TOTAL",
-          "name": "Over",
-          "net_support": 3,
-          "neutral": 3,
-          "normalized_support": 0.5,
-          "oppose": 1,
-          "p_effective": 0.62392,
-          "p_market": 0.513619,
-          "point": 8.5,
-          "research_only": true,
-          "schema": "v12-4-convergence-score-v1",
-          "score_8": 4,
-          "signals": {
-            "attack": {
-              "detail": {
-                "line": 8.5,
-                "projected_total": 10.57166775555832
-              },
-              "state": "SUPPORT",
-              "value": 2.0716677555583196
-            },
-            "bullpen": {
-              "detail": {
-                "away_factor": 1.0078397643245771,
-                "home_factor": 1.0244633816946107
-              },
-              "state": "SUPPORT",
-              "value": 0.0161515730095938
-            },
-            "lineup": {
-              "detail": {
-                "away_factor": 0.9984466805237169,
-                "home_factor": 1.0003854363651348
-              },
-              "state": "NEUTRAL",
-              "value": -0.0005839415555741745
-            },
-            "model": {
-              "detail": {
-                "p": 0.62392
-              },
-              "state": "SUPPORT",
-              "value": 0.12392000000000003
-            },
-            "sharp": {
-              "detail": {
-                "p_market": 0.513619
-              },
-              "state": "NEUTRAL",
-              "value": 0.013619000000000048
-            },
-            "starter": {
-              "detail": {
-                "away_factor": 0.9974755057236824,
-                "home_factor": 0.9986289570998299
-              },
-              "state": "NEUTRAL",
-              "value": -0.001947768588243859
-            },
-            "statcast": {
-              "detail": {
-                "away_factor": 0.9869208015267176,
-                "home_factor": 0.9958454198473282
-              },
-              "state": "OPPOSE",
-              "value": -0.008616889312977105
-            },
-            "weather_park": {
-              "detail": {
-                "away_factor": 1.0126243584979069,
-                "home_factor": 1.0126243584979069
-              },
-              "state": "SUPPORT",
-              "value": 0.012624358497906885
-            }
-          },
-          "support": 4,
-          "unavailable": 0,
-          "version": "v12.4-convergence-score-v1"
-        },
-        {
-          "affects_v12_selection": false,
-          "available": 8,
-          "directional": 5,
-          "game": "St. Louis Cardinals @ Cincinnati Reds",
-          "game_pk": 824476,
-          "grade": "MIXED",
-          "market": "RUNLINE",
-          "name": "St. Louis Cardinals",
-          "net_support": 3,
-          "neutral": 3,
-          "normalized_support": 0.5,
-          "oppose": 1,
-          "p_effective": 0.602336,
-          "p_market": 0.617695,
-          "point": 1.5,
-          "research_only": true,
-          "schema": "v12-4-convergence-score-v1",
-          "score_8": 4,
-          "signals": {
-            "attack": {
-              "detail": {
-                "projected_margin": -0.6726761561647416,
-                "required_margin": -1.5
-              },
-              "state": "SUPPORT",
-              "value": 0.8273238438352584
-            },
-            "bullpen": {
-              "detail": {
-                "opponent_factor": 0.99749538248767,
-                "own_factor": 0.9994918218302382
-              },
-              "state": "NEUTRAL",
-              "value": 0.0020014522148354974
-            },
-            "lineup": {
-              "detail": {
-                "opponent_factor": 0.9980984578853508,
-                "own_factor": 0.9991014276599494
-              },
-              "state": "NEUTRAL",
-              "value": 0.00100488059737458
-            },
-            "model": {
-              "detail": {
-                "p": 0.602336
-              },
-              "state": "SUPPORT",
-              "value": 0.10233599999999998
-            },
-            "sharp": {
-              "detail": {
-                "p_market": 0.617695
-              },
-              "state": "SUPPORT",
-              "value": 0.117695
-            },
-            "starter": {
-              "detail": {
-                "opponent_factor": 0.9990809185742152,
-                "own_factor": 0.9923948643024485
-              },
-              "state": "OPPOSE",
-              "value": -0.0066922049530365735
-            },
-            "statcast": {
-              "detail": {
-                "opponent_factor": 0.9920219465648855,
-                "own_factor": 1.0044408396946565
-              },
-              "state": "SUPPORT",
-              "value": 0.01251876853407774
-            },
-            "weather_park": {
-              "detail": {
-                "opponent_factor": 1.0156511352680107,
-                "own_factor": 1.0156511352680107
-              },
-              "state": "NEUTRAL",
-              "value": 0.0
-            }
-          },
-          "support": 4,
-          "unavailable": 0,
-          "version": "v12.4-convergence-score-v1"
-        },
-        {
-          "affects_v12_selection": false,
-          "available": 8,
-          "directional": 5,
-          "game": "St. Louis Cardinals @ Cincinnati Reds",
-          "game_pk": 824476,
-          "grade": "MIXED",
-          "market": "ML",
-          "name": "Cincinnati Reds",
-          "net_support": 3,
-          "neutral": 3,
-          "normalized_support": 0.5,
-          "oppose": 1,
-          "p_effective": 0.566172,
-          "p_market": 0.558488,
-          "point": null,
-          "research_only": true,
-          "schema": "v12-4-convergence-score-v1",
-          "score_8": 4,
-          "signals": {
-            "attack": {
-              "detail": {
-                "projected_margin": 0.6726761561647416,
-                "required_margin": 0.0
-              },
-              "state": "SUPPORT",
-              "value": 0.6726761561647416
-            },
-            "bullpen": {
-              "detail": {
-                "opponent_factor": 0.9994918218302382,
-                "own_factor": 0.99749538248767
-              },
-              "state": "NEUTRAL",
-              "value": -0.0019974544052920873
-            },
-            "lineup": {
-              "detail": {
-                "opponent_factor": 0.9991014276599494,
-                "own_factor": 0.9980984578853508
-              },
-              "state": "NEUTRAL",
-              "value": -0.0010038718260544366
-            },
-            "model": {
-              "detail": {
-                "p": 0.566172
-              },
-              "state": "SUPPORT",
-              "value": 0.06617200000000001
-            },
-            "sharp": {
-              "detail": {
-                "p_market": 0.558488
-              },
-              "state": "SUPPORT",
-              "value": 0.058487999999999984
-            },
-            "starter": {
-              "detail": {
-                "opponent_factor": 0.9923948643024485,
-                "own_factor": 0.9990809185742152
-              },
-              "state": "SUPPORT",
-              "value": 0.006737292293895969
-            },
-            "statcast": {
-              "detail": {
-                "opponent_factor": 1.0044408396946565,
-                "own_factor": 0.9920219465648855
-              },
-              "state": "OPPOSE",
-              "value": -0.01236398664708438
-            },
-            "weather_park": {
-              "detail": {
-                "opponent_factor": 1.0156511352680107,
-                "own_factor": 1.0156511352680107
-              },
-              "state": "NEUTRAL",
-              "value": 0.0
-            }
-          },
-          "support": 4,
-          "unavailable": 0,
-          "version": "v12.4-convergence-score-v1"
-        },
-        {
-          "affects_v12_selection": false,
-          "available": 8,
           "directional": 6,
           "game": "Seattle Mariners @ Milwaukee Brewers",
           "game_pk": 823748,
@@ -2774,8 +2252,8 @@
           "neutral": 2,
           "normalized_support": 0.5,
           "oppose": 2,
-          "p_effective": 0.655365,
-          "p_market": 0.6432,
+          "p_effective": 0.65757,
+          "p_market": 0.650856,
           "point": 1.5,
           "research_only": true,
           "schema": "v12-4-convergence-score-v1",
@@ -2783,11 +2261,11 @@
           "signals": {
             "attack": {
               "detail": {
-                "projected_margin": -0.1244548436070092,
+                "projected_margin": -0.12444122992239581,
                 "required_margin": -1.5
               },
               "state": "SUPPORT",
-              "value": 1.3755451563929908
+              "value": 1.3755587700776042
             },
             "bullpen": {
               "detail": {
@@ -2799,33 +2277,33 @@
             },
             "lineup": {
               "detail": {
-                "opponent_factor": 1.006516792306876,
-                "own_factor": 1.003640444112562
+                "opponent_factor": 1.0065216565764186,
+                "own_factor": 1.0036451828464918
               },
               "state": "NEUTRAL",
-              "value": -0.0028577249940576754
+              "value": -0.002857835905598627
             },
             "model": {
               "detail": {
-                "p": 0.655365
+                "p": 0.65757
               },
               "state": "SUPPORT",
-              "value": 0.15536499999999998
+              "value": 0.15757
             },
             "sharp": {
               "detail": {
-                "p_market": 0.6432
+                "p_market": 0.650856
               },
               "state": "SUPPORT",
-              "value": 0.1432
+              "value": 0.150856
             },
             "starter": {
               "detail": {
-                "opponent_factor": 0.9884539577525607,
-                "own_factor": 1.0008968478347176
+                "opponent_factor": 0.9884534192450178,
+                "own_factor": 1.0008966967130988
               },
               "state": "SUPPORT",
-              "value": 0.012588234367990392
+              "value": 0.012588633137194494
             },
             "statcast": {
               "detail": {
@@ -2847,52 +2325,560 @@
           "support": 4,
           "unavailable": 0,
           "version": "v12.4-convergence-score-v1"
+        },
+        {
+          "affects_v12_selection": false,
+          "available": 8,
+          "directional": 6,
+          "game": "Seattle Mariners @ Milwaukee Brewers",
+          "game_pk": 823748,
+          "grade": "MIXED",
+          "market": "TOTAL",
+          "name": "Over",
+          "net_support": 2,
+          "neutral": 2,
+          "normalized_support": 0.5,
+          "oppose": 2,
+          "p_effective": 0.530256,
+          "p_market": 0.494199,
+          "point": 7.5,
+          "research_only": true,
+          "schema": "v12-4-convergence-score-v1",
+          "score_8": 4,
+          "signals": {
+            "attack": {
+              "detail": {
+                "line": 7.5,
+                "projected_total": 8.275177294867252
+              },
+              "state": "SUPPORT",
+              "value": 0.7751772948672517
+            },
+            "bullpen": {
+              "detail": {
+                "away_factor": 0.978413316274386,
+                "home_factor": 0.9979872162000647
+              },
+              "state": "OPPOSE",
+              "value": -0.011799733762774656
+            },
+            "lineup": {
+              "detail": {
+                "away_factor": 1.0036451828464918,
+                "home_factor": 1.0065216565764186
+              },
+              "state": "SUPPORT",
+              "value": 0.005083419711455317
+            },
+            "model": {
+              "detail": {
+                "p": 0.530256
+              },
+              "state": "SUPPORT",
+              "value": 0.03025599999999995
+            },
+            "sharp": {
+              "detail": {
+                "p_market": 0.494199
+              },
+              "state": "NEUTRAL",
+              "value": -0.005801000000000001
+            },
+            "starter": {
+              "detail": {
+                "away_factor": 1.0008966967130988,
+                "home_factor": 0.9884534192450178
+              },
+              "state": "OPPOSE",
+              "value": -0.005324942020941692
+            },
+            "statcast": {
+              "detail": {
+                "away_factor": 1.0032853053435116,
+                "home_factor": 1.0105553435114503
+              },
+              "state": "SUPPORT",
+              "value": 0.006920324427480917
+            },
+            "weather_park": {
+              "detail": {
+                "away_factor": 1.0,
+                "home_factor": 1.0
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            }
+          },
+          "support": 4,
+          "unavailable": 0,
+          "version": "v12.4-convergence-score-v1"
+        },
+        {
+          "affects_v12_selection": false,
+          "available": 8,
+          "directional": 3,
+          "game": "Washington Nationals @ Texas Rangers",
+          "game_pk": 822860,
+          "grade": "MIXED",
+          "market": "TOTAL",
+          "name": "Over",
+          "net_support": 3,
+          "neutral": 5,
+          "normalized_support": 0.375,
+          "oppose": 0,
+          "p_effective": 0.641467,
+          "p_market": 0.509892,
+          "point": 7.5,
+          "research_only": true,
+          "schema": "v12-4-convergence-score-v1",
+          "score_8": 3,
+          "signals": {
+            "attack": {
+              "detail": {
+                "line": 7.5,
+                "projected_total": 9.869906831852031
+              },
+              "state": "SUPPORT",
+              "value": 2.369906831852031
+            },
+            "bullpen": {
+              "detail": {
+                "away_factor": 0.9886543814675604,
+                "home_factor": 1.0293518320771733
+              },
+              "state": "SUPPORT",
+              "value": 0.00900310677236682
+            },
+            "lineup": {
+              "detail": {
+                "away_factor": 1.005952870208469,
+                "home_factor": 0.9984277885113775
+              },
+              "state": "NEUTRAL",
+              "value": 0.0021903293599232487
+            },
+            "model": {
+              "detail": {
+                "p": 0.641467
+              },
+              "state": "SUPPORT",
+              "value": 0.141467
+            },
+            "sharp": {
+              "detail": {
+                "p_market": 0.509892
+              },
+              "state": "NEUTRAL",
+              "value": 0.009892000000000012
+            },
+            "starter": {
+              "detail": {
+                "away_factor": 1.0039294461708772,
+                "home_factor": 0.9987625063407759
+              },
+              "state": "NEUTRAL",
+              "value": 0.0013459762558265531
+            },
+            "statcast": {
+              "detail": {
+                "away_factor": 1.001344465648855,
+                "home_factor": 0.9940687022900763
+              },
+              "state": "NEUTRAL",
+              "value": -0.0022934160305343454
+            },
+            "weather_park": {
+              "detail": {
+                "away_factor": 1.0,
+                "home_factor": 1.0
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            }
+          },
+          "support": 3,
+          "unavailable": 0,
+          "version": "v12.4-convergence-score-v1"
+        },
+        {
+          "affects_v12_selection": false,
+          "available": 8,
+          "directional": 4,
+          "game": "Seattle Mariners @ Milwaukee Brewers",
+          "game_pk": 823748,
+          "grade": "MIXED",
+          "market": "ML",
+          "name": "Milwaukee Brewers",
+          "net_support": 2,
+          "neutral": 4,
+          "normalized_support": 0.375,
+          "oppose": 1,
+          "p_effective": 0.519382,
+          "p_market": 0.527712,
+          "point": null,
+          "research_only": true,
+          "schema": "v12-4-convergence-score-v1",
+          "score_8": 3,
+          "signals": {
+            "attack": {
+              "detail": {
+                "projected_margin": 0.12444122992239581,
+                "required_margin": 0.0
+              },
+              "state": "NEUTRAL",
+              "value": 0.12444122992239581
+            },
+            "bullpen": {
+              "detail": {
+                "opponent_factor": 0.978413316274386,
+                "own_factor": 0.9979872162000647
+              },
+              "state": "SUPPORT",
+              "value": 0.020005757894028253
+            },
+            "lineup": {
+              "detail": {
+                "opponent_factor": 1.0036451828464918,
+                "own_factor": 1.0065216565764186
+              },
+              "state": "NEUTRAL",
+              "value": 0.0028660265391486917
+            },
+            "model": {
+              "detail": {
+                "p": 0.519382
+              },
+              "state": "NEUTRAL",
+              "value": 0.01938200000000001
+            },
+            "sharp": {
+              "detail": {
+                "p_market": 0.527712
+              },
+              "state": "SUPPORT",
+              "value": 0.02771199999999996
+            },
+            "starter": {
+              "detail": {
+                "opponent_factor": 1.0008966967130988,
+                "own_factor": 0.9884534192450178
+              },
+              "state": "OPPOSE",
+              "value": -0.012432129618315413
+            },
+            "statcast": {
+              "detail": {
+                "opponent_factor": 1.0032853053435116,
+                "own_factor": 1.0105553435114503
+              },
+              "state": "SUPPORT",
+              "value": 0.007246232082956272
+            },
+            "weather_park": {
+              "detail": {
+                "opponent_factor": 1.0,
+                "own_factor": 1.0
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            }
+          },
+          "support": 3,
+          "unavailable": 0,
+          "version": "v12.4-convergence-score-v1"
+        },
+        {
+          "affects_v12_selection": false,
+          "available": 8,
+          "directional": 5,
+          "game": "Athletics @ Kansas City Royals",
+          "game_pk": 824076,
+          "grade": "MIXED",
+          "market": "RUNLINE",
+          "name": "Athletics",
+          "net_support": 1,
+          "neutral": 3,
+          "normalized_support": 0.375,
+          "oppose": 2,
+          "p_effective": 0.54963,
+          "p_market": 0.533955,
+          "point": 1.5,
+          "research_only": true,
+          "schema": "v12-4-convergence-score-v1",
+          "score_8": 3,
+          "signals": {
+            "attack": {
+              "detail": {
+                "projected_margin": -1.02112873940988,
+                "required_margin": -1.5
+              },
+              "state": "SUPPORT",
+              "value": 0.47887126059012
+            },
+            "bullpen": {
+              "detail": {
+                "opponent_factor": 1.0244633816946107,
+                "own_factor": 1.0078397643245771
+              },
+              "state": "OPPOSE",
+              "value": -0.016226658431202967
+            },
+            "lineup": {
+              "detail": {
+                "opponent_factor": 1.0003902132152347,
+                "own_factor": 0.9984512826333671
+              },
+              "state": "NEUTRAL",
+              "value": -0.001938174280649796
+            },
+            "model": {
+              "detail": {
+                "p": 0.54963
+              },
+              "state": "SUPPORT",
+              "value": 0.04962999999999995
+            },
+            "sharp": {
+              "detail": {
+                "p_market": 0.533955
+              },
+              "state": "SUPPORT",
+              "value": 0.03395499999999996
+            },
+            "starter": {
+              "detail": {
+                "opponent_factor": 0.9986291599911534,
+                "own_factor": 0.997475268407265
+              },
+              "state": "NEUTRAL",
+              "value": -0.0011554755560099217
+            },
+            "statcast": {
+              "detail": {
+                "opponent_factor": 0.9958454198473282,
+                "own_factor": 0.9869208015267176
+              },
+              "state": "OPPOSE",
+              "value": -0.008961851049110514
+            },
+            "weather_park": {
+              "detail": {
+                "opponent_factor": 1.0220218816681126,
+                "own_factor": 1.0220218816681126
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            }
+          },
+          "support": 3,
+          "unavailable": 0,
+          "version": "v12.4-convergence-score-v1"
+        },
+        {
+          "affects_v12_selection": false,
+          "available": 8,
+          "directional": 6,
+          "game": "Los Angeles Angels @ Houston Astros",
+          "game_pk": 824155,
+          "grade": "MIXED",
+          "market": "RUNLINE",
+          "name": "Los Angeles Angels",
+          "net_support": 0,
+          "neutral": 2,
+          "normalized_support": 0.375,
+          "oppose": 3,
+          "p_effective": 0.65146,
+          "p_market": 0.591624,
+          "point": 1.5,
+          "research_only": true,
+          "schema": "v12-4-convergence-score-v1",
+          "score_8": 3,
+          "signals": {
+            "attack": {
+              "detail": {
+                "projected_margin": 0.14487483698243508,
+                "required_margin": -1.5
+              },
+              "state": "SUPPORT",
+              "value": 1.644874836982435
+            },
+            "bullpen": {
+              "detail": {
+                "opponent_factor": 0.98991995294968,
+                "own_factor": 0.9750297771994922
+              },
+              "state": "OPPOSE",
+              "value": -0.015041797779526855
+            },
+            "lineup": {
+              "detail": {
+                "opponent_factor": 1.006108420272063,
+                "own_factor": 0.9960954959866694
+              },
+              "state": "OPPOSE",
+              "value": -0.00995213247761706
+            },
+            "model": {
+              "detail": {
+                "p": 0.65146
+              },
+              "state": "SUPPORT",
+              "value": 0.15146000000000004
+            },
+            "sharp": {
+              "detail": {
+                "p_market": 0.591624
+              },
+              "state": "SUPPORT",
+              "value": 0.09162400000000004
+            },
+            "starter": {
+              "detail": {
+                "opponent_factor": 0.9988211588814986,
+                "own_factor": 1.0
+              },
+              "state": "NEUTRAL",
+              "value": 0.0011802324250134166
+            },
+            "statcast": {
+              "detail": {
+                "opponent_factor": 0.9995658396946565,
+                "own_factor": 0.9905667938931298
+              },
+              "state": "OPPOSE",
+              "value": -0.009002954527013052
+            },
+            "weather_park": {
+              "detail": {
+                "opponent_factor": 1.0,
+                "own_factor": 1.0
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            }
+          },
+          "support": 3,
+          "unavailable": 0,
+          "version": "v12.4-convergence-score-v1"
+        },
+        {
+          "affects_v12_selection": false,
+          "available": 8,
+          "directional": 5,
+          "game": "Los Angeles Dodgers @ Colorado Rockies",
+          "game_pk": 824318,
+          "grade": "WEAK",
+          "market": "RUNLINE",
+          "name": "Colorado Rockies",
+          "net_support": -1,
+          "neutral": 3,
+          "normalized_support": 0.25,
+          "oppose": 3,
+          "p_effective": 0.524917,
+          "p_market": 0.449776,
+          "point": 1.5,
+          "research_only": true,
+          "schema": "v12-4-convergence-score-v1",
+          "score_8": 2,
+          "signals": {
+            "attack": {
+              "detail": {
+                "projected_margin": -0.970649814546829,
+                "required_margin": -1.5
+              },
+              "state": "SUPPORT",
+              "value": 0.529350185453171
+            },
+            "bullpen": {
+              "detail": {
+                "opponent_factor": 1.0337510372729357,
+                "own_factor": 0.9835909298891268
+              },
+              "state": "OPPOSE",
+              "value": -0.04852242520223504
+            },
+            "lineup": {
+              "detail": {
+                "opponent_factor": 1.0010056701511334,
+                "own_factor": 1.0180427088138682
+              },
+              "state": "SUPPORT",
+              "value": 0.01701992223496851
+            },
+            "model": {
+              "detail": {
+                "p": 0.524917
+              },
+              "state": "NEUTRAL",
+              "value": 0.024916999999999967
+            },
+            "sharp": {
+              "detail": {
+                "p_market": 0.449776
+              },
+              "state": "OPPOSE",
+              "value": -0.05022399999999999
+            },
+            "starter": {
+              "detail": {
+                "opponent_factor": 1.0010478797185989,
+                "own_factor": 1.0024230253117867
+              },
+              "state": "NEUTRAL",
+              "value": 0.0013737061144112328
+            },
+            "statcast": {
+              "detail": {
+                "opponent_factor": 1.0128072979493365,
+                "own_factor": 0.9993530534351145
+              },
+              "state": "OPPOSE",
+              "value": -0.013284110947327621
+            },
+            "weather_park": {
+              "detail": {
+                "opponent_factor": 1.03517114608,
+                "own_factor": 1.03517114608
+              },
+              "state": "NEUTRAL",
+              "value": 0.0
+            }
+          },
+          "support": 2,
+          "unavailable": 0,
+          "version": "v12.4-convergence-score-v1"
         }
       ],
       "version": "v12.4-convergence-score-v1"
     },
-    "current_run_disagreements": [
-      {
-        "abs_gap": 0.013460000000000027,
-        "baseline_p": 0.551235,
-        "challenger": "all_core",
-        "crosses_55": true,
-        "game": "Athletics @ Kansas City Royals",
-        "game_pk": 824076,
-        "gap": -0.013460000000000027,
-        "market": "RUNLINE",
-        "name": "Athletics",
-        "point": 1.5,
-        "v124_p": 0.537775
-      }
-    ],
+    "current_run_disagreements": [],
     "evolution": {
       "has_previous": true,
-      "settled_games_delta": 3,
+      "settled_games_delta": 0,
       "variants": {
         "all_core": {
           "accuracy": 0.0,
-          "brier": 0.004080998423526105,
-          "gt55_hit_rate": -0.017534704101868304,
-          "gt55_n": 9,
-          "logloss": 0.008622387513561702,
-          "n": 24
+          "brier": 0.0,
+          "gt55_hit_rate": 0.0,
+          "gt55_n": 0,
+          "logloss": 0.0,
+          "n": 0
         },
         "baseline_v1232": {
           "accuracy": 0.0,
-          "brier": 0.0039923552427995335,
-          "gt55_hit_rate": -0.017302573203194282,
-          "gt55_n": 9,
-          "logloss": 0.008474228044002441,
-          "n": 24
+          "brier": 0.0,
+          "gt55_hit_rate": 0.0,
+          "gt55_n": 0,
+          "logloss": 0.0,
+          "n": 0
         },
         "ensemble": {
           "accuracy": 0.0,
-          "brier": 0.0036425494669058145,
-          "gt55_hit_rate": -0.009461924304605573,
-          "gt55_n": 7,
-          "logloss": 0.007657556656468167,
-          "n": 24
+          "brier": 0.0,
+          "gt55_hit_rate": 0.0,
+          "gt55_n": 0,
+          "logloss": 0.0,
+          "n": 0
         }
       }
     },
@@ -3006,7 +2992,7 @@
       "weight_source": "NO_ELIGIBLE_WARM_START"
     },
     "research_only": true,
-    "run_id": "988df722ded34b0f",
+    "run_id": "65d9e203efb19b5c",
     "schema": "v12-4-research-monitor-v1",
     "target_date": "2026-08-19",
     "v115": {
@@ -3123,7 +3109,7 @@
     },
     "version": "v12.4-research-monitor-v1"
   },
-  "run_id": "988df722ded34b0f",
+  "run_id": "65d9e203efb19b5c",
   "scheduled_games": 15,
   "schema": "v12-3-professional-v1",
   "shadow_challenger": {
