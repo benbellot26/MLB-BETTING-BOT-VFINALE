@@ -1,8 +1,11 @@
 import unittest
+from unittest.mock import patch
 
+from v11 import context
 from v11 import data_quality
 from v11 import point_in_time_v13 as pit
 from v11 import uncertainty_v13
+from v11 import v13_coverage_report as coverage
 from v11 import v13_probability_diagnostics as diagnostics
 
 
@@ -66,6 +69,34 @@ class V136EvidenceHardeningTests(unittest.TestCase):
         report=diagnostics.build([early,late])
         self.assertEqual(report["independent_targets"],1)
         self.assertEqual(report["by_market"]["ML"]["n"],1)
+
+    def test_coverage_report_explains_every_scheduled_game(self):
+        def game(gid,start,home="Home",away="Away"):
+            return {"gamePk":gid,"gameDate":start,"teams":{"home":{"team":{"name":home}},"away":{"team":{"name":away}}}}
+        snapshot={"run_id":"r1","target_date":"2026-08-19","analyzed_at":"2026-08-19T15:00:00Z",
+                  "games":[game(1,"2026-08-19T14:00:00Z"),game(2,"2026-08-19T18:00:00Z"),game(3,"2026-08-19T21:00:00Z","H2","A2")],
+                  "odds_events":[{"id":"e2","home_team":"Home","away_team":"Away","commence_time":"2026-08-19T18:00:00Z"}]}
+        report=coverage.build(snapshot,[{"game_pk":2}])
+        by={r["game_pk"]:r["status"] for r in report["games"]}
+        self.assertEqual(by[1],"SKIPPED_ALREADY_STARTED")
+        self.assertEqual(by[2],"ANALYZED")
+        self.assertEqual(by[3],"SKIPPED_NO_ODDS_EVENT")
+        self.assertEqual(sum(report["status_counts"].values()),3)
+
+    def test_same_day_finished_game_counts_for_doubleheader_bullpen(self):
+        context._BP_CACHE.clear()
+        final_game={"gamePk":99,"gameDate":"2026-08-19T12:00:00Z","status":{"abstractGameState":"Final"}}
+        def schedule(day,team_id=None,hydrate=None):
+            return [final_game] if day=="2026-08-19" else []
+        box={"teams":{"home":{"team":{"id":7},"pitchers":[1,2],"players":{"ID2":{"person":{"fullName":"Closer"},"stats":{"pitching":{"pitchesThrown":24}}}}},
+                      "away":{"team":{"id":8},"pitchers":[],"players":{}}}}
+        with patch("v11.context.core.mlb_schedule",side_effect=schedule), \
+             patch("v11.context.core.mlb",return_value=box), \
+             patch("v11.context.core.player_stats",return_value={"era":2.5,"whip":1.0}):
+            state=context.bullpen_state(7,"2026-08-19",as_of="2026-08-19T15:00:00Z")
+        self.assertEqual(state["same_day_games_before_as_of"],1)
+        self.assertEqual(state["relievers"][0]["pitches_today"],24)
+        self.assertGreaterEqual(state["likely_unavailable_relievers"],1)
 
 
 if __name__ == "__main__":
