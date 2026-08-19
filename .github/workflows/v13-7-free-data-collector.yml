@@ -1,6 +1,10 @@
 name: MLB V13.7 Free Data Foundation
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/v13-7-free-data-collector.yml'
   schedule:
     # Free-only collector: no Odds API secret and no paid provider.
     - cron: '11 11 * * *'
@@ -101,7 +105,8 @@ jobs:
         run: |
           python -m v11.v137_statcast_daily \
             --cutoff "${{ steps.dates.outputs.cutoff }}" \
-            --lookback-days 45
+            --lookback-days 45 \
+            --archive
 
       - name: Collect prior-only Statcast park factors
         run: |
