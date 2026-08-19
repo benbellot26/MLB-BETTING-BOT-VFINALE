@@ -5,26 +5,50 @@ from pathlib import Path
 from typing import Any
 
 
-def _load(path: str) -> dict[str,Any]:
-    p=Path(path)
-    if not p.exists():return {}
-    try:return json.loads(p.read_text(encoding="utf-8"))
-    except Exception:return {}
+def _load(path: str) -> dict[str, Any]:
+    file_path = Path(path)
+    if not file_path.exists():
+        return {}
+    try:
+        return json.loads(file_path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
 
 
-def build() -> dict[str,Any]:
-    closure=_load("data/v138_audit_closure.json");research=_load("data/v138_research_models.json")
-    monitoring=_load("data/v138_monitoring.json");validation=_load("data/v138_validation.json")
-    native=_load("data/v138_native_evidence.json")
-    return {"audit_closure":{"engineering_closed":closure.get("engineering_closed"),"engineering_open":closure.get("engineering_open"),
-            "overall_closed":closure.get("overall_closed"),"evidence_gates_pending":closure.get("evidence_gates_pending")},
-        "research_challengers":{"status":research.get("status"),"games":research.get("games"),"holdout_games":research.get("holdout_games"),
-            "ensemble_weights":research.get("ensemble_weights"),"promotion_eligible":research.get("promotion_eligible"),
-            "holdout_isolation":research.get("holdout_isolation")},
-        "walk_forward":{"folds":len((validation.get("walk_forward") or {}).get("folds") or []),
-            "seasons":(validation.get("walk_forward") or {}).get("seasons")},
-        "native_evidence":{"independent_targets":native.get("independent_native_targets"),
-            "uncertainty_coverage":native.get("uncertainty_coverage") or {},
-            "bookmaker_weights":native.get("bookmaker_weights") or {},
-            "dynamic_calibration":native.get("dynamic_calibration") or {}},
-        "feature_drift":monitoring.get("feature_drift") or {},"alerts":monitoring.get("alerts") or []}
+def build() -> dict[str, Any]:
+    closure = _load("data/v138_audit_closure.json")
+    research = _load("data/v138_research_models.json")
+    monitoring = _load("data/v138_monitoring.json")
+    validation = _load("data/v138_validation.json")
+    native = _load("data/v138_native_evidence.json")
+
+    walk_forward = validation.get("walk_forward") or {}
+
+    return {
+        "audit_closure": {
+            "engineering_closed": closure.get("engineering_closed"),
+            "engineering_open": closure.get("engineering_open"),
+            "overall_closed": closure.get("overall_closed"),
+            "evidence_gates_pending": closure.get("evidence_gates_pending"),
+        },
+        "research_challengers": {
+            "status": research.get("status"),
+            "games": research.get("games"),
+            "holdout_games": research.get("holdout_games"),
+            "ensemble_weights": research.get("ensemble_weights"),
+            "promotion_eligible": research.get("promotion_eligible"),
+            "holdout_isolation": research.get("holdout_isolation"),
+        },
+        "walk_forward": {
+            "folds": len(walk_forward.get("folds") or []),
+            "seasons": walk_forward.get("seasons"),
+        },
+        "native_evidence": {
+            "independent_targets": native.get("independent_native_targets"),
+            "uncertainty_coverage": native.get("uncertainty_coverage") or {},
+            "bookmaker_weights": native.get("bookmaker_weights") or {},
+            "dynamic_calibration": native.get("dynamic_calibration") or {},
+        },
+        "feature_drift": monitoring.get("feature_drift") or {},
+        "alerts": monitoring.get("alerts") or [],
+    }
