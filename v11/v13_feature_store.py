@@ -24,6 +24,8 @@ def _feature_row(r: dict[str,Any]) -> dict[str,Any] | None:
     valid,reasons=pit.validate_pregame_row(r)
     if not valid:return None
     ctx=r.get("ctx") or {}
+    starters=r.get("starters") or {}
+    lineups=r.get("lineups") or {}
     features=r.get("features") or {}
     return {
         "schema":FEATURE_SCHEMA,
@@ -35,9 +37,12 @@ def _feature_row(r: dict[str,Any]) -> dict[str,Any] | None:
         "home":r.get("home") or ctx.get("home"),"away":r.get("away") or ctx.get("away"),
         "context":{
             "home_id":ctx.get("home_id"),"away_id":ctx.get("away_id"),
-            "home_sp":ctx.get("home_sp"),"away_sp":ctx.get("away_sp"),
-            "home_starter":ctx.get("home_starter"),"away_starter":ctx.get("away_starter"),
-            "home_lineup":ctx.get("home_lineup"),"away_lineup":ctx.get("away_lineup"),
+            "home_sp":ctx.get("home_sp") or (starters.get("home") or {}).get("name"),
+            "away_sp":ctx.get("away_sp") or (starters.get("away") or {}).get("name"),
+            "home_starter":ctx.get("home_starter") or starters.get("home"),
+            "away_starter":ctx.get("away_starter") or starters.get("away"),
+            "home_lineup":ctx.get("home_lineup") or lineups.get("home"),
+            "away_lineup":ctx.get("away_lineup") or lineups.get("away"),
         },
         # Persist the values seen by the model, not the post-game label. Nested
         # operational/weather/bullpen payloads retain player IDs and raw inputs
@@ -66,11 +71,10 @@ def build(rows: list[dict[str,Any]] | None=None) -> tuple[list[dict[str,Any]],li
         f=_feature_row(r)
         if f is not None:
             features[_key(r)]=f
-        else:
-            if row_is_predictively_compatible(r):
-                valid,reasons=pit.validate_pregame_row(r)
-                if not valid:
-                    for reason in reasons:rejected[reason]=rejected.get(reason,0)+1
+        elif row_is_predictively_compatible(r):
+            valid,reasons=pit.validate_pregame_row(r)
+            if not valid:
+                for reason in reasons:rejected[reason]=rejected.get(reason,0)+1
         label=_label_row(r)
         if label is not None:
             gid=str(label["game_pk"]);rank=str(label.get("settled_at") or r.get("analyzed_at") or "")
