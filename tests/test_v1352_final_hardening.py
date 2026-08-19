@@ -136,9 +136,11 @@ class V1352FinalHardeningTests(unittest.TestCase):
 
     def test_transfer_backfill_uses_persisted_pre_candidate_baseline(self):
         runtime=Path("v11/v13_runtime.py").read_text(encoding="utf-8")
+        engine=Path("v11/v13_engine.py").read_text(encoding="utf-8")
         backfill=Path("v11/v13_historical_backfill.py").read_text(encoding="utf-8")
         run_mean=Path("v11/v13_run_mean_prior.py").read_text(encoding="utf-8")
-        self.assertIn("v13_validation_baseline_home_mu", runtime)
+        self.assertIn("v13_validation_baseline_home_mu", engine)
+        self.assertIn('payload["v13_validation_baseline"]', runtime)
         self.assertIn("p_replay_baseline_raw", backfill)
         self.assertIn("v13-pre-candidate-score-distribution", backfill)
         self.assertIn("validation_baseline_home_runs", backfill)
@@ -176,10 +178,12 @@ class V1352FinalHardeningTests(unittest.TestCase):
         self.assertIn('MODEL_GENERATION_FINGERPRINT', text)
 
     def test_runtime_restores_both_standard_runline_pairs(self):
-        text=Path("v11/v13_runtime.py").read_text(encoding="utf-8")
-        self.assertIn('merged.update({-1.5, 1.5})', text)
-        self.assertIn('engine_v12._analysis_points = v13_analysis_points', text)
-        self.assertIn('cannot bypass the selector', text)
+        engine=Path("v11/v13_engine.py").read_text(encoding="utf-8")
+        runtime=Path("v11/v13_runtime.py").read_text(encoding="utf-8")
+        self.assertIn('for home_point in (-1.5, 1.5):', engine)
+        self.assertIn('"v13-standard-1.5"', engine)
+        self.assertIn('(away, "away", -home_point)', engine)
+        self.assertNotIn('engine_v12._analysis_points = v13_analysis_points', runtime)
 
     def test_discord_shows_truthful_per_team_lineup_and_starter_status(self):
         text=Path("v11/discord_v13.py").read_text(encoding="utf-8")
@@ -191,10 +195,12 @@ class V1352FinalHardeningTests(unittest.TestCase):
         self.assertNotIn('PROJETÉE', text)
 
     def test_runtime_exposes_primary_predictive_probability_without_promoting_posterior(self):
-        text=Path("v11/v13_runtime.py").read_text(encoding="utf-8")
-        self.assertIn('opt["p_predictive_final"] = round(calibrated, 6)', text)
-        self.assertIn('"BASEBALL_PRIMARY_POSTERIOR_SHADOW"', text)
-        self.assertIn('result["primary_probability_field"] = "p_predictive_final"', text)
+        runtime=Path("v11/v13_runtime.py").read_text(encoding="utf-8")
+        engine=Path("v11/v13_engine.py").read_text(encoding="utf-8")
+        self.assertIn('option["p_predictive_final"] = round(calibrated, 6)', runtime)
+        self.assertIn('option["p_predictive_final"] = round(calibrated, 6)', engine)
+        self.assertIn('"BASEBALL_PRIMARY_POSTERIOR_SHADOW"', runtime)
+        self.assertIn('result["primary_probability_field"] = "p_predictive_final"', engine)
 
     def test_discord_is_analytics_first_and_suppresses_recommendation_cards(self):
         text=Path("v11/discord_v13.py").read_text(encoding="utf-8")
