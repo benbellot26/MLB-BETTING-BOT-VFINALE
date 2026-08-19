@@ -25,8 +25,6 @@ _original_send_persisted = runner.send_persisted
 def _tracked_allocate(results, *args, **kwargs):
     out = _original_allocate(results, *args, **kwargs)
     v13_daily_tracking.capture_results(results, target_date=core.TARGET_DATE)
-    # Store canonical per-book no-vig probabilities separately from the baseball
-    # feature path. This telemetry is used only for future OOS book-weight learning.
     try:
         v138_book_telemetry.capture(results)
     except Exception:
@@ -57,6 +55,11 @@ def _assert_v13_calibration_artifact():
         raise SystemExit("V13 calibration artifact stale/incompatible: run `python -m v11.v13_train` before analysis")
 
 
+# Compatibility name retained for tests/tools written against V13.5.x. It is an
+# alias to the current generation-independent guard, not a separate code path.
+_assert_v135_calibration_artifact = _assert_v13_calibration_artifact
+
+
 def _write_postrun_diagnostics():
     """Persist non-actionable evidence views after the run without blocking Discord."""
     for name, fn in (
@@ -80,21 +83,21 @@ def _run_v13(*args, **kwargs):
 
 
 def _send_persisted_v13():
-    # Discord publication is fail-closed if a stale/future code path manages to
-    # re-introduce actionable betting state into the analytics payload.
     v13_analytics_only.assert_payload_file(runner.DISCORD_PAYLOAD)
     return _original_send_persisted()
 
 
+# Preserve stable internal symbols while moving implementation naming forward.
+_run_v135 = _run_v13
+_send_persisted_v135 = _send_persisted_v13
+
 selector.allocate = _tracked_allocate
-# Redundant storage guard: even if a future runner bypasses the empty chosen
-# list returned above, V13 cannot create PROPOSED betting ledger events.
 storage.record_selected_bets = v13_analytics_only.disabled_record_selected_bets
 runner.storage.record_selected_bets = v13_analytics_only.disabled_record_selected_bets
 storage.update_clv = _tracked_update_clv
 journal.settle_rows = _tracked_settle_rows
-runner.run = _run_v13
-runner.send_persisted = _send_persisted_v13
+runner.run = _run_v135
+runner.send_persisted = _send_persisted_v135
 
 
 def _summary_v13(report):
@@ -110,8 +113,7 @@ def self_test_v13():
     from .v13_engine import VERSION as ENGINE_VERSION
 
     # Software versions may advance independently from the predictive evidence
-    # fingerprint. Validate the actual runtime contract instead of pinning an old
-    # 13.5 prefix forever.
+    # fingerprint. Validate the actual runtime contract instead of pinning 13.5.
     assert config.VERSION == ENGINE_VERSION
     runtime_status = v13_runtime.assert_runtime_hooks()
     assert runtime_status.get("explicit_engine") is True
