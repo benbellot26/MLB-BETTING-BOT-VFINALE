@@ -107,7 +107,10 @@ jobs:
           python -m v11.v13_train
           python -m v11.v13_posterior_policy
           python -m v11.v13_rich_native_train
+          python -m v11.v13_feature_store
           python -m v11.v13_probability_diagnostics
+          python -m v11.v13_coverage_report
+          python -m v11.v13_model_health
 
       - name: Persist V13 phase observations and evidence
         if: steps.gate.outputs.run_needed == 'true'
@@ -121,6 +124,10 @@ jobs:
           [ -f data/v13_posterior_policy.json ] && git add -f data/v13_posterior_policy.json
           [ -f data/v13_rich_native_candidate.json ] && git add -f data/v13_rich_native_candidate.json
           [ -f data/v13_probability_diagnostics.json ] && git add -f data/v13_probability_diagnostics.json
+          [ -f data/v13_coverage_report.json ] && git add -f data/v13_coverage_report.json
+          [ -f data/v13_model_health.json ] && git add -f data/v13_model_health.json
+          [ -f data/v13_feature_store.jsonl ] && git add -f data/v13_feature_store.jsonl
+          [ -f data/v13_label_store.jsonl ] && git add -f data/v13_label_store.jsonl
           [ -f data/v13_market_tracking.jsonl ] && git add -f data/v13_market_tracking.jsonl
           [ -f data/v13_market_tracking_report.json ] && git add -f data/v13_market_tracking_report.json
           if ! git diff --cached --quiet; then
