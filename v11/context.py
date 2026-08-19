@@ -70,9 +70,27 @@ def weather_for_game(game, home_name):
     return out
 
 
-def bullpen_state(team_id, target_date):
-    """Resolve three prior calendar days without confusing rest days with API failures."""
-    key = (str(team_id), str(target_date))
+def _reference_time(as_of=None):
+    try:
+        if as_of:
+            return core.parse_dt(as_of)
+        replay=core.replay_as_of()
+        if replay:
+            return core.parse_dt(replay)
+    except Exception:
+        pass
+    return datetime.now(timezone.utc)
+
+
+def bullpen_state(team_id, target_date, as_of=None):
+    """Resolve recent bullpen workload strictly from games final before ``as_of``.
+
+    Three prior calendar days are retained, and already-finished games on the
+    target date are also included.  The latter is essential for Game 2 of a
+    doubleheader: usage in Game 1 must be visible without leaking future games.
+    """
+    ref=_reference_time(as_of)
+    key = (str(team_id), str(target_date), ref.strftime("%Y-%m-%dT%H:%M"))
     if key in _BP_CACHE:
         return _BP_CACHE[key]
     try:
@@ -86,19 +104,32 @@ def bullpen_state(team_id, target_date):
     game_days = 0
     boxscores_expected = 0
     boxscores_ok = 0
+    same_day_games = 0
 
-    for back in (1, 2, 3):
+    # Include target day plus three prior calendar days. Target-day games count
+    # only if already FINAL and started before the analysis reference time.
+    for back in (0, 1, 2, 3):
         day = (d0-timedelta(days=back)).isoformat()
         try:
             games = core.mlb_schedule(day, team_id=team_id, hydrate="linescore")
-            schedule_days_resolved += 1
+            if back:
+                schedule_days_resolved += 1
         except Exception:
             continue
-        finals = [
-            g for g in games
-            if str((g.get("status") or {}).get("abstractGameState") or "").lower() == "final"
-        ]
-        if finals:
+        finals = []
+        for g in games:
+            final=str((g.get("status") or {}).get("abstractGameState") or "").lower()=="final"
+            if not final:
+                continue
+            if back==0:
+                try:
+                    if core.parse_dt(g.get("gameDate")) >= ref:
+                        continue
+                except Exception:
+                    continue
+                same_day_games += 1
+            finals.append(g)
+        if back and finals:
             game_days += 1
         for g in finals:
             boxscores_expected += 1
@@ -124,10 +155,15 @@ def bullpen_state(team_id, target_date):
                 pitches = int(_num(st.get("pitchesThrown")))
                 entry = pitcher_usage.setdefault(
                     str(pid),
-                    {"id": pid, "name": (p.get("person") or {}).get("fullName"), "pitches_3d": 0, "days_used": 0},
+                    {"id": pid, "name": (p.get("person") or {}).get("fullName"), "pitches_3d": 0,
+                     "pitches_today": 0, "days_used": 0, "appearances_recent": 0},
                 )
                 entry["pitches_3d"] += pitches
-                entry["days_used"] += 1
+                entry["appearances_recent"] += 1
+                if back==0:
+                    entry["pitches_today"] += pitches
+                else:
+                    entry["days_used"] += 1
 
     weighted_era, weighted_whip = [], []
     for p in pitcher_usage.values():
@@ -139,8 +175,8 @@ def bullpen_state(team_id, target_date):
             weighted_era.append(_num(st.get("era"), 4.35))
             weighted_whip.append(_num(st.get("whip"), 1.32))
 
-    unavailable = sum(p["pitches_3d"] >= 45 or p["days_used"] >= 3 for p in pitcher_usage.values())
-    taxed = sum(p["pitches_3d"] >= 25 or p["days_used"] >= 2 for p in pitcher_usage.values())
+    unavailable = sum(p["pitches_today"] >= 20 or p["pitches_3d"] >= 45 or p["days_used"] >= 3 for p in pitcher_usage.values())
+    taxed = sum(p["pitches_today"] >= 10 or p["pitches_3d"] >= 25 or p["days_used"] >= 2 for p in pitcher_usage.values())
 
     schedule_coverage = schedule_days_resolved/3.0
     boxscore_coverage = boxscores_ok/boxscores_expected if boxscores_expected else 1.0
@@ -152,6 +188,7 @@ def bullpen_state(team_id, target_date):
         "schedule_days_resolved": schedule_days_resolved,
         "rest_days_observed": schedule_days_resolved-game_days,
         "game_days": game_days,
+        "same_day_games_before_as_of": same_day_games,
         "boxscores_expected": boxscores_expected,
         "boxscores_ok": boxscores_ok,
         "relievers_seen": len(pitcher_usage),
@@ -159,6 +196,7 @@ def bullpen_state(team_id, target_date):
         "likely_unavailable_relievers": unavailable,
         "recent_reliever_era": sum(weighted_era)/len(weighted_era) if weighted_era else None,
         "recent_reliever_whip": sum(weighted_whip)/len(weighted_whip) if weighted_whip else None,
+        "as_of": ref.isoformat(),
         "relievers": list(pitcher_usage.values()),
     }
     _BP_CACHE[key] = out
