@@ -44,12 +44,16 @@ class V1352AuditHardeningTests(unittest.TestCase):
         self.assertEqual(opt["posterior_weight_v13"],1.0)
         self.assertFalse(opt["posterior_allowed_for_edge"])
 
-    def test_production_is_manual_and_research_version_check_is_fingerprint_based(self):
+    def test_production_is_gated_final_automation_and_research_version_check_is_fingerprint_based(self):
         prod=Path(".github/workflows/mlb-bot.yml").read_text(encoding="utf-8")
+        gate=Path("v11/v13_production_gate.py").read_text(encoding="utf-8")
         research=Path(".github/workflows/v12-3-research-collector.yml").read_text(encoding="utf-8")
         self.assertIn("workflow_dispatch:",prod)
-        self.assertNotIn("schedule:",prod)
-        self.assertNotIn("cron:",prod)
+        self.assertIn("schedule:",prod)
+        self.assertIn("v13_production_gate",prod)
+        self.assertIn("needs.gate.outputs.run_needed == 'true'",prod)
+        self.assertIn("V13_DISCORD_FINAL_ONLY",prod)
+        self.assertIn('phase=="FINAL"',gate)
         self.assertIn("MODEL_GENERATION_FINGERPRINT",research)
         self.assertNotIn("startswith('13.5-')",research)
         self.assertIn("v13_research_gate",research)
