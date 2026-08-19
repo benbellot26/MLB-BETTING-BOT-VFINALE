@@ -1,0 +1,190 @@
+{
+  "alerts": [],
+  "claim": "data-health artifact only; reconstructed free data cannot masquerade as native-live evidence",
+  "cohort_policy": {
+    "historical_reconstructed": "research/challenger evidence only",
+    "native_live": "authenticated live snapshots stay separate and may become eligible only through existing promotion gates"
+  },
+  "mlb_native_state": {
+    "archive": "data/v137/mlb_state/mlb_state_2026-08-19.json.gz",
+    "injured_list_transaction_signals": 85,
+    "native_live": true,
+    "observed_at": "2026-08-19T12:26:50.407056+00:00",
+    "point_in_time": true,
+    "promotion_eligible": false,
+    "roster_failures": [],
+    "rosters_ok": 30,
+    "schema": "v13-7-mlb-native-state-report-v1",
+    "snapshot_day": "2026-08-19",
+    "teams": 30,
+    "transaction_error": null,
+    "transactions": 579
+  },
+  "paid_sources_required": false,
+  "park_factors": {
+    "end_season": 2026,
+    "failed_requests": 0,
+    "failures": [],
+    "promotion_eligible": false,
+    "requests_expected": 18,
+    "schema": "v13-7-prior-park-factors-report-v1",
+    "season_count": 6,
+    "start_season": 2021,
+    "venue_counts": {
+      "2021": {
+        "ALL": 0,
+        "L": 0,
+        "R": 0
+      },
+      "2022": {
+        "ALL": 0,
+        "L": 0,
+        "R": 0
+      },
+      "2023": {
+        "ALL": 0,
+        "L": 0,
+        "R": 0
+      },
+      "2024": {
+        "ALL": 0,
+        "L": 0,
+        "R": 0
+      },
+      "2025": {
+        "ALL": 0,
+        "L": 0,
+        "R": 0
+      },
+      "2026": {
+        "ALL": 0,
+        "L": 0,
+        "R": 0
+      }
+    }
+  },
+  "providers": {
+    "mlb": "MLB Stats API (free)",
+    "park_factors": "Baseball Savant Statcast Park Factors (free)",
+    "statcast": "Baseball Savant / Statcast Search CSV (free)",
+    "weather": "Open-Meteo Single Runs / ECMWF IFS (free)"
+  },
+  "schema": "v13-7-free-data-health-v2",
+  "statcast": {
+    "chunks": [
+      {
+        "end": "2026-07-11",
+        "rows": 25000,
+        "start": "2026-07-05",
+        "status": "OK"
+      },
+      {
+        "end": "2026-07-18",
+        "rows": 13290,
+        "start": "2026-07-12",
+        "status": "OK"
+      },
+      {
+        "end": "2026-07-25",
+        "rows": 25000,
+        "start": "2026-07-19",
+        "status": "OK"
+      },
+      {
+        "end": "2026-08-01",
+        "rows": 25000,
+        "start": "2026-07-26",
+        "status": "OK"
+      },
+      {
+        "end": "2026-08-08",
+        "rows": 25000,
+        "start": "2026-08-02",
+        "status": "OK"
+      },
+      {
+        "end": "2026-08-15",
+        "rows": 25000,
+        "start": "2026-08-09",
+        "status": "OK"
+      },
+      {
+        "end": "2026-08-18",
+        "rows": 12116,
+        "start": "2026-08-16",
+        "status": "OK"
+      }
+    ],
+    "chunks_failed": 0,
+    "chunks_ok": 7,
+    "claim": "free ID-first Statcast priors for research/challenger development; no automatic production promotion",
+    "cohort": "HISTORICAL_RECONSTRUCTED_FREE",
+    "cutoff_day": "2026-08-19",
+    "hitter_ids": 519,
+    "lookback_days": 45,
+    "pitcher_ids": 602,
+    "point_in_time": true,
+    "promotion_eligible": false,
+    "raw_rows": 150406,
+    "schema": "v13-7-statcast-priors-report-v1",
+    "stable_id_only": true
+  },
+  "team_history": {
+    "cohort": "HISTORICAL_RECONSTRUCTED_FREE",
+    "end": "2026-08-18",
+    "feature_rows": 14043,
+    "files": [
+      "data/v137/team_features_2021.jsonl.gz",
+      "data/v137/team_labels_2021.jsonl.gz",
+      "data/v137/team_features_2022.jsonl.gz",
+      "data/v137/team_labels_2022.jsonl.gz",
+      "data/v137/team_features_2023.jsonl.gz",
+      "data/v137/team_labels_2023.jsonl.gz",
+      "data/v137/team_features_2024.jsonl.gz",
+      "data/v137/team_labels_2024.jsonl.gz",
+      "data/v137/team_features_2025.jsonl.gz",
+      "data/v137/team_labels_2025.jsonl.gz",
+      "data/v137/team_features_2026.jsonl.gz",
+      "data/v137/team_labels_2026.jsonl.gz"
+    ],
+    "label_rows": 14043,
+    "leakage_policy": "target labels separate; target and same-day scores never enter target feature row; park factors end before target season",
+    "native_live": false,
+    "park_prior_coverage": 0.0,
+    "park_prior_rows": 0,
+    "promotion_eligible": false,
+    "schema": "v13-7-free-team-history-report-v2",
+    "seasons": [
+      2021,
+      2022,
+      2023,
+      2024,
+      2025,
+      2026
+    ],
+    "skipped": {
+      "missing_score_or_team": 7
+    },
+    "start": "2021-03-01",
+    "unique_games": 14043
+  },
+  "weather": {
+    "archive_available_from": "2024-03-14",
+    "available_rows": 0,
+    "cohort": "HISTORICAL_RECONSTRUCTED_FREE",
+    "end": "2026-08-18",
+    "files": [
+      "data/v137/weather_2026-08.jsonl.gz"
+    ],
+    "generated_at": "2026-08-19T12:29:20.580912+00:00",
+    "lead_hours": 2,
+    "point_in_time_rows": 70,
+    "promotion_eligible": false,
+    "rows": 70,
+    "schema": "v13-7-free-weather-backfill-report-v1",
+    "start": "2026-08-14",
+    "status_counts": {
+      "single_run_error:HTTPError": 70
+    }
+  }
+}
