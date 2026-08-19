@@ -1,0 +1,137 @@
+name: MLB V13.7 Free Data Foundation
+
+on:
+  schedule:
+    # Free-only collector: no Odds API secret and no paid provider.
+    - cron: '11 11 * * *'
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: 'Team-history backfill start (YYYY-MM-DD); blank = current season'
+        required: false
+        type: string
+      end_date:
+        description: 'Team-history backfill end (YYYY-MM-DD); blank = yesterday'
+        required: false
+        type: string
+      weather_start_date:
+        description: 'Optional archived-weather backfill start; blank = yesterday'
+        required: false
+        type: string
+      weather_end_date:
+        description: 'Optional archived-weather backfill end; blank = weather start'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mlb-betting-bot-state
+  cancel-in-progress: false
+
+jobs:
+  collect-free-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Resolve free-data windows
+        id: dates
+        env:
+          INPUT_START: ${{ inputs.start_date }}
+          INPUT_END: ${{ inputs.end_date }}
+          INPUT_WEATHER_START: ${{ inputs.weather_start_date }}
+          INPUT_WEATHER_END: ${{ inputs.weather_end_date }}
+        run: |
+          yesterday="$(date -u -d 'yesterday' +%F)"
+          year="$(date -u +%Y)"
+          team_start="${INPUT_START:-${year}-03-01}"
+          team_end="${INPUT_END:-$yesterday}"
+          weather_start="${INPUT_WEATHER_START:-$yesterday}"
+          weather_end="${INPUT_WEATHER_END:-$weather_start}"
+          cutoff="$(date -u +%F)"
+          echo "team_start=$team_start" >> "$GITHUB_OUTPUT"
+          echo "team_end=$team_end" >> "$GITHUB_OUTPUT"
+          echo "weather_start=$weather_start" >> "$GITHUB_OUTPUT"
+          echo "weather_end=$weather_end" >> "$GITHUB_OUTPUT"
+          echo "cutoff=$cutoff" >> "$GITHUB_OUTPUT"
+          printf 'team=%s..%s weather=%s..%s statcast_cutoff=%s\n' \
+            "$team_start" "$team_end" "$weather_start" "$weather_end" "$cutoff"
+
+      - name: V13.7 free-data preflight
+        run: |
+          python -m py_compile v11/*.py tests/*.py
+          python -m v11.v13_preflight
+
+      - name: Collect stable-ID Statcast priors
+        run: |
+          python -m v11.v137_statcast_daily \
+            --cutoff "${{ steps.dates.outputs.cutoff }}" \
+            --lookback-days 45
+
+      - name: Rebuild free team history
+        run: |
+          python -m v11.v137_team_history \
+            --start "${{ steps.dates.outputs.team_start }}" \
+            --end "${{ steps.dates.outputs.team_end }}"
+
+      - name: Collect archived point-in-time weather
+        run: |
+          python -m v11.v137_weather_backfill \
+            --start "${{ steps.dates.outputs.weather_start }}" \
+            --end "${{ steps.dates.outputs.weather_end }}" \
+            --lead-hours 2 \
+            --persist
+
+      - name: Refresh free-data and model health
+        run: |
+          python -m v11.v137_free_data_health
+          python -m v11.v13_model_health
+
+      - name: Assert free-only cohort boundaries
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          h=json.loads(Path('data/v137_free_data_health.json').read_text(encoding='utf-8'))
+          if h.get('paid_sources_required') is not False:
+              raise SystemExit('free-data workflow unexpectedly requires a paid provider')
+          providers=' '.join(str(x) for x in (h.get('providers') or {}).values()).lower()
+          forbidden=('the odds api','sportsdataio','pinnacle')
+          if any(x in providers for x in forbidden):
+              raise SystemExit(f'paid/market provider leaked into free foundation: {providers}')
+          team=h.get('team_history') or {}
+          stat=h.get('statcast') or {}
+          weather=h.get('weather') or {}
+          if team.get('promotion_eligible') or stat.get('promotion_eligible') or weather.get('promotion_eligible'):
+              raise SystemExit('historical reconstructed evidence became promotion eligible')
+          if stat and not stat.get('stable_id_only'):
+              raise SystemExit('Statcast priors lost stable-ID-only contract')
+          print('V13.7 free-only + reconstructed/native separation OK')
+          PY
+
+      - name: Persist free-data foundation
+        run: |
+          git config user.name 'MLB Betting Bot V13.7 Free Data'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          [ -d data/v137 ] && git add -f data/v137
+          [ -f data/v137_statcast_priors_latest.json.gz ] && git add -f data/v137_statcast_priors_latest.json.gz
+          [ -f data/v137_statcast_priors_report.json ] && git add -f data/v137_statcast_priors_report.json
+          [ -f data/v137_free_team_history_report.json ] && git add -f data/v137_free_team_history_report.json
+          [ -f data/v137_weather_backfill_report.json ] && git add -f data/v137_weather_backfill_report.json
+          [ -f data/v137_free_data_health.json ] && git add -f data/v137_free_data_health.json
+          [ -f data/v13_model_health.json ] && git add -f data/v13_model_health.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'data: refresh V13.7 free data foundation [skip ci]'
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
