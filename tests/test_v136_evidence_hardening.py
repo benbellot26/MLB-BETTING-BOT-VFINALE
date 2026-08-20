@@ -13,7 +13,7 @@ from v11 import v13_discord_delivery as discord_delivery
 from v11 import v13_feature_store as feature_store
 from v11 import v13_probability_diagnostics as diagnostics
 from v11 import v13_production_gate as production_gate
-from v11.probability_contract_v13 import attach_contract
+from v11.probability_contract_v13 import MODEL_GENERATION_FINGERPRINT, attach_contract
 
 
 class V136EvidenceHardeningTests(unittest.TestCase):
@@ -67,7 +67,8 @@ class V136EvidenceHardeningTests(unittest.TestCase):
 
     def test_probability_diagnostics_use_one_latest_snapshot_per_game_market(self):
         base={"game_pk":1,"game_date":"2026-08-19T20:00:00Z","market":"ML","pick":"Home","home":"Home","away":"Away",
-              "p_model":.60,"p_market":.55,"settled_result":"WIN"}
+              "p_model":.60,"p_market":.55,"settled_result":"WIN","model_generation":MODEL_GENERATION_FINGERPRINT}
+        attach_contract(base)
         early={**base,"phase":"EARLY","observation_at":"2026-08-19T10:00:00Z"}
         late={**base,"phase":"LATE","observation_at":"2026-08-19T17:00:00Z","p_model":.62}
         rows=diagnostics.independent_states([early,late])
