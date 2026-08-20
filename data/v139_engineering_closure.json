@@ -1503,13 +1503,13 @@
           "passed": true,
           "path": "tests/test_v1352_audit_hardening.py",
           "reason": "token_present",
-          "token": "test_production_is_gated_final_automation_and_research_version_check_is_fingerprint_based"
+          "token": "test_production_is_manual_only_and_research_version_check_is_fingerprint_based"
         }
       ],
       "engineering_closed": true,
       "id": 86,
-      "implementation": "v11/v13_production_gate.py",
-      "name": "Production execution remains FINAL-gated"
+      "implementation": ".github/workflows/mlb-bot.yml",
+      "name": "Production execution is manual-only"
     },
     {
       "category": "operations",
