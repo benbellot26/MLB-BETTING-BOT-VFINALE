@@ -15,6 +15,15 @@ class V1352FinalHardeningTests(unittest.TestCase):
             "game_pk":game_pk,"phase":"FINAL",
             "analyzed_at":"2026-08-17T17:00:00+00:00","game_date":"2026-08-17T18:00:00+00:00",
             "home_score":5,"away_score":3,"home":"Home","away":"Away","features_from_postgame":False,
+            "feature_provenance":{"team_stats":{
+                "source":"final-hardening-test-durable",
+                "as_of":"2026-08-17T17:00:00+00:00",
+                "observed_at":"2026-08-17T17:00:00+00:00",
+                "timestamp_basis":"durable_snapshot_capture",
+                "source_timestamp_attested":True,
+                "point_in_time":True,"snapshot":True,"cutoff_capable":False,
+                "season_aggregate":False,"postgame_identity":False,
+            }},
             "options":[{"market":"ML","name":"Home","is_canonical_line":True,"p_baseball_raw":.58,"result":"WIN"}],
         }
         if attach: contract.attach_contract(row)
@@ -84,7 +93,7 @@ class V1352FinalHardeningTests(unittest.TestCase):
         native=v13_train.eligible_probability_rows([self._row()])
         combined=v13_train.combine_calibration_rows(native,replay)
         self.assertEqual(len(combined),1)
-        self.assertEqual(combined[0]["calibration_evidence_origin"],"native-current-generation")
+        self.assertEqual(combined[0]["calibration_evidence_origin"],"native-current-generation-promotion-grade")
         self.assertAlmostEqual(combined[0]["options"][0]["p_baseball_raw"],.58)
 
     def test_final_run_mean_prior_is_gated_until_native_transfer_passes(self):
