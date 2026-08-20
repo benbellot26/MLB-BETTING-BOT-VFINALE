@@ -58,6 +58,7 @@ jobs:
       - name: Validate V13.10 champion contract
         run: |
           python -m py_compile v11/*.py tests/*.py
+          python -m v11.v13_preflight
           python -m unittest \
             tests.test_v13_probability_contract \
             tests.test_v13_probability_invariants \
