@@ -3,12 +3,12 @@
     "ML": {
       "closing_price_observed": 102,
       "closing_sharp_observed": 102,
-      "positive_ev_pnl_1u": -25.66,
-      "positive_ev_wins": 57,
-      "positive_nominal_ev": 154,
-      "priced": 682,
-      "settled": 682,
-      "t60_sharp_observed": 110
+      "positive_ev_pnl_1u": -21.54,
+      "positive_ev_wins": 63,
+      "positive_nominal_ev": 160,
+      "priced": 706,
+      "settled": 706,
+      "t60_sharp_observed": 126
     },
     "RUNLINE": {
       "closing_price_observed": 0,
@@ -17,8 +17,8 @@
       "positive_ev_wins": 0,
       "positive_nominal_ev": 0,
       "priced": 0,
-      "settled": 1192,
-      "t60_sharp_observed": 110
+      "settled": 1240,
+      "t60_sharp_observed": 126
     },
     "TOTAL": {
       "closing_price_observed": 0,
@@ -27,19 +27,19 @@
       "positive_ev_wins": 0,
       "positive_nominal_ev": 0,
       "priced": 0,
-      "settled": 682,
-      "t60_sharp_observed": 102
+      "settled": 706,
+      "t60_sharp_observed": 118
     }
   },
   "by_nominal_ev_band": {
     "ML": {
       "0-1%": {
         "losses": 27,
-        "n": 31,
-        "pnl_1u": -22.73,
+        "n": 33,
+        "pnl_1u": -21.41,
         "pushes": 0,
-        "roi_1u": -0.7332,
-        "wins": 4
+        "roi_1u": -0.6488,
+        "wins": 6
       },
       "1-3%": {
         "losses": 15,
@@ -51,11 +51,11 @@
       },
       "3-5%": {
         "losses": 7,
-        "n": 20,
-        "pnl_1u": 8.32,
+        "n": 24,
+        "pnl_1u": 11.12,
         "pushes": 0,
-        "roi_1u": 0.416,
-        "wins": 13
+        "roi_1u": 0.4633,
+        "wins": 17
       },
       "5-10%": {
         "losses": 20,
@@ -66,12 +66,12 @@
         "wins": 23
       },
       "<0%": {
-        "losses": 244,
-        "n": 528,
-        "pnl_1u": -17.69,
+        "losses": 256,
+        "n": 546,
+        "pnl_1u": -25.53,
         "pushes": 0,
-        "roi_1u": -0.0335,
-        "wins": 284
+        "roi_1u": -0.0468,
+        "wins": 290
       },
       ">=10%": {
         "losses": 28,
@@ -85,7 +85,7 @@
     "RUNLINE": {},
     "TOTAL": {}
   },
-  "generated_at": "2026-08-20T20:56:58.134698+00:00",
+  "generated_at": "2026-08-20T21:59:00.725323+00:00",
   "methodology": {
     "closing": "paid market polling is checkpoint-based: one T-60 window and one close window per tracked observation, batched in a single Odds API request across all games due at that time",
     "generation_identity": "every new model snapshot persists model_generation and predictive_contract; legacy rows remain historical-only",
@@ -95,8 +95,8 @@
     "unit_pnl": "descriptive flat 1u; complementary displayed sides are not a betting portfolio"
   },
   "schema": "v13-market-tracking-report-v4",
-  "settled_observations": 2556,
-  "settled_options": 2556,
+  "settled_observations": 2652,
+  "settled_options": 2652,
   "tracked_observations": 2796,
   "tracked_options": 2796
 }
