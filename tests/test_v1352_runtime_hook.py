@@ -22,6 +22,10 @@ class V1352RuntimeHookTests(unittest.TestCase):
         self.assertFalse(getattr(methodology_v123.bootstrap_prior_v123, "_v13_runtime_hook", False))
 
     def test_explicit_engine_builds_same_validation_baseline_metadata(self):
+        # This test can run first alphabetically in a fresh unittest process.
+        # Initialize the same V12.3 compatibility layer that production V13.10
+        # installs through v13_entry before exercising the explicit engine.
+        from v11 import v13_entry  # noqa: F401
         from v11 import probability_contract_v13 as contract
         from v11.v13_engine import V13Engine
 
