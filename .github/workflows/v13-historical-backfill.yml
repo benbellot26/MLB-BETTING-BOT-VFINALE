@@ -116,6 +116,7 @@ jobs:
           from pathlib import Path
           from v11 import probability_contract_v13 as contract
           from v11 import v13_distribution_prior, v13_run_mean_prior
+          from v11 import v13_exact_transfer_evidence as exact_evidence
 
           report=json.loads(Path('data/v13_historical_backfill_report.json').read_text())
           assert report['source_replays'] > 0, report
@@ -150,14 +151,19 @@ jobs:
           assert rejected == int(report.get('calibration_rejected_rows') or 0), report
           assert candidates > 0, report
 
-          final_games=len({str(r.get('game_pk')) for r in rows
-                           if str(r.get('phase') or '').upper() == 'FINAL'
-                           and r.get('calibration_evidence_candidate')})
+          exact_rows=exact_evidence.load_exact_final_rows()
+          exact_counts=exact_evidence.source_counts(exact_rows)
+          exact_games=len({str(r.get('game_pk')) for r in exact_rows})
+          exact_native=int(exact_counts.get('NATIVE_CURRENT_GENERATION_FINAL') or 0)
+          exact_replay=int(exact_counts.get('EXACT_REPLAY_CURRENT_GENERATION_FINAL') or 0)
+          assert exact_games == exact_native + exact_replay, exact_counts
 
           prior=json.loads(Path('data/v13_run_mean_prior.json').read_text())
           assert prior['schema'] == v13_run_mean_prior.SCHEMA, prior
           assert prior['model_generation'] == contract.MODEL_GENERATION_FINGERPRINT, prior
-          assert int(prior.get('exact_final_games') or 0) <= final_games
+          assert int(prior.get('exact_final_games') or 0) == exact_games, (prior, exact_counts)
+          assert int(prior.get('exact_native_games') or 0) == exact_native, (prior, exact_counts)
+          assert int(prior.get('exact_replay_games') or 0) == exact_replay, (prior, exact_counts)
           assert set(prior.get('historical_seasons') or []) >= {2021,2022,2023,2024,2025,2026}, prior
           if prior.get('active'):
               assert prior.get('historical_candidate_active') is True, prior
@@ -174,7 +180,9 @@ jobs:
           assert (dist.get('walk_forward') or {}).get('stable') is True, dist
           assert int((dist.get('walk_forward') or {}).get('folds_passed') or 0) == int((dist.get('walk_forward') or {}).get('folds_total') or 0), dist
           assert set(dist.get('historical_seasons') or []) >= {2021,2022,2023,2024,2025,2026}, dist
-          assert int(dist.get('exact_final_games') or 0) <= final_games
+          assert int(dist.get('exact_final_games') or 0) == exact_games, (dist, exact_counts)
+          assert int(dist.get('exact_native_games') or 0) == exact_native, (dist, exact_counts)
+          assert int(dist.get('exact_replay_games') or 0) == exact_replay, (dist, exact_counts)
           if dist.get('active'):
               assert int(dist.get('exact_final_games') or 0) >= max(v13_distribution_prior.MIN_EXACT_FINAL, int(dist.get('exact_transfer_required_games') or 0)), dist
               assert dist.get('exact_transfer_status') == 'PASS_FINAL_ONLY', dist
@@ -185,6 +193,7 @@ jobs:
           calibration=json.loads(Path('data/v13_baseball_calibration.json').read_text())
           assert calibration['model_generation'] == contract.MODEL_GENERATION_FINGERPRINT, calibration
           assert calibration.get('training_policy',{}).get('exact_v13_replay_backfill_allowed') is True, calibration
+          assert calibration.get('training_policy',{}).get('native_promotion_grade_pit_required') is True, calibration
 
           hist=json.loads(Path('data/v13_historical_validation.json').read_text())
           assert hist['model_generation'] == contract.MODEL_GENERATION_FINGERPRINT, hist
@@ -199,6 +208,7 @@ jobs:
           assert policy.get('model_generation') == contract.MODEL_GENERATION_FINGERPRINT, policy
           assert policy.get('primary_probability_affected') is False, policy
           assert policy.get('promotion_requires_unique_games') is True, policy
+          assert policy.get('live_generation_contract_required') is True, policy
           for key, entry in (policy.get('entries') or {}).items():
               assert 0 <= float(entry.get('weight') or 0) <= 1, (key,entry)
               if entry.get('active_for_shadow'):
@@ -207,6 +217,7 @@ jobs:
 
           print('V13 backfill rows=',len(rows),'games=',report['canonical_games'],
                 'candidates=',candidates,'rejected=',rejected,
+                'exact=',exact_games,'native=',exact_native,'replay=',exact_replay,
                 'run_mean=',prior.get('exact_final_games'),'/',prior.get('exact_transfer_required_games'),prior.get('exact_transfer_status'),prior.get('active'),
                 'distribution=',dist.get('exact_final_games'),'/',dist.get('exact_transfer_required_games'),dist.get('exact_transfer_status'),dist.get('active'),
                 'calibration_games=',calibration.get('eligible_games'),
