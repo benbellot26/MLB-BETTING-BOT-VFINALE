@@ -126,7 +126,7 @@ POINTS = [
     _point(83,"operations","Shared preflight is used by critical workflows","v11/v13_preflight.py",_check("tests/test_v1352_audit_hardening.py","test_shared_preflight_is_used_by_ci_production_backfill_and_research")),
     _point(84,"operations","Provider live-smoke CI is dedicated and fail-closed",".github/workflows/v13-provider-hardening-ci.yml",_check(".github/workflows/v13-provider-hardening-ci.yml","provider-contracts")),
     _point(85,"operations","Main CI compiles all V11 and test modules",".github/workflows/ci.yml",_check(".github/workflows/ci.yml","python -m py_compile v11/*.py tests/*.py")),
-    _point(86,"operations","Production execution remains FINAL-gated","v11/v13_production_gate.py",_check("tests/test_v1352_audit_hardening.py","test_production_is_gated_final_automation_and_research_version_check_is_fingerprint_based")),
+    _point(86,"operations","Production execution is manual-only",".github/workflows/mlb-bot.yml",_check("tests/test_v1352_audit_hardening.py","test_production_is_manual_only_and_research_version_check_is_fingerprint_based")),
     _point(87,"operations","Analytics-only payload is redundantly enforced","v11/v13_analytics_only.py",_check("tests/test_v13_analytics_only.py","test_v13_entry_wires_redundant_fail_closed_guards")),
     _point(88,"operations","Critical starter/lineup changes reopen publication","v11/v138_live_change.py",_check("tests/test_v138_production_change_gate.py","test_sent_game_reopens_when_probable_starter_changes"),_check("tests/test_v138_production_change_gate.py","test_sent_game_reopens_when_free_live_feed_lineup_personnel_changes")),
     _point(89,"operations","Feature drift remains monitored","v11/v138_monitoring.py",_check("v11/v138_monitoring.py","validation.feature_drift")),
