@@ -6,12 +6,14 @@ V14 is a new, minimal MLB probability engine. It does **not** inherit the V11/V1
 
 `pregame data -> home/away run means -> one score distribution -> 8 probabilities -> optional validated calibration -> tracking/validation`
 
-The first shadow foundation intentionally contains only the pieces needed to prove that contract:
+The shadow foundation intentionally contains only the pieces needed to prove that contract:
 
 1. `model.py` — small immutable input/output contracts and fail-closed surface checks.
 2. `distribution.py` — one negative-binomial score distribution generating ML, both standard ±1.5 runlines, and one half-run total pair.
 3. `shadow.py` — transition adapter that may read V13 run means for paired comparison but forbids V13 probabilities, market probabilities, selector scores, and betting decisions as V14 model inputs.
-4. `validation.py` — Brier/LogLoss scoring on four independent canonical targets rather than double-counting complementary sides.
+4. `benchmark.py` — frozen V13.10 probability reference used only after V14 has already produced its probabilities.
+5. `validation.py` — Brier/LogLoss scoring on four independent canonical targets rather than double-counting complementary sides.
+6. `evidence.py` — paired V14-vs-V13.10 FINAL evaluation with one unique game as the statistical sample unit and deterministic bootstrap evidence.
 
 ## Eight displayed probabilities
 
@@ -30,6 +32,21 @@ Every pair must sum to exactly 1 within numerical tolerance. Invalid or incomple
 - Total display lines must be half-run lines; integer lines with pushes are not silently normalized.
 - No market probability is a baseball feature.
 - No V14 output can affect production, Discord betting selection, or the V13 probability journal.
+
+## Paired evidence boundary
+
+The frozen V13.10 champion probabilities are comparison metadata, never V14 features. `shadow.py` calculates the complete V14 surface first and only then copies the V13.10 reference through `benchmark.py`.
+
+Settled outcomes come from the separate `v13-label-store-v1` label store. `evidence.py` accepts only the latest valid FINAL pregame V14 shadow per game and joins a label only when `settled_at >= game_date`.
+
+The sample unit is always one unique MLB game:
+
+- ML: one home-win target.
+- RUNLINE: home -1.5 and home +1.5 proper losses are averaged inside the game; they do not count as two games.
+- TOTAL: one Over target at the exact persisted half-run line.
+- OVERALL: equal-weight mean of ML, game-aggregated RUNLINE and TOTAL.
+
+The paired comparison uses a conservative 300-game floor plus paired Brier/LogLoss bootstrap evidence. Passing those checks still cannot promote the foundation: an independent V14 run model and independently validated V14 calibration are hard blockers.
 
 ## Promotion philosophy
 

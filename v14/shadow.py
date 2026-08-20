@@ -7,10 +7,12 @@ from pathlib import Path
 from typing import Any
 
 from . import MODEL_GENERATION
+from .benchmark import CHAMPION_GENERATION, benchmark_payload
 from .distribution import probability_surface
 from .model import RunProjection, shadow_payload
 
 DEFAULT_PAYLOAD = Path("runtime/v11/discord_payload.json")
+DEFAULT_JOURNAL = Path("data/v11_3_live.jsonl")
 DEFAULT_OUTPUT = Path("data/v14_shadow_predictions.jsonl")
 
 
@@ -45,10 +47,11 @@ def _total_line(result: dict[str, Any]) -> float | None:
 
 
 def projection_from_v13_result(result: dict[str, Any], *, analyzed_at: str | None = None) -> RunProjection:
-    """Narrow transition adapter: only run means cross the V13→V14 boundary.
+    """Narrow transition adapter: only run means cross the V13→V14 model boundary.
 
-    No V13 probability, market probability, calibration output, selector score or
-    betting decision is accepted as a V14 model input.
+    V13 probability outputs, market probabilities, calibration outputs, selector
+    scores and betting decisions are forbidden as V14 model inputs. Persisted V13
+    probabilities may be copied later into a separate benchmark-only field.
     """
     ctx = result.get("ctx") or {}
     game = result.get("game") or {}
@@ -57,10 +60,12 @@ def projection_from_v13_result(result: dict[str, Any], *, analyzed_at: str | Non
     observed = result.get("analyzed_at") or result.get("as_of") or analyzed_at
     home_mu = _num(result.get("hmu"))
     away_mu = _num(result.get("amu"))
-    if home_mu is None:
-        home_mu = _num(result.get("home_mu"))
-    if away_mu is None:
-        away_mu = _num(result.get("away_mu"))
+    for key in ("home_mu", "projected_home_runs"):
+        if home_mu is None:
+            home_mu = _num(result.get(key))
+    for key in ("away_mu", "projected_away_runs"):
+        if away_mu is None:
+            away_mu = _num(result.get(key))
     line = _total_line(result)
     if home_mu is None or away_mu is None:
         raise ValueError("V14 shadow requires explicit V13 home/away run means")
@@ -83,10 +88,20 @@ def projection_from_v13_result(result: dict[str, Any], *, analyzed_at: str | Non
 
 
 def build_shadow(result: dict[str, Any], *, analyzed_at: str | None = None) -> dict[str, Any]:
+    # Build V14 first. The benchmark is intentionally extracted only afterwards
+    # so V13 probabilities cannot influence the V14 calculation by construction.
     projection = projection_from_v13_result(result, analyzed_at=analyzed_at)
     surface, tail = probability_surface(projection)
     out = shadow_payload(projection, surface, tail_mass=tail)
-    out["transition_adapter"] = "V13 run means only; V13 probabilities/market/selection are forbidden inputs"
+    out["transition_adapter"] = "V13 run means only; V13 probabilities/market/selection are forbidden V14 model inputs"
+    if result.get("model_generation") == CHAMPION_GENERATION:
+        out["champion_reference"] = benchmark_payload(result, total_line=projection.total_line)
+    else:
+        out["champion_reference"] = {
+            "role": "UNAVAILABLE_NON_CHAMPION_GENERATION",
+            "source_generation": result.get("model_generation"),
+            "used_as_v14_model_input": False,
+        }
     return out
 
 
@@ -113,11 +128,12 @@ def write_shadows(rows: list[dict[str, Any]], path: Path = DEFAULT_OUTPUT) -> in
     return len(existing) - before
 
 
-def run_payload(payload: dict[str, Any], *, strict: bool = False) -> dict[str, Any]:
-    report = payload.get("report") or {}
-    analyzed_at = report.get("analyzed_at") or report.get("as_of")
+def run_results(results: list[dict[str, Any]], *, analyzed_at: str | None = None,
+                strict: bool = False, champion_only: bool = False) -> dict[str, Any]:
     built, skipped = [], []
-    for result in payload.get("results") or []:
+    for result in results:
+        if champion_only and result.get("model_generation") != CHAMPION_GENERATION:
+            continue
         try:
             built.append(build_shadow(result, analyzed_at=analyzed_at))
         except Exception as exc:
@@ -127,18 +143,48 @@ def run_payload(payload: dict[str, Any], *, strict: bool = False) -> dict[str, A
     return {"rows": built, "skipped": skipped, "shadow_only": True, "affects_production": False}
 
 
+def run_payload(payload: dict[str, Any], *, strict: bool = False) -> dict[str, Any]:
+    report = payload.get("report") or {}
+    analyzed_at = report.get("analyzed_at") or report.get("as_of")
+    return run_results(list(payload.get("results") or []), analyzed_at=analyzed_at, strict=strict)
+
+
+def _read_jsonl(path: Path) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    rows = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+            if isinstance(row, dict):
+                rows.append(row)
+        except Exception:
+            continue
+    return rows
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build clean V14 shadow probabilities from persisted V13 run means")
-    parser.add_argument("--payload", default=str(DEFAULT_PAYLOAD))
+    source = parser.add_mutually_exclusive_group()
+    source.add_argument("--payload", default=None)
+    source.add_argument("--journal", default=None)
     parser.add_argument("--output", default=str(DEFAULT_OUTPUT))
     parser.add_argument("--strict", action="store_true")
     args = parser.parse_args()
-    payload_path = Path(args.payload)
-    if not payload_path.exists():
-        print(json.dumps({"written": 0, "skipped": [{"reason": "payload absent"}], "shadow_only": True}))
-        return
-    payload = json.loads(payload_path.read_text(encoding="utf-8"))
-    result = run_payload(payload, strict=args.strict)
+
+    if args.journal:
+        rows = _read_jsonl(Path(args.journal))
+        result = run_results(rows, strict=args.strict, champion_only=True)
+    else:
+        payload_path = Path(args.payload) if args.payload else DEFAULT_PAYLOAD
+        if not payload_path.exists():
+            print(json.dumps({"written": 0, "skipped": [{"reason": "payload absent"}], "shadow_only": True}))
+            return
+        payload = json.loads(payload_path.read_text(encoding="utf-8"))
+        result = run_payload(payload, strict=args.strict)
+
     written = write_shadows(result["rows"], Path(args.output)) if result["rows"] else 0
     print(json.dumps({"built": len(result["rows"]), "written": written, "skipped": result["skipped"],
                       "shadow_only": True, "affects_production": False}, ensure_ascii=False, indent=2))
