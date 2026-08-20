@@ -6,18 +6,30 @@ on:
       - 'v11/v13_run_mean_prior.py'
       - 'v11/v13_run_mean_runtime.py'
       - 'v11/v13_distribution_prior.py'
+      - 'v11/v13_exact_transfer_evidence.py'
+      - 'v11/v13_feature_store.py'
+      - 'v11/point_in_time_v13.py'
+      - 'v11/v13_train.py'
       - 'v11/v13_preflight.py'
       - 'tests/test_v1311_historical_transfer.py'
+      - 'tests/test_v1310_max_audit_hardening.py'
       - '.github/workflows/v13-11-historical-transfer.yml'
+      - '.github/workflows/v13-historical-backfill.yml'
   push:
     branches: [main]
     paths:
       - 'v11/v13_run_mean_prior.py'
       - 'v11/v13_run_mean_runtime.py'
       - 'v11/v13_distribution_prior.py'
+      - 'v11/v13_exact_transfer_evidence.py'
+      - 'v11/v13_feature_store.py'
+      - 'v11/point_in_time_v13.py'
+      - 'v11/v13_train.py'
       - 'v11/v13_preflight.py'
       - 'tests/test_v1311_historical_transfer.py'
+      - 'tests/test_v1310_max_audit_hardening.py'
       - '.github/workflows/v13-11-historical-transfer.yml'
+      - '.github/workflows/v13-historical-backfill.yml'
   schedule:
     - cron: '17 13 * * *'
   workflow_dispatch:
@@ -43,10 +55,12 @@ jobs:
           python-version: '3.12'
 
       - name: Compile transfer modules
-        run: python -m py_compile v11/v13_run_mean_prior.py v11/v13_run_mean_runtime.py v11/v13_distribution_prior.py tests/test_v1311_historical_transfer.py
+        run: python -m py_compile v11/v13_run_mean_prior.py v11/v13_run_mean_runtime.py v11/v13_distribution_prior.py v11/v13_exact_transfer_evidence.py v11/v13_train.py tests/test_v1311_historical_transfer.py tests/test_v1310_max_audit_hardening.py
 
       - name: Behavioral transfer tests
-        run: python -m unittest -v tests.test_v1311_historical_transfer
+        run: |
+          python -m unittest -v tests.test_v1311_historical_transfer
+          python -m unittest -v tests.test_v1310_max_audit_hardening
 
       - name: Shared critical preflight
         run: python -m v11.v13_preflight
@@ -75,7 +89,6 @@ jobs:
           if int(artifact.get('historical_games') or 0) < 10000:
               raise SystemExit('run-mean transfer unexpectedly lost the large reconstructed cohort')
           safety = artifact.get('safety') or {}
-          # An inactive historical candidate is acceptable; any active transfer must carry all safety attestations.
           if artifact.get('historical_candidate_active') or artifact.get('active'):
               if safety.get('market_probability_used') is not False or safety.get('historical_odds_used') is not False:
                   raise SystemExit('market data entered baseball run-mean transfer')
