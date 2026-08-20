@@ -17,9 +17,6 @@ def _history(seasons=range(2021, 2027), games_per_season=30):
     rows = []
     for season in seasons:
         for i in range(games_per_season):
-            # Stable integer-run target: baseline is low by 0.20 on both sides.
-            # No market field exists, so this fixture also exercises the
-            # baseball-only nature of the historical run-mean correction.
             rows.append({
                 "game_pk": f"h-{season}-{i}",
                 "game_date": f"{season}-06-{(i % 28) + 1:02d}T18:00:00Z",
@@ -47,9 +44,6 @@ def _exact(n=12):
 
 
 def _distribution_history(seasons=range(2021, 2027), games_per_season=520):
-    # Deliberately overdispersed but stationary score pattern around realistic
-    # MLB means. Each synthetic season clears the same 500-game floor used by
-    # the production walk-forward contract; tests never lower that volume gate.
     home_scores = (0, 1, 2, 3, 5, 7, 8, 10)
     away_scores = (0, 1, 2, 3, 4, 6, 8, 9)
     rows = []
@@ -87,6 +81,23 @@ def _write_jsonl(path: Path, rows: list[dict]):
     path.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
 
 
+def _promotion_provenance(as_of: str):
+    return {
+        "team_stats": {
+            "source": "test-durable-snapshot",
+            "as_of": as_of,
+            "observed_at": as_of,
+            "timestamp_basis": "durable_snapshot_capture",
+            "source_timestamp_attested": True,
+            "point_in_time": True,
+            "snapshot": True,
+            "cutoff_capable": False,
+            "season_aggregate": False,
+            "postgame_identity": False,
+        }
+    }
+
+
 def _native_feature(game_pk="native-1", phase="FINAL", generation=None, as_of="2026-08-19T18:00:00Z", source=None):
     generation = generation or contract.MODEL_GENERATION_FINGERPRINT
     return {
@@ -98,6 +109,7 @@ def _native_feature(game_pk="native-1", phase="FINAL", generation=None, as_of="2
         "model_generation": generation,
         "point_in_time": True,
         "point_in_time_validation_reasons": [],
+        "feature_provenance": _promotion_provenance(as_of),
         "features": {
             "historical_bootstrap": {
                 "run_prior": {
@@ -113,6 +125,18 @@ def _native_feature(game_pk="native-1", phase="FINAL", generation=None, as_of="2
     }
 
 
+def _label(game_pk: str, home_score=6, away_score=3):
+    return {
+        "schema": exact_evidence.LABEL_SCHEMA,
+        "game_pk": game_pk,
+        "game_date": "2026-08-19T19:00:00Z",
+        "home_score": home_score,
+        "away_score": away_score,
+        "settled_at": "2026-08-20T05:00:00Z",
+        "label_source": exact_evidence.LABEL_SOURCE,
+    }
+
+
 class V1311HistoricalTransferTests(unittest.TestCase):
     def test_native_final_feature_plus_postgame_label_is_exact_transfer_evidence(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -122,12 +146,7 @@ class V1311HistoricalTransferTests(unittest.TestCase):
             label = root / "labels.jsonl"
             _write_jsonl(replay, [])
             _write_jsonl(feature, [_native_feature()])
-            _write_jsonl(label, [{
-                "game_pk": "native-1",
-                "home_score": 6,
-                "away_score": 3,
-                "settled_at": "2026-08-20T05:00:00Z",
-            }])
+            _write_jsonl(label, [_label("native-1")])
             rows = exact_evidence.load_exact_final_rows(replay, feature, label)
         self.assertEqual(len(rows), 1)
         row = rows[0]
@@ -135,6 +154,22 @@ class V1311HistoricalTransferTests(unittest.TestCase):
         self.assertEqual(row["validation_baseline_model_generation"], contract.MODEL_GENERATION_FINGERPRINT)
         self.assertEqual((row["home_score"], row["away_score"]), (6, 3))
         self.assertEqual(row["validation_baseline_dispersion"], 7.5)
+
+    def test_native_transfer_rejects_weak_pit_or_unattested_label(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            replay = root / "replay.jsonl"
+            feature = root / "features.jsonl"
+            label = root / "labels.jsonl"
+            weak = _native_feature("weak")
+            weak["feature_provenance"]["team_stats"]["source_timestamp_attested"] = False
+            _write_jsonl(replay, [])
+            _write_jsonl(feature, [weak, _native_feature("bad-label")])
+            bad_label = _label("bad-label")
+            bad_label["schema"] = "untrusted-label"
+            _write_jsonl(label, [_label("weak"), bad_label])
+            rows = exact_evidence.load_exact_final_rows(replay, feature, label)
+        self.assertEqual(rows, [])
 
     def test_native_transfer_rejects_nonfinal_wrong_generation_and_poststart_rows(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -149,7 +184,7 @@ class V1311HistoricalTransferTests(unittest.TestCase):
                 _native_feature("poststart", as_of="2026-08-19T19:00:01Z"),
                 _native_feature("wrong-source", source="not-pre-candidate"),
             ])
-            _write_jsonl(label, [{"game_pk": gid, "home_score": 4, "away_score": 2} for gid in ("late", "old", "poststart", "wrong-source")])
+            _write_jsonl(label, [_label(gid) for gid in ("late", "old", "poststart", "wrong-source")])
             rows = exact_evidence.load_exact_final_rows(replay, feature, label)
         self.assertEqual(rows, [])
 
@@ -164,7 +199,7 @@ class V1311HistoricalTransferTests(unittest.TestCase):
             second["features"]["historical_bootstrap"]["run_prior"]["v13_validation_baseline_home_mu"] = 5.1
             _write_jsonl(replay, [])
             _write_jsonl(feature, [first, second])
-            _write_jsonl(label, [{"game_pk": "native-1", "home_score": 6, "away_score": 3}])
+            _write_jsonl(label, [_label("native-1")])
             rows = exact_evidence.load_exact_final_rows(replay, feature, label)
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]["validation_baseline_home_runs"], 5.1)
