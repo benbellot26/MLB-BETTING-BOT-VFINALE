@@ -26,8 +26,8 @@ jobs:
           python-version: '3.12'
       - name: Compile and smoke test
         run: |
-          python -m py_compile v11/v13_daily_postmortem.py v11/v13_daily_tracking.py v11/v13_tracking_sync.py v11/v13_feature_store.py v11/v13_exact_transfer_evidence.py v11/v13_run_mean_prior.py v11/v13_distribution_prior.py
-          python -m unittest tests.test_v13_daily_postmortem tests.test_v13_daily_tracking tests.test_v1310_max_audit_hardening
+          python -m py_compile v11/v13_daily_postmortem.py v11/v13_daily_tracking.py v11/v13_tracking_sync.py v11/v13_feature_store.py v11/v13_exact_transfer_evidence.py v11/v13_run_mean_prior.py v11/v13_distribution_prior.py v11/v13_champion_dashboard.py
+          python -m unittest tests.test_v13_daily_postmortem tests.test_v13_daily_tracking tests.test_v1310_max_audit_hardening tests.test_v1310_champion_dashboard
       - name: Sync, settle and send yesterday report
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
@@ -40,6 +40,7 @@ jobs:
           python -m v11.v13_train
           python -m v11.v13_posterior_policy
           python -m v11.v13_probability_diagnostics
+          python -m v11.v13_champion_dashboard
           python -m v11.v13_model_health
       - name: Persist tracking, postmortem and refreshed evidence
         run: |
@@ -55,6 +56,8 @@ jobs:
           [ -f data/v13_baseball_calibration.json ] && git add -f data/v13_baseball_calibration.json
           [ -f data/v13_posterior_policy.json ] && git add -f data/v13_posterior_policy.json
           [ -f data/v13_probability_diagnostics.json ] && git add -f data/v13_probability_diagnostics.json
+          [ -f data/v13_champion_dashboard.json ] && git add -f data/v13_champion_dashboard.json
+          [ -f data/v13_champion_dashboard.md ] && git add -f data/v13_champion_dashboard.md
           [ -f data/v13_model_health.json ] && git add -f data/v13_model_health.json
           if ! git diff --cached --quiet; then
             git commit -m 'data: daily V13 postmortem and evidence refresh [skip ci]'

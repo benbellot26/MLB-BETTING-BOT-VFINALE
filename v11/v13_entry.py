@@ -1,12 +1,20 @@
 from __future__ import annotations
 
+import os
+
+# V13.10 is the production champion. Legacy V11.5/V12.4 challengers are
+# research-only and must never run implicitly in the champion path. Dedicated
+# research workflows may opt back in explicitly with environment overrides.
+os.environ.setdefault("V1232_ENABLE_V115_SHADOW", "0")
+os.environ.setdefault("V124_ENABLE_SHADOW", "0")
+
 from . import v123_entry as v123
 from .v13_runtime import install
 
 install()
 
 from . import config, runner, discord_v13, core, selector, storage, journal, v13_daily_tracking, v13_analytics_only
-from . import v13_coverage_report, v13_probability_diagnostics, v13_feature_store, v13_model_health
+from . import v13_coverage_report, v13_probability_diagnostics, v13_feature_store, v13_model_health, v13_champion_dashboard
 from . import v138_book_telemetry, v138_native_evidence
 from . import calibration_baseball_v13 as calibration_v13
 from . import probability_contract_v13 as probability_contract
@@ -65,6 +73,7 @@ def _write_postrun_diagnostics():
     for name, fn in (
         ("coverage report", v13_coverage_report.main),
         ("probability diagnostics", v13_probability_diagnostics.main),
+        ("champion dashboard", v13_champion_dashboard.main),
         ("native evidence gates", v138_native_evidence.main),
         ("feature store", v13_feature_store.main),
         ("model health", v13_model_health.main),
