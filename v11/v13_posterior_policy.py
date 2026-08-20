@@ -6,6 +6,8 @@ import os
 from pathlib import Path
 from typing import Any
 
+from . import probability_contract_v13 as contract
+
 POLICY_FILE = Path(os.getenv("V13_POSTERIOR_POLICY_FILE", "data/v13_posterior_policy.json"))
 HISTORICAL_VALIDATION = Path(os.getenv("V13_HISTORICAL_VALIDATION_FILE", "data/v13_historical_validation.json"))
 WEIGHT_GRID = tuple(i / 20 for i in range(21))  # 0%, 5%, ..., 100% Sharp
@@ -190,8 +192,6 @@ def _fit_entry(rows: list[dict[str, Any]], minimum_games: int) -> dict[str, Any]
 
 
 def build_policy(observations: list[dict[str, Any]]) -> dict[str, Any]:
-    from .probability_contract_v13 import MODEL_GENERATION_FINGERPRINT
-
     entries: dict[str, Any] = {}
     for market in ("ML", "RUNLINE", "TOTAL"):
         market_rows = [r for r in observations if str(r.get("market") or "").upper() == market]
@@ -200,7 +200,7 @@ def build_policy(observations: list[dict[str, Any]]) -> dict[str, Any]:
             entries[f"PHASE:{phase}:{market}"] = _fit_entry(one_per_game_phase(market_rows, phase), MIN_PHASE_GAMES)
     return {
         "schema": "v13-posterior-weight-policy-v1",
-        "model_generation": MODEL_GENERATION_FINGERPRINT,
+        "model_generation": contract.MODEL_GENERATION_FINGERPRINT,
         "primary_probability_affected": False,
         "promotion_requires_unique_games": True,
         "weight_selection": "chronological discovery + untouched holdout; 0..100% Sharp grid; phase preferred then market fallback",
@@ -249,6 +249,10 @@ def _live_observations() -> list[dict[str, Any]]:
         return []
     out = []
     for row in states:
+        if row.get("model_generation") != contract.MODEL_GENERATION_FINGERPRINT:
+            continue
+        if not contract.CONTRACT.compatible_with(row.get("predictive_contract") or {}):
+            continue
         if row.get("settled_result") not in {"WIN", "LOSS"}:
             continue
         if not row.get("predictive_final_status"):
@@ -256,7 +260,7 @@ def _live_observations() -> list[dict[str, Any]]:
         if _num(row.get("p_baseball_calibrated")) is None or _num(row.get("p_market")) is None:
             continue
         clone = dict(row)
-        clone.setdefault("evidence_origin", "native-live-current-generation")
+        clone["evidence_origin"] = "native-live-current-generation-attested"
         out.append(clone)
     return out
 
@@ -266,14 +270,16 @@ def build_from_sources() -> dict[str, Any]:
     for row in _historical_observations():
         key = (_game_key(row), str(row.get("phase") or "EARLY").upper(), str(row.get("market") or "").upper())
         merged[key] = row
-    # Genuine current-generation live evidence wins collisions.
-    for row in _live_observations():
+    # Only explicitly attested current-generation live evidence may win collisions.
+    live = _live_observations()
+    for row in live:
         key = (_game_key(row), str(row.get("phase") or "EARLY").upper(), str(row.get("market") or "").upper())
         merged[key] = row
     policy = build_policy(list(merged.values()))
     policy["source_observations"] = len(merged)
     policy["historical_observations"] = sum(str(r.get("evidence_origin") or "").startswith("exact-replay") for r in merged.values())
-    policy["live_observations"] = policy["source_observations"] - policy["historical_observations"]
+    policy["live_observations"] = sum(str(r.get("evidence_origin") or "").startswith("native-live-current-generation-attested") for r in merged.values())
+    policy["live_generation_contract_required"] = True
     return policy
 
 

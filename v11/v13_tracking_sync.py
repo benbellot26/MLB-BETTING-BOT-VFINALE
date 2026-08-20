@@ -28,21 +28,35 @@ def sync_from_journal():
     state=tracking.fold(); rows=[]
     for r in _latest_pregame_rows():
         phase=str(r.get("phase") or "EARLY").upper()
+        model_generation=r.get("model_generation") or r.get("model_generation_fingerprint")
+        predictive_contract=r.get("predictive_contract") or {}
         for o in r.get("options") or []:
             k=tracking._key(r,o)
-            if k in state:continue
+            existing=state.get(k)
+            if existing is not None:
+                # Old tracking rows predate generation identity. The persisted
+                # journal still contains the immutable source snapshot, so it is
+                # safe to attest missing identity metadata without changing the
+                # probability or market observation itself.
+                if (not existing.get("model_generation") or not existing.get("predictive_contract")) and model_generation and predictive_contract:
+                    rows.append({"schema":"v13-market-tracking-v4","event_type":"MODEL_IDENTITY_ATTESTATION",
+                                 "tracking_key":k,"model_generation":model_generation,
+                                 "predictive_contract":predictive_contract,"identity_source":"persisted-v13-journal"})
+                continue
             e=o.get("winamax_eval") or {}; gate=e.get("v11_price_gate") or {}
             price=tracking._num(e.get("price")); price=price if price and price>1 else None
             calibrated=o.get("p_baseball_calibrated",o.get("p_effective"))
             predictive=o.get("p_predictive_final",calibrated)
-            rows.append({"schema":"v13-market-tracking-v3","event_type":"MODEL_SNAPSHOT","tracking_key":k,
+            rows.append({"schema":"v13-market-tracking-v4","event_type":"MODEL_SNAPSHOT","tracking_key":k,
                 "market_key":tracking._market_key(r,o),"observation_at":r.get("analyzed_at"),"observation_phase":phase,
                 "source":"persisted-v13-journal","source_run_id":r.get("run_id"),"observed_at":r.get("analyzed_at"),
                 "target_date":r.get("target_date"),"game_pk":r.get("game_pk"),"game_date":r.get("game_date"),
+                "model_generation":model_generation,"predictive_contract":predictive_contract,
                 "home":r.get("home"),"away":r.get("away"),"phase":r.get("phase"),"market":o.get("market"),
                 "pick":o.get("name"),"point":o.get("point"),"canonical":bool(o.get("is_canonical_line")),
                 "p_model":calibrated,"p_baseball_calibrated":calibrated,"p_raw":o.get("p_baseball_raw",o.get("p_model")),
                 "p_posterior":o.get("p_posterior"),"p_predictive_final":predictive,
+                "probability_product":o.get("probability_product"),
                 "posterior_weight_v13":o.get("posterior_weight_v13"),
                 "posterior_weight_source_v13":o.get("posterior_weight_source_v13"),
                 "posterior_weight_games_v13":o.get("posterior_weight_games_v13"),

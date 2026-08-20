@@ -20,6 +20,20 @@ class V135ProfessionalAuditTests(unittest.TestCase):
             "home": "Home",
             "away": "Away",
             "features_from_postgame": False,
+            "feature_provenance": {
+                "team_stats": {
+                    "source": "audit-test-durable",
+                    "as_of": "2026-08-17T17:00:00+00:00",
+                    "observed_at": "2026-08-17T17:00:00+00:00",
+                    "timestamp_basis": "durable_snapshot_capture",
+                    "source_timestamp_attested": True,
+                    "point_in_time": True,
+                    "snapshot": True,
+                    "cutoff_capable": False,
+                    "season_aggregate": False,
+                    "postgame_identity": False,
+                }
+            },
             "options": [
                 {"market": "ML", "name": "Home", "point": None, "is_canonical_line": True,
                  "p_baseball_raw": .58, "result": "WIN"},

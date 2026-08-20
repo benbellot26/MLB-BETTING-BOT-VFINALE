@@ -6,12 +6,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from . import point_in_time_v13 as pit
 from . import probability_contract_v13 as contract
 
 REPLAY_FILE = Path("data/v13_historical_backfill.jsonl")
 NATIVE_FEATURE_FILE = Path("data/v13_feature_store.jsonl")
 NATIVE_LABEL_FILE = Path("data/v13_label_store.jsonl")
 SCHEMA = "v13-exact-transfer-evidence-v1"
+LABEL_SCHEMA = "v13-label-store-v1"
+LABEL_SOURCE = "settled MLB result; never part of pregame feature payload"
 PRE_CANDIDATE_BASELINE_SOURCE = "v123-compose-runtime-pre-v13-candidate"
 
 
@@ -97,14 +100,32 @@ def _replay_candidate(row: dict[str, Any]) -> dict[str, Any] | None:
     }
 
 
+def _valid_label(row: dict[str, Any]) -> bool:
+    if row.get("schema") != LABEL_SCHEMA or row.get("label_source") != LABEL_SOURCE:
+        return False
+    gid = str(row.get("game_pk") or "")
+    if not gid:
+        return False
+    try:
+        home_score = int(row.get("home_score"))
+        away_score = int(row.get("away_score"))
+    except Exception:
+        return False
+    if home_score < 0 or away_score < 0:
+        return False
+    settled = _dt(row.get("settled_at"))
+    game_time = _dt(row.get("game_date"))
+    if settled is None or game_time is None or settled < game_time:
+        return False
+    return True
+
+
 def _label_index(path: Path) -> dict[str, dict[str, Any]]:
     best: dict[str, tuple[str, dict[str, Any]]] = {}
     for row in _jsonl(path):
-        if row.get("home_score") is None or row.get("away_score") is None:
+        if not _valid_label(row):
             continue
         gid = str(row.get("game_pk") or "")
-        if not gid:
-            continue
         rank = str(row.get("settled_at") or "")
         if gid not in best or rank > best[gid][0]:
             best[gid] = (rank, row)
@@ -118,9 +139,13 @@ def _native_candidate(row: dict[str, Any], label: dict[str, Any] | None) -> dict
         return None
     if row.get("model_generation") != contract.MODEL_GENERATION_FINGERPRINT:
         return None
-    if row.get("point_in_time") is not True:
+    if row.get("point_in_time") is not True or row.get("point_in_time_validation_reasons"):
         return None
-    if row.get("point_in_time_validation_reasons"):
+    # Exact transfer is a promotion gate, so a merely operational PIT snapshot
+    # is insufficient. Every feature source must carry durable/source-time
+    # attestation accepted by the stricter promotion-grade validator.
+    promotion_valid, _ = pit.validate_promotion_grade_row(row)
+    if not promotion_valid:
         return None
     # Feature rows must stay label-free; outcomes are joined only after settlement.
     if any(key in row for key in ("home_score", "away_score", "winner")):
@@ -174,7 +199,8 @@ def load_exact_final_rows(
 
     Archived exact replays and genuine native current-generation FINAL snapshots
     are both admissible only when they carry the frozen pre-candidate V13
-    baseline. Reconstructed free history is deliberately not read here.
+    baseline. Native rows additionally require promotion-grade source timestamp
+    attestation. Reconstructed free history is deliberately not read here.
     Native evidence wins a duplicate because it is the genuine live PIT record.
     """
     best: dict[str, tuple[int, str, dict[str, Any]]] = {}

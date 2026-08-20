@@ -6,14 +6,14 @@ from pathlib import Path
 from typing import Any
 
 from . import calibration_baseball_v13 as calibration
+from . import probability_contract_v13 as contract
 from . import v13_daily_tracking as tracking
 from . import v13_rich_native_train as rich_native
 from . import v137_free_data_health as free_data_health
 from . import v138_model_health_bridge as v138_health
-from .probability_contract_v13 import MODEL_GENERATION_FINGERPRINT
 
 OUT=Path("data/v13_model_health.json")
-SCHEMA="v13-model-health-v4"
+SCHEMA="v13-model-health-v5"
 EDGE_EVIDENCE_MIN=300
 
 
@@ -34,6 +34,11 @@ def _norm(value: Any) -> str:
     return "".join(ch.lower() for ch in str(value or "") if ch.isalnum())
 
 
+def _current_state(state: dict[str,Any]) -> bool:
+    return (state.get("model_generation") == contract.MODEL_GENERATION_FINGERPRINT
+            and contract.CONTRACT.compatible_with(state.get("predictive_contract") or {}))
+
+
 def _canonical_probability_state(state: dict[str,Any]) -> bool:
     market=str(state.get("market") or "").upper();pick=str(state.get("pick") or "");home=str(state.get("home") or "")
     if market=="ML":return _norm(pick)==_norm(home)
@@ -42,14 +47,14 @@ def _canonical_probability_state(state: dict[str,Any]) -> bool:
     return False
 
 
-def _probability_drift(states):
-    """Monitor directional/certainty drift on one canonical side per market.
+def _probability_drift(states, *, current_generation_only: bool = False):
+    """Monitor directional/certainty drift on canonical settled sides.
 
-    Averaging both complementary sides mechanically converges to 0.50 and can
-    hide major changes. Canonical-side probability and absolute distance from
-    50% remain informative even when probabilities are perfectly complementary.
+    The helper stays generation-agnostic for research tests. The production
+    health report explicitly opts into current-generation-only evidence.
     """
-    rows=[s for s in states if s.get("settled_result") in {"WIN","LOSS"}
+    rows=[s for s in states if (not current_generation_only or _current_state(s))
+          and s.get("settled_result") in {"WIN","LOSS"}
           and s.get("p_model") is not None and _canonical_probability_state(s)]
     rows.sort(key=lambda s:str(s.get("observation_at") or s.get("observed_at") or ""))
     out={}
@@ -68,7 +73,7 @@ def _probability_drift(states):
                      "recent_mean_abs_edge_from_50":recent_conf_mean,
                      "prior_mean_abs_edge_from_50":prior_conf_mean,
                      "confidence_shift":recent_conf_mean-prior_conf_mean if recent_conf_mean is not None and prior_conf_mean is not None else None,
-                     "sample_policy":"one canonical settled side per game/market"}
+                     "sample_policy":"current-generation attested; one canonical settled side per game/market" if current_generation_only else "one canonical settled side per game/market"}
     return out
 
 
@@ -111,7 +116,24 @@ def build() -> dict[str,Any]:
         if int(m.get("n") or 0)>=30 and m.get("gap_residual_slope") is not None and _num(m.get("gap_residual_slope"))<=0:alerts.append(f"{market.lower()}_model_market_gap_not_informative")
     for alert in free_data.get("alerts") or []:alerts.append(f"free_data:{alert}")
     for alert in closure_health.get("alerts") or []:alerts.append(f"v138:{alert}")
-    return {"schema":SCHEMA,"model_generation":MODEL_GENERATION_FINGERPRINT,
+
+    operability_ok=bool(not coverage or coverage.get("complete_future_coverage",True))
+    data_alerts=list(free_data.get("alerts") or [])
+    validation_ready=all(
+        int((calibrators.get(f"MARKET:{m}") or {}).get("n") or 0)
+        >= int((calibrators.get(f"MARKET:{m}") or {}).get("strict_required_n") or 400)
+        for m in ("ML","RUNLINE","TOTAL")
+    )
+    edge_ready=any(v.get("claim_allowed") for v in edge_evidence.values())
+    health_axes={
+        "operability":{"status":"OK" if operability_ok else "DEGRADED","meaning":"runtime coverage and ability to produce the scheduled probability surface"},
+        "data":{"status":"OK" if not data_alerts else "DEGRADED","meaning":"source freshness/coverage; independent from predictive proof"},
+        "probability_validation":{"status":"VALIDATED" if validation_ready else "COLLECTING","meaning":"current-generation calibration volume has cleared each strict market floor"},
+        "edge_evidence":{"status":"VALIDATED" if edge_ready else "NOT_VALIDATED","meaning":"market-edge claims remain blocked unless a market independently clears all gates"},
+    }
+    return {"schema":SCHEMA,"model_generation":contract.MODEL_GENERATION_FINGERPRINT,
+            "diagnostic_scope":diag.get("scope") or "unknown",
+            "health_axes":health_axes,
             "calibration":calibration_status,
             "rich_native":{"status":rich.get("status"),"native_games":rich.get("native_games"),"minimum_games":rich.get("minimum_games"),
                            "feature_coverage":rich.get("native_feature_coverage"),"rejection_reasons":rich.get("native_rejection_reasons"),
@@ -119,11 +141,12 @@ def build() -> dict[str,Any]:
             "posterior":{"historical_observations":posterior.get("historical_observations"),"live_observations":posterior.get("live_observations"),
                          "primary_probability_affected":posterior.get("primary_probability_affected")},
             "proper_scoring_vs_market":diag.get("by_market") or {},
+            "tracking_availability":diag.get("tracking_availability") or {},
             "edge_evidence":edge_evidence,
-            "any_market_edge_claim_allowed":any(v.get("claim_allowed") for v in edge_evidence.values()),
+            "any_market_edge_claim_allowed":edge_ready,
             "daily_coverage":{"complete_future_coverage":coverage.get("complete_future_coverage"),"status_counts":coverage.get("status_counts"),
                               "future_coverage_rate":coverage.get("future_coverage_rate")},
-            "probability_drift":_probability_drift(states),"free_data_foundation":free_data,"v138_audit_research":closure_health,
+            "probability_drift":_probability_drift(states,current_generation_only=True),"free_data_foundation":free_data,"v138_audit_research":closure_health,
             "alerts":sorted(set(alerts)),
             "claim":"monitoring artifact only; market-edge claims are blocked until each market independently clears proper-score and sample-size evidence"}
 

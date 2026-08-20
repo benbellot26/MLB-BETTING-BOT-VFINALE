@@ -47,6 +47,16 @@ class V13ProbabilityContractTests(unittest.TestCase):
                 "analyzed_at":"2026-06-01T16:00:00+00:00",
                 "game_date":"2026-06-01T20:00:00+00:00",
                 "home_score":5, "away_score":3, "engine_version":version,
+                "features_from_postgame":False,
+                "feature_provenance":{"team_stats":{
+                    "source":"contract-test-durable",
+                    "as_of":"2026-06-01T16:00:00+00:00",
+                    "observed_at":"2026-06-01T16:00:00+00:00",
+                    "timestamp_basis":"durable_snapshot_capture",
+                    "source_timestamp_attested":True,
+                    "point_in_time":True,"snapshot":True,"cutoff_capable":False,
+                    "season_aggregate":False,"postgame_identity":False,
+                }},
                 "options":[{"market":"ML","name":"A","p_learned":.60,"result":"WIN"}],
             }
             contract.attach_contract(row)
