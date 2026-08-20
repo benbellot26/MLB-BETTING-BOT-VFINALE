@@ -7,6 +7,7 @@ from v11.probability_contract_v13 import MODEL_GENERATION_FINGERPRINT, attach_co
 
 
 def _row(game_pk: str, *, day: str, home: str, away: str, hp: float, ap: float, hs: int, ass: int, p: float, result: str, dq: float = .9):
+    away_result = "LOSS" if result == "WIN" else "WIN" if result == "LOSS" else "PUSH"
     row = {
         "game_pk": game_pk,
         "target_date": day,
@@ -24,7 +25,8 @@ def _row(game_pk: str, *, day: str, home: str, away: str, hp: float, ap: float, 
         "features": {"park_factor_runtime": {"venue": "Test Park"}},
         "canonical_lines": {"RUNLINE": -1.5, "TOTAL": 8.5},
         "options": [
-            {"market": "ML", "name": home, "point": None, "is_canonical_line": True, "p_predictive_final": p, "p_baseball_calibrated": p, "result": result},
+            {"market": "ML", "name": home, "point": None, "is_canonical_line": True, "p_predictive_final": p, "p_baseball_calibrated": p, "p_effective": p, "result": result},
+            {"market": "ML", "name": away, "point": None, "is_canonical_line": True, "p_predictive_final": 1-p, "p_baseball_calibrated": 1-p, "p_effective": 1-p, "result": away_result},
         ],
     }
     attach_contract(row)
