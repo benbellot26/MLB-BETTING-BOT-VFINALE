@@ -102,6 +102,7 @@ class V14ChampionParityTests(unittest.TestCase):
             self.skipTest("persisted champion journal not available")
         checked = 0
         worst_gap = 0.0
+        worst_detail = None
         for line in path.read_text(encoding="utf-8").splitlines():
             try:
                 row = json.loads(line)
@@ -119,13 +120,26 @@ class V14ChampionParityTests(unittest.TestCase):
             candidate = shadow.get("probabilities") or {}
             if set(champion) != set(candidate) or not champion:
                 continue
-            gap = max(abs(float(candidate[key]) - float(champion[key])) for key in champion)
-            worst_gap = max(worst_gap, gap)
+            for key in champion:
+                gap = abs(float(candidate[key]) - float(champion[key]))
+                if gap > worst_gap:
+                    worst_gap = gap
+                    worst_detail = {
+                        "game_pk": row.get("game_pk"),
+                        "market_key": key,
+                        "v14": candidate[key],
+                        "v13": champion[key],
+                        "home_mu": row.get("hmu"),
+                        "away_mu": row.get("amu"),
+                        "dispersion": (row.get("features") or {}).get("run_dispersion"),
+                        "environment_sigma": (row.get("features") or {}).get("run_environment_sigma"),
+                        "extra_innings_home_probability": (row.get("features") or {}).get("extra_innings_home_probability"),
+                    }
             checked += 1
             if checked >= 25:
                 break
         self.assertGreater(checked, 0, "no complete current-generation FINAL champion snapshot available for parity")
-        self.assertLessEqual(worst_gap, 2e-6)
+        self.assertLessEqual(worst_gap, 2e-6, f"worst parity detail: {worst_detail}")
 
 
 if __name__ == "__main__":
