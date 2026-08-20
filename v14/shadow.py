@@ -60,16 +60,27 @@ def projection_from_v13_result(result: dict[str, Any], *, analyzed_at: str | Non
     ctx = result.get("ctx") or {}
     game = result.get("game") or {}
     event = result.get("event") or {}
+    features = result.get("features") or {}
     game_date = result.get("game_date") or game.get("gameDate") or event.get("commence_time")
     observed = result.get("analyzed_at") or result.get("as_of") or analyzed_at
+
+    # Preserve the exact run means that generated the V13 probability surface.
+    # Persisted journal rows do not always retain root hmu/amu; features.home_mu
+    # and features.away_mu are the exact V13 run-stack outputs and therefore take
+    # precedence over rounded compatibility/display projection fields.
     home_mu = _num(result.get("hmu"))
     away_mu = _num(result.get("amu"))
+    if home_mu is None:
+        home_mu = _num(features.get("home_mu"))
+    if away_mu is None:
+        away_mu = _num(features.get("away_mu"))
     for key in ("home_mu", "projected_home_runs"):
         if home_mu is None:
             home_mu = _num(result.get(key))
     for key in ("away_mu", "projected_away_runs"):
         if away_mu is None:
             away_mu = _num(result.get(key))
+
     line = _total_line(result)
     if home_mu is None or away_mu is None:
         raise ValueError("V14 parity shadow requires explicit V13.10 home/away run means")
