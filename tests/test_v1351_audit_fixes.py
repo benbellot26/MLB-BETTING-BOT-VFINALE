@@ -10,6 +10,7 @@ from v11 import pipeline_v13
 from v11 import probability_contract_v13 as contract
 from v11 import v13_daily_tracking as tracking
 from v11 import v13_daily_postmortem as postmortem
+from v11 import v13_exact_transfer_evidence as exact_evidence
 from v11 import v13_tracking_sync
 from v11 import v13_run_mean_prior
 
@@ -80,6 +81,7 @@ class V1351AuditFixesTest(unittest.TestCase):
              "validation_baseline_home_runs":4.4,"validation_baseline_away_runs":4.1,
              "validation_baseline_dispersion":7.5,
              "validation_baseline_model_generation":contract.MODEL_GENERATION_FINGERPRINT,
+             "point_in_time":True,"features_from_postgame":False,
              "home_score":5,"away_score":4},
             {"game_pk":2,"game_date":"2026-08-17T21:00:00Z","phase":"LATE","analyzed_at":"2026-08-17T19:00:00Z","projected_home_runs":4.0,"projected_away_runs":3.9,"home_score":3,"away_score":2},
         ]
@@ -87,12 +89,9 @@ class V1351AuditFixesTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             path=Path(td)/"exact.jsonl"
             path.write_text("\n".join(json.dumps(r) for r in rows)+"\n",encoding="utf-8")
-            old=v13_run_mean_prior.EXACT
-            try:
-                v13_run_mean_prior.EXACT=path
+            replay_rows=exact_evidence.load_exact_final_rows(replay_path=path,include_native=False)
+            with patch.object(v13_run_mean_prior.exact_evidence,"load_exact_final_rows",return_value=replay_rows):
                 got=v13_run_mean_prior._exact_rows()
-            finally:
-                v13_run_mean_prior.EXACT=old
         self.assertEqual(len(got),1)
         self.assertEqual(got[0]["phase"],"FINAL")
         self.assertAlmostEqual(got[0]["home_mu"],4.4)
