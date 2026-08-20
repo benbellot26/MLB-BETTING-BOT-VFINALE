@@ -2,27 +2,54 @@
   "activation_rule": "all nested season walk-forward folds must pass, then >=60 current-generation genuine FINAL V13 transfer games excluded from historical fitting must improve RMSE and NB-NLL with MAE regression <=0.01 and >=90% bootstrap probability of positive NLL gain",
   "active": false,
   "dataset_content_sha256": "8121851fbece22b3f79b1c1188622ebe574fc38d54d29020ed4763195dac7e64",
-  "exact_final_games": 0,
-  "exact_games": 0,
-  "exact_phase_counts": {
-    "FINAL": 0
+  "exact_evidence_source_counts": {
+    "NATIVE_CURRENT_GENERATION_FINAL": 11
   },
+  "exact_final_games": 11,
+  "exact_games": 11,
+  "exact_native_games": 11,
+  "exact_phase_counts": {
+    "FINAL": 11
+  },
+  "exact_replay_games": 0,
   "exact_transfer": {
-    "baseline": {},
-    "candidate": {},
-    "games": 0,
-    "mae_gain": null,
-    "nll_gain": null,
-    "rmse_gain": null
+    "baseline": {
+      "mae": 1.994773800687036,
+      "nb_nll": 2.3532132517107867,
+      "rmse": 2.370117907399917,
+      "team_observations": 22
+    },
+    "candidate": {
+      "mae": 1.9857583156179677,
+      "nb_nll": 2.3487576647008392,
+      "rmse": 2.357792836630741,
+      "team_observations": 22
+    },
+    "games": 11,
+    "mae_gain": 0.009015485069068241,
+    "nll_gain": 0.004455587009947415,
+    "rmse_gain": 0.012325070769175994
   },
   "exact_transfer_bootstrap": {
-    "draws": 0,
-    "nll_gain_positive_probability": null,
+    "draws": 1200,
+    "nll_gain_positive_probability": 0.8816666666666667,
     "passes": false
   },
   "exact_transfer_required_games": 60,
   "exact_transfer_status": "COLLECTING_FINAL_ONLY",
-  "excluded_exact_transfer_game_ids": [],
+  "excluded_exact_transfer_game_ids": [
+    "822860",
+    "822937",
+    "823424",
+    "823748",
+    "824076",
+    "824155",
+    "824318",
+    "824394",
+    "824476",
+    "824722",
+    "824801"
+  ],
   "historical_candidate_active": false,
   "historical_games": 13104,
   "historical_seasons": [
@@ -51,6 +78,7 @@
     "historical_odds_used": false,
     "independent_pre_candidate_baseline_required": true,
     "market_probability_used": false,
+    "native_feature_label_join_point_in_time_required": true,
     "reconstructed_history_is_native_evidence": false,
     "runtime_adjustment_cap_runs": 0.15
   },

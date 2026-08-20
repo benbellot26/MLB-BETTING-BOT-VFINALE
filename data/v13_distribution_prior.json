@@ -4,28 +4,44 @@
   "baseline_dispersion": 7.5,
   "calibration_effect": "none",
   "current_generation_transfer": {
-    "baseline_nb_nll": null,
+    "baseline_nb_nll": 2.3532132517107867,
     "baseline_source": "persisted pre-distribution-candidate dispersion",
-    "candidate_nb_nll": null,
-    "games": 0,
-    "nll_gain": null,
-    "team_observations": 0
+    "candidate_nb_nll": 2.383636676962082,
+    "games": 11,
+    "nll_gain": -0.030423425251295377,
+    "team_observations": 22
   },
   "dataset_content_sha256": "8121851fbece22b3f79b1c1188622ebe574fc38d54d29020ed4763195dac7e64",
   "dispersion": 3.5,
   "environment_sigma": 0.08,
   "evidence_boundary": "Applies only to score-distribution dispersion in FINAL phase. Historical evidence cannot masquerade as native V13 evidence.",
-  "exact_final_games": 0,
+  "exact_evidence_source_counts": {
+    "NATIVE_CURRENT_GENERATION_FINAL": 11
+  },
+  "exact_final_games": 11,
+  "exact_native_games": 11,
   "exact_replay_games": 0,
-  "exact_replay_nll_gain": null,
+  "exact_replay_nll_gain": -0.030423425251295377,
   "exact_transfer_bootstrap": {
-    "draws": 0,
-    "nll_gain_positive_probability": null,
+    "draws": 1200,
+    "nll_gain_positive_probability": 0.2975,
     "passes": false
   },
   "exact_transfer_required_games": 60,
   "exact_transfer_status": "COLLECTING_FINAL_ONLY",
-  "excluded_exact_transfer_game_ids": [],
+  "excluded_exact_transfer_game_ids": [
+    "822860",
+    "822937",
+    "823424",
+    "823748",
+    "824076",
+    "824155",
+    "824318",
+    "824394",
+    "824476",
+    "824722",
+    "824801"
+  ],
   "full_history_nb_nll": 2.454128880769345,
   "generation_gate": true,
   "historical_candidate_active": true,
@@ -50,6 +66,7 @@
     "exact_transfer_required_for_activation": true,
     "historical_odds_used": false,
     "market_probability_used": false,
+    "native_feature_label_join_point_in_time_required": true,
     "reconstructed_history_is_native_evidence": false
   },
   "schema": "v13-distribution-prior-v2",
