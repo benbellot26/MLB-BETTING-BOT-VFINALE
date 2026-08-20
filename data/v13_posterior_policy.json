@@ -2,25 +2,25 @@
   "entries": {
     "MARKET:ML": {
       "active_for_shadow": true,
-      "discovery_games": 64,
-      "games": 84,
+      "discovery_games": 45,
+      "games": 65,
       "holdout_baseball": {
-        "brier": 0.2411034599616,
-        "logloss": 0.6747745144803544,
+        "brier": 0.22268380919555,
+        "logloss": 0.6374416416846798,
         "n": 20
       },
-      "holdout_brier_gain": 0.01042369630279999,
+      "holdout_brier_gain": 0.004687407138795757,
       "holdout_candidate": {
-        "brier": 0.2306797636588,
-        "logloss": 0.6540697273089833,
+        "brier": 0.21799640205675425,
+        "logloss": 0.627864179323874,
         "n": 20
       },
       "holdout_games": 20,
-      "holdout_logloss_gain": 0.020704787171371142,
+      "holdout_logloss_gain": 0.00957746236080581,
       "minimum_games": 50,
-      "selected_weight": 1.0,
+      "selected_weight": 0.45,
       "selection": {
-        "games": 64,
+        "games": 45,
         "grid": [
           0.0,
           0.05,
@@ -45,15 +45,15 @@
           1.0
         ],
         "metrics": {
-          "brier": 0.24421785869351564,
-          "logloss": 0.6809815471842158,
-          "n": 64
+          "brier": 0.2629863506041238,
+          "logloss": 0.7193293910305019,
+          "n": 45
         },
         "status": "LEARNED_FROM_PRIOR_GAMES",
-        "weight": 1.0
+        "weight": 0.45
       },
       "status": "SHADOW_VALIDATED",
-      "weight": 1.0,
+      "weight": 0.45,
       "weight_grid": [
         0.0,
         0.05,
@@ -80,25 +80,25 @@
     },
     "MARKET:RUNLINE": {
       "active_for_shadow": false,
-      "discovery_games": 52,
-      "games": 72,
+      "discovery_games": 33,
+      "games": 53,
       "holdout_baseball": {
-        "brier": 0.22044984754035002,
-        "logloss": 0.6329075805188409,
+        "brier": 0.2133860714816,
+        "logloss": 0.617263823748205,
         "n": 20
       },
-      "holdout_brier_gain": -0.0017372383868999586,
+      "holdout_brier_gain": -0.00296658528719998,
       "holdout_candidate": {
-        "brier": 0.22218708592724998,
-        "logloss": 0.6363330415919265,
+        "brier": 0.21635265676879997,
+        "logloss": 0.6234441902148482,
         "n": 20
       },
       "holdout_games": 20,
-      "holdout_logloss_gain": -0.0034254610730856117,
+      "holdout_logloss_gain": -0.006180366466643217,
       "minimum_games": 50,
       "selected_weight": 1.0,
       "selection": {
-        "games": 52,
+        "games": 33,
         "grid": [
           0.0,
           0.05,
@@ -123,9 +123,9 @@
           1.0
         ],
         "metrics": {
-          "brier": 0.2404756476407692,
-          "logloss": 0.6752281201587678,
-          "n": 52
+          "brier": 0.22670805938657573,
+          "logloss": 0.6486205659428593,
+          "n": 33
         },
         "status": "LEARNED_FROM_PRIOR_GAMES",
         "weight": 1.0
@@ -157,26 +157,26 @@
       ]
     },
     "MARKET:TOTAL": {
-      "active_for_shadow": true,
-      "discovery_games": 64,
-      "games": 84,
+      "active_for_shadow": false,
+      "discovery_games": 45,
+      "games": 65,
       "holdout_baseball": {
-        "brier": 0.26579732344670004,
-        "logloss": 0.725847671083425,
+        "brier": 0.24376767415204997,
+        "logloss": 0.6801608959329322,
         "n": 20
       },
-      "holdout_brier_gain": 0.006543974659040053,
+      "holdout_brier_gain": -0.005775041210345888,
       "holdout_candidate": {
-        "brier": 0.25925334878766,
-        "logloss": 0.7118731045150231,
+        "brier": 0.24954271536239586,
+        "logloss": 0.6922299890667288,
         "n": 20
       },
       "holdout_games": 20,
-      "holdout_logloss_gain": 0.013974566568401903,
+      "holdout_logloss_gain": -0.012069093133796671,
       "minimum_games": 50,
-      "selected_weight": 0.4,
+      "selected_weight": 0.95,
       "selection": {
-        "games": 64,
+        "games": 45,
         "grid": [
           0.0,
           0.05,
@@ -201,15 +201,15 @@
           1.0
         ],
         "metrics": {
-          "brier": 0.24829548240024563,
-          "logloss": 0.689671289110365,
-          "n": 64
+          "brier": 0.24955493944338278,
+          "logloss": 0.6922578955308478,
+          "n": 45
         },
         "status": "LEARNED_FROM_PRIOR_GAMES",
-        "weight": 0.4
+        "weight": 0.95
       },
-      "status": "SHADOW_VALIDATED",
-      "weight": 0.4,
+      "status": "BASEBALL_BEST_OR_UNSTABLE",
+      "weight": 0.0,
       "weight_grid": [
         0.0,
         0.05,
@@ -236,7 +236,7 @@
     },
     "PHASE:EARLY:ML": {
       "active_for_shadow": false,
-      "games": 57,
+      "games": 32,
       "minimum_games": 60,
       "status": "COLLECTING",
       "weight": 0.0,
@@ -266,7 +266,7 @@
     },
     "PHASE:EARLY:RUNLINE": {
       "active_for_shadow": false,
-      "games": 49,
+      "games": 24,
       "minimum_games": 60,
       "status": "COLLECTING",
       "weight": 0.0,
@@ -296,7 +296,7 @@
     },
     "PHASE:EARLY:TOTAL": {
       "active_for_shadow": false,
-      "games": 57,
+      "games": 32,
       "minimum_games": 60,
       "status": "COLLECTING",
       "weight": 0.0,
@@ -326,7 +326,7 @@
     },
     "PHASE:FINAL:ML": {
       "active_for_shadow": false,
-      "games": 27,
+      "games": 23,
       "minimum_games": 60,
       "status": "COLLECTING",
       "weight": 0.0,
@@ -356,7 +356,7 @@
     },
     "PHASE:FINAL:RUNLINE": {
       "active_for_shadow": false,
-      "games": 27,
+      "games": 23,
       "minimum_games": 60,
       "status": "COLLECTING",
       "weight": 0.0,
@@ -386,7 +386,7 @@
     },
     "PHASE:FINAL:TOTAL": {
       "active_for_shadow": false,
-      "games": 27,
+      "games": 23,
       "minimum_games": 60,
       "status": "COLLECTING",
       "weight": 0.0,
@@ -416,57 +416,9 @@
     },
     "PHASE:LATE:ML": {
       "active_for_shadow": false,
-      "discovery_games": 49,
-      "games": 69,
-      "holdout_baseball": {
-        "brier": 0.2416615570268,
-        "logloss": 0.6759740546456168,
-        "n": 20
-      },
-      "holdout_brier_gain": 0.0,
-      "holdout_candidate": {
-        "brier": 0.2416615570268,
-        "logloss": 0.6759740546456168,
-        "n": 20
-      },
-      "holdout_games": 20,
-      "holdout_logloss_gain": 0.0,
+      "games": 51,
       "minimum_games": 60,
-      "selected_weight": 0.0,
-      "selection": {
-        "games": 49,
-        "grid": [
-          0.0,
-          0.05,
-          0.1,
-          0.15,
-          0.2,
-          0.25,
-          0.3,
-          0.35,
-          0.4,
-          0.45,
-          0.5,
-          0.55,
-          0.6,
-          0.65,
-          0.7,
-          0.75,
-          0.8,
-          0.85,
-          0.9,
-          0.95,
-          1.0
-        ],
-        "metrics": {
-          "brier": 0.23981459281561224,
-          "logloss": 0.6722336257398526,
-          "n": 49
-        },
-        "status": "LEARNED_FROM_PRIOR_GAMES",
-        "weight": 0.0
-      },
-      "status": "BASEBALL_BEST_OR_UNSTABLE",
+      "status": "COLLECTING",
       "weight": 0.0,
       "weight_grid": [
         0.0,
@@ -493,59 +445,11 @@
       ]
     },
     "PHASE:LATE:RUNLINE": {
-      "active_for_shadow": true,
-      "discovery_games": 41,
-      "games": 61,
-      "holdout_baseball": {
-        "brier": 0.23648952577549998,
-        "logloss": 0.6660447988814661,
-        "n": 20
-      },
-      "holdout_brier_gain": 0.0015345871232749775,
-      "holdout_candidate": {
-        "brier": 0.234954938652225,
-        "logloss": 0.662930513904164,
-        "n": 20
-      },
-      "holdout_games": 20,
-      "holdout_logloss_gain": 0.00311428497730204,
+      "active_for_shadow": false,
+      "games": 43,
       "minimum_games": 60,
-      "selected_weight": 0.5,
-      "selection": {
-        "games": 41,
-        "grid": [
-          0.0,
-          0.05,
-          0.1,
-          0.15,
-          0.2,
-          0.25,
-          0.3,
-          0.35,
-          0.4,
-          0.45,
-          0.5,
-          0.55,
-          0.6,
-          0.65,
-          0.7,
-          0.75,
-          0.8,
-          0.85,
-          0.9,
-          0.95,
-          1.0
-        ],
-        "metrics": {
-          "brier": 0.2392451849009512,
-          "logloss": 0.6730185138926581,
-          "n": 41
-        },
-        "status": "LEARNED_FROM_PRIOR_GAMES",
-        "weight": 0.5
-      },
-      "status": "SHADOW_VALIDATED",
-      "weight": 0.5,
+      "status": "COLLECTING",
+      "weight": 0.0,
       "weight_grid": [
         0.0,
         0.05,
@@ -571,59 +475,11 @@
       ]
     },
     "PHASE:LATE:TOTAL": {
-      "active_for_shadow": true,
-      "discovery_games": 49,
-      "games": 69,
-      "holdout_baseball": {
-        "brier": 0.27046498670045,
-        "logloss": 0.7353447627848879,
-        "n": 20
-      },
-      "holdout_brier_gain": 0.004461394290137977,
-      "holdout_candidate": {
-        "brier": 0.266003592410312,
-        "logloss": 0.7257834656983166,
-        "n": 20
-      },
-      "holdout_games": 20,
-      "holdout_logloss_gain": 0.009561297086571274,
+      "active_for_shadow": false,
+      "games": 51,
       "minimum_games": 60,
-      "selected_weight": 0.2,
-      "selection": {
-        "games": 49,
-        "grid": [
-          0.0,
-          0.05,
-          0.1,
-          0.15,
-          0.2,
-          0.25,
-          0.3,
-          0.35,
-          0.4,
-          0.45,
-          0.5,
-          0.55,
-          0.6,
-          0.65,
-          0.7,
-          0.75,
-          0.8,
-          0.85,
-          0.9,
-          0.95,
-          1.0
-        ],
-        "metrics": {
-          "brier": 0.24845566844211672,
-          "logloss": 0.6897997185098425,
-          "n": 49
-        },
-        "status": "LEARNED_FROM_PRIOR_GAMES",
-        "weight": 0.2
-      },
-      "status": "SHADOW_VALIDATED",
-      "weight": 0.2,
+      "status": "COLLECTING",
+      "weight": 0.0,
       "weight_grid": [
         0.0,
         0.05,
@@ -650,11 +506,12 @@
     }
   },
   "historical_observations": 255,
-  "live_observations": 204,
+  "live_generation_contract_required": true,
+  "live_observations": 63,
   "model_generation": "v13.10-gen-structural-nb-independent-transfer-park-extra-surface-v3",
   "primary_probability_affected": false,
   "promotion_requires_unique_games": true,
   "schema": "v13-posterior-weight-policy-v1",
-  "source_observations": 459,
+  "source_observations": 318,
   "weight_selection": "chronological discovery + untouched holdout; 0..100% Sharp grid; phase preferred then market fallback"
 }

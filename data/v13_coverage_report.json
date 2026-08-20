@@ -1,9 +1,9 @@
 {
-  "analyzed_at": "2026-08-20T16:21:28.741192+00:00",
-  "analyzed_games": 9,
+  "analyzed_at": "2026-08-20T17:51:52.414930+00:00",
+  "analyzed_games": 6,
   "complete_future_coverage": true,
   "future_coverage_rate": 1.0,
-  "future_or_unresolved_games": 9,
+  "future_or_unresolved_games": 6,
   "games": [
     {
       "away": "St. Louis Cardinals",
@@ -11,7 +11,7 @@
       "game_pk": 824474,
       "home": "Cincinnati Reds",
       "odds_event_id": "48f1a38db4ac9c09c80dc35075975eff",
-      "status": "ANALYZED"
+      "status": "SKIPPED_ALREADY_STARTED"
     },
     {
       "away": "San Francisco Giants",
@@ -19,7 +19,7 @@
       "game_pk": 824395,
       "home": "Cleveland Guardians",
       "odds_event_id": "2b7408aef064f311c0be470b8f761505",
-      "status": "ANALYZED"
+      "status": "SKIPPED_ALREADY_STARTED"
     },
     {
       "away": "Toronto Blue Jays",
@@ -27,7 +27,7 @@
       "game_pk": 822934,
       "home": "Tampa Bay Rays",
       "odds_event_id": "3bcf2e3b041524ff81a10ccac32db220",
-      "status": "ANALYZED"
+      "status": "SKIPPED_ALREADY_STARTED"
     },
     {
       "away": "Athletics",
@@ -79,11 +79,12 @@
     }
   ],
   "policy": "Every scheduled game is either ANALYZED or carries an explicit skip reason; ambiguous event identity fails closed.",
-  "run_id": "bff6ae22a296e9fe",
+  "run_id": "f52b03a00b6e346a",
   "scheduled_games": 9,
   "schema": "v13-daily-coverage-v1",
   "status_counts": {
-    "ANALYZED": 9
+    "ANALYZED": 6,
+    "SKIPPED_ALREADY_STARTED": 3
   },
   "target_date": "2026-08-20"
 }
