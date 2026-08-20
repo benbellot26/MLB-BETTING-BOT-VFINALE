@@ -1,5 +1,13 @@
 from __future__ import annotations
 
+import os
+
+# V13.10 is the production champion. Legacy V11.5/V12.4 challengers are
+# research-only and must never run implicitly in the champion path. Dedicated
+# research workflows may opt back in explicitly with environment overrides.
+os.environ.setdefault("V1232_ENABLE_V115_SHADOW", "0")
+os.environ.setdefault("V124_ENABLE_SHADOW", "0")
+
 from . import v123_entry as v123
 from .v13_runtime import install
 
