@@ -57,7 +57,13 @@ def _current_generation_state(s: dict[str,Any]) -> bool:
     return contract.CONTRACT.compatible_with(payload)
 
 
-def independent_states(states: list[dict[str,Any]], *, current_generation_only: bool = True) -> list[dict[str,Any]]:
+def independent_states(states: list[dict[str,Any]], *, current_generation_only: bool = False) -> list[dict[str,Any]]:
+    """Collapse repeated snapshots to one independent game/market state.
+
+    The generic helper remains generation-agnostic for research/tests. Production
+    diagnostics explicitly pass ``current_generation_only=True`` at the report
+    boundary so legacy observations can never enter top-level V13.10 claims.
+    """
     best={}
     for s in states:
         if current_generation_only and not _current_generation_state(s):continue
