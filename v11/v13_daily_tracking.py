@@ -91,17 +91,21 @@ def capture_results(results, analyzed_at=None, target_date=None):
         observation_at=str(r.get("as_of") or at)
         phase=str(r.get("phase") or "EARLY").upper()
         key_ctx=dict(r); key_ctx.setdefault("analyzed_at",observation_at)
+        model_generation=r.get("model_generation") or r.get("model_generation_fingerprint")
+        predictive_contract=r.get("predictive_contract") or {}
         for o in r.get("options") or []:
             price=_price(o); e=o.get("winamax_eval") or {}; gate=e.get("v11_price_gate") or {}
             calibrated=o.get("p_baseball_calibrated",o.get("p_effective"))
             predictive_final=o.get("p_predictive_final",calibrated)
-            rows.append({"schema":"v13-market-tracking-v3","event_type":"MODEL_SNAPSHOT","tracking_key":_key(key_ctx,o),
+            rows.append({"schema":"v13-market-tracking-v4","event_type":"MODEL_SNAPSHOT","tracking_key":_key(key_ctx,o),
                 "market_key":_market_key(r,o),"observation_at":observation_at,"observation_phase":phase,
                 "observed_at":at,"target_date":target_date or core.TARGET_DATE,"game_pk":r.get("game_pk"),"game_date":game_date,
+                "model_generation":model_generation,"predictive_contract":predictive_contract,
                 "home":(r.get("ctx") or {}).get("home"),"away":(r.get("ctx") or {}).get("away"),"phase":r.get("phase"),
                 "market":o.get("market"),"pick":o.get("name"),"point":o.get("point"),"canonical":bool(o.get("is_canonical_line")),
                 "p_model":calibrated,"p_baseball_calibrated":calibrated,"p_raw":o.get("p_baseball_raw",o.get("p_model")),
                 "p_posterior":o.get("p_posterior"),"p_predictive_final":predictive_final,
+                "probability_product":o.get("probability_product"),
                 "posterior_weight_v13":o.get("posterior_weight_v13"),
                 "posterior_weight_source_v13":o.get("posterior_weight_source_v13"),
                 "posterior_weight_games_v13":o.get("posterior_weight_games_v13"),
@@ -117,7 +121,7 @@ def capture_results(results, analyzed_at=None, target_date=None):
 
 
 def _market_update(k, known, at, mins, price, sharp, poll_reason=None):
-    row={"schema":"v13-market-tracking-v3","event_type":"MARKET_UPDATE","tracking_key":k,
+    row={"schema":"v13-market-tracking-v4","event_type":"MARKET_UPDATE","tracking_key":k,
          "last_market_observed_at":at,"minutes_to_start":round(mins,2) if mins is not None else None,
          "market_poll_reason":poll_reason}
     if price is not None: row["latest_winamax_price"] = price
@@ -238,7 +242,7 @@ def settle_from_journal(journal_rows, settled_at=None):
         o={"market":s.get("market"),"name":s.get("pick"),"point":s.get("point"),"p_effective":s.get("p_model")}; journal.settle_option(o,r); res=o.get("result")
         if res not in {"WIN","LOSS","PUSH"}:continue
         price=_num(s.get("winamax_price")); pnl=(price-1 if res=="WIN" else -1.0 if res=="LOSS" else 0.0) if price and price>1 else None
-        out.append({"schema":"v13-market-tracking-v3","event_type":"SETTLED","tracking_key":k,"settled_at":at,
+        out.append({"schema":"v13-market-tracking-v4","event_type":"SETTLED","tracking_key":k,"settled_at":at,
                     "settled_result":res,"flat_1u_pnl":pnl,"home_score":r.get("home_score"),"away_score":r.get("away_score")})
     n=_append(out); write_report(); return n
 
@@ -266,10 +270,10 @@ def write_report():
             d["n"]+=1; d["wins"]+=x.get("settled_result")=="WIN"; d["losses"]+=x.get("settled_result")=="LOSS"; d["pushes"]+=x.get("settled_result")=="PUSH"; d["pnl_1u"]+=_num(x.get("flat_1u_pnl"),0) or 0
         for d in bands.values():d["pnl_1u"]=round(d["pnl_1u"],4); d["roi_1u"]=round(d["pnl_1u"]/max(1,d["n"]-d["pushes"]),4)
         by_edge[market_name]=bands
-    report={"schema":"v13-market-tracking-report-v3","generated_at":datetime.now(timezone.utc).isoformat(),
+    report={"schema":"v13-market-tracking-report-v4","generated_at":datetime.now(timezone.utc).isoformat(),
             "tracked_observations":len(xs),"settled_observations":len(settled),"tracked_options":len(xs),"settled_options":len(settled),
             "by_market":by_market,"by_nominal_ev_band":by_edge,
-            "methodology":{"observation_identity":"immutable game/market/side/line + phase + analysis as-of; later phases never overwrite earlier forecasts","unit_pnl":"descriptive flat 1u; complementary displayed sides are not a betting portfolio","closing":"paid market polling is checkpoint-based: one T-60 window and one close window per tracked observation, batched in a single Odds API request across all games due at that time","missing_price":"never imputed; absent Winamax RL/TOTAL prices remain unpriced and are still tracked against sharp probability","probability_products":"raw baseball, calibrated baseball, learned-weight posterior shadow, and primary predictive probability are persisted separately"}}
+            "methodology":{"observation_identity":"immutable game/market/side/line + phase + analysis as-of; later phases never overwrite earlier forecasts","unit_pnl":"descriptive flat 1u; complementary displayed sides are not a betting portfolio","closing":"paid market polling is checkpoint-based: one T-60 window and one close window per tracked observation, batched in a single Odds API request across all games due at that time","missing_price":"never imputed; absent Winamax RL/TOTAL prices remain unpriced and are still tracked against sharp probability","probability_products":"raw baseball, calibrated baseball, learned-weight posterior shadow, and primary predictive probability are persisted separately","generation_identity":"every new model snapshot persists model_generation and predictive_contract; legacy rows remain historical-only"}}
     REPORT_FILE.parent.mkdir(parents=True,exist_ok=True); REPORT_FILE.write_text(json.dumps(report,indent=2,sort_keys=True),encoding="utf-8"); return report
 
 
