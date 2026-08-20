@@ -6,6 +6,7 @@ import unittest
 CRITICAL_TEST_MODULES = (
     "tests.test_v14_foundation",
     "tests.test_v14_champion_parity",
+    "tests.test_v14_run_stack_parity",
     "tests.test_v14_evidence",
     "tests.test_v14_run_model",
 )
