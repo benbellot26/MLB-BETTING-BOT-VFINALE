@@ -32,7 +32,17 @@ def sync_from_journal():
         predictive_contract=r.get("predictive_contract") or {}
         for o in r.get("options") or []:
             k=tracking._key(r,o)
-            if k in state:continue
+            existing=state.get(k)
+            if existing is not None:
+                # Old tracking rows predate generation identity. The persisted
+                # journal still contains the immutable source snapshot, so it is
+                # safe to attest missing identity metadata without changing the
+                # probability or market observation itself.
+                if (not existing.get("model_generation") or not existing.get("predictive_contract")) and model_generation and predictive_contract:
+                    rows.append({"schema":"v13-market-tracking-v4","event_type":"MODEL_IDENTITY_ATTESTATION",
+                                 "tracking_key":k,"model_generation":model_generation,
+                                 "predictive_contract":predictive_contract,"identity_source":"persisted-v13-journal"})
+                continue
             e=o.get("winamax_eval") or {}; gate=e.get("v11_price_gate") or {}
             price=tracking._num(e.get("price")); price=price if price and price>1 else None
             calibrated=o.get("p_baseball_calibrated",o.get("p_effective"))
