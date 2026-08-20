@@ -8,6 +8,7 @@ from typing import Any
 
 from . import calibration_baseball_v13 as calibration
 from . import journal
+from . import point_in_time_v13 as pit
 from . import probability_contract_v13 as contract
 
 STRICT_GLOBAL_N = 600
@@ -87,7 +88,12 @@ def _native_contract_ok(row: dict[str,Any]) -> bool:
 
 
 def eligible_probability_rows(rows: list[dict[str,Any]]) -> list[dict[str,Any]]:
-    """Use only genuine current-generation native V13 pregame observations."""
+    """Use only promotion-grade current-generation native V13 observations.
+
+    Native calibration can eventually alter displayed probabilities, therefore
+    operational PIT validity alone is not enough: feature timestamps must carry
+    durable/source-time attestation accepted by the promotion-grade validator.
+    """
     best: dict[tuple[str,str], tuple[str,dict[str,Any]]] = {}
     for row in rows:
         analyzed = _dt(row.get("analyzed_at"))
@@ -100,6 +106,9 @@ def eligible_probability_rows(rows: list[dict[str,Any]]) -> list[dict[str,Any]]:
             continue
         if not _native_contract_ok(row):
             continue
+        promotion_valid, _ = pit.validate_promotion_grade_row(row)
+        if not promotion_valid:
+            continue
         canonical = _canonical_options(row)
         if not canonical:
             continue
@@ -108,7 +117,7 @@ def eligible_probability_rows(rows: list[dict[str,Any]]) -> list[dict[str,Any]]:
         rank = str(row.get("analyzed_at") or "")
         clone = dict(row)
         clone["options"] = canonical
-        clone["calibration_evidence_origin"] = "native-current-generation"
+        clone["calibration_evidence_origin"] = "native-current-generation-promotion-grade"
         if key not in best or rank > best[key][0]:
             best[key] = (rank,clone)
     return sorted((x[1] for x in best.values()), key=lambda r: (str(r.get("game_date") or ""), str(r.get("game_pk") or ""), str(r.get("phase") or "")))
@@ -242,6 +251,7 @@ def build() -> dict[str,Any]:
     model["model_generation"] = contract.MODEL_GENERATION_FINGERPRINT
     model["training_policy"] = {
         "native_predictive_contract_required": True,
+        "native_promotion_grade_pit_required": True,
         "exact_model_generation_required": contract.MODEL_GENERATION_FINGERPRINT,
         "pregame_required": True,
         "settled_result_required": True,
@@ -274,6 +284,12 @@ def build() -> dict[str,Any]:
     model["eligible_games"] = len({str(r.get("game_pk")) for r in rows})
     model["exact_replay_games"] = len({str(r.get("game_pk")) for r in replay_rows})
     model["rejected_non_current_generation_rows"] = sum(1 for r in live if not contract.row_is_predictively_compatible(r))
+    model["rejected_non_promotion_grade_native_rows"] = sum(
+        1 for r in live
+        if contract.row_is_predictively_compatible(r)
+        and r.get("home_score") is not None and r.get("away_score") is not None
+        and not pit.validate_promotion_grade_row(r)[0]
+    )
     model["legacy_2026_research"] = _legacy_2026_research_summary()
     return model
 
