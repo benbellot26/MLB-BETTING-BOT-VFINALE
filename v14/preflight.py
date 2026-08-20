@@ -3,7 +3,10 @@ from __future__ import annotations
 import argparse
 import unittest
 
-CRITICAL_TEST_MODULES = ("tests.test_v14_foundation",)
+CRITICAL_TEST_MODULES = (
+    "tests.test_v14_foundation",
+    "tests.test_v14_evidence",
+)
 
 
 def run(verbosity: int = 1) -> bool:
