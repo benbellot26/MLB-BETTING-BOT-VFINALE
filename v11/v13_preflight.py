@@ -34,6 +34,7 @@ CRITICAL_TEST_MODULES = (
     "tests.test_v1310_pit_weather_hotfix",
     "tests.test_v1310_max_audit_hardening",
     "tests.test_v1310_champion_only",
+    "tests.test_v1310_champion_dashboard",
     "tests.test_v1311_historical_transfer",
 )
 
