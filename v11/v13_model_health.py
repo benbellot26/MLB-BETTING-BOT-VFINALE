@@ -47,9 +47,14 @@ def _canonical_probability_state(state: dict[str,Any]) -> bool:
     return False
 
 
-def _probability_drift(states):
-    """Monitor current-generation directional/certainty drift on canonical sides."""
-    rows=[s for s in states if _current_state(s) and s.get("settled_result") in {"WIN","LOSS"}
+def _probability_drift(states, *, current_generation_only: bool = False):
+    """Monitor directional/certainty drift on canonical settled sides.
+
+    The helper stays generation-agnostic for research tests. The production
+    health report explicitly opts into current-generation-only evidence.
+    """
+    rows=[s for s in states if (not current_generation_only or _current_state(s))
+          and s.get("settled_result") in {"WIN","LOSS"}
           and s.get("p_model") is not None and _canonical_probability_state(s)]
     rows.sort(key=lambda s:str(s.get("observation_at") or s.get("observed_at") or ""))
     out={}
@@ -68,7 +73,7 @@ def _probability_drift(states):
                      "recent_mean_abs_edge_from_50":recent_conf_mean,
                      "prior_mean_abs_edge_from_50":prior_conf_mean,
                      "confidence_shift":recent_conf_mean-prior_conf_mean if recent_conf_mean is not None and prior_conf_mean is not None else None,
-                     "sample_policy":"current-generation attested; one canonical settled side per game/market"}
+                     "sample_policy":"current-generation attested; one canonical settled side per game/market" if current_generation_only else "one canonical settled side per game/market"}
     return out
 
 
@@ -114,12 +119,16 @@ def build() -> dict[str,Any]:
 
     operability_ok=bool(not coverage or coverage.get("complete_future_coverage",True))
     data_alerts=list(free_data.get("alerts") or [])
-    validation_ready=all(int((calibrators.get(f"MARKET:{m}") or {}).get("n") or 0)>=EDGE_EVIDENCE_MIN for m in ("ML","RUNLINE","TOTAL"))
+    validation_ready=all(
+        int((calibrators.get(f"MARKET:{m}") or {}).get("n") or 0)
+        >= int((calibrators.get(f"MARKET:{m}") or {}).get("strict_required_n") or 400)
+        for m in ("ML","RUNLINE","TOTAL")
+    )
     edge_ready=any(v.get("claim_allowed") for v in edge_evidence.values())
     health_axes={
         "operability":{"status":"OK" if operability_ok else "DEGRADED","meaning":"runtime coverage and ability to produce the scheduled probability surface"},
         "data":{"status":"OK" if not data_alerts else "DEGRADED","meaning":"source freshness/coverage; independent from predictive proof"},
-        "probability_validation":{"status":"VALIDATED" if validation_ready else "COLLECTING","meaning":"current-generation calibration/proper-score evidence only"},
+        "probability_validation":{"status":"VALIDATED" if validation_ready else "COLLECTING","meaning":"current-generation calibration volume has cleared each strict market floor"},
         "edge_evidence":{"status":"VALIDATED" if edge_ready else "NOT_VALIDATED","meaning":"market-edge claims remain blocked unless a market independently clears all gates"},
     }
     return {"schema":SCHEMA,"model_generation":contract.MODEL_GENERATION_FINGERPRINT,
@@ -137,7 +146,7 @@ def build() -> dict[str,Any]:
             "any_market_edge_claim_allowed":edge_ready,
             "daily_coverage":{"complete_future_coverage":coverage.get("complete_future_coverage"),"status_counts":coverage.get("status_counts"),
                               "future_coverage_rate":coverage.get("future_coverage_rate")},
-            "probability_drift":_probability_drift(states),"free_data_foundation":free_data,"v138_audit_research":closure_health,
+            "probability_drift":_probability_drift(states,current_generation_only=True),"free_data_foundation":free_data,"v138_audit_research":closure_health,
             "alerts":sorted(set(alerts)),
             "claim":"monitoring artifact only; market-edge claims are blocked until each market independently clears proper-score and sample-size evidence"}
 
