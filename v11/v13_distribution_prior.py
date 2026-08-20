@@ -7,10 +7,11 @@ from pathlib import Path
 from typing import Any
 
 from . import probability_contract_v13 as contract
+from . import v13_exact_transfer_evidence as exact_evidence
 from . import v13_run_mean_prior as historical_source
 
 MODEL_FILE = Path("data/v13_distribution_prior.json")
-EXACT_FILE = Path("data/v13_historical_backfill.jsonl")
+EXACT_FILE = exact_evidence.REPLAY_FILE
 SCHEMA = "v13-distribution-prior-v2"
 BASELINE_DISPERSION = 7.5
 ENVIRONMENT_SIGMA = 0.08
@@ -125,34 +126,9 @@ def _walk_forward(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _exact_rows(path: Path = EXACT_FILE) -> list[dict[str, Any]]:
-    """Current-generation FINAL rows whose distribution baseline was frozen before this candidate."""
-    if not path.exists():
-        return []
-    best: dict[str, tuple[str, dict[str, Any]]] = {}
-    for line in path.read_text(encoding="utf-8").splitlines():
-        if not line.strip():
-            continue
-        try:
-            row = json.loads(line)
-        except Exception:
-            continue
-        if str(row.get("phase") or "").upper() != "FINAL":
-            continue
-        if not contract.row_is_predictively_compatible(row):
-            continue
-        if row.get("validation_baseline_model_generation") != contract.MODEL_GENERATION_FINGERPRINT:
-            continue
-        if row.get("home_score") is None or row.get("away_score") is None:
-            continue
-        if row.get("validation_baseline_home_runs") is None or row.get("validation_baseline_away_runs") is None:
-            continue
-        if row.get("validation_baseline_dispersion") is None:
-            continue
-        key = str(row.get("game_pk") or "")
-        rank = str(row.get("analyzed_at") or "")
-        if key and (key not in best or rank > best[key][0]):
-            best[key] = (rank, row)
-    return [x[1] for x in sorted(best.values(), key=lambda x: str(x[1].get("game_date") or ""))]
+    """Current-generation FINAL evidence whose distribution baseline was frozen before this candidate."""
+    include_native = path == EXACT_FILE
+    return exact_evidence.load_exact_final_rows(replay_path=path, include_native=include_native)
 
 
 def _transfer_eval(rows: list[dict[str, Any]], candidate_dispersion: float) -> dict[str, Any]:
@@ -214,6 +190,9 @@ def build(
     exact_rows: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     exact = _exact_rows() if exact_rows is None else list(exact_rows)
+    evidence_counts = exact_evidence.source_counts(exact)
+    native_exact_games = int(evidence_counts.get("NATIVE_CURRENT_GENERATION_FINAL", 0))
+    replay_exact_games = int(evidence_counts.get("EXACT_REPLAY_CURRENT_GENERATION_FINAL", 0))
     exact_ids = {str(r.get("game_pk") or "") for r in exact}
     if historical_rows is None:
         rows, source_games, dataset_sha = _historical_rows(exact_ids)
@@ -272,7 +251,9 @@ def build(
         "validation_nll_gain": previous.get("nll_gain"),
         "test_games": int(last.get("test_games") or 0),
         "test_nll_gain": last.get("nll_gain"),
-        "exact_replay_games": len(exact),
+        "exact_replay_games": replay_exact_games,
+        "exact_native_games": native_exact_games,
+        "exact_evidence_source_counts": evidence_counts,
         "exact_replay_nll_gain": transfer.get("nll_gain"),
         "model_generation": contract.MODEL_GENERATION_FINGERPRINT,
         "exact_final_games": len(exact),
@@ -293,13 +274,15 @@ def build(
             "exact_transfer_required_for_activation": True,
             "exact_transfer_generation_locked": True,
             "exact_transfer_games_excluded_from_historical_fit": True,
+            "native_feature_label_join_point_in_time_required": True,
             "environment_sigma_learned_from_reconstructed_history": False,
         },
     }
 
 
 def rebuild_transfer(path: Path = MODEL_FILE, exact_path: Path = EXACT_FILE) -> dict[str, Any]:
-    # exact_path is retained for compatibility with existing callers/tests.
+    # A custom exact_path remains replay-only for compatibility with tests/callers;
+    # the canonical path additionally joins genuine native FINAL evidence.
     exact = _exact_rows(exact_path)
     data = build(exact_rows=exact)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -388,6 +371,8 @@ def main() -> None:
         "walk_forward_folds": (report.get("walk_forward") or {}).get("folds_total"),
         "walk_forward_passed": (report.get("walk_forward") or {}).get("folds_passed"),
         "exact_final_games": report.get("exact_final_games"),
+        "exact_native_games": report.get("exact_native_games"),
+        "exact_replay_games": report.get("exact_replay_games"),
         "exact_transfer_status": report.get("exact_transfer_status"),
     }, ensure_ascii=False, indent=2, sort_keys=True))
 

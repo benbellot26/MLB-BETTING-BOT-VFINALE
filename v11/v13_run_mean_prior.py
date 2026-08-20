@@ -9,10 +9,11 @@ from pathlib import Path
 from typing import Any
 
 from . import probability_contract_v13 as contract
+from . import v13_exact_transfer_evidence as exact_evidence
 from . import v138_research_models as research_models
 from .v138_audit_features import park_factor
 
-EXACT = Path("data/v13_historical_backfill.jsonl")
+EXACT = exact_evidence.REPLAY_FILE
 OUT = Path("data/v13_run_mean_prior.json")
 DATA_DIR = Path("data/v137")
 SCHEMA = "v13-run-mean-prior-v2"
@@ -90,37 +91,13 @@ def _historical_rows(exclude_game_ids: set[str] | None = None) -> tuple[list[dic
 
 
 def _exact_rows() -> list[dict[str, Any]]:
-    """Only current-generation FINAL replays with an independent pre-prior V13 baseline count."""
-    if not EXACT.exists():
-        return []
-    best: dict[str, tuple[str, dict[str, Any]]] = {}
-    with EXACT.open("r", encoding="utf-8") as fh:
-        for line in fh:
-            if not line.strip():
-                continue
-            try:
-                row = json.loads(line)
-            except Exception:
-                continue
-            if str(row.get("phase") or "").upper() != "FINAL":
-                continue
-            if not contract.row_is_predictively_compatible(row):
-                continue
-            if row.get("home_score") is None or row.get("away_score") is None:
-                continue
-            hmu = row.get("validation_baseline_home_runs")
-            amu = row.get("validation_baseline_away_runs")
-            dispersion = row.get("validation_baseline_dispersion")
-            if hmu is None or amu is None or dispersion is None:
-                continue
-            if row.get("validation_baseline_model_generation") != contract.MODEL_GENERATION_FINGERPRINT:
-                continue
-            gid = str(row.get("game_pk") or "")
-            rank = str(row.get("analyzed_at") or "")
-            if gid and (gid not in best or rank > best[gid][0]):
-                best[gid] = (rank, row)
+    """Current-generation FINAL evidence with an independent pre-prior V13 baseline.
+
+    This combines exact archived replays with genuine native FINAL feature rows
+    joined to postgame labels. Reconstructed free history never enters here.
+    """
     out = []
-    for _, row in best.values():
+    for row in exact_evidence.load_exact_final_rows():
         out.append({
             "game_pk": row.get("game_pk"),
             "game_date": row.get("game_date"),
@@ -131,6 +108,7 @@ def _exact_rows() -> list[dict[str, Any]]:
             "dispersion": _num(row.get("validation_baseline_dispersion"), DISPERSION),
             "home_score": int(_num(row.get("home_score"))),
             "away_score": int(_num(row.get("away_score"))),
+            "exact_evidence_source": row.get("exact_evidence_source"),
         })
     return sorted(out, key=lambda r: (str(r.get("game_date") or ""), str(r.get("game_pk") or "")))
 
@@ -348,6 +326,9 @@ def build(
     exact_rows: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     exact = _exact_rows() if exact_rows is None else list(exact_rows)
+    evidence_counts = exact_evidence.source_counts(exact)
+    native_exact_games = int(evidence_counts.get("NATIVE_CURRENT_GENERATION_FINAL", 0))
+    replay_exact_games = int(evidence_counts.get("EXACT_REPLAY_CURRENT_GENERATION_FINAL", 0))
     exact_ids = {str(r.get("game_pk") or "") for r in exact}
     if historical_rows is None:
         rows, source_games = _historical_rows(exact_ids)
@@ -373,6 +354,9 @@ def build(
             "dataset_content_sha256": dataset_sha,
             "walk_forward": walk_forward,
             "exact_final_games": len(exact),
+            "exact_native_games": native_exact_games,
+            "exact_replay_games": replay_exact_games,
+            "exact_evidence_source_counts": evidence_counts,
             "exact_transfer_required_games": MIN_EXACT_FINAL,
         }
 
@@ -416,6 +400,9 @@ def build(
         "walk_forward": walk_forward,
         "exact_games": len(exact),
         "exact_final_games": len(exact),
+        "exact_native_games": native_exact_games,
+        "exact_replay_games": replay_exact_games,
+        "exact_evidence_source_counts": evidence_counts,
         "exact_phase_counts": {"FINAL": len(exact)},
         "exact_transfer": exact_eval,
         "exact_transfer_bootstrap": exact_bootstrap,
@@ -431,6 +418,7 @@ def build(
             "exact_transfer_generation_locked": True,
             "exact_transfer_games_excluded_from_historical_fit": True,
             "independent_pre_candidate_baseline_required": True,
+            "native_feature_label_join_point_in_time_required": True,
             "runtime_adjustment_cap_runs": MAX_ADJ,
             "applies_only_when_native_residual_and_legacy_run_bootstrap_are_inactive": True,
         },
@@ -450,6 +438,8 @@ def main() -> None:
         "walk_forward_folds": (report.get("walk_forward") or {}).get("folds_total"),
         "walk_forward_passed": (report.get("walk_forward") or {}).get("folds_passed"),
         "exact_final_games": report.get("exact_final_games"),
+        "exact_native_games": report.get("exact_native_games"),
+        "exact_replay_games": report.get("exact_replay_games"),
         "exact_transfer_status": report.get("exact_transfer_status"),
     }, ensure_ascii=False, indent=2, sort_keys=True))
 

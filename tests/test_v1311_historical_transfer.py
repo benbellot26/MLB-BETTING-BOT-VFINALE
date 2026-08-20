@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import json
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from v11 import probability_contract_v13 as contract
 from v11 import v13_distribution_prior as distribution
+from v11 import v13_exact_transfer_evidence as exact_evidence
 from v11 import v13_run_mean_prior as prior
 from v11 import v13_run_mean_runtime as runtime
 
@@ -79,7 +83,92 @@ def _distribution_exact(n=40):
     } for i in range(n)]
 
 
+def _write_jsonl(path: Path, rows: list[dict]):
+    path.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
+
+
+def _native_feature(game_pk="native-1", phase="FINAL", generation=None, as_of="2026-08-19T18:00:00Z", source=None):
+    generation = generation or contract.MODEL_GENERATION_FINGERPRINT
+    return {
+        "schema": "v13-pit-feature-store-v1",
+        "game_pk": game_pk,
+        "game_date": "2026-08-19T19:00:00Z",
+        "as_of": as_of,
+        "phase": phase,
+        "model_generation": generation,
+        "point_in_time": True,
+        "point_in_time_validation_reasons": [],
+        "features": {
+            "historical_bootstrap": {
+                "run_prior": {
+                    "v13_validation_baseline_home_mu": 4.7,
+                    "v13_validation_baseline_away_mu": 4.2,
+                    "v13_validation_baseline_dispersion": 7.5,
+                    "v13_validation_baseline_environment_sigma": 0.08,
+                    "v13_validation_baseline_source": source or exact_evidence.PRE_CANDIDATE_BASELINE_SOURCE,
+                    "v13_validation_model_generation": generation,
+                }
+            }
+        },
+    }
+
+
 class V1311HistoricalTransferTests(unittest.TestCase):
+    def test_native_final_feature_plus_postgame_label_is_exact_transfer_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            replay = root / "replay.jsonl"
+            feature = root / "features.jsonl"
+            label = root / "labels.jsonl"
+            _write_jsonl(replay, [])
+            _write_jsonl(feature, [_native_feature()])
+            _write_jsonl(label, [{
+                "game_pk": "native-1",
+                "home_score": 6,
+                "away_score": 3,
+                "settled_at": "2026-08-20T05:00:00Z",
+            }])
+            rows = exact_evidence.load_exact_final_rows(replay, feature, label)
+        self.assertEqual(len(rows), 1)
+        row = rows[0]
+        self.assertEqual(row["exact_evidence_source"], "NATIVE_CURRENT_GENERATION_FINAL")
+        self.assertEqual(row["validation_baseline_model_generation"], contract.MODEL_GENERATION_FINGERPRINT)
+        self.assertEqual((row["home_score"], row["away_score"]), (6, 3))
+        self.assertEqual(row["validation_baseline_dispersion"], 7.5)
+
+    def test_native_transfer_rejects_nonfinal_wrong_generation_and_poststart_rows(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            replay = root / "replay.jsonl"
+            feature = root / "features.jsonl"
+            label = root / "labels.jsonl"
+            _write_jsonl(replay, [])
+            _write_jsonl(feature, [
+                _native_feature("late", phase="LATE"),
+                _native_feature("old", generation="old-generation"),
+                _native_feature("poststart", as_of="2026-08-19T19:00:01Z"),
+                _native_feature("wrong-source", source="not-pre-candidate"),
+            ])
+            _write_jsonl(label, [{"game_pk": gid, "home_score": 4, "away_score": 2} for gid in ("late", "old", "poststart", "wrong-source")])
+            rows = exact_evidence.load_exact_final_rows(replay, feature, label)
+        self.assertEqual(rows, [])
+
+    def test_native_exact_evidence_deduplicates_to_latest_final_snapshot(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            replay = root / "replay.jsonl"
+            feature = root / "features.jsonl"
+            label = root / "labels.jsonl"
+            first = _native_feature(as_of="2026-08-19T17:30:00Z")
+            second = _native_feature(as_of="2026-08-19T18:30:00Z")
+            second["features"]["historical_bootstrap"]["run_prior"]["v13_validation_baseline_home_mu"] = 5.1
+            _write_jsonl(replay, [])
+            _write_jsonl(feature, [first, second])
+            _write_jsonl(label, [{"game_pk": "native-1", "home_score": 6, "away_score": 3}])
+            rows = exact_evidence.load_exact_final_rows(replay, feature, label)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["validation_baseline_home_runs"], 5.1)
+
     def test_nested_walk_forward_uses_only_prior_seasons(self):
         with patch.object(prior, "MIN_WF_TEST_GAMES", 10), patch.object(prior, "MIN_WF_FOLDS", 3):
             report = prior._walk_forward(_history())
