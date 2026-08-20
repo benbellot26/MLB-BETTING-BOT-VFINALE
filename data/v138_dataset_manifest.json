@@ -1,10 +1,10 @@
 {
-  "code_sha": "1d0fd736d9b05fb752a31747f0b1a2cb683a3400",
-  "dataset_content_sha256": "8913f9a6a4d3283f7a563f4de0615f875dcb5e52741522a7bccd9eef1bade3a1",
+  "code_sha": "0438d8fcb8c2cc7c92238b32fafda0546ed1aa5c",
+  "dataset_content_sha256": "25651a792801abe9f52bdf1d41f5142832378aad1c902a2edcfc1df32cdd1ebb",
   "dataset_fingerprint_policy": "SHA256 over path + SHA256 of every compressed source feature/label file; any feature or label byte changes the fingerprint",
-  "dataset_version": "1d0fd736d9b05fb752a31747f0b1a2cb683a3400",
+  "dataset_version": "0438d8fcb8c2cc7c92238b32fafda0546ed1aa5c",
   "feature_contract_sha256": "08b35bb22ea34adb3113de13d335975ca00e401b9c1d80deada2473a9b661a61",
-  "feature_rows": 14043,
+  "feature_rows": 14058,
   "files": [
     {
       "bytes": 361219,
@@ -32,9 +32,9 @@
       "sha256": "f64bf53fdf40e946bcf9eea1235c5a4d684d719015c3fe416fec5d1716fbe5dd"
     },
     {
-      "bytes": 394887,
+      "bytes": 398262,
       "path": "data/v137/team_features_2026.jsonl.gz",
-      "sha256": "e906b5072da471330c2a47cbb8ba1848ced348508d68789588fe9ecd50f31c73"
+      "sha256": "aabee5b0618dd558404fc2db52efef4ed3bc7d811e61556fc0989e4b22f4d094"
     },
     {
       "bytes": 42643,
@@ -62,36 +62,36 @@
       "sha256": "e9fea7ac9d410b3b1de224afada02452add916ce07ee0c85ca5d84302d8bd2c9"
     },
     {
-      "bytes": 34540,
+      "bytes": 34782,
       "path": "data/v137/team_labels_2026.jsonl.gz",
-      "sha256": "c3c6694ec1567815aae3c343c9ab3f7849a912afad773db70e67adf18b653dea"
+      "sha256": "e0f027c3a4bf5735aa53fb2faf625536b594f8af2a4e818d29d6c63d75aecc1b"
     },
     {
-      "bytes": 2895872,
+      "bytes": 5779456,
       "path": "data/v138/v138.duckdb",
-      "sha256": "e26233c3a17f4a4358af7965fa8fedc33de4c473112fff5a2ccf18e46924d8fb"
+      "sha256": "31ab476b3ec618adcbc1ba13e4205a7cdc41b2c5b73d24aea2ab6d7aaad6b4f7"
     },
     {
-      "bytes": 934044,
+      "bytes": 935031,
       "path": "data/v138/team_features.parquet",
-      "sha256": "04f0a8ef2bfd373485146bc98b70700f0763d00b5abbf0750fdf7409f3d12d03"
+      "sha256": "3bc69cb3db143e2e6e945c7c0d130fd39419db4440810ff967ee1c87ee377e51"
     },
     {
-      "bytes": 131385,
+      "bytes": 131479,
       "path": "data/v138/team_labels.parquet",
-      "sha256": "e1fa15ca5300120c33e198777287e327dfc659dad9acf5da0b3548395ece7e18"
+      "sha256": "4f6c24a42aa90ef5c64435127d29cf3160c08a9eb1220ad4c0bfa517ac23862b"
     }
   ],
-  "label_rows": 14043,
+  "label_rows": 14058,
   "schema": "v13-10-versioned-dataset-store-v2",
   "separation_policy": "features and labels remain separate physical tables",
   "split_policy": "strict temporal / walk-forward",
   "storage": {
     "duckdb": "data/v138/v138.duckdb",
     "feature_parquet": "data/v138/team_features.parquet",
-    "feature_rows": 14043,
+    "feature_rows": 14058,
     "label_parquet": "data/v138/team_labels.parquet",
-    "label_rows": 14043,
+    "label_rows": 14058,
     "status": "BUILT"
   },
   "training_seed": 138
