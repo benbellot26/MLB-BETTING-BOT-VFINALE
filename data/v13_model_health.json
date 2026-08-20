@@ -1,8 +1,5 @@
 {
-  "alerts": [
-    "ml_brier_worse_than_market",
-    "ml_model_market_gap_not_informative"
-  ],
+  "alerts": [],
   "any_market_edge_claim_allowed": false,
   "calibration": {
     "GLOBAL": {
@@ -63,15 +60,15 @@
       "ANALYZED": 9
     }
   },
-  "diagnostic_scope": "unknown",
+  "diagnostic_scope": "current-generation-only",
   "edge_evidence": {
     "ML": {
-      "brier_gain_vs_market": -0.0064403924398214445,
+      "brier_gain_vs_market": -0.005361721671545482,
       "claim_allowed": false,
-      "gap_residual_slope": -1.498836340053143,
-      "logloss_gain_vs_market": -0.013080543790025581,
+      "gap_residual_slope": -1.909560244404998,
+      "logloss_gain_vs_market": -0.010132979532860712,
       "minimum_n": 300,
-      "n": 84,
+      "n": 11,
       "reason": "INSUFFICIENT_INDEPENDENT_MARKET_TARGETS"
     },
     "RUNLINE": {
@@ -582,16 +579,16 @@
   },
   "proper_scoring_vs_market": {
     "ML": {
-      "brier_gain_vs_market": -0.0064403924398214445,
-      "gap_residual_slope": -1.498836340053143,
-      "logloss_gain_vs_market": -0.013080543790025581,
-      "market_brier": 0.24089258613576195,
-      "market_logloss": 0.6744398805755106,
-      "mean_model_minus_market": -0.01896808333333333,
-      "model_brier": 0.2473329785755834,
-      "model_logloss": 0.6875204243655363,
-      "n": 84,
-      "outcome_residual_vs_market": -0.03874766666666666
+      "brier_gain_vs_market": -0.005361721671545482,
+      "gap_residual_slope": -1.909560244404998,
+      "logloss_gain_vs_market": -0.010132979532860712,
+      "market_brier": 0.23277054337309092,
+      "market_logloss": 0.6587438858840218,
+      "mean_model_minus_market": -0.03295245454545453,
+      "model_brier": 0.23813226504463642,
+      "model_logloss": 0.6688768654168825,
+      "n": 11,
+      "outcome_residual_vs_market": -0.1052810909090909
     },
     "RUNLINE": {
       "n": 0
@@ -620,7 +617,31 @@
     "status": "COLLECTING"
   },
   "schema": "v13-model-health-v5",
-  "tracking_availability": {},
+  "tracking_availability": {
+    "by_market": {
+      "ML": {
+        "canonical": 323,
+        "current_generation_attested": 21,
+        "current_generation_scoreable": 21,
+        "not_current_generation_attested": 302,
+        "settled": 646
+      },
+      "RUNLINE": {
+        "settled": 1120
+      },
+      "TOTAL": {
+        "settled": 646
+      }
+    },
+    "note": "missing market probabilities are reported, never imputed; RL/TOTAL proper-score evidence remains unavailable until a real comparable market probability was captured",
+    "total": {
+      "canonical": 323,
+      "current_generation_attested": 21,
+      "current_generation_scoreable": 21,
+      "not_current_generation_attested": 302,
+      "settled": 2412
+    }
+  },
   "v138_audit_research": {
     "alerts": [],
     "audit_closure": {
@@ -635,111 +656,111 @@
       "features": {
         "away_l14_rpg": {
           "alert": false,
-          "recent_mean": 4.434142857142857,
-          "reference_mean": 4.468112136987202,
-          "standardized_shift": -0.033493334128415965
+          "recent_mean": 4.419857142857143,
+          "reference_mean": 4.468205368454299,
+          "standardized_shift": -0.047676645159683444
         },
         "away_l30_rpg": {
           "alert": false,
-          "recent_mean": 4.539133333333333,
-          "reference_mean": 4.4593710575253045,
-          "standardized_shift": 0.09628813813407362
+          "recent_mean": 4.5252,
+          "reference_mean": 4.459639737822579,
+          "standardized_shift": 0.07915282069418755
         },
         "away_l7_rpg": {
           "alert": false,
-          "recent_mean": 4.450285714285715,
-          "reference_mean": 4.476817579280106,
-          "standardized_shift": -0.020161979633572222
+          "recent_mean": 4.43,
+          "reference_mean": 4.477269965369242,
+          "standardized_shift": -0.0359165605203154
         },
         "away_offense_talent": {
           "alert": false,
-          "recent_mean": 4.480071206464242,
-          "reference_mean": 4.451494216468508,
-          "standardized_shift": 0.0743976812463439
+          "recent_mean": 4.473997357358737,
+          "reference_mean": 4.451605791020916,
+          "standardized_shift": 0.058299030022312605
         },
         "away_offense_x_home_defense": {
           "alert": false,
-          "recent_mean": 4.520614772222173,
-          "reference_mean": 4.4313904541415985,
-          "standardized_shift": 0.0992382551582343
+          "recent_mean": 4.513571319205673,
+          "reference_mean": 4.431679233437247,
+          "standardized_shift": 0.09110755508422969
         },
         "away_ra_pg": {
           "alert": false,
-          "recent_mean": 4.505911174263963,
-          "reference_mean": 4.415791403115744,
-          "standardized_shift": 0.11578527789574808
+          "recent_mean": 4.501728459967876,
+          "reference_mean": 4.415932977240196,
+          "standardized_shift": 0.1102488220531282
         },
         "away_rest": {
           "alert": false,
-          "recent_mean": 0.256,
-          "reference_mean": 0.1768441261168131,
-          "standardized_shift": 0.1619910122221003
+          "recent_mean": 0.254,
+          "reference_mean": 0.1767222304174657,
+          "standardized_shift": 0.15820778942806954
         },
         "away_season_rpg": {
           "alert": false,
-          "recent_mean": 4.509769125266791,
-          "reference_mean": 4.415822965482917,
-          "standardized_shift": 0.13087427873252222
+          "recent_mean": 4.507566012776764,
+          "reference_mean": 4.41593971208514,
+          "standardized_shift": 0.12769475923522836
         },
         "away_win_pct": {
           "alert": false,
-          "recent_mean": 0.5001542854428022,
-          "reference_mean": 0.49949730596323466,
-          "standardized_shift": 0.005638681219270033
+          "recent_mean": 0.5002900141254368,
+          "reference_mean": 0.4994886759406999,
+          "standardized_shift": 0.0068800235775477725
         },
         "home_l14_rpg": {
           "alert": false,
-          "recent_mean": 4.446714285714285,
-          "reference_mean": 4.466952653825946,
-          "standardized_shift": -0.01956251339633071
+          "recent_mean": 4.442857142857143,
+          "reference_mean": 4.467268439670343,
+          "standardized_shift": -0.023602968092747287
         },
         "home_l30_rpg": {
           "alert": false,
-          "recent_mean": 4.513066666666667,
-          "reference_mean": 4.4657490366457,
-          "standardized_shift": 0.05586611541299941
+          "recent_mean": 4.506733333333334,
+          "reference_mean": 4.4659811577390505,
+          "standardized_shift": 0.04813073699658274
         },
         "home_l7_rpg": {
           "alert": false,
-          "recent_mean": 4.327428571428571,
-          "reference_mean": 4.455196850947424,
-          "standardized_shift": -0.09737685750508732
+          "recent_mean": 4.320571428571428,
+          "reference_mean": 4.455609936849795,
+          "standardized_shift": -0.10292103172570782
         },
         "home_offense_talent": {
           "alert": false,
-          "recent_mean": 4.465670979834275,
-          "reference_mean": 4.448469302624336,
-          "standardized_shift": 0.04535852478858049
+          "recent_mean": 4.4642494902409275,
+          "reference_mean": 4.4485804010409655,
+          "standardized_shift": 0.04132617361964235
         },
         "home_offense_x_away_defense": {
           "alert": false,
-          "recent_mean": 4.519292897300776,
-          "reference_mean": 4.421747156342804,
-          "standardized_shift": 0.10646655125778193
+          "recent_mean": 4.513678495326259,
+          "reference_mean": 4.42197636977952,
+          "standardized_shift": 0.100118431651869
         },
         "home_ra_pg": {
           "alert": false,
-          "recent_mean": 4.488525227298702,
-          "reference_mean": 4.421570865531148,
-          "standardized_shift": 0.08816804728506698
+          "recent_mean": 4.487866660186975,
+          "reference_mean": 4.421742479235373,
+          "standardized_shift": 0.08711089267254826
         },
         "home_rest": {
           "alert": false,
-          "recent_mean": 0.264,
-          "reference_mean": 0.18348962563686036,
-          "standardized_shift": 0.16184683251601137
+          "recent_mean": 0.262,
+          "reference_mean": 0.1833603776368196,
+          "standardized_shift": 0.15814681590340235
         },
         "home_season_rpg": {
           "alert": false,
-          "recent_mean": 4.494723679232032,
-          "reference_mean": 4.419514295868443,
-          "standardized_shift": 0.10164950283722152
+          "recent_mean": 4.496808539834596,
+          "reference_mean": 4.41953873493782,
+          "standardized_shift": 0.10447772490985764
         },
         "home_win_pct": {
           "alert": false,
-          "recent_mean": 0.50118138267686,
-          "reference_mean": 0.5002634599299187,
-          "standardized_shift": 0.007898083383421997
+          "recent_mean": 0.5014409592179019,
+          "reference_mean": 0.5002577816059198,
+          "standardized_shift": 0.01018517801839452
         },
         "park_run_factor": {
           "alert": false,
@@ -868,8 +889,8 @@
         "hierarchical": 0.10000000000000003,
         "naive": 0.8999999999999999
       },
-      "games": 14043,
-      "holdout_games": 2809,
+      "games": 14058,
+      "holdout_games": 2812,
       "holdout_isolation": true,
       "promotion_eligible": false,
       "status": "TRAINED_RESEARCH_ONLY"
