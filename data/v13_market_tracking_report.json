@@ -1,91 +1,91 @@
 {
   "by_market": {
     "ML": {
-      "closing_price_observed": 52,
-      "closing_sharp_observed": 52,
-      "positive_ev_pnl_1u": -22.75,
-      "positive_ev_wins": 31,
-      "positive_nominal_ev": 93,
-      "priced": 474,
-      "settled": 474,
-      "t60_sharp_observed": 60
+      "closing_price_observed": 102,
+      "closing_sharp_observed": 102,
+      "positive_ev_pnl_1u": -22.58,
+      "positive_ev_wins": 51,
+      "positive_nominal_ev": 138,
+      "priced": 624,
+      "settled": 624,
+      "t60_sharp_observed": 98
     },
     "RUNLINE": {
       "closing_price_observed": 0,
-      "closing_sharp_observed": 54,
+      "closing_sharp_observed": 104,
       "positive_ev_pnl_1u": 0,
       "positive_ev_wins": 0,
       "positive_nominal_ev": 0,
       "priced": 0,
-      "settled": 776,
-      "t60_sharp_observed": 60
+      "settled": 1076,
+      "t60_sharp_observed": 98
     },
     "TOTAL": {
       "closing_price_observed": 0,
-      "closing_sharp_observed": 42,
+      "closing_sharp_observed": 92,
       "positive_ev_pnl_1u": 0,
       "positive_ev_wins": 0,
       "positive_nominal_ev": 0,
       "priced": 0,
-      "settled": 474,
-      "t60_sharp_observed": 52
+      "settled": 624,
+      "t60_sharp_observed": 90
     }
   },
   "by_nominal_ev_band": {
     "ML": {
       "0-1%": {
         "losses": 23,
-        "n": 25,
-        "pnl_1u": -20.45,
+        "n": 27,
+        "pnl_1u": -18.73,
         "pushes": 0,
-        "roi_1u": -0.818,
-        "wins": 2
+        "roi_1u": -0.6937,
+        "wins": 4
       },
       "1-3%": {
-        "losses": 8,
-        "n": 17,
-        "pnl_1u": 2.35,
+        "losses": 15,
+        "n": 24,
+        "pnl_1u": -4.65,
         "pushes": 0,
-        "roi_1u": 0.1382,
+        "roi_1u": -0.1938,
         "wins": 9
       },
       "3-5%": {
         "losses": 7,
-        "n": 10,
-        "pnl_1u": -2.6,
+        "n": 14,
+        "pnl_1u": 1.4,
         "pushes": 0,
-        "roi_1u": -0.26,
-        "wins": 3
+        "roi_1u": 0.1,
+        "wins": 7
       },
       "5-10%": {
-        "losses": 12,
-        "n": 21,
-        "pnl_1u": -1.5,
+        "losses": 14,
+        "n": 37,
+        "pnl_1u": 15.95,
         "pushes": 0,
-        "roi_1u": -0.0714,
-        "wins": 9
+        "roi_1u": 0.4311,
+        "wins": 23
       },
       "<0%": {
-        "losses": 175,
-        "n": 381,
-        "pnl_1u": 0.38,
+        "losses": 225,
+        "n": 486,
+        "pnl_1u": -12.51,
         "pushes": 0,
-        "roi_1u": 0.001,
-        "wins": 206
+        "roi_1u": -0.0257,
+        "wins": 261
       },
       ">=10%": {
-        "losses": 12,
-        "n": 20,
-        "pnl_1u": -0.55,
+        "losses": 28,
+        "n": 36,
+        "pnl_1u": -16.55,
         "pushes": 0,
-        "roi_1u": -0.0275,
+        "roi_1u": -0.4597,
         "wins": 8
       }
     },
     "RUNLINE": {},
     "TOTAL": {}
   },
-  "generated_at": "2026-08-19T23:58:04.976895+00:00",
+  "generated_at": "2026-08-20T03:13:37.007684+00:00",
   "methodology": {
     "closing": "paid market polling is checkpoint-based: one T-60 window and one close window per tracked observation, batched in a single Odds API request across all games due at that time",
     "missing_price": "never imputed; absent Winamax RL/TOTAL prices remain unpriced and are still tracked against sharp probability",
@@ -94,8 +94,8 @@
     "unit_pnl": "descriptive flat 1u; complementary displayed sides are not a betting portfolio"
   },
   "schema": "v13-market-tracking-report-v3",
-  "settled_observations": 1724,
-  "settled_options": 1724,
-  "tracked_observations": 2364,
-  "tracked_options": 2364
+  "settled_observations": 2324,
+  "settled_options": 2324,
+  "tracked_observations": 2412,
+  "tracked_options": 2412
 }
