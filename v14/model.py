@@ -5,9 +5,12 @@ import math
 from typing import Any
 
 from . import MODEL_GENERATION, SCHEMA, VERSION
+from .champion_contract import CHAMPION_DISPERSION, CHAMPION_ENVIRONMENT_SIGMA
 
 
-DEFAULT_DISPERSION = 7.5
+DEFAULT_DISPERSION = CHAMPION_DISPERSION
+DEFAULT_ENVIRONMENT_SIGMA = CHAMPION_ENVIRONMENT_SIGMA
+DEFAULT_EXTRA_INNINGS_HOME_PROBABILITY = 0.5
 DEFAULT_TAIL_TOLERANCE = 1e-8
 DEFAULT_MAX_RUNS = 60
 
@@ -19,6 +22,16 @@ def _finite_positive(value: Any, name: str) -> float:
         raise ValueError(f"{name} must be numeric") from exc
     if not math.isfinite(out) or out <= 0:
         raise ValueError(f"{name} must be finite and > 0")
+    return out
+
+
+def _finite_range(value: Any, name: str, low: float, high: float) -> float:
+    try:
+        out = float(value)
+    except Exception as exc:
+        raise ValueError(f"{name} must be numeric") from exc
+    if not math.isfinite(out) or not low <= out <= high:
+        raise ValueError(f"{name} must be finite in [{low}, {high}]")
     return out
 
 
@@ -47,6 +60,8 @@ class RunProjection:
     total_line: float
     phase: str = "FINAL"
     dispersion: float = DEFAULT_DISPERSION
+    environment_sigma: float = DEFAULT_ENVIRONMENT_SIGMA
+    extra_innings_home_probability: float = DEFAULT_EXTRA_INNINGS_HOME_PROBABILITY
     source_generation: str | None = None
 
     def validated(self) -> "RunProjection":
@@ -57,11 +72,20 @@ class RunProjection:
         home_mu = _finite_positive(self.home_mu, "home_mu")
         away_mu = _finite_positive(self.away_mu, "away_mu")
         dispersion = _finite_positive(self.dispersion, "dispersion")
+        environment_sigma = _finite_range(self.environment_sigma, "environment_sigma", 0.0, 0.30)
+        extra_probability = _finite_range(
+            self.extra_innings_home_probability,
+            "extra_innings_home_probability",
+            0.45,
+            0.55,
+        )
         total_line = _half_run_line(self.total_line)
         return RunProjection(
             game_pk=str(self.game_pk), game_date=str(self.game_date), analyzed_at=str(self.analyzed_at),
             home=str(self.home), away=str(self.away), home_mu=home_mu, away_mu=away_mu,
             total_line=total_line, phase=str(self.phase or "FINAL").upper(), dispersion=dispersion,
+            environment_sigma=environment_sigma,
+            extra_innings_home_probability=extra_probability,
             source_generation=self.source_generation,
         )
 
@@ -118,13 +142,17 @@ def shadow_payload(projection: RunProjection, probabilities: ProbabilitySurface,
             "home_mu": p.home_mu,
             "away_mu": p.away_mu,
             "dispersion": p.dispersion,
-            "source": "explicit run projection input",
+            "environment_sigma": p.environment_sigma,
+            "extra_innings_home_probability": p.extra_innings_home_probability,
+            "source": "V13.10 champion-parity migration input until native V14 run stack wins",
         },
         "total_line": p.total_line,
         "probabilities": s.as_dict(),
         "distribution": {
-            "family": "independent-negative-binomial",
-            "regulation_tie_resolution": "50/50 extra-inning neutral split",
+            "family": "correlated-negative-binomial-environment-mixture",
+            "regulation_tie_resolution": "validated historical extra-innings home prior",
+            "environment_sigma": p.environment_sigma,
             "tail_mass_truncated_before_renormalization": tail_mass,
+            "parity_target": "V13.10 champion score-distribution behavior",
         },
     }

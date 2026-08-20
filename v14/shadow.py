@@ -8,6 +8,7 @@ from typing import Any
 
 from . import MODEL_GENERATION
 from .benchmark import CHAMPION_GENERATION, benchmark_payload
+from .champion_contract import parameters_from_champion_result
 from .distribution import probability_surface
 from .model import RunProjection, shadow_payload
 
@@ -47,35 +48,51 @@ def _total_line(result: dict[str, Any]) -> float | None:
 
 
 def projection_from_v13_result(result: dict[str, Any], *, analyzed_at: str | None = None) -> RunProjection:
-    """Narrow transition adapter: only run means cross the V13→V14 model boundary.
+    """Parity-migration adapter for the frozen V13.10 champion.
 
-    V13 probability outputs, market probabilities, calibration outputs, selector
-    scores and betting decisions are forbidden as V14 model inputs. Persisted V13
-    probabilities may be copied later into a separate benchmark-only field.
+    Until the V13 run stack has been cleanly reimplemented inside V14, the
+    champion run means are accepted as migration inputs. The only additional
+    state allowed across the boundary is the score-distribution configuration
+    required to reproduce V13.10 behavior. V13 probabilities, market values,
+    calibration outputs, selectors and staking decisions remain forbidden model
+    inputs.
     """
     ctx = result.get("ctx") or {}
     game = result.get("game") or {}
     event = result.get("event") or {}
+    features = result.get("features") or {}
     game_date = result.get("game_date") or game.get("gameDate") or event.get("commence_time")
     observed = result.get("analyzed_at") or result.get("as_of") or analyzed_at
+
+    # Preserve the exact run means that generated the V13 probability surface.
+    # Persisted journal rows do not always retain root hmu/amu; features.home_mu
+    # and features.away_mu are the exact V13 run-stack outputs and therefore take
+    # precedence over rounded compatibility/display projection fields.
     home_mu = _num(result.get("hmu"))
     away_mu = _num(result.get("amu"))
+    if home_mu is None:
+        home_mu = _num(features.get("home_mu"))
+    if away_mu is None:
+        away_mu = _num(features.get("away_mu"))
     for key in ("home_mu", "projected_home_runs"):
         if home_mu is None:
             home_mu = _num(result.get(key))
     for key in ("away_mu", "projected_away_runs"):
         if away_mu is None:
             away_mu = _num(result.get(key))
+
     line = _total_line(result)
     if home_mu is None or away_mu is None:
-        raise ValueError("V14 shadow requires explicit V13 home/away run means")
+        raise ValueError("V14 parity shadow requires explicit V13.10 home/away run means")
     if line is None:
-        raise ValueError("V14 shadow requires a canonical half-run total line")
+        raise ValueError("V14 parity shadow requires a canonical half-run total line")
     if not observed or not game_date:
-        raise ValueError("V14 shadow requires analyzed_at and game_date")
+        raise ValueError("V14 parity shadow requires analyzed_at and game_date")
     obs_dt, game_dt = _dt(observed), _dt(game_date)
     if obs_dt is None or game_dt is None or obs_dt >= game_dt:
-        raise ValueError("V14 shadow input must be a valid pregame snapshot")
+        raise ValueError("V14 parity input must be a valid pregame snapshot")
+
+    parameters = parameters_from_champion_result(result)
     return RunProjection(
         game_pk=str(result.get("game_pk") or game.get("gamePk") or ""),
         game_date=str(game_date), analyzed_at=str(observed),
@@ -83,17 +100,27 @@ def projection_from_v13_result(result: dict[str, Any], *, analyzed_at: str | Non
         away=str(ctx.get("away") or result.get("away") or ""),
         home_mu=home_mu, away_mu=away_mu, total_line=line,
         phase=str(result.get("phase") or "FINAL"),
+        dispersion=parameters["dispersion"],
+        environment_sigma=parameters["environment_sigma"],
+        extra_innings_home_probability=parameters["extra_innings_home_probability"],
         source_generation=result.get("model_generation"),
     ).validated()
 
 
 def build_shadow(result: dict[str, Any], *, analyzed_at: str | None = None) -> dict[str, Any]:
-    # Build V14 first. The benchmark is intentionally extracted only afterwards
-    # so V13 probabilities cannot influence the V14 calculation by construction.
     projection = projection_from_v13_result(result, analyzed_at=analyzed_at)
     surface, tail = probability_surface(projection)
     out = shadow_payload(projection, surface, tail_mass=tail)
-    out["transition_adapter"] = "V13 run means only; V13 probabilities/market/selection are forbidden V14 model inputs"
+    out["transition_adapter"] = (
+        "V13.10 champion run means + score-distribution configuration only; "
+        "V13 probabilities/market/calibration/selection/staking are forbidden V14 model inputs"
+    )
+    out["parity_migration"] = {
+        "target": CHAMPION_GENERATION,
+        "run_stack_native_in_v14": False,
+        "score_distribution_native_in_v14": True,
+        "purpose": "preserve champion performance before legacy removal",
+    }
     if result.get("model_generation") == CHAMPION_GENERATION:
         out["champion_reference"] = benchmark_payload(result, total_line=projection.total_line)
     else:
@@ -166,7 +193,7 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Build clean V14 shadow probabilities from persisted V13 run means")
+    parser = argparse.ArgumentParser(description="Build V14 V13.10-champion-parity shadows from persisted pregame state")
     source = parser.add_mutually_exclusive_group()
     source.add_argument("--payload", default=None)
     source.add_argument("--journal", default=None)
