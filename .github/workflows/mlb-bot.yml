@@ -69,7 +69,9 @@ jobs:
             tests.test_v1310_deep_audit_hardening \
             tests.test_v1310_deep_audit_registry \
             tests.test_v1310_pit_weather_hotfix \
-            tests.test_v1310_max_audit_hardening
+            tests.test_v1310_max_audit_hardening \
+            tests.test_v1310_champion_only \
+            tests.test_v1310_champion_dashboard
           python -m v11.v13_entry --self-test
 
       - name: Ensure baseline-safe historical reference
@@ -82,7 +84,7 @@ jobs:
           model = hb.ensure_artifact()
           allowed = {'PASS', 'FAIL', 'COLLECTING', 'INCOMPATIBLE_BASELINE'}
           if model.get('status') not in allowed:
-              raise SystemExit(f"Unexpected V12.3 bootstrap status: {model.get('status')}")
+            raise SystemExit(f"Unexpected V12.3 bootstrap status: {model.get('status')}")
           meta = model.get('metadata') or {}
           if model.get('eligible_for_final_prior') and meta.get('baseline_schema') != hb.BASELINE_SCHEMA:
               raise SystemExit('Historical prior baseline schema mismatch')
@@ -227,6 +229,8 @@ jobs:
           [ -f data/v11_bet_ledger.jsonl ] && git add -f data/v11_bet_ledger.jsonl
           [ -f data/v13_baseball_calibration.json ] && git add -f data/v13_baseball_calibration.json
           [ -f data/v13_probability_diagnostics.json ] && git add -f data/v13_probability_diagnostics.json
+          [ -f data/v13_champion_dashboard.json ] && git add -f data/v13_champion_dashboard.json
+          [ -f data/v13_champion_dashboard.md ] && git add -f data/v13_champion_dashboard.md
           [ -f data/v13_coverage_report.json ] && git add -f data/v13_coverage_report.json
           [ -f data/v13_model_health.json ] && git add -f data/v13_model_health.json
           [ -f data/v13_feature_store.jsonl ] && git add -f data/v13_feature_store.jsonl
