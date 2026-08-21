@@ -1,8 +1,8 @@
 {
-  "analyzed_at": "2026-08-21T08:15:55.761670+00:00",
-  "analyzed_games": 13,
-  "complete_future_coverage": false,
-  "future_coverage_rate": 0.8666666666666667,
+  "analyzed_at": "2026-08-21T18:56:32.876151+00:00",
+  "analyzed_games": 15,
+  "complete_future_coverage": true,
+  "future_coverage_rate": 1.0,
   "future_or_unresolved_games": 15,
   "games": [
     {
@@ -18,8 +18,8 @@
       "game_date": "2026-08-21T22:40:00Z",
       "game_pk": 823420,
       "home": "Philadelphia Phillies",
-      "odds_event_id": null,
-      "status": "SKIPPED_NO_ODDS_EVENT"
+      "odds_event_id": "a889ec328e20424c875cd7f4c5f12ac1",
+      "status": "ANALYZED"
     },
     {
       "away": "Toronto Blue Jays",
@@ -106,8 +106,8 @@
       "game_date": "2026-08-22T01:40:00Z",
       "game_pk": 823262,
       "home": "San Diego Padres",
-      "odds_event_id": null,
-      "status": "SKIPPED_NO_ODDS_EVENT"
+      "odds_event_id": "88b867463b5fd396b643c8da0c9716f9",
+      "status": "ANALYZED"
     },
     {
       "away": "Pittsburgh Pirates",
@@ -127,12 +127,11 @@
     }
   ],
   "policy": "Every scheduled game is either ANALYZED or carries an explicit skip reason; ambiguous event identity fails closed.",
-  "run_id": "fffa4f5bf5688013",
+  "run_id": "971298ec2b29a73c",
   "scheduled_games": 15,
   "schema": "v13-daily-coverage-v1",
   "status_counts": {
-    "ANALYZED": 13,
-    "SKIPPED_NO_ODDS_EVENT": 2
+    "ANALYZED": 15
   },
   "target_date": "2026-08-21"
 }
