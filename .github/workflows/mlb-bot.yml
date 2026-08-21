@@ -224,6 +224,8 @@ jobs:
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           V13_DISCORD_FINAL_ONLY: '0'
+          # Republishing reuses the already-computed payload and does not make another paid Odds API call.
+          V13_FORCE_DISCORD_RESEND: '1'
         run: python -m v11.v13_entry --send-persisted
 
       - name: Persist Discord delivery checkpoint
