@@ -3,6 +3,27 @@
   "by_venue": {},
   "cumulative": {
     "by_data_quality": {
+      "0.60-0.75": {
+        "games": 3,
+        "probability": {
+          "accuracy_at_50": 0.666667,
+          "brier": 0.261744,
+          "calibration_gap": 0.18053,
+          "logloss": 0.717079,
+          "mean_probability": 0.513864,
+          "n": 3,
+          "outcome_rate": 0.333333
+        },
+        "runs": {
+          "away_bias_runs": 3.7737,
+          "away_mae_runs": 6.5102,
+          "home_bias_runs": -2.3949,
+          "home_mae_runs": 2.3949,
+          "n": 3,
+          "total_bias_runs": 1.3789,
+          "total_mae_runs": 6.1034
+        }
+      },
       "0.75-0.90": {
         "games": 2,
         "probability": {
@@ -25,77 +46,119 @@
         }
       },
       ">=0.90": {
-        "games": 9,
+        "games": 15,
         "probability": {
-          "accuracy_at_50": 0.666667,
-          "brier": 0.22047,
-          "calibration_gap": 0.078077,
-          "logloss": 0.632985,
-          "mean_probability": 0.522521,
-          "n": 9,
-          "outcome_rate": 0.444444
+          "accuracy_at_50": 0.733333,
+          "brier": 0.21477,
+          "calibration_gap": 0.061886,
+          "logloss": 0.621661,
+          "mean_probability": 0.528553,
+          "n": 15,
+          "outcome_rate": 0.466667
         },
         "runs": {
-          "away_bias_runs": 0.7313,
-          "away_mae_runs": 1.934,
-          "home_bias_runs": -0.1454,
-          "home_mae_runs": 1.7105,
-          "n": 9,
-          "total_bias_runs": 0.5859,
-          "total_mae_runs": 3.2775
+          "away_bias_runs": 0.4329,
+          "away_mae_runs": 2.0124,
+          "home_bias_runs": -0.0383,
+          "home_mae_runs": 2.0922,
+          "n": 15,
+          "total_bias_runs": 0.3947,
+          "total_mae_runs": 3.6126
         }
       }
     },
     "by_phase": {
-      "FINAL": {
-        "games": 11,
+      "EARLY": {
+        "games": 2,
         "probability": {
-          "accuracy_at_50": 0.545455,
-          "brier": 0.238132,
-          "calibration_gap": 0.072329,
-          "logloss": 0.668877,
-          "mean_probability": 0.526874,
-          "n": 11,
-          "outcome_rate": 0.454545
+          "accuracy_at_50": 0.5,
+          "brier": 0.289711,
+          "calibration_gap": 0.043964,
+          "logloss": 0.773359,
+          "mean_probability": 0.543964,
+          "n": 2,
+          "outcome_rate": 0.5
         },
         "runs": {
-          "away_bias_runs": 0.1331,
-          "away_mae_runs": 2.0476,
-          "home_bias_runs": -0.6614,
-          "home_mae_runs": 1.942,
-          "n": 11,
-          "total_bias_runs": -0.5283,
-          "total_mae_runs": 3.6893
+          "away_bias_runs": 4.7136,
+          "away_mae_runs": 8.8184,
+          "home_bias_runs": -2.2435,
+          "home_mae_runs": 2.2435,
+          "n": 2,
+          "total_bias_runs": 2.4701,
+          "total_mae_runs": 8.7533
+        }
+      },
+      "FINAL": {
+        "games": 17,
+        "probability": {
+          "accuracy_at_50": 0.647059,
+          "brier": 0.226869,
+          "calibration_gap": 0.060072,
+          "logloss": 0.646218,
+          "mean_probability": 0.53066,
+          "n": 17,
+          "outcome_rate": 0.470588
+        },
+        "runs": {
+          "away_bias_runs": 0.081,
+          "away_mae_runs": 2.0767,
+          "home_bias_runs": -0.3848,
+          "home_mae_runs": 2.197,
+          "n": 17,
+          "total_bias_runs": -0.3038,
+          "total_mae_runs": 3.8396
+        }
+      },
+      "LATE": {
+        "games": 1,
+        "probability": {
+          "accuracy_at_50": 1.0,
+          "brier": 0.20581,
+          "calibration_gap": 0.453663,
+          "logloss": 0.604519,
+          "mean_probability": 0.453663,
+          "n": 1,
+          "outcome_rate": 0.0
+        },
+        "runs": {
+          "away_bias_runs": 1.8939,
+          "away_mae_runs": 1.8939,
+          "home_bias_runs": -2.6975,
+          "home_mae_runs": 2.6975,
+          "n": 1,
+          "total_bias_runs": -0.8036,
+          "total_mae_runs": 0.8036
         }
       }
     },
     "by_probability_band": {
       "55-60%": {
         "accuracy_at_50": 0.666667,
-        "brier": 0.225637,
-        "calibration_gap": -0.090159,
-        "logloss": 0.643874,
-        "mean_probability": 0.576508,
-        "n": 3,
+        "brier": 0.229202,
+        "calibration_gap": -0.089998,
+        "logloss": 0.651183,
+        "mean_probability": 0.576668,
+        "n": 6,
         "outcome_rate": 0.666667
       },
       "60-65%": {
-        "accuracy_at_50": 0.5,
-        "brier": 0.246941,
-        "calibration_gap": 0.127931,
-        "logloss": 0.685517,
-        "mean_probability": 0.627931,
-        "n": 2,
-        "outcome_rate": 0.5
+        "accuracy_at_50": 0.666667,
+        "brier": 0.215627,
+        "calibration_gap": -0.045096,
+        "logloss": 0.622406,
+        "mean_probability": 0.621571,
+        "n": 3,
+        "outcome_rate": 0.666667
       },
       "<55%": {
-        "accuracy_at_50": 0.5,
-        "brier": 0.241443,
-        "calibration_gap": 0.135038,
-        "logloss": 0.675831,
-        "mean_probability": 0.468372,
-        "n": 6,
-        "outcome_rate": 0.333333
+        "accuracy_at_50": 0.636364,
+        "brier": 0.238174,
+        "calibration_gap": 0.203462,
+        "logloss": 0.669329,
+        "mean_probability": 0.476189,
+        "n": 11,
+        "outcome_rate": 0.272727
       }
     },
     "data_quality_components": {
@@ -104,37 +167,37 @@
       },
       "mean_components": {
         "bullpen": 1.0,
-        "lineup_identity": 1.0,
-        "lineup_stats": 1.0,
+        "lineup_identity": 0.85,
+        "lineup_stats": 0.8582,
         "sharp_coverage": 1.0,
-        "sharp_recency": 0.9955,
+        "sharp_recency": 0.9952,
         "starter_identity": 1.0,
-        "starter_stats": 0.8182,
+        "starter_stats": 0.9,
         "team_stats": 1.0,
         "weather": 1.0
       },
-      "n": 11
+      "n": 20
     },
-    "games": 11,
+    "games": 20,
     "probability": {
       "all_markets": {
-        "accuracy_at_50": 0.545455,
-        "brier": 0.238132,
-        "calibration_gap": 0.072329,
-        "logloss": 0.668877,
-        "mean_probability": 0.526874,
-        "n": 11,
-        "outcome_rate": 0.454545
+        "accuracy_at_50": 0.65,
+        "brier": 0.2321,
+        "calibration_gap": 0.07814,
+        "logloss": 0.656847,
+        "mean_probability": 0.52814,
+        "n": 20,
+        "outcome_rate": 0.45
       },
       "by_market": {
         "ML": {
-          "accuracy_at_50": 0.545455,
-          "brier": 0.238132,
-          "calibration_gap": 0.072329,
-          "logloss": 0.668877,
-          "mean_probability": 0.526874,
-          "n": 11,
-          "outcome_rate": 0.454545
+          "accuracy_at_50": 0.65,
+          "brier": 0.2321,
+          "calibration_gap": 0.07814,
+          "logloss": 0.656847,
+          "mean_probability": 0.52814,
+          "n": 20,
+          "outcome_rate": 0.45
         },
         "RUNLINE": {
           "n": 0
@@ -145,150 +208,190 @@
       }
     },
     "runs": {
-      "away_bias_runs": 0.1331,
-      "away_mae_runs": 2.0476,
-      "home_bias_runs": -0.6614,
-      "home_mae_runs": 1.942,
-      "n": 11,
-      "total_bias_runs": -0.5283,
-      "total_mae_runs": 3.6893
+      "away_bias_runs": 0.6349,
+      "away_mae_runs": 2.7417,
+      "home_bias_runs": -0.6863,
+      "home_mae_runs": 2.2267,
+      "n": 20,
+      "total_bias_runs": -0.0514,
+      "total_mae_runs": 4.1792
     }
   },
-  "latest_date": "2026-08-19",
+  "latest_date": "2026-08-20",
   "latest_day": {
     "by_data_quality": {
-      "0.75-0.90": {
-        "games": 2,
+      "0.60-0.75": {
+        "games": 3,
         "probability": {
-          "accuracy_at_50": 0.0,
-          "brier": 0.317611,
-          "calibration_gap": 0.046462,
-          "logloss": 0.83039,
-          "mean_probability": 0.546462,
-          "n": 2,
-          "outcome_rate": 0.5
+          "accuracy_at_50": 0.666667,
+          "brier": 0.261744,
+          "calibration_gap": 0.18053,
+          "logloss": 0.717079,
+          "mean_probability": 0.513864,
+          "n": 3,
+          "outcome_rate": 0.333333
         },
         "runs": {
-          "away_bias_runs": -2.5587,
-          "away_mae_runs": 2.5587,
-          "home_bias_runs": -2.9836,
-          "home_mae_runs": 2.9836,
-          "n": 2,
-          "total_bias_runs": -5.5423,
-          "total_mae_runs": 5.5423
+          "away_bias_runs": 3.7737,
+          "away_mae_runs": 6.5102,
+          "home_bias_runs": -2.3949,
+          "home_mae_runs": 2.3949,
+          "n": 3,
+          "total_bias_runs": 1.3789,
+          "total_mae_runs": 6.1034
         }
       },
       ">=0.90": {
-        "games": 9,
+        "games": 6,
         "probability": {
-          "accuracy_at_50": 0.666667,
-          "brier": 0.22047,
-          "calibration_gap": 0.078077,
-          "logloss": 0.632985,
-          "mean_probability": 0.522521,
-          "n": 9,
-          "outcome_rate": 0.444444
+          "accuracy_at_50": 0.833333,
+          "brier": 0.206219,
+          "calibration_gap": 0.0376,
+          "logloss": 0.604676,
+          "mean_probability": 0.5376,
+          "n": 6,
+          "outcome_rate": 0.5
         },
         "runs": {
-          "away_bias_runs": 0.7313,
-          "away_mae_runs": 1.934,
-          "home_bias_runs": -0.1454,
-          "home_mae_runs": 1.7105,
-          "n": 9,
-          "total_bias_runs": 0.5859,
-          "total_mae_runs": 3.2775
+          "away_bias_runs": -0.0145,
+          "away_mae_runs": 2.1301,
+          "home_bias_runs": 0.1225,
+          "home_mae_runs": 2.6646,
+          "n": 6,
+          "total_bias_runs": 0.1079,
+          "total_mae_runs": 4.1152
         }
       }
     },
     "by_phase": {
-      "FINAL": {
-        "games": 11,
+      "EARLY": {
+        "games": 2,
         "probability": {
-          "accuracy_at_50": 0.545455,
-          "brier": 0.238132,
-          "calibration_gap": 0.072329,
-          "logloss": 0.668877,
-          "mean_probability": 0.526874,
-          "n": 11,
-          "outcome_rate": 0.454545
+          "accuracy_at_50": 0.5,
+          "brier": 0.289711,
+          "calibration_gap": 0.043964,
+          "logloss": 0.773359,
+          "mean_probability": 0.543964,
+          "n": 2,
+          "outcome_rate": 0.5
         },
         "runs": {
-          "away_bias_runs": 0.1331,
-          "away_mae_runs": 2.0476,
-          "home_bias_runs": -0.6614,
-          "home_mae_runs": 1.942,
-          "n": 11,
-          "total_bias_runs": -0.5283,
-          "total_mae_runs": 3.6893
+          "away_bias_runs": 4.7136,
+          "away_mae_runs": 8.8184,
+          "home_bias_runs": -2.2435,
+          "home_mae_runs": 2.2435,
+          "n": 2,
+          "total_bias_runs": 2.4701,
+          "total_mae_runs": 8.7533
+        }
+      },
+      "FINAL": {
+        "games": 6,
+        "probability": {
+          "accuracy_at_50": 0.833333,
+          "brier": 0.206219,
+          "calibration_gap": 0.0376,
+          "logloss": 0.604676,
+          "mean_probability": 0.5376,
+          "n": 6,
+          "outcome_rate": 0.5
+        },
+        "runs": {
+          "away_bias_runs": -0.0145,
+          "away_mae_runs": 2.1301,
+          "home_bias_runs": 0.1225,
+          "home_mae_runs": 2.6646,
+          "n": 6,
+          "total_bias_runs": 0.1079,
+          "total_mae_runs": 4.1152
+        }
+      },
+      "LATE": {
+        "games": 1,
+        "probability": {
+          "accuracy_at_50": 1.0,
+          "brier": 0.20581,
+          "calibration_gap": 0.453663,
+          "logloss": 0.604519,
+          "mean_probability": 0.453663,
+          "n": 1,
+          "outcome_rate": 0.0
+        },
+        "runs": {
+          "away_bias_runs": 1.8939,
+          "away_mae_runs": 1.8939,
+          "home_bias_runs": -2.6975,
+          "home_mae_runs": 2.6975,
+          "n": 1,
+          "total_bias_runs": -0.8036,
+          "total_mae_runs": 0.8036
         }
       }
     },
     "by_probability_band": {
       "55-60%": {
         "accuracy_at_50": 0.666667,
-        "brier": 0.225637,
-        "calibration_gap": -0.090159,
-        "logloss": 0.643874,
-        "mean_probability": 0.576508,
+        "brier": 0.232766,
+        "calibration_gap": -0.089837,
+        "logloss": 0.658492,
+        "mean_probability": 0.576829,
         "n": 3,
         "outcome_rate": 0.666667
       },
       "60-65%": {
-        "accuracy_at_50": 0.5,
-        "brier": 0.246941,
-        "calibration_gap": 0.127931,
-        "logloss": 0.685517,
-        "mean_probability": 0.627931,
-        "n": 2,
-        "outcome_rate": 0.5
+        "accuracy_at_50": 1.0,
+        "brier": 0.152998,
+        "calibration_gap": -0.39115,
+        "logloss": 0.496183,
+        "mean_probability": 0.60885,
+        "n": 1,
+        "outcome_rate": 1.0
       },
       "<55%": {
-        "accuracy_at_50": 0.5,
-        "brier": 0.241443,
-        "calibration_gap": 0.135038,
-        "logloss": 0.675831,
-        "mean_probability": 0.468372,
-        "n": 6,
-        "outcome_rate": 0.333333
+        "accuracy_at_50": 0.8,
+        "brier": 0.23425,
+        "calibration_gap": 0.285571,
+        "logloss": 0.661527,
+        "mean_probability": 0.485571,
+        "n": 5,
+        "outcome_rate": 0.2
       }
     },
     "data_quality_components": {
-      "blockers": {
-        "starter_stats_unusable": 2
-      },
+      "blockers": {},
       "mean_components": {
         "bullpen": 1.0,
-        "lineup_identity": 1.0,
-        "lineup_stats": 1.0,
+        "lineup_identity": 0.6667,
+        "lineup_stats": 0.6849,
         "sharp_coverage": 1.0,
-        "sharp_recency": 0.9955,
+        "sharp_recency": 0.9948,
         "starter_identity": 1.0,
-        "starter_stats": 0.8182,
+        "starter_stats": 1.0,
         "team_stats": 1.0,
         "weather": 1.0
       },
-      "n": 11
+      "n": 9
     },
-    "games": 11,
+    "games": 9,
     "probability": {
       "all_markets": {
-        "accuracy_at_50": 0.545455,
-        "brier": 0.238132,
-        "calibration_gap": 0.072329,
-        "logloss": 0.668877,
-        "mean_probability": 0.526874,
-        "n": 11,
-        "outcome_rate": 0.454545
+        "accuracy_at_50": 0.777778,
+        "brier": 0.224727,
+        "calibration_gap": 0.085244,
+        "logloss": 0.642144,
+        "mean_probability": 0.529688,
+        "n": 9,
+        "outcome_rate": 0.444444
       },
       "by_market": {
         "ML": {
-          "accuracy_at_50": 0.545455,
-          "brier": 0.238132,
-          "calibration_gap": 0.072329,
-          "logloss": 0.668877,
-          "mean_probability": 0.526874,
-          "n": 11,
-          "outcome_rate": 0.454545
+          "accuracy_at_50": 0.777778,
+          "brier": 0.224727,
+          "calibration_gap": 0.085244,
+          "logloss": 0.642144,
+          "mean_probability": 0.529688,
+          "n": 9,
+          "outcome_rate": 0.444444
         },
         "RUNLINE": {
           "n": 0
@@ -299,13 +402,13 @@
       }
     },
     "runs": {
-      "away_bias_runs": 0.1331,
-      "away_mae_runs": 2.0476,
-      "home_bias_runs": -0.6614,
-      "home_mae_runs": 1.942,
-      "n": 11,
-      "total_bias_runs": -0.5283,
-      "total_mae_runs": 3.6893
+      "away_bias_runs": 1.2482,
+      "away_mae_runs": 3.5901,
+      "home_bias_runs": -0.7166,
+      "home_mae_runs": 2.5747,
+      "n": 9,
+      "total_bias_runs": 0.5316,
+      "total_mae_runs": 4.7779
     }
   },
   "model_generation": "v13.10-gen-structural-nb-independent-transfer-park-extra-surface-v3",

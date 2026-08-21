@@ -1,25 +1,25 @@
 # V13.10 Champion Diagnostic Dashboard
 
 Model generation: `v13.10-gen-structural-nb-independent-transfer-park-extra-surface-v3`
-Latest settled date: `2026-08-19`
+Latest settled date: `2026-08-20`
 
 ## Core scorecard
 
 | Metric | Latest day | Cumulative |
 |---|---:|---:|
-| Games | 11 | 11 |
-| Home run MAE | 1.942 | 1.942 |
-| Away run MAE | 2.048 | 2.048 |
-| Total run MAE | 3.689 | 3.689 |
-| Brier | 0.238 | 0.238 |
-| LogLoss | 0.669 | 0.669 |
-| Calibration gap | 0.072 | 0.072 |
+| Games | 9 | 20 |
+| Home run MAE | 2.575 | 2.227 |
+| Away run MAE | 3.590 | 2.742 |
+| Total run MAE | 4.778 | 4.179 |
+| Brier | 0.225 | 0.232 |
+| LogLoss | 0.642 | 0.657 |
+| Calibration gap | 0.085 | 0.078 |
 
 ## Cumulative by market
 
 | Market | N | Brier | LogLoss | Mean p | Outcome rate | Calibration gap |
 |---|---:|---:|---:|---:|---:|---:|
-| ML | 11 | 0.238 | 0.669 | 0.527 | 0.455 | 0.072 |
+| ML | 20 | 0.232 | 0.657 | 0.528 | 0.450 | 0.078 |
 | RUNLINE | 0 | — | — | — | — | — |
 | TOTAL | 0 | — | — | — | — | — |
 
@@ -27,7 +27,8 @@ Latest settled date: `2026-08-19`
 
 | DQ band | Games | Run MAE total | Brier | LogLoss |
 |---|---:|---:|---:|---:|
-| >=0.90 | 9 | 3.277 | 0.220 | 0.633 |
+| >=0.90 | 15 | 3.613 | 0.215 | 0.622 |
+| 0.60-0.75 | 3 | 6.103 | 0.262 | 0.717 |
 | 0.75-0.90 | 2 | 5.542 | 0.318 | 0.830 |
 
 ## Highest run-error teams (min 3 observations)

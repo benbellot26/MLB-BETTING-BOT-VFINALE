@@ -1,5 +1,7 @@
 {
-  "alerts": [],
+  "alerts": [
+    "daily_future_coverage_incomplete"
+  ],
   "any_market_edge_claim_allowed": false,
   "calibration": {
     "GLOBAL": {
@@ -54,22 +56,22 @@
   },
   "claim": "monitoring artifact only; market-edge claims are blocked until each market independently clears proper-score and sample-size evidence",
   "daily_coverage": {
-    "complete_future_coverage": true,
-    "future_coverage_rate": 1.0,
+    "complete_future_coverage": false,
+    "future_coverage_rate": 0.8666666666666667,
     "status_counts": {
-      "ANALYZED": 6,
-      "SKIPPED_ALREADY_STARTED": 3
+      "ANALYZED": 13,
+      "SKIPPED_NO_ODDS_EVENT": 2
     }
   },
   "diagnostic_scope": "current-generation-only",
   "edge_evidence": {
     "ML": {
-      "brier_gain_vs_market": -0.005361721671545482,
+      "brier_gain_vs_market": 0.003407760204199972,
       "claim_allowed": false,
-      "gap_residual_slope": -1.909560244404998,
-      "logloss_gain_vs_market": -0.010132979532860712,
+      "gap_residual_slope": -0.2569537693461766,
+      "logloss_gain_vs_market": 0.007199200711047205,
       "minimum_n": 300,
-      "n": 11,
+      "n": 20,
       "reason": "INSUFFICIENT_INDEPENDENT_MARKET_TARGETS"
     },
     "RUNLINE": {
@@ -527,7 +529,7 @@
     },
     "operability": {
       "meaning": "runtime coverage and ability to produce the scheduled probability surface",
-      "status": "OK"
+      "status": "DEGRADED"
     },
     "probability_validation": {
       "meaning": "current-generation calibration volume has cleared each strict market floor",
@@ -544,13 +546,13 @@
     "ML": {
       "confidence_shift": null,
       "mean_probability_shift": null,
-      "observations": 21,
+      "observations": 45,
       "prior_mean_abs_edge_from_50": null,
       "prior_mean_probability": null,
       "prior_n": 0,
-      "recent_mean_abs_edge_from_50": 0.06329138095238095,
-      "recent_mean_probability": 0.5250645238095238,
-      "recent_n": 21,
+      "recent_mean_abs_edge_from_50": 0.05928733333333334,
+      "recent_mean_probability": 0.5283744888888889,
+      "recent_n": 45,
       "sample_policy": "current-generation attested; one canonical settled side per game/market"
     },
     "RUNLINE": {
@@ -580,16 +582,16 @@
   },
   "proper_scoring_vs_market": {
     "ML": {
-      "brier_gain_vs_market": -0.005361721671545482,
-      "gap_residual_slope": -1.909560244404998,
-      "logloss_gain_vs_market": -0.010132979532860712,
-      "market_brier": 0.23277054337309092,
-      "market_logloss": 0.6587438858840218,
-      "mean_model_minus_market": -0.03295245454545453,
-      "model_brier": 0.23813226504463642,
-      "model_logloss": 0.6688768654168825,
-      "n": 11,
-      "outcome_residual_vs_market": -0.1052810909090909
+      "brier_gain_vs_market": 0.003407760204199972,
+      "gap_residual_slope": -0.2569537693461766,
+      "logloss_gain_vs_market": 0.007199200711047205,
+      "market_brier": 0.23550778955764998,
+      "market_logloss": 0.6640460915217214,
+      "mean_model_minus_market": -0.03473549999999999,
+      "model_brier": 0.23210002935345,
+      "model_logloss": 0.6568468908106743,
+      "n": 20,
+      "outcome_residual_vs_market": -0.11287585
     },
     "RUNLINE": {
       "n": 0
@@ -621,26 +623,26 @@
   "tracking_availability": {
     "by_market": {
       "ML": {
-        "canonical": 323,
-        "current_generation_attested": 21,
-        "current_generation_scoreable": 21,
-        "not_current_generation_attested": 302,
-        "settled": 646
+        "canonical": 371,
+        "current_generation_attested": 45,
+        "current_generation_scoreable": 45,
+        "not_current_generation_attested": 326,
+        "settled": 742
       },
       "RUNLINE": {
-        "settled": 1120
+        "settled": 1312
       },
       "TOTAL": {
-        "settled": 646
+        "settled": 738
       }
     },
     "note": "missing market probabilities are reported, never imputed; RL/TOTAL proper-score evidence remains unavailable until a real comparable market probability was captured",
     "total": {
-      "canonical": 323,
-      "current_generation_attested": 21,
-      "current_generation_scoreable": 21,
-      "not_current_generation_attested": 302,
-      "settled": 2412
+      "canonical": 371,
+      "current_generation_attested": 45,
+      "current_generation_scoreable": 45,
+      "not_current_generation_attested": 326,
+      "settled": 2792
     }
   },
   "v138_audit_research": {
@@ -779,7 +781,7 @@
           "ML": {
             "active": false,
             "minimum_n": 300,
-            "n": 12,
+            "n": 21,
             "reason": "INSUFFICIENT_MARKET_SPECIFIC_PIT_BOOK_TARGETS"
           },
           "RUNLINE": {
@@ -796,7 +798,7 @@
           }
         },
         "minimum_n_per_market": 300,
-        "n": 12,
+        "n": 21,
         "production_applied": false
       },
       "dynamic_calibration": {
@@ -806,7 +808,7 @@
           "ML": {
             "active": false,
             "minimum_n": 300,
-            "n": 84,
+            "n": 93,
             "reason": "INSUFFICIENT_MARKET_SPECIFIC_NATIVE_TARGETS"
           },
           "RUNLINE": {
@@ -823,10 +825,10 @@
           }
         },
         "minimum_n_per_market": 300,
-        "n": 84,
+        "n": 93,
         "production_applied": false
       },
-      "independent_targets": 84,
+      "independent_targets": 93,
       "uncertainty_coverage": {
         "activation_scope": "per-market; aggregate active only when ML, RUNLINE and TOTAL each pass independently",
         "active": false,
@@ -840,7 +842,7 @@
             "frequentist_confidence_interval": false,
             "mean_interval_half_width": null,
             "minimum_n": 300,
-            "n": 30,
+            "n": 39,
             "reason": "INSUFFICIENT_MARKET_SPECIFIC_NATIVE_TARGETS",
             "usable_bins": 0,
             "user_facing_type": "model_uncertainty_band",
@@ -878,7 +880,7 @@
           }
         },
         "minimum_n_per_market": 300,
-        "n": 30,
+        "n": 39,
         "production_applied": false
       }
     },
