@@ -6,6 +6,8 @@ from typing import Any
 
 SCHEMA = "v13-8-critical-change-v1"
 
+_PHASE_RANK = {"EARLY": 0, "LATE": 1, "FINAL": 2}
+
 
 def _player_id(player: Any) -> str:
     if isinstance(player, dict):
@@ -60,6 +62,14 @@ def signature(result: dict[str, Any]) -> str:
     return hashlib.sha256(raw.encode()).hexdigest()
 
 
+def _phase_progression(previous: dict[str, Any], current_result: dict[str, Any]) -> str | None:
+    old_phase = str(previous.get("phase") or "").upper()
+    new_phase = str(current_result.get("phase") or "").upper()
+    if old_phase in _PHASE_RANK and new_phase in _PHASE_RANK and _PHASE_RANK[new_phase] > _PHASE_RANK[old_phase]:
+        return f"PHASE_{old_phase}_TO_{new_phase}"
+    return None
+
+
 def classify(
     previous: dict[str, Any] | None,
     current_result: dict[str, Any],
@@ -80,7 +90,12 @@ def classify(
             "personnel_state": current,
         }
 
-    if previous_sig == current_sig:
+    reasons: list[str] = []
+    phase_reason = _phase_progression(previous, current_result)
+    if phase_reason:
+        reasons.append(phase_reason)
+
+    if previous_sig == current_sig and not reasons:
         return {
             "schema": SCHEMA,
             "changed": False,
@@ -90,30 +105,30 @@ def classify(
             "personnel_state": current,
         }
 
-    reasons: list[str] = []
     for side in ("home", "away"):
         starter_key = f"{side}_starter"
         old_starter = str(previous_state.get(starter_key) or "")
         new_starter = str(current.get(starter_key) or "")
-        if old_starter and new_starter and old_starter != new_starter:
+        if not old_starter and new_starter:
+            reasons.append(f"{side.upper()}_STARTER_ANNOUNCED")
+        elif old_starter and new_starter and old_starter != new_starter:
             reasons.append(f"{side.upper()}_STARTER_CHANGED")
 
         lineup_key = f"{side}_lineup"
         old_lineup = list(previous_state.get(lineup_key) or [])
         new_lineup = list(current.get(lineup_key) or [])
-        if old_lineup and new_lineup and old_lineup != new_lineup:
+        if not old_lineup and new_lineup:
+            reasons.append(f"{side.upper()}_LINEUP_PUBLISHED")
+        elif old_lineup and new_lineup and old_lineup != new_lineup:
             if set(old_lineup) != set(new_lineup):
                 reasons.append(f"{side.upper()}_LINEUP_PERSONNEL_CHANGED")
             else:
                 reasons.append(f"{side.upper()}_LINEUP_ORDER_CHANGED")
 
-    critical = any(
-        "STARTER_CHANGED" in reason or "LINEUP_PERSONNEL_CHANGED" in reason
-        for reason in reasons
-    )
+    critical = bool(reasons)
     return {
         "schema": SCHEMA,
-        "changed": True,
+        "changed": bool(reasons) or previous_sig != current_sig,
         "critical": critical,
         "reason": "+".join(reasons) if reasons else "SIGNATURE_CHANGED_NONCRITICAL",
         "analysis_signature": current_sig,

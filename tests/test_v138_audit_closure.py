@@ -89,13 +89,13 @@ class V138AuditClosureTests(unittest.TestCase):
         self.assertFalse(validation.learn_extra_innings_home_prior([{"extra_innings":True,"home_win":1}]*50)["active"])
         self.assertFalse(advanced.dynamic_calibration([{"outcome":1,"p_model":.6}]*50)["active"])
 
-    def test_critical_live_change_allows_starter_or_personnel_republish_only(self):
+    def test_material_live_change_republishes_starter_personnel_or_lineup_order(self):
         base={"game_pk":7,"ctx":{"home_starter":{"id":1},"away_starter":{"id":2},
               "home_lineup":{"players":[{"id":x} for x in range(10,19)]},"away_lineup":{"players":[{"id":x} for x in range(20,29)]}}}
         prev={"analysis_signature":live.signature(base),"personnel_state":live.personnel_state(base)}
         self.assertFalse(live.classify(prev,base)["changed"])
         order={"game_pk":7,"ctx":dict(base["ctx"])};order["ctx"]["home_lineup"]={"players":[{"id":x} for x in [11,10,12,13,14,15,16,17,18]]}
-        ch=live.classify(prev,order);self.assertTrue(ch["changed"]);self.assertFalse(ch["critical"])
+        ch=live.classify(prev,order);self.assertTrue(ch["changed"]);self.assertTrue(ch["critical"])
         starter={"game_pk":7,"ctx":dict(base["ctx"])};starter["ctx"]["home_starter"]={"id":99}
         self.assertTrue(live.classify(prev,starter)["critical"])
 
