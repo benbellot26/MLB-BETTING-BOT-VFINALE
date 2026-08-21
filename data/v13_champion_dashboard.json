@@ -6,12 +6,12 @@
       "0.60-0.75": {
         "games": 3,
         "probability": {
-          "accuracy_at_50": 0.666667,
-          "brier": 0.261744,
-          "calibration_gap": 0.18053,
-          "logloss": 0.717079,
-          "mean_probability": 0.513864,
-          "n": 3,
+          "accuracy_at_50": 0.555556,
+          "brier": 0.280487,
+          "calibration_gap": 0.173522,
+          "logloss": 0.756757,
+          "mean_probability": 0.506855,
+          "n": 9,
           "outcome_rate": 0.333333
         },
         "runs": {
@@ -27,13 +27,13 @@
       "0.75-0.90": {
         "games": 2,
         "probability": {
-          "accuracy_at_50": 0.0,
-          "brier": 0.317611,
-          "calibration_gap": 0.046462,
-          "logloss": 0.83039,
-          "mean_probability": 0.546462,
-          "n": 2,
-          "outcome_rate": 0.5
+          "accuracy_at_50": 0.333333,
+          "brier": 0.243186,
+          "calibration_gap": 0.313326,
+          "logloss": 0.678112,
+          "mean_probability": 0.479993,
+          "n": 6,
+          "outcome_rate": 0.166667
         },
         "runs": {
           "away_bias_runs": -2.5587,
@@ -48,13 +48,13 @@
       ">=0.90": {
         "games": 15,
         "probability": {
-          "accuracy_at_50": 0.733333,
-          "brier": 0.21477,
-          "calibration_gap": 0.061886,
-          "logloss": 0.621661,
-          "mean_probability": 0.528553,
-          "n": 15,
-          "outcome_rate": 0.466667
+          "accuracy_at_50": 0.590909,
+          "brier": 0.237053,
+          "calibration_gap": 0.063623,
+          "logloss": 0.666549,
+          "mean_probability": 0.495441,
+          "n": 44,
+          "outcome_rate": 0.431818
         },
         "runs": {
           "away_bias_runs": 0.4329,
@@ -72,11 +72,11 @@
         "games": 2,
         "probability": {
           "accuracy_at_50": 0.5,
-          "brier": 0.289711,
-          "calibration_gap": 0.043964,
-          "logloss": 0.773359,
-          "mean_probability": 0.543964,
-          "n": 2,
+          "brier": 0.278376,
+          "calibration_gap": -0.003596,
+          "logloss": 0.752463,
+          "mean_probability": 0.496404,
+          "n": 6,
           "outcome_rate": 0.5
         },
         "runs": {
@@ -92,13 +92,13 @@
       "FINAL": {
         "games": 17,
         "probability": {
-          "accuracy_at_50": 0.647059,
-          "brier": 0.226869,
-          "calibration_gap": 0.060072,
-          "logloss": 0.646218,
-          "mean_probability": 0.53066,
-          "n": 17,
-          "outcome_rate": 0.470588
+          "accuracy_at_50": 0.56,
+          "brier": 0.237789,
+          "calibration_gap": 0.093587,
+          "logloss": 0.667936,
+          "mean_probability": 0.493587,
+          "n": 50,
+          "outcome_rate": 0.4
         },
         "runs": {
           "away_bias_runs": 0.081,
@@ -113,12 +113,12 @@
       "LATE": {
         "games": 1,
         "probability": {
-          "accuracy_at_50": 1.0,
-          "brier": 0.20581,
-          "calibration_gap": 0.453663,
-          "logloss": 0.604519,
-          "mean_probability": 0.453663,
-          "n": 1,
+          "accuracy_at_50": 0.666667,
+          "brier": 0.28471,
+          "calibration_gap": 0.527757,
+          "logloss": 0.765346,
+          "mean_probability": 0.527757,
+          "n": 3,
           "outcome_rate": 0.0
         },
         "runs": {
@@ -134,31 +134,40 @@
     },
     "by_probability_band": {
       "55-60%": {
-        "accuracy_at_50": 0.666667,
-        "brier": 0.229202,
-        "calibration_gap": -0.089998,
-        "logloss": 0.651183,
-        "mean_probability": 0.576668,
-        "n": 6,
-        "outcome_rate": 0.666667
+        "accuracy_at_50": 0.7,
+        "brier": 0.227379,
+        "calibration_gap": -0.124421,
+        "logloss": 0.647606,
+        "mean_probability": 0.575579,
+        "n": 10,
+        "outcome_rate": 0.7
       },
       "60-65%": {
-        "accuracy_at_50": 0.666667,
-        "brier": 0.215627,
-        "calibration_gap": -0.045096,
-        "logloss": 0.622406,
-        "mean_probability": 0.621571,
-        "n": 3,
-        "outcome_rate": 0.666667
+        "accuracy_at_50": 0.333333,
+        "brier": 0.3039,
+        "calibration_gap": 0.288613,
+        "logloss": 0.80338,
+        "mean_probability": 0.621947,
+        "n": 9,
+        "outcome_rate": 0.333333
+      },
+      "65-70%": {
+        "accuracy_at_50": 1.0,
+        "brier": 0.102023,
+        "calibration_gap": -0.31941,
+        "logloss": 0.384795,
+        "mean_probability": 0.68059,
+        "n": 1,
+        "outcome_rate": 1.0
       },
       "<55%": {
-        "accuracy_at_50": 0.636364,
-        "brier": 0.238174,
-        "calibration_gap": 0.203462,
-        "logloss": 0.669329,
-        "mean_probability": 0.476189,
-        "n": 11,
-        "outcome_rate": 0.272727
+        "accuracy_at_50": 0.564103,
+        "brier": 0.238536,
+        "calibration_gap": 0.133517,
+        "logloss": 0.66965,
+        "mean_probability": 0.441209,
+        "n": 39,
+        "outcome_rate": 0.307692
       }
     },
     "data_quality_components": {
@@ -181,13 +190,13 @@
     "games": 20,
     "probability": {
       "all_markets": {
-        "accuracy_at_50": 0.65,
-        "brier": 0.2321,
-        "calibration_gap": 0.07814,
-        "logloss": 0.656847,
-        "mean_probability": 0.52814,
-        "n": 20,
-        "outcome_rate": 0.45
+        "accuracy_at_50": 0.559322,
+        "brier": 0.244302,
+        "calibration_gap": 0.105781,
+        "logloss": 0.681485,
+        "mean_probability": 0.495611,
+        "n": 59,
+        "outcome_rate": 0.389831
       },
       "by_market": {
         "ML": {
@@ -200,10 +209,22 @@
           "outcome_rate": 0.45
         },
         "RUNLINE": {
-          "n": 0
+          "accuracy_at_50": 0.55,
+          "brier": 0.246184,
+          "calibration_gap": 0.111457,
+          "logloss": 0.685239,
+          "mean_probability": 0.411457,
+          "n": 20,
+          "outcome_rate": 0.3
         },
         "TOTAL": {
-          "n": 0
+          "accuracy_at_50": 0.473684,
+          "brier": 0.255165,
+          "calibration_gap": 0.128901,
+          "logloss": 0.703469,
+          "mean_probability": 0.549954,
+          "n": 19,
+          "outcome_rate": 0.421053
         }
       }
     },
@@ -223,12 +244,12 @@
       "0.60-0.75": {
         "games": 3,
         "probability": {
-          "accuracy_at_50": 0.666667,
-          "brier": 0.261744,
-          "calibration_gap": 0.18053,
-          "logloss": 0.717079,
-          "mean_probability": 0.513864,
-          "n": 3,
+          "accuracy_at_50": 0.555556,
+          "brier": 0.280487,
+          "calibration_gap": 0.173522,
+          "logloss": 0.756757,
+          "mean_probability": 0.506855,
+          "n": 9,
           "outcome_rate": 0.333333
         },
         "runs": {
@@ -244,13 +265,13 @@
       ">=0.90": {
         "games": 6,
         "probability": {
-          "accuracy_at_50": 0.833333,
-          "brier": 0.206219,
-          "calibration_gap": 0.0376,
-          "logloss": 0.604676,
-          "mean_probability": 0.5376,
-          "n": 6,
-          "outcome_rate": 0.5
+          "accuracy_at_50": 0.588235,
+          "brier": 0.239428,
+          "calibration_gap": 0.008056,
+          "logloss": 0.670498,
+          "mean_probability": 0.478644,
+          "n": 17,
+          "outcome_rate": 0.470588
         },
         "runs": {
           "away_bias_runs": -0.0145,
@@ -268,11 +289,11 @@
         "games": 2,
         "probability": {
           "accuracy_at_50": 0.5,
-          "brier": 0.289711,
-          "calibration_gap": 0.043964,
-          "logloss": 0.773359,
-          "mean_probability": 0.543964,
-          "n": 2,
+          "brier": 0.278376,
+          "calibration_gap": -0.003596,
+          "logloss": 0.752463,
+          "mean_probability": 0.496404,
+          "n": 6,
           "outcome_rate": 0.5
         },
         "runs": {
@@ -288,13 +309,13 @@
       "FINAL": {
         "games": 6,
         "probability": {
-          "accuracy_at_50": 0.833333,
-          "brier": 0.206219,
-          "calibration_gap": 0.0376,
-          "logloss": 0.604676,
-          "mean_probability": 0.5376,
-          "n": 6,
-          "outcome_rate": 0.5
+          "accuracy_at_50": 0.588235,
+          "brier": 0.239428,
+          "calibration_gap": 0.008056,
+          "logloss": 0.670498,
+          "mean_probability": 0.478644,
+          "n": 17,
+          "outcome_rate": 0.470588
         },
         "runs": {
           "away_bias_runs": -0.0145,
@@ -309,12 +330,12 @@
       "LATE": {
         "games": 1,
         "probability": {
-          "accuracy_at_50": 1.0,
-          "brier": 0.20581,
-          "calibration_gap": 0.453663,
-          "logloss": 0.604519,
-          "mean_probability": 0.453663,
-          "n": 1,
+          "accuracy_at_50": 0.666667,
+          "brier": 0.28471,
+          "calibration_gap": 0.527757,
+          "logloss": 0.765346,
+          "mean_probability": 0.527757,
+          "n": 3,
           "outcome_rate": 0.0
         },
         "runs": {
@@ -330,31 +351,31 @@
     },
     "by_probability_band": {
       "55-60%": {
-        "accuracy_at_50": 0.666667,
-        "brier": 0.232766,
-        "calibration_gap": -0.089837,
-        "logloss": 0.658492,
-        "mean_probability": 0.576829,
-        "n": 3,
-        "outcome_rate": 0.666667
+        "accuracy_at_50": 0.8,
+        "brier": 0.213637,
+        "calibration_gap": -0.225799,
+        "logloss": 0.619925,
+        "mean_probability": 0.574201,
+        "n": 5,
+        "outcome_rate": 0.8
       },
       "60-65%": {
-        "accuracy_at_50": 1.0,
-        "brier": 0.152998,
-        "calibration_gap": -0.39115,
-        "logloss": 0.496183,
-        "mean_probability": 0.60885,
-        "n": 1,
-        "outcome_rate": 1.0
+        "accuracy_at_50": 0.25,
+        "brier": 0.327206,
+        "calibration_gap": 0.367619,
+        "logloss": 0.851329,
+        "mean_probability": 0.617619,
+        "n": 4,
+        "outcome_rate": 0.25
       },
       "<55%": {
-        "accuracy_at_50": 0.8,
-        "brier": 0.23425,
-        "calibration_gap": 0.285571,
-        "logloss": 0.661527,
-        "mean_probability": 0.485571,
-        "n": 5,
-        "outcome_rate": 0.2
+        "accuracy_at_50": 0.588235,
+        "brier": 0.248098,
+        "calibration_gap": 0.079833,
+        "logloss": 0.688491,
+        "mean_probability": 0.432774,
+        "n": 17,
+        "outcome_rate": 0.352941
       }
     },
     "data_quality_components": {
@@ -375,13 +396,13 @@
     "games": 9,
     "probability": {
       "all_markets": {
-        "accuracy_at_50": 0.777778,
-        "brier": 0.224727,
-        "calibration_gap": 0.085244,
-        "logloss": 0.642144,
-        "mean_probability": 0.529688,
-        "n": 9,
-        "outcome_rate": 0.444444
+        "accuracy_at_50": 0.576923,
+        "brier": 0.253641,
+        "calibration_gap": 0.065333,
+        "logloss": 0.700357,
+        "mean_probability": 0.488409,
+        "n": 26,
+        "outcome_rate": 0.423077
       },
       "by_market": {
         "ML": {
@@ -394,10 +415,22 @@
           "outcome_rate": 0.444444
         },
         "RUNLINE": {
-          "n": 0
+          "accuracy_at_50": 0.444444,
+          "brier": 0.264095,
+          "calibration_gap": -0.04298,
+          "logloss": 0.720662,
+          "mean_probability": 0.401465,
+          "n": 9,
+          "outcome_rate": 0.444444
         },
         "TOTAL": {
-          "n": 0
+          "accuracy_at_50": 0.5,
+          "brier": 0.274408,
+          "calibration_gap": 0.164784,
+          "logloss": 0.743004,
+          "mean_probability": 0.539784,
+          "n": 8,
+          "outcome_rate": 0.375
         }
       }
     },

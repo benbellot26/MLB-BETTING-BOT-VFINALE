@@ -7,49 +7,49 @@
     "GLOBAL": {
       "active": false,
       "method": "identity",
-      "n": 33,
+      "n": 60,
       "status": "COLLECTING",
       "strict_required_n": 600
     },
     "MARKET:ML": {
       "active": false,
       "method": "identity",
-      "n": 11,
+      "n": 20,
       "status": "COLLECTING",
       "strict_required_n": 400
     },
     "MARKET:RUNLINE": {
       "active": false,
       "method": "identity",
-      "n": 11,
+      "n": 20,
       "status": "COLLECTING",
       "strict_required_n": 400
     },
     "MARKET:TOTAL": {
       "active": false,
       "method": "identity",
-      "n": 11,
+      "n": 20,
       "status": "COLLECTING",
       "strict_required_n": 400
     },
     "PHASE:FINAL:ML": {
       "active": false,
       "method": "identity",
-      "n": 11,
+      "n": 17,
       "status": "COLLECTING",
       "strict_required_n": 300
     },
     "PHASE:FINAL:RUNLINE": {
       "active": false,
       "method": "identity",
-      "n": 11,
+      "n": 17,
       "status": "COLLECTING",
       "strict_required_n": 300
     },
     "PHASE:FINAL:TOTAL": {
       "active": false,
       "method": "identity",
-      "n": 11,
+      "n": 16,
       "status": "COLLECTING",
       "strict_required_n": 300
     }
@@ -539,7 +539,7 @@
   "model_generation": "v13.10-gen-structural-nb-independent-transfer-park-extra-surface-v3",
   "posterior": {
     "historical_observations": 255,
-    "live_observations": 63,
+    "live_observations": 119,
     "primary_probability_affected": false
   },
   "probability_drift": {
@@ -781,7 +781,7 @@
           "ML": {
             "active": false,
             "minimum_n": 300,
-            "n": 21,
+            "n": 12,
             "reason": "INSUFFICIENT_MARKET_SPECIFIC_PIT_BOOK_TARGETS"
           },
           "RUNLINE": {
@@ -798,7 +798,7 @@
           }
         },
         "minimum_n_per_market": 300,
-        "n": 21,
+        "n": 12,
         "production_applied": false
       },
       "dynamic_calibration": {
@@ -808,7 +808,7 @@
           "ML": {
             "active": false,
             "minimum_n": 300,
-            "n": 93,
+            "n": 84,
             "reason": "INSUFFICIENT_MARKET_SPECIFIC_NATIVE_TARGETS"
           },
           "RUNLINE": {
@@ -825,10 +825,10 @@
           }
         },
         "minimum_n_per_market": 300,
-        "n": 93,
+        "n": 84,
         "production_applied": false
       },
-      "independent_targets": 93,
+      "independent_targets": 84,
       "uncertainty_coverage": {
         "activation_scope": "per-market; aggregate active only when ML, RUNLINE and TOTAL each pass independently",
         "active": false,
@@ -842,7 +842,7 @@
             "frequentist_confidence_interval": false,
             "mean_interval_half_width": null,
             "minimum_n": 300,
-            "n": 39,
+            "n": 30,
             "reason": "INSUFFICIENT_MARKET_SPECIFIC_NATIVE_TARGETS",
             "usable_bins": 0,
             "user_facing_type": "model_uncertainty_band",
@@ -880,7 +880,7 @@
           }
         },
         "minimum_n_per_market": 300,
-        "n": 39,
+        "n": 30,
         "production_applied": false
       }
     },
