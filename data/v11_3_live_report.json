@@ -1,5 +1,5 @@
 {
-  "analyzed_at": "2026-08-21T18:56:32.876151+00:00",
+  "analyzed_at": "2026-08-21T19:01:45.355231+00:00",
   "calibration_health": {
     "by_phase": {
       "EARLY": {
@@ -1854,7 +1854,7 @@
     "confirmed_lineups": 1,
     "confirmed_starters": 13,
     "matched_events": 15,
-    "mean_data_quality": 0.7642,
+    "mean_data_quality": 0.7721,
     "scheduled_games": 15,
     "sharp_coverage": {
       "ML": 15,
@@ -1923,14 +1923,14 @@
     "generation": "V12.3.2 value-selection-v1 + V12.4 predictive shadow",
     "historical_evidence": "legacy V10 1,801-game data are diagnostic only until a V12.3 structural baseline exists",
     "ledger": "PROPOSED -> PUBLISHED -> CONFIRMED_PLACED -> SETTLED",
-    "raw_archive": "runtime/v11/snapshots/2026-08-21_971298ec2b29a73c.json.gz",
+    "raw_archive": "runtime/v11/snapshots/2026-08-21_688985a8ce35b55e.json.gz",
     "runs_model": "immutable structural baseline + validated FINAL historical prior fallback + phase-specific live residual",
     "selection": "informational recommendations use model confidence + conservative EV/edge + DQ + uncertainty + Kelly; Winamax never decides eligibility",
     "selection_confidence": "RL >= 55%; ML/TOTAL >= 58%",
     "selection_price_floor": "reference decimal odds >= 1.40",
     "selection_reference_price": "fresh configured sharp books; exact side/point; second-best effective quote when >=2 books, otherwise single fresh sharp quote",
     "sharp_disagreement": "large model-vs-sharp disagreement reduces selection score but is not a hard directional veto",
-    "source_replay": "runtime/v11/source_replays/2026-08-21_971298ec2b29a73c_sources.json.gz",
+    "source_replay": "runtime/v11/source_replays/2026-08-21_688985a8ce35b55e_sources.json.gz",
     "staking": "bankroll-aware fractional Kelly; official combos disabled",
     "starter_model": "current season + N-1/N-2 prior affects structural run means",
     "uncertainty": "empirical phase/market reliability bins + market disagreement + DQ penalty",
@@ -3265,7 +3265,7 @@
       }
     },
     "affects_v12_selection": false,
-    "analyzed_at": "2026-08-21T18:56:32.876151+00:00",
+    "analyzed_at": "2026-08-21T19:01:45.355231+00:00",
     "canonicalization": "latest settled pre-game snapshot per game_pk",
     "convergence": {
       "affects_v12_selection": false,
@@ -3461,7 +3461,7 @@
       "weight_source": "NATIVE_ONLY"
     },
     "research_only": true,
-    "run_id": "971298ec2b29a73c",
+    "run_id": "688985a8ce35b55e",
     "schema": "v12-4-research-monitor-v1",
     "target_date": "2026-08-21",
     "v115": {
@@ -3578,7 +3578,7 @@
     },
     "version": "v12.4-research-monitor-v1"
   },
-  "run_id": "971298ec2b29a73c",
+  "run_id": "688985a8ce35b55e",
   "scheduled_games": 15,
   "schema": "v12-3-professional-v1",
   "shadow_challenger": {
