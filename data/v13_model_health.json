@@ -57,7 +57,8 @@
     "complete_future_coverage": true,
     "future_coverage_rate": 1.0,
     "status_counts": {
-      "ANALYZED": 15
+      "ANALYZED": 14,
+      "SKIPPED_ALREADY_STARTED": 1
     }
   },
   "diagnostic_scope": "current-generation-only",
@@ -601,18 +602,19 @@
     "active_for_production": false,
     "feature_coverage": {
       "bullpen_player": 1.0,
-      "lineup_player": 1.0,
-      "platoon": 0.98989898989899,
-      "starter_ip": 0.9642857142857143,
-      "statcast": 0.8954545454545454,
-      "weather_park": 0.9681818181818183
+      "lineup_player": 0.996031746031746,
+      "platoon": 0.9880952380952381,
+      "starter_ip": 0.9668367346938777,
+      "statcast": 0.8928571428571429,
+      "weather_park": 0.975
     },
     "minimum_games": 300,
-    "native_games": 11,
+    "native_games": 14,
     "rejection_reasons": {
-      "not_final_phase": 16,
-      "not_settled_final": 24,
-      "predictive_contract_mismatch": 621
+      "not_final_phase": 34,
+      "not_settled_final": 72,
+      "predictive_contract_mismatch": 621,
+      "rich_modules_missing": 3
     },
     "status": "COLLECTING"
   },

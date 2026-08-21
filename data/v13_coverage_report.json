@@ -1,9 +1,9 @@
 {
-  "analyzed_at": "2026-08-21T19:33:43.972120+00:00",
-  "analyzed_games": 15,
+  "analyzed_at": "2026-08-21T21:02:56.047529+00:00",
+  "analyzed_games": 14,
   "complete_future_coverage": true,
   "future_coverage_rate": 1.0,
-  "future_or_unresolved_games": 15,
+  "future_or_unresolved_games": 14,
   "games": [
     {
       "away": "Atlanta Braves",
@@ -11,7 +11,7 @@
       "game_pk": 823746,
       "home": "Milwaukee Brewers",
       "odds_event_id": "c7e232240c764a7cc09ae780b3289626",
-      "status": "ANALYZED"
+      "status": "SKIPPED_ALREADY_STARTED"
     },
     {
       "away": "St. Louis Cardinals",
@@ -127,11 +127,12 @@
     }
   ],
   "policy": "Every scheduled game is either ANALYZED or carries an explicit skip reason; ambiguous event identity fails closed.",
-  "run_id": "2a2e5bd54037f285",
+  "run_id": "5f40df423ed1fa9e",
   "scheduled_games": 15,
   "schema": "v13-daily-coverage-v1",
   "status_counts": {
-    "ANALYZED": 15
+    "ANALYZED": 14,
+    "SKIPPED_ALREADY_STARTED": 1
   },
   "target_date": "2026-08-21"
 }
