@@ -3,7 +3,7 @@
   "claim": "observability only; provider freshness is explicit and stale artifacts cannot look silently current",
   "dataset": {
     "dataset_content_sha256": "9f5bb8affc07864c4d0d5409a22720ba22cd4069fb0e74a34274489e4ecf600a",
-    "dataset_version": "d8a3007f8b6bb458e0248876ab982fb549407ef9",
+    "dataset_version": "33f3da3b4dbd7fbb9d9f51cdbf9c0fa1b4c196cc",
     "feature_contract_sha256": "08b35bb22ea34adb3113de13d335975ca00e401b9c1d80deada2473a9b661a61",
     "feature_rows": 14067,
     "label_rows": 14067
@@ -128,7 +128,7 @@
       }
     }
   },
-  "generated_at": "2026-08-21T14:22:29.927961+00:00",
+  "generated_at": "2026-08-21T19:17:24.013631+00:00",
   "provider_current": {
     "free_health_alerts": [],
     "free_health_status": "DEGRADED",
@@ -136,15 +136,15 @@
       "weather_previous_runs_fallback_used"
     ],
     "freshness": {
-      "mlb_state_age_hours": 2.278497816388889,
-      "park_age_hours": 2.27852734,
+      "mlb_state_age_hours": 7.193458354722223,
+      "park_age_hours": 7.193487878333333,
       "provider_stale_threshold_hours": 36.0,
-      "statcast_age_hours": 14.3747658325,
+      "statcast_age_hours": 19.289726370833332,
       "statcast_stale_threshold_hours": 72.0,
-      "weather_age_hours": 2.210863985277778
+      "weather_age_hours": 7.125824523611111
     },
     "il_signals": 88,
-    "observed_at": "2026-08-21T14:22:29.156997+00:00",
+    "observed_at": "2026-08-21T19:17:23.014935+00:00",
     "park_empty_parses": 0,
     "park_fallback_requests": 0,
     "park_rows": 525,
@@ -352,6 +352,35 @@
       },
       "il_signals": 88,
       "observed_at": "2026-08-21T14:22:29.156997+00:00",
+      "park_empty_parses": 0,
+      "park_fallback_requests": 0,
+      "park_rows": 525,
+      "rosters_ok": 30,
+      "statcast_failures": 0,
+      "statcast_rows": 165958,
+      "transactions": 569,
+      "weather_available": 71,
+      "weather_provider_counts": {
+        "Open-Meteo Previous Runs / Best Match": 71
+      },
+      "weather_rows": 71
+    },
+    {
+      "free_health_alerts": [],
+      "free_health_status": "DEGRADED",
+      "free_health_warnings": [
+        "weather_previous_runs_fallback_used"
+      ],
+      "freshness": {
+        "mlb_state_age_hours": 7.193458354722223,
+        "park_age_hours": 7.193487878333333,
+        "provider_stale_threshold_hours": 36.0,
+        "statcast_age_hours": 19.289726370833332,
+        "statcast_stale_threshold_hours": 72.0,
+        "weather_age_hours": 7.125824523611111
+      },
+      "il_signals": 88,
+      "observed_at": "2026-08-21T19:17:23.014935+00:00",
       "park_empty_parses": 0,
       "park_fallback_requests": 0,
       "park_rows": 525,
