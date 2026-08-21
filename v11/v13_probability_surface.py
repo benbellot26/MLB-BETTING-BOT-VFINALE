@@ -187,10 +187,8 @@ def reconcile(result: dict[str, Any]) -> dict[str, Any]:
         name = str(option.get("name") or "")
         if _norm(name) == _norm(home):
             other = _find_team(options, "RUNLINE", away, -point)
-            key = ("home", round(point, 6))
         elif _norm(name) == _norm(away):
             other = _find_team(options, "RUNLINE", home, -point)
-            key = ("away", round(point, 6))
         else:
             continue
         if other is None:
@@ -249,11 +247,16 @@ def validate(result: dict[str, Any], require_display_surface: bool = False) -> d
         if abs(_prob(standard[("home", 1.5)]) + _prob(standard[("away", -1.5)]) - 1.0) > TOLERANCE:
             errors.append("runline_home_plus_pair_not_complementary")
 
+    total_options = [o for o in options if str(o.get("market") or "").upper() == "TOTAL"]
+    canonical_total = (result.get("canonical_lines") or {}).get("TOTAL")
+    analysis_total = ((result.get("analysis_lines") or {}).get("TOTAL") or {})
+    total_expected = bool(total_options or canonical_total is not None or (analysis_total.get("points") or []))
     total_point, over, under = _canonical_total_pair(result)
-    if over is None or under is None:
-        errors.append("canonical_total_pair_missing")
-    elif abs(_prob(over) + _prob(under) - 1.0) > TOLERANCE:
-        errors.append("canonical_total_not_complementary")
+    if total_expected:
+        if over is None or under is None:
+            errors.append("canonical_total_pair_missing")
+        elif abs(_prob(over) + _prob(under) - 1.0) > TOLERANCE:
+            errors.append("canonical_total_not_complementary")
 
     display_complete = not any(
         error.startswith(("ml_pair_missing", "runline_standard_missing", "canonical_total_pair_missing"))
@@ -266,8 +269,10 @@ def validate(result: dict[str, Any], require_display_surface: bool = False) -> d
         "valid": not errors,
         "display_complete": display_complete,
         "canonical_total_point": total_point,
+        "total_market_expected": total_expected,
+        "total_market_available": bool(total_options),
         "errors": sorted(set(errors)),
-        "contract": "ML and complementary RL/TOTAL pairs sum to 1; standard +/-1.5 probabilities are monotone",
+        "contract": "ML and available complementary RL/TOTAL pairs sum to 1; standard +/-1.5 probabilities are monotone",
     }
 
 
