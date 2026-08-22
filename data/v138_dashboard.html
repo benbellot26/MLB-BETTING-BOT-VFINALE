@@ -1,48 +1,48 @@
 <!doctype html><html><head><meta charset="utf-8"><title>MLB V13.10 Model Health</title><style>
 body{font-family:system-ui,Arial;margin:28px;background:#111;color:#eee}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
 .card{background:#1c1c1c;border:1px solid #333;border-radius:10px;padding:14px}table{width:100%;border-collapse:collapse}td,th{border-bottom:1px solid #333;padding:7px;text-align:left}code{color:#9fe}
-</style></head><body><h1>MLB V13.10 — Model & Data Health</h1><p>Generated 2026-08-21T19:17:24.013631+00:00</p><div class="grid">
-<div class="card"><h3>Research challenger</h3><b>TRAINED_RESEARCH_ONLY</b><p>Games: 14067</p></div>
-<div class="card"><h3>Dataset</h3><p>Features: 14067<br>Labels: 14067</p></div>
-<div class="card"><h3>MLB state</h3><p>Rosters: 30/30<br>Transactions: 569<br>Age: 7.193458354722223 h</p></div>
-<div class="card"><h3>Free providers</h3><p>Status: DEGRADED<br>Statcast: 165958<br>Weather: 71/71<br>Park rows: 525</p></div>
-</div><h2>Alerts</h2><ul><li>None</li></ul><h2>Warnings</h2><ul><li>free_provider_health_degraded</li><li>weather_previous_runs_fallback_used</li></ul><h2>Feature drift</h2><table><tr><th>Feature</th><th>Std shift</th><th>Status</th></tr><tr><td>home_season_rpg</td><td>0.095</td><td>OK</td></tr><tr><td>away_season_rpg</td><td>0.12</td><td>OK</td></tr><tr><td>home_l30_rpg</td><td>0.033</td><td>OK</td></tr><tr><td>away_l30_rpg</td><td>0.055</td><td>OK</td></tr><tr><td>home_l14_rpg</td><td>-0.04</td><td>OK</td></tr><tr><td>away_l14_rpg</td><td>-0.06</td><td>OK</td></tr><tr><td>home_l7_rpg</td><td>-0.114</td><td>OK</td></tr><tr><td>away_l7_rpg</td><td>-0.042</td><td>OK</td></tr><tr><td>home_ra_pg</td><td>0.082</td><td>OK</td></tr><tr><td>away_ra_pg</td><td>0.107</td><td>OK</td></tr><tr><td>home_win_pct</td><td>0.012</td><td>OK</td></tr><tr><td>away_win_pct</td><td>0.004</td><td>OK</td></tr><tr><td>home_rest</td><td>0.146</td><td>OK</td></tr><tr><td>away_rest</td><td>0.146</td><td>OK</td></tr><tr><td>park_run_factor</td><td>0.0</td><td>OK</td></tr><tr><td>home_offense_talent</td><td>0.022</td><td>OK</td></tr><tr><td>away_offense_talent</td><td>0.04</td><td>OK</td></tr><tr><td>home_offense_x_away_defense</td><td>0.09</td><td>OK</td></tr><tr><td>away_offense_x_home_defense</td><td>0.078</td><td>OK</td></tr></table>
+</style></head><body><h1>MLB V13.10 — Model & Data Health</h1><p>Generated 2026-08-22T13:55:20.147948+00:00</p><div class="grid">
+<div class="card"><h3>Research challenger</h3><b>TRAINED_RESEARCH_ONLY</b><p>Games: 14082</p></div>
+<div class="card"><h3>Dataset</h3><p>Features: 14082<br>Labels: 14082</p></div>
+<div class="card"><h3>MLB state</h3><p>Rosters: 30/30<br>Transactions: 558<br>Age: 1.964879615 h</p></div>
+<div class="card"><h3>Free providers</h3><p>Status: DEGRADED<br>Statcast: 165596<br>Weather: 63/63<br>Park rows: 525</p></div>
+</div><h2>Alerts</h2><ul><li>None</li></ul><h2>Warnings</h2><ul><li>free_provider_health_degraded</li><li>weather_previous_runs_fallback_used</li></ul><h2>Feature drift</h2><table><tr><th>Feature</th><th>Std shift</th><th>Status</th></tr><tr><td>home_season_rpg</td><td>0.093</td><td>OK</td></tr><tr><td>away_season_rpg</td><td>0.123</td><td>OK</td></tr><tr><td>home_l30_rpg</td><td>0.023</td><td>OK</td></tr><tr><td>away_l30_rpg</td><td>0.048</td><td>OK</td></tr><tr><td>home_l14_rpg</td><td>-0.055</td><td>OK</td></tr><tr><td>away_l14_rpg</td><td>-0.06</td><td>OK</td></tr><tr><td>home_l7_rpg</td><td>-0.12</td><td>OK</td></tr><tr><td>away_l7_rpg</td><td>-0.058</td><td>OK</td></tr><tr><td>home_ra_pg</td><td>0.078</td><td>OK</td></tr><tr><td>away_ra_pg</td><td>0.118</td><td>OK</td></tr><tr><td>home_win_pct</td><td>0.013</td><td>OK</td></tr><tr><td>away_win_pct</td><td>-0.0</td><td>OK</td></tr><tr><td>home_rest</td><td>0.175</td><td>OK</td></tr><tr><td>away_rest</td><td>0.167</td><td>OK</td></tr><tr><td>park_run_factor</td><td>0.0</td><td>OK</td></tr><tr><td>home_offense_talent</td><td>0.011</td><td>OK</td></tr><tr><td>away_offense_talent</td><td>0.036</td><td>OK</td></tr><tr><td>home_offense_x_away_defense</td><td>0.095</td><td>OK</td></tr><tr><td>away_offense_x_home_defense</td><td>0.073</td><td>OK</td></tr></table>
 <h2>Research metrics</h2><pre>{
   &quot;ensemble&quot;: {
-    &quot;away_mae&quot;: 2.5701416932235306,
-    &quot;away_rmse&quot;: 3.2862646240746898,
-    &quot;home_mae&quot;: 2.4657654490597096,
-    &quot;home_rmse&quot;: 3.1902023538891244
+    &quot;away_mae&quot;: 2.568337989450031,
+    &quot;away_rmse&quot;: 3.282425216395264,
+    &quot;home_mae&quot;: 2.462657150199842,
+    &quot;home_rmse&quot;: 3.186995839333992
   },
   &quot;gam&quot;: {
-    &quot;away_mae&quot;: 2.6592277243427334,
-    &quot;away_rmse&quot;: 3.6310352599345,
-    &quot;home_mae&quot;: 2.581594909468403,
-    &quot;home_rmse&quot;: 3.5171680681447457
+    &quot;away_mae&quot;: 2.652995322790677,
+    &quot;away_rmse&quot;: 3.622692672641141,
+    &quot;home_mae&quot;: 2.5834571314542383,
+    &quot;home_rmse&quot;: 3.5183267957953714
   },
   &quot;gbdt&quot;: {
-    &quot;away_mae&quot;: 2.6647209464428663,
-    &quot;away_rmse&quot;: 3.649741133011719,
-    &quot;home_mae&quot;: 2.573223435315545,
-    &quot;home_rmse&quot;: 3.517863361458306
+    &quot;away_mae&quot;: 2.659069462305171,
+    &quot;away_rmse&quot;: 3.642222588654513,
+    &quot;home_mae&quot;: 2.5738876756296976,
+    &quot;home_rmse&quot;: 3.5182526374790086
   },
   &quot;glm&quot;: {
-    &quot;away_mae&quot;: 2.663012808957303,
-    &quot;away_rmse&quot;: 3.6415257829274084,
-    &quot;home_mae&quot;: 2.5796446889063365,
-    &quot;home_rmse&quot;: 3.5188016620923914
+    &quot;away_mae&quot;: 2.657158905332249,
+    &quot;away_rmse&quot;: 3.6339349061753543,
+    &quot;home_mae&quot;: 2.5813173210942773,
+    &quot;home_rmse&quot;: 3.519766443002462
   },
   &quot;hierarchical&quot;: {
-    &quot;away_mae&quot;: 2.6494831935039636,
-    &quot;away_rmse&quot;: 3.6202990295580313,
-    &quot;home_mae&quot;: 2.5840754306814,
-    &quot;home_rmse&quot;: 3.519063445918519
+    &quot;away_mae&quot;: 2.6439513073879377,
+    &quot;away_rmse&quot;: 3.6128805233397525,
+    &quot;home_mae&quot;: 2.5852581892225674,
+    &quot;home_rmse&quot;: 3.5193485959844653
   },
   &quot;naive&quot;: {
-    &quot;away_mae&quot;: 2.593074639981051,
-    &quot;away_rmse&quot;: 3.2875516275002634,
-    &quot;home_mae&quot;: 2.487029428967964,
-    &quot;home_rmse&quot;: 3.19296066834463
+    &quot;away_mae&quot;: 2.591794760786579,
+    &quot;away_rmse&quot;: 3.2842504990901613,
+    &quot;home_mae&quot;: 2.483380137376345,
+    &quot;home_rmse&quot;: 3.189408908236817
   }
 }</pre>
 <p><small>Monitoring/research artifact only. No automatic model promotion or betting action.</small></p></body></html>
