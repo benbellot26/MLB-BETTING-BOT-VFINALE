@@ -1,44 +1,44 @@
 {
   "by_market": {
     "ML": {
-      "closing_price_observed": 272,
-      "closing_sharp_observed": 272,
-      "positive_ev_pnl_1u": -90.92,
+      "closing_price_observed": 276,
+      "closing_sharp_observed": 276,
+      "positive_ev_pnl_1u": -94.92,
       "positive_ev_wins": 78,
-      "positive_nominal_ev": 259,
-      "priced": 1056,
-      "settled": 1056,
-      "t60_sharp_observed": 280
+      "positive_nominal_ev": 263,
+      "priced": 1064,
+      "settled": 1064,
+      "t60_sharp_observed": 284
     },
     "RUNLINE": {
       "closing_price_observed": 0,
-      "closing_sharp_observed": 274,
+      "closing_sharp_observed": 282,
       "positive_ev_pnl_1u": 0,
       "positive_ev_wins": 0,
       "positive_nominal_ev": 0,
       "priced": 0,
-      "settled": 1940,
-      "t60_sharp_observed": 282
+      "settled": 1956,
+      "t60_sharp_observed": 286
     },
     "TOTAL": {
       "closing_price_observed": 0,
-      "closing_sharp_observed": 220,
+      "closing_sharp_observed": 224,
       "positive_ev_pnl_1u": 0,
       "positive_ev_wins": 0,
       "positive_nominal_ev": 0,
       "priced": 0,
-      "settled": 1052,
-      "t60_sharp_observed": 264
+      "settled": 1060,
+      "t60_sharp_observed": 268
     }
   },
   "by_nominal_ev_band": {
     "ML": {
       "0-1%": {
-        "losses": 40,
-        "n": 57,
-        "pnl_1u": -25.59,
+        "losses": 44,
+        "n": 61,
+        "pnl_1u": -29.59,
         "pushes": 0,
-        "roi_1u": -0.4489,
+        "roi_1u": -0.4851,
         "wins": 17
       },
       "1-3%": {
@@ -67,11 +67,11 @@
       },
       "<0%": {
         "losses": 347,
-        "n": 797,
-        "pnl_1u": -16.71,
+        "n": 801,
+        "pnl_1u": -14.39,
         "pushes": 0,
-        "roi_1u": -0.021,
-        "wins": 450
+        "roi_1u": -0.018,
+        "wins": 454
       },
       ">=10%": {
         "losses": 58,
@@ -85,7 +85,7 @@
     "RUNLINE": {},
     "TOTAL": {}
   },
-  "generated_at": "2026-08-22T19:53:55.531198+00:00",
+  "generated_at": "2026-08-22T20:54:04.992838+00:00",
   "methodology": {
     "closing": "paid market polling is checkpoint-based: one T-60 window and one close window per tracked observation, batched in a single Odds API request across all games due at that time",
     "generation_identity": "every new model snapshot persists model_generation and predictive_contract; legacy rows remain historical-only",
@@ -95,8 +95,8 @@
     "unit_pnl": "descriptive flat 1u; complementary displayed sides are not a betting portfolio"
   },
   "schema": "v13-market-tracking-report-v4",
-  "settled_observations": 4048,
-  "settled_options": 4048,
-  "tracked_observations": 4720,
-  "tracked_options": 4720
+  "settled_observations": 4080,
+  "settled_options": 4080,
+  "tracked_observations": 4928,
+  "tracked_options": 4928
 }
