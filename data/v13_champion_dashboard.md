@@ -1,40 +1,50 @@
 # V13.10 Champion Diagnostic Dashboard
 
 Model generation: `v13.10-gen-structural-nb-independent-transfer-park-extra-surface-v3`
-Latest settled date: `2026-08-20`
+Latest settled date: `2026-08-21`
 
 ## Core scorecard
 
 | Metric | Latest day | Cumulative |
 |---|---:|---:|
-| Games | 9 | 20 |
-| Home run MAE | 2.575 | 2.227 |
-| Away run MAE | 3.590 | 2.742 |
-| Total run MAE | 4.778 | 4.179 |
-| Brier | 0.254 | 0.244 |
-| LogLoss | 0.700 | 0.681 |
-| Calibration gap | 0.065 | 0.106 |
+| Games | 15 | 35 |
+| Home run MAE | 1.823 | 2.054 |
+| Away run MAE | 2.132 | 2.480 |
+| Total run MAE | 2.752 | 3.568 |
+| Brier | 0.205 | 0.220 |
+| LogLoss | 0.602 | 0.633 |
+| Calibration gap | -0.397 | -0.126 |
 
 ## Cumulative by market
 
 | Market | N | Brier | LogLoss | Mean p | Outcome rate | Calibration gap |
 |---|---:|---:|---:|---:|---:|---:|
-| ML | 20 | 0.232 | 0.657 | 0.528 | 0.450 | 0.078 |
-| RUNLINE | 20 | 0.246 | 0.685 | 0.411 | 0.300 | 0.111 |
-| TOTAL | 19 | 0.255 | 0.703 | 0.550 | 0.421 | 0.129 |
+| ML | 35 | 0.220 | 0.633 | 0.532 | 0.657 | -0.126 |
+| RUNLINE | 0 | — | — | — | — | — |
+| TOTAL | 0 | — | — | — | — | — |
 
 ## Data-quality bands
 
 | DQ band | Games | Run MAE total | Brier | LogLoss |
 |---|---:|---:|---:|---:|
-| >=0.90 | 15 | 3.613 | 0.237 | 0.667 |
-| 0.60-0.75 | 3 | 6.103 | 0.280 | 0.757 |
-| 0.75-0.90 | 2 | 5.542 | 0.243 | 0.678 |
+| >=0.90 | 28 | 3.258 | 0.211 | 0.615 |
+| 0.75-0.90 | 4 | 3.830 | 0.255 | 0.703 |
+| 0.60-0.75 | 3 | 6.103 | 0.262 | 0.717 |
 
 ## Highest run-error teams (min 3 observations)
 
 | Team | N | Run MAE | Bias |
 |---|---:|---:|---:|
+| Los Angeles Angels | 3 | 6.407 | 2.614 |
+| Athletics | 3 | 3.083 | -1.696 |
+| Texas Rangers | 3 | 2.999 | -2.999 |
+| Cincinnati Reds | 3 | 2.958 | 0.109 |
+| Washington Nationals | 3 | 2.759 | -1.843 |
+| Cleveland Guardians | 3 | 2.432 | -0.579 |
+| St. Louis Cardinals | 3 | 2.390 | 2.167 |
+| Tampa Bay Rays | 3 | 2.253 | -0.900 |
+| Seattle Mariners | 3 | 1.985 | 1.985 |
+| Toronto Blue Jays | 3 | 1.921 | 0.406 |
 
 ## Data blockers
 
