@@ -1,7 +1,7 @@
 {
   "activation_rule": "all nested season walk-forward folds must pass, then >=60 current-generation genuine FINAL V13 transfer games excluded from historical fitting must improve RMSE and NB-NLL with MAE regression <=0.01 and >=90% bootstrap probability of positive NLL gain",
   "active": false,
-  "dataset_content_sha256": "c562d57b22237f377e67585a25bd478321a247c12aa80ba6369899e112b3d0db",
+  "dataset_content_sha256": "092c82b5cae36776867f05b10657c221cfa640174c27c96c54808cb9877faede",
   "exact_evidence_source_counts": {
     "NATIVE_CURRENT_GENERATION_FINAL": 17
   },
@@ -20,15 +20,15 @@
       "team_observations": 34
     },
     "candidate": {
-      "mae": 2.1375830473033393,
-      "nb_nll": 2.3836378334184283,
-      "rmse": 2.555116644276649,
+      "mae": 2.137677436749108,
+      "nb_nll": 2.3836517228797045,
+      "rmse": 2.5551567108530593,
       "team_observations": 34
     },
     "games": 17,
-    "mae_gain": -0.0007298918006859445,
-    "nll_gain": 0.0010880624884581636,
-    "rmse_gain": 0.0021476062384264694
+    "mae_gain": -0.0008242812464547278,
+    "nll_gain": 0.001074173027181935,
+    "rmse_gain": 0.0021075396620160447
   },
   "exact_transfer_bootstrap": {
     "draws": 1200,
@@ -57,7 +57,7 @@
     "824801"
   ],
   "historical_candidate_active": false,
-  "historical_games": 13111,
+  "historical_games": 13126,
   "historical_seasons": [
     2021,
     2022,
@@ -67,12 +67,12 @@
     2026
   ],
   "model": {
-    "away_bias": 0.4078667036583875,
+    "away_bias": 0.4050781007289276,
     "formula": "mu + side_bias + slope_delta*mu",
-    "home_bias": 0.33657134793864085,
+    "home_bias": 0.3355942405632639,
     "max_adjustment": 0.15,
     "ridge": 10.0,
-    "slope_delta": -0.08769435017148215
+    "slope_delta": -0.0874552696161578
   },
   "model_generation": "v13.10-gen-structural-nb-independent-transfer-park-extra-surface-v3",
   "phase_scope": "FINAL",
@@ -91,7 +91,7 @@
   "schema": "v13-run-mean-prior-v2",
   "selected_variant": "side_bias_shared_slope",
   "source": "2021-2026 leakage-separated free reconstructed team history",
-  "source_games": 14067,
+  "source_games": 14082,
   "transfer_caveat": "Reconstructed history may propose a small run-mean correction, but it cannot alter V13 until independent current-generation FINAL transfer proves that the correction improves the pre-candidate V13 baseline.",
   "walk_forward": {
     "folds": [
@@ -214,23 +214,23 @@
         "selected_variant": "side_bias_shared_slope",
         "test": {
           "baseline": {
-            "mae": 2.532478839297227,
-            "nb_nll": 2.470429459294547,
-            "rmse": 3.225537654092948,
-            "team_observations": 3500
+            "mae": 2.5284334459294953,
+            "nb_nll": 2.4689441326734634,
+            "rmse": 3.2196867360244306,
+            "team_observations": 3530
           },
           "candidate": {
-            "mae": 2.5291516106190843,
-            "nb_nll": 2.470086849546425,
-            "rmse": 3.2242109355038675,
-            "team_observations": 3500
+            "mae": 2.525223622695502,
+            "nb_nll": 2.4686223062914645,
+            "rmse": 3.218426150297619,
+            "team_observations": 3530
           },
-          "games": 1750,
-          "mae_gain": 0.003327228678142724,
-          "nll_gain": 0.000342609748122058,
-          "rmse_gain": 0.0013267185890804
+          "games": 1765,
+          "mae_gain": 0.0032098232339934363,
+          "nll_gain": 0.0003218263819988465,
+          "rmse_gain": 0.0012605857268117582
         },
-        "test_games": 1750,
+        "test_games": 1765,
         "test_season": 2026,
         "train_games": 9085,
         "train_seasons": [
