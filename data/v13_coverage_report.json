@@ -1,9 +1,9 @@
 {
-  "analyzed_at": "2026-08-22T16:54:03.121949+00:00",
-  "analyzed_games": 15,
+  "analyzed_at": "2026-08-22T17:58:01.922445+00:00",
+  "analyzed_games": 14,
   "complete_future_coverage": true,
   "future_coverage_rate": 1.0,
-  "future_or_unresolved_games": 15,
+  "future_or_unresolved_games": 14,
   "games": [
     {
       "away": "Toronto Blue Jays",
@@ -11,7 +11,7 @@
       "game_pk": 823509,
       "home": "New York Yankees",
       "odds_event_id": "37d5ada29cdca43791f56ead0c6f958a",
-      "status": "ANALYZED"
+      "status": "SKIPPED_ALREADY_STARTED"
     },
     {
       "away": "Atlanta Braves",
@@ -127,11 +127,12 @@
     }
   ],
   "policy": "Every scheduled game is either ANALYZED or carries an explicit skip reason; ambiguous event identity fails closed.",
-  "run_id": "b1117fcbbbc42693",
+  "run_id": "06289291bd19946f",
   "scheduled_games": 15,
   "schema": "v13-daily-coverage-v1",
   "status_counts": {
-    "ANALYZED": 15
+    "ANALYZED": 14,
+    "SKIPPED_ALREADY_STARTED": 1
   },
   "target_date": "2026-08-22"
 }

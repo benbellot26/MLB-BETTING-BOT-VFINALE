@@ -12,18 +12,18 @@
   "minimum_games": 300,
   "native_feature_coverage": {
     "bullpen_player": 1.0,
-    "lineup_player": 0.996031746031746,
-    "platoon": 0.9880952380952381,
-    "starter_ip": 0.9668367346938777,
-    "statcast": 0.8928571428571429,
-    "weather_park": 0.975
+    "lineup_player": 0.9970760233918128,
+    "platoon": 0.9912280701754386,
+    "starter_ip": 0.9718045112781956,
+    "statcast": 0.8947368421052632,
+    "weather_park": 0.981578947368421
   },
-  "native_games": 14,
+  "native_games": 19,
   "native_rejection_reasons": {
-    "not_final_phase": 34,
-    "not_settled_final": 86,
+    "not_final_phase": 112,
+    "not_settled_final": 29,
     "predictive_contract_mismatch": 621,
-    "rich_modules_missing": 3
+    "rich_modules_missing": 6
   },
   "replacement_policy": "Do not hand-tune production coefficients. Rich/native modules may replace or augment the heuristic champion only after exact current-generation promotion-grade PIT walk-forward, untouched run holdout, and downstream ML/RL/TOTAL proper-score validation.",
   "safety": {
@@ -40,7 +40,7 @@
     "weather_requires_native_pregame_snapshot": true
   },
   "schema": "v13-rich-native-candidate-v5",
-  "source_rows": 760,
+  "source_rows": 789,
   "status": "COLLECTING",
   "target_phase": "FINAL"
 }
