@@ -3,11 +3,11 @@
     "ML": {
       "closing_price_observed": 272,
       "closing_sharp_observed": 272,
-      "positive_ev_pnl_1u": -81.92,
+      "positive_ev_pnl_1u": -90.92,
       "positive_ev_wins": 78,
-      "positive_nominal_ev": 250,
-      "priced": 1012,
-      "settled": 1012,
+      "positive_nominal_ev": 259,
+      "priced": 1056,
+      "settled": 1056,
       "t60_sharp_observed": 280
     },
     "RUNLINE": {
@@ -17,7 +17,7 @@
       "positive_ev_wins": 0,
       "positive_nominal_ev": 0,
       "priced": 0,
-      "settled": 1852,
+      "settled": 1940,
       "t60_sharp_observed": 282
     },
     "TOTAL": {
@@ -27,7 +27,7 @@
       "positive_ev_wins": 0,
       "positive_nominal_ev": 0,
       "priced": 0,
-      "settled": 1008,
+      "settled": 1052,
       "t60_sharp_observed": 264
     }
   },
@@ -58,20 +58,20 @@
         "wins": 17
       },
       "5-10%": {
-        "losses": 36,
-        "n": 59,
-        "pnl_1u": -6.05,
+        "losses": 45,
+        "n": 68,
+        "pnl_1u": -15.05,
         "pushes": 0,
-        "roi_1u": -0.1025,
+        "roi_1u": -0.2213,
         "wins": 23
       },
       "<0%": {
-        "losses": 334,
-        "n": 762,
-        "pnl_1u": -17.06,
+        "losses": 347,
+        "n": 797,
+        "pnl_1u": -16.71,
         "pushes": 0,
-        "roi_1u": -0.0224,
-        "wins": 428
+        "roi_1u": -0.021,
+        "wins": 450
       },
       ">=10%": {
         "losses": 58,
@@ -85,7 +85,7 @@
     "RUNLINE": {},
     "TOTAL": {}
   },
-  "generated_at": "2026-08-22T04:59:34.899519+00:00",
+  "generated_at": "2026-08-22T05:58:59.572881+00:00",
   "methodology": {
     "closing": "paid market polling is checkpoint-based: one T-60 window and one close window per tracked observation, batched in a single Odds API request across all games due at that time",
     "generation_identity": "every new model snapshot persists model_generation and predictive_contract; legacy rows remain historical-only",
@@ -95,8 +95,8 @@
     "unit_pnl": "descriptive flat 1u; complementary displayed sides are not a betting portfolio"
   },
   "schema": "v13-market-tracking-report-v4",
-  "settled_observations": 3872,
-  "settled_options": 3872,
+  "settled_observations": 4048,
+  "settled_options": 4048,
   "tracked_observations": 4048,
   "tracked_options": 4048
 }
