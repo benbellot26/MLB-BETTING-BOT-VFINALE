@@ -1,34 +1,34 @@
 {
   "by_market": {
     "ML": {
-      "closing_price_observed": 276,
-      "closing_sharp_observed": 276,
+      "closing_price_observed": 288,
+      "closing_sharp_observed": 288,
       "positive_ev_pnl_1u": -96.92,
       "positive_ev_wins": 78,
       "positive_nominal_ev": 265,
-      "priced": 1068,
-      "settled": 1068,
-      "t60_sharp_observed": 284
+      "priced": 1084,
+      "settled": 1084,
+      "t60_sharp_observed": 292
     },
     "RUNLINE": {
       "closing_price_observed": 0,
-      "closing_sharp_observed": 282,
+      "closing_sharp_observed": 298,
       "positive_ev_pnl_1u": 0,
       "positive_ev_wins": 0,
       "positive_nominal_ev": 0,
       "priced": 0,
-      "settled": 1964,
-      "t60_sharp_observed": 286
+      "settled": 1996,
+      "t60_sharp_observed": 294
     },
     "TOTAL": {
       "closing_price_observed": 0,
-      "closing_sharp_observed": 224,
+      "closing_sharp_observed": 236,
       "positive_ev_pnl_1u": 0,
       "positive_ev_wins": 0,
       "positive_nominal_ev": 0,
       "priced": 0,
-      "settled": 1064,
-      "t60_sharp_observed": 268
+      "settled": 1080,
+      "t60_sharp_observed": 276
     }
   },
   "by_nominal_ev_band": {
@@ -66,12 +66,12 @@
         "wins": 23
       },
       "<0%": {
-        "losses": 347,
-        "n": 803,
-        "pnl_1u": -12.63,
+        "losses": 355,
+        "n": 819,
+        "pnl_1u": -16.63,
         "pushes": 0,
-        "roi_1u": -0.0157,
-        "wins": 456
+        "roi_1u": -0.0203,
+        "wins": 464
       },
       ">=10%": {
         "losses": 58,
@@ -85,7 +85,7 @@
     "RUNLINE": {},
     "TOTAL": {}
   },
-  "generated_at": "2026-08-22T22:52:28.837904+00:00",
+  "generated_at": "2026-08-22T23:44:05.879892+00:00",
   "methodology": {
     "closing": "paid market polling is checkpoint-based: one T-60 window and one close window per tracked observation, batched in a single Odds API request across all games due at that time",
     "generation_identity": "every new model snapshot persists model_generation and predictive_contract; legacy rows remain historical-only",
@@ -95,8 +95,8 @@
     "unit_pnl": "descriptive flat 1u; complementary displayed sides are not a betting portfolio"
   },
   "schema": "v13-market-tracking-report-v4",
-  "settled_observations": 4096,
-  "settled_options": 4096,
+  "settled_observations": 4160,
+  "settled_options": 4160,
   "tracked_observations": 4928,
   "tracked_options": 4928
 }
