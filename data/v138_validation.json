@@ -1,79 +1,79 @@
 {
   "ablation": {
     "available": true,
-    "full_rmse": 3.5868670126899604,
+    "full_rmse": 3.5814949197434083,
     "groups": [
       {
-        "delta_rmse": 0.0023836222634598947,
+        "delta_rmse": 0.0023862692398104457,
         "group": "recent_14",
-        "rmse_full": 3.5868670126899604,
-        "rmse_without": 3.5892506349534203
+        "rmse_full": 3.5814949197434083,
+        "rmse_without": 3.5838811889832187
       },
       {
-        "delta_rmse": 0.002071261894512677,
+        "delta_rmse": 0.002107491308576126,
         "group": "talent_shrinkage",
-        "rmse_full": 3.5868670126899604,
-        "rmse_without": 3.588938274584473
+        "rmse_full": 3.5814949197434083,
+        "rmse_without": 3.5836024110519844
       },
       {
-        "delta_rmse": 0.0007225113600499711,
+        "delta_rmse": 0.0007157987934505172,
         "group": "recent_7",
-        "rmse_full": 3.5868670126899604,
-        "rmse_without": 3.5875895240500104
+        "rmse_full": 3.5814949197434083,
+        "rmse_without": 3.582210718536859
       },
       {
         "delta_rmse": 0.0,
         "group": "park",
-        "rmse_full": 3.5868670126899604,
-        "rmse_without": 3.5868670126899604
+        "rmse_full": 3.5814949197434083,
+        "rmse_without": 3.5814949197434083
       },
       {
-        "delta_rmse": -0.00043681226369729487,
+        "delta_rmse": -0.0004258521451361297,
         "group": "offense_defense_interaction",
-        "rmse_full": 3.5868670126899604,
-        "rmse_without": 3.586430200426263
+        "rmse_full": 3.5814949197434083,
+        "rmse_without": 3.581069067598272
       },
       {
-        "delta_rmse": -0.0005948721742856655,
+        "delta_rmse": -0.0006188550645442881,
         "group": "rest",
-        "rmse_full": 3.5868670126899604,
-        "rmse_without": 3.5862721405156748
+        "rmse_full": 3.5814949197434083,
+        "rmse_without": 3.580876064678864
       },
       {
-        "delta_rmse": -0.0009565600946705999,
+        "delta_rmse": -0.0008823844896346245,
         "group": "recent_30",
-        "rmse_full": 3.5868670126899604,
-        "rmse_without": 3.58591045259529
+        "rmse_full": 3.5814949197434083,
+        "rmse_without": 3.5806125352537737
       },
       {
-        "delta_rmse": -0.003013478342221987,
+        "delta_rmse": -0.0029771042613542242,
         "group": "team_season",
-        "rmse_full": 3.5868670126899604,
-        "rmse_without": 3.5838535343477385
+        "rmse_full": 3.5814949197434083,
+        "rmse_without": 3.578517815482054
       }
     ],
-    "holdout_n": 2817,
+    "holdout_n": 2820,
     "interpretation": "positive delta means the removed feature group helped on the temporal holdout",
-    "train_n": 11265
+    "train_n": 11277
   },
   "baselines": {
     "coin_flip": {
       "brier": 0.25,
       "logloss": 0.6931471805599453,
-      "n": 14082
+      "n": 14097
     },
     "home_field_54": {
-      "brier": 0.24913444113052122,
-      "logloss": 0.6914157864232993,
-      "n": 14082
+      "brier": 0.24912855217422145,
+      "logloss": 0.6914039832875583,
+      "n": 14097
     },
     "market_if_present": {
       "n": 0,
       "status": "NO_PIT_MARKET_IN_FREE_DATA"
     },
     "naive_team_runs": {
-      "away_mae": 2.5309563903348438,
-      "away_rmse": 3.234892139502752,
+      "away_mae": 2.53065948255174,
+      "away_rmse": 3.2345789403518856,
       "calibration_bins": [
         {
           "empirical_rate": 0.35,
@@ -104,18 +104,18 @@
           "n": 714
         },
         {
-          "empirical_rate": 0.4821790198460915,
+          "empirical_rate": 0.48239579117766085,
           "high": 0.5,
           "low": 0.4,
-          "mean_probability": 0.46051720794456363,
-          "n": 4938
+          "mean_probability": 0.4605199321092115,
+          "n": 4942
         },
         {
-          "empirical_rate": 0.554449472096531,
+          "empirical_rate": 0.5544345731064598,
           "high": 0.6,
           "low": 0.5,
-          "mean_probability": 0.5429109465597676,
-          "n": 6630
+          "mean_probability": 0.5429187031359904,
+          "n": 6641
         },
         {
           "empirical_rate": 0.654532967032967,
@@ -146,29 +146,29 @@
           "n": 24
         }
       ],
-      "home_mae": 2.4404537498806067,
-      "home_rmse": 3.1155174165904724,
-      "ml_brier": 0.2466757175178521,
-      "ml_ece": 0.021439547061202064,
-      "ml_logloss": 0.6881059980500077,
-      "n": 14082
+      "home_mae": 2.4398059577610924,
+      "home_rmse": 3.1149923682027163,
+      "ml_brier": 0.24669017988481307,
+      "ml_ece": 0.02149625014027988,
+      "ml_logloss": 0.6881333320576055,
+      "n": 14097
     }
   },
   "claim": "research validation only; no automatic champion promotion",
-  "dataset_content_sha256": "d5508043fb482a1a91b2b993bc2dca4d3d83ae3cfeee774166035022e7cf887c",
+  "dataset_content_sha256": "b11c8c24afcc60e84a25928e3449236af22a61e909a24daec84379e697523426",
   "dataset_integrity": {
     "bound": true,
-    "content_sha256": "d5508043fb482a1a91b2b993bc2dca4d3d83ae3cfeee774166035022e7cf887c",
+    "content_sha256": "b11c8c24afcc60e84a25928e3449236af22a61e909a24daec84379e697523426",
     "feature_contract_sha256": "08b35bb22ea34adb3113de13d335975ca00e401b9c1d80deada2473a9b661a61",
-    "feature_rows": 14082,
-    "label_rows": 14082,
+    "feature_rows": 14097,
+    "label_rows": 14097,
     "legacy_identity_fingerprint": null,
     "legacy_identity_fingerprint_sufficient": false,
     "policy": "model/validation evidence is bound to SHA256 of every compressed source feature/label file",
     "schema": "v13-10-research-dataset-integrity-v1",
     "source": "data/v138_dataset_manifest.json"
   },
-  "games": 14082,
+  "games": 14097,
   "schema": "v13-8-validation-suite-v1",
   "walk_forward": {
     "folds": [
@@ -950,20 +950,20 @@
           "coin_flip": {
             "brier": 0.25,
             "logloss": 0.6931471805599453,
-            "n": 1934
+            "n": 1949
           },
           "home_field_54": {
-            "brier": 0.2494076525336091,
-            "logloss": 0.6919633794283226,
-            "n": 1934
+            "brier": 0.24936295536172395,
+            "logloss": 0.691873793640936,
+            "n": 1949
           },
           "market_if_present": {
             "n": 0,
             "status": "NO_PIT_MARKET_IN_FREE_DATA"
           },
           "naive_team_runs": {
-            "away_mae": 2.6150975445729,
-            "away_rmse": 3.2923933259244036,
+            "away_mae": 2.6123024566652653,
+            "away_rmse": 3.2897278888311186,
             "calibration_bins": [
               {
                 "empirical_rate": 0.2,
@@ -994,18 +994,18 @@
                 "n": 67
               },
               {
-                "empirical_rate": 0.4977973568281938,
+                "empirical_rate": 0.4992700729927007,
                 "high": 0.5,
                 "low": 0.4,
-                "mean_probability": 0.4642298887557899,
-                "n": 681
+                "mean_probability": 0.4642278626221329,
+                "n": 685
               },
               {
-                "empirical_rate": 0.5369807497467072,
+                "empirical_rate": 0.5370741482965932,
                 "high": 0.6,
                 "low": 0.5,
-                "mean_probability": 0.538368709522052,
-                "n": 987
+                "mean_probability": 0.5384703889109408,
+                "n": 998
               },
               {
                 "empirical_rate": 0.6066666666666667,
@@ -1036,17 +1036,17 @@
                 "n": 5
               }
             ],
-            "home_mae": 2.492125737685224,
-            "home_rmse": 3.194313788216475,
-            "ml_brier": 0.25173490834910534,
-            "ml_ece": 0.02516233986615783,
-            "ml_logloss": 0.6979944858069855,
-            "n": 1934
+            "home_mae": 2.4870426154041247,
+            "home_rmse": 3.1900082771265565,
+            "ml_brier": 0.2518005769609986,
+            "ml_ece": 0.0255679658709773,
+            "ml_logloss": 0.6981160867247643,
+            "n": 1949
           }
         },
         "candidate": {
-          "away_mae": 2.6032999377481905,
-          "away_rmse": 3.290021823981573,
+          "away_mae": 2.600311850678789,
+          "away_rmse": 3.2872956337113224,
           "calibration_bins": [
             {
               "empirical_rate": 0.2,
@@ -1077,18 +1077,18 @@
               "n": 78
             },
             {
-              "empirical_rate": 0.5060606060606061,
+              "empirical_rate": 0.5075301204819277,
               "high": 0.5,
               "low": 0.4,
-              "mean_probability": 0.4638898584073811,
-              "n": 660
+              "mean_probability": 0.4638841213831801,
+              "n": 664
             },
             {
-              "empirical_rate": 0.5337361530715005,
+              "empirical_rate": 0.5338645418326693,
               "high": 0.6,
               "low": 0.5,
-              "mean_probability": 0.5385808559543506,
-              "n": 993
+              "mean_probability": 0.5386948028450542,
+              "n": 1004
             },
             {
               "empirical_rate": 0.6103896103896104,
@@ -1119,25 +1119,25 @@
               "n": 5
             }
           ],
-          "home_mae": 2.4809756545566137,
-          "home_rmse": 3.1909183567874133,
-          "ml_brier": 0.2515871960603343,
-          "ml_ece": 0.028258128842389693,
-          "ml_logloss": 0.6975501779559067,
-          "n": 1934
+          "home_mae": 2.4758261133306205,
+          "home_rmse": 3.186595432833071,
+          "ml_brier": 0.25165351924836143,
+          "ml_ece": 0.028649698935549466,
+          "ml_logloss": 0.6976741742183682,
+          "n": 1949
         },
         "candidate_vs_naive_brier_bootstrap": {
           "available": true,
-          "ci95_high": -2.258697582435687e-05,
-          "ci95_low": -0.0002722883723957903,
-          "difference": -0.00014771228877102915,
+          "ci95_high": -1.960150911212155e-05,
+          "ci95_low": -0.0002723917168228618,
+          "difference": -0.00014705771263717748,
           "iterations": 600,
-          "n": 1934,
-          "probability_a_better": 0.99
+          "n": 1949,
+          "probability_a_better": 0.995
         },
         "season": 2026,
         "status": "PASS",
-        "test_games": 1934,
+        "test_games": 1949,
         "train_games": 12148
       }
     ],
