@@ -1,6 +1,7 @@
 {
   "alerts": [
-    "ml_brier_worse_than_market"
+    "ml_brier_worse_than_market",
+    "ml_model_market_gap_not_informative"
   ],
   "any_market_edge_claim_allowed": false,
   "calibration": {
@@ -66,12 +67,12 @@
   "diagnostic_scope": "current-generation-only",
   "edge_evidence": {
     "ML": {
-      "brier_gain_vs_market": -0.009897656396857104,
+      "brier_gain_vs_market": -0.01037054167657999,
       "claim_allowed": false,
-      "gap_residual_slope": 0.0029586397377743515,
-      "logloss_gain_vs_market": -0.02065929971723658,
+      "gap_residual_slope": -0.6075010986632418,
+      "logloss_gain_vs_market": -0.02135626587108888,
       "minimum_n": 300,
-      "n": 35,
+      "n": 50,
       "reason": "INSUFFICIENT_INDEPENDENT_MARKET_TARGETS"
     },
     "RUNLINE": {
@@ -540,19 +541,19 @@
   "model_generation": "v13.10-gen-structural-nb-independent-transfer-park-extra-surface-v3",
   "posterior": {
     "historical_observations": 255,
-    "live_observations": 217,
+    "live_observations": 301,
     "primary_probability_affected": false
   },
   "probability_drift": {
     "ML": {
-      "confidence_shift": 0.007603040000000005,
-      "mean_probability_shift": 0.00915240000000006,
-      "observations": 116,
-      "prior_mean_abs_edge_from_50": 0.05880336,
-      "prior_mean_probability": 0.52658848,
+      "confidence_shift": 0.011050620000000011,
+      "mean_probability_shift": 0.012341539999999984,
+      "observations": 171,
+      "prior_mean_abs_edge_from_50": 0.06667492,
+      "prior_mean_probability": 0.53784824,
       "prior_n": 50,
-      "recent_mean_abs_edge_from_50": 0.0664064,
-      "recent_mean_probability": 0.5357408800000001,
+      "recent_mean_abs_edge_from_50": 0.07772554000000001,
+      "recent_mean_probability": 0.55018978,
       "recent_n": 50,
       "sample_policy": "current-generation attested; one canonical settled side per game/market"
     },
@@ -583,16 +584,16 @@
   },
   "proper_scoring_vs_market": {
     "ML": {
-      "brier_gain_vs_market": -0.009897656396857104,
-      "gap_residual_slope": 0.0029586397377743515,
-      "logloss_gain_vs_market": -0.02065929971723658,
-      "market_brier": 0.21059914633508572,
-      "market_logloss": 0.6128230438745568,
-      "mean_model_minus_market": -0.03537102857142856,
-      "model_brier": 0.22049680273194283,
-      "model_logloss": 0.6334823435917935,
-      "n": 35,
-      "outcome_residual_vs_market": 0.09019005714285715
+      "brier_gain_vs_market": -0.01037054167657999,
+      "gap_residual_slope": -0.6075010986632418,
+      "logloss_gain_vs_market": -0.02135626587108888,
+      "market_brier": 0.21830404003497997,
+      "market_logloss": 0.6286280625408044,
+      "mean_model_minus_market": -0.03133341999999999,
+      "model_brier": 0.22867458171155997,
+      "model_logloss": 0.6499843284118932,
+      "n": 50,
+      "outcome_residual_vs_market": 0.07132274000000001
     },
     "RUNLINE": {
       "n": 0
@@ -625,26 +626,26 @@
   "tracking_availability": {
     "by_market": {
       "ML": {
-        "canonical": 528,
-        "current_generation_attested": 116,
-        "current_generation_scoreable": 116,
-        "not_current_generation_attested": 412,
-        "settled": 1056
+        "canonical": 638,
+        "current_generation_attested": 171,
+        "current_generation_scoreable": 171,
+        "not_current_generation_attested": 467,
+        "settled": 1276
       },
       "RUNLINE": {
-        "settled": 1940
+        "settled": 2380
       },
       "TOTAL": {
-        "settled": 1030
+        "settled": 1250
       }
     },
     "note": "missing market probabilities are reported, never imputed; RL/TOTAL proper-score evidence remains unavailable until a real comparable market probability was captured",
     "total": {
-      "canonical": 528,
-      "current_generation_attested": 116,
-      "current_generation_scoreable": 116,
-      "not_current_generation_attested": 412,
-      "settled": 4026
+      "canonical": 638,
+      "current_generation_attested": 171,
+      "current_generation_scoreable": 171,
+      "not_current_generation_attested": 467,
+      "settled": 4906
     }
   },
   "v138_audit_research": {

@@ -3,36 +3,36 @@
   "active": false,
   "dataset_content_sha256": "092c82b5cae36776867f05b10657c221cfa640174c27c96c54808cb9877faede",
   "exact_evidence_source_counts": {
-    "NATIVE_CURRENT_GENERATION_FINAL": 17
+    "NATIVE_CURRENT_GENERATION_FINAL": 23
   },
-  "exact_final_games": 17,
-  "exact_games": 17,
-  "exact_native_games": 17,
+  "exact_final_games": 23,
+  "exact_games": 23,
+  "exact_native_games": 23,
   "exact_phase_counts": {
-    "FINAL": 17
+    "FINAL": 23
   },
   "exact_replay_games": 0,
   "exact_transfer": {
     "baseline": {
-      "mae": 2.1368531555026533,
-      "nb_nll": 2.3847258959068864,
-      "rmse": 2.5572642505150753,
-      "team_observations": 34
+      "mae": 2.004222556518696,
+      "nb_nll": 2.2905498601108376,
+      "rmse": 2.386240926268841,
+      "team_observations": 46
     },
     "candidate": {
-      "mae": 2.137677436749108,
-      "nb_nll": 2.3836517228797045,
-      "rmse": 2.5551567108530593,
-      "team_observations": 34
+      "mae": 2.011896615889898,
+      "nb_nll": 2.2921309530187886,
+      "rmse": 2.3893166520712987,
+      "team_observations": 46
     },
-    "games": 17,
-    "mae_gain": -0.0008242812464547278,
-    "nll_gain": 0.001074173027181935,
-    "rmse_gain": 0.0021075396620160447
+    "games": 23,
+    "mae_gain": -0.007674059371201913,
+    "nll_gain": -0.0015810929079509428,
+    "rmse_gain": -0.0030757258024576295
   },
   "exact_transfer_bootstrap": {
     "draws": 1200,
-    "nll_gain_positive_probability": 0.6466666666666666,
+    "nll_gain_positive_probability": 0.315,
     "passes": false
   },
   "exact_transfer_required_games": 60,
@@ -41,9 +41,13 @@
     "822860",
     "822934",
     "822937",
+    "823420",
     "823424",
+    "823510",
+    "823746",
     "823747",
     "823748",
+    "823830",
     "824074",
     "824076",
     "824155",
@@ -53,11 +57,13 @@
     "824474",
     "824476",
     "824589",
+    "824721",
     "824722",
+    "824800",
     "824801"
   ],
   "historical_candidate_active": false,
-  "historical_games": 13126,
+  "historical_games": 13120,
   "historical_seasons": [
     2021,
     2022,
@@ -67,12 +73,12 @@
     2026
   ],
   "model": {
-    "away_bias": 0.4050781007289276,
+    "away_bias": 0.4060726511505122,
     "formula": "mu + side_bias + slope_delta*mu",
-    "home_bias": 0.3355942405632639,
+    "home_bias": 0.3360065772817775,
     "max_adjustment": 0.15,
     "ridge": 10.0,
-    "slope_delta": -0.0874552696161578
+    "slope_delta": -0.0875252029155395
   },
   "model_generation": "v13.10-gen-structural-nb-independent-transfer-park-extra-surface-v3",
   "phase_scope": "FINAL",
@@ -214,23 +220,23 @@
         "selected_variant": "side_bias_shared_slope",
         "test": {
           "baseline": {
-            "mae": 2.5284334459294953,
-            "nb_nll": 2.4689441326734634,
-            "rmse": 3.2196867360244306,
-            "team_observations": 3530
+            "mae": 2.530676054766757,
+            "nb_nll": 2.4699230798619993,
+            "rmse": 3.222880384708643,
+            "team_observations": 3518
           },
           "candidate": {
-            "mae": 2.525223622695502,
-            "nb_nll": 2.4686223062914645,
-            "rmse": 3.218426150297619,
-            "team_observations": 3530
+            "mae": 2.5274517744363654,
+            "nb_nll": 2.4695951681679684,
+            "rmse": 3.2216040907059282,
+            "team_observations": 3518
           },
-          "games": 1765,
-          "mae_gain": 0.0032098232339934363,
-          "nll_gain": 0.0003218263819988465,
-          "rmse_gain": 0.0012605857268117582
+          "games": 1759,
+          "mae_gain": 0.0032242803303916823,
+          "nll_gain": 0.00032791169403090237,
+          "rmse_gain": 0.001276294002714895
         },
-        "test_games": 1765,
+        "test_games": 1759,
         "test_season": 2026,
         "train_games": 9085,
         "train_seasons": [
