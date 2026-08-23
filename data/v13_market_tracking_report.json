@@ -6,9 +6,9 @@
       "positive_ev_pnl_1u": -103.02,
       "positive_ev_wins": 94,
       "positive_nominal_ev": 313,
-      "priced": 1260,
-      "settled": 1260,
-      "t60_sharp_observed": 308
+      "priced": 1276,
+      "settled": 1276,
+      "t60_sharp_observed": 324
     },
     "RUNLINE": {
       "closing_price_observed": 0,
@@ -17,8 +17,8 @@
       "positive_ev_wins": 0,
       "positive_nominal_ev": 0,
       "priced": 0,
-      "settled": 2348,
-      "t60_sharp_observed": 310
+      "settled": 2380,
+      "t60_sharp_observed": 326
     },
     "TOTAL": {
       "closing_price_observed": 0,
@@ -27,7 +27,7 @@
       "positive_ev_wins": 0,
       "positive_nominal_ev": 0,
       "priced": 0,
-      "settled": 1256,
+      "settled": 1272,
       "t60_sharp_observed": 292
     }
   },
@@ -66,12 +66,12 @@
         "wins": 31
       },
       "<0%": {
-        "losses": 411,
-        "n": 947,
-        "pnl_1u": -16.41,
+        "losses": 419,
+        "n": 963,
+        "pnl_1u": -19.13,
         "pushes": 0,
-        "roi_1u": -0.0173,
-        "wins": 536
+        "roi_1u": -0.0199,
+        "wins": 544
       },
       ">=10%": {
         "losses": 74,
@@ -85,7 +85,7 @@
     "RUNLINE": {},
     "TOTAL": {}
   },
-  "generated_at": "2026-08-23T03:29:13.162490+00:00",
+  "generated_at": "2026-08-23T05:05:02.841029+00:00",
   "methodology": {
     "closing": "paid market polling is checkpoint-based: one T-60 window and one close window per tracked observation, batched in a single Odds API request across all games due at that time",
     "generation_identity": "every new model snapshot persists model_generation and predictive_contract; legacy rows remain historical-only",
@@ -95,8 +95,8 @@
     "unit_pnl": "descriptive flat 1u; complementary displayed sides are not a betting portfolio"
   },
   "schema": "v13-market-tracking-report-v4",
-  "settled_observations": 4864,
-  "settled_options": 4864,
+  "settled_observations": 4928,
+  "settled_options": 4928,
   "tracked_observations": 4928,
   "tracked_options": 4928
 }
