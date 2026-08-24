@@ -65,10 +65,15 @@ class V1310PrefreezeHardeningTests(unittest.TestCase):
 
     def test_repository_tracking_now_has_real_rl_and_total_comparison_targets(self):
         report = diagnostics.build()
-        self.assertGreater(report["by_market"]["RUNLINE"]["n"], 0)
-        self.assertGreater(report["by_market"]["TOTAL"]["n"], 0)
-        self.assertGreater(report["tracking_availability"]["by_market"]["RUNLINE"]["current_generation_independent_scoreable"], 0)
-        self.assertGreater(report["tracking_availability"]["by_market"]["TOTAL"]["current_generation_independent_scoreable"], 0)
+        detail = {
+            "selection_audit": report.get("selection_audit"),
+            "runline_availability": (report.get("tracking_availability") or {}).get("by_market", {}).get("RUNLINE"),
+            "total_availability": (report.get("tracking_availability") or {}).get("by_market", {}).get("TOTAL"),
+        }
+        self.assertGreater(report["by_market"]["RUNLINE"]["n"], 0, detail)
+        self.assertGreater(report["by_market"]["TOTAL"]["n"], 0, detail)
+        self.assertGreater(report["tracking_availability"]["by_market"]["RUNLINE"]["current_generation_independent_scoreable"], 0, detail)
+        self.assertGreater(report["tracking_availability"]["by_market"]["TOTAL"]["current_generation_independent_scoreable"], 0, detail)
 
     def test_dashboard_exposes_market_and_run_projection_dates_separately(self):
         game = {
