@@ -146,7 +146,7 @@ def _starter_stats(starter: dict[str, Any] | None) -> tuple[dict[str, Any], floa
     return stats, max(0.0, ip or 0.0)
 
 
-def starter_vulnerability(starter: dict[str, Any] | None) -> Signal:
+def starter_vulnerability(starter: dict[str, Any] | None, advanced: dict[str, Any] | None = None) -> Signal:
     """Continuous starter-vulnerability score (0 elite -> 100 vulnerable)."""
     stats, ip = _starter_stats(starter)
     if not stats:
@@ -158,7 +158,11 @@ def starter_vulnerability(starter: dict[str, Any] | None) -> Signal:
     hr9 = _first_num(stats, "homeRunsPer9", "homeRunsPer9Inn", "hr9", "HR9")
     k9 = _first_num(stats, "strikeoutsPer9Inn", "k9", "K9", "k_per_9")
 
-    metrics = [x for x in (era, whip, bb9, hr9, k9) if x is not None]
+    advanced_data = _mapping(advanced)
+    run_prevention = _first_num(advanced_data, "run_prevention_multiplier")
+    k_minus_bb = _first_num(advanced_data, "k_minus_bb")
+
+    metrics = [x for x in (era, whip, bb9, hr9, k9, run_prevention, k_minus_bb) if x is not None]
     if len(metrics) < 2:
         return Signal(50.0, 0.0, 0.0, False, "insufficient starter metrics")
 
@@ -173,13 +177,17 @@ def starter_vulnerability(starter: dict[str, Any] | None) -> Signal:
         contributions.append((_clip((hr9 - 1.18) / 0.95, -1.0, 1.0), 0.15))
     if k9 is not None:
         contributions.append((_clip((8.40 - k9) / 3.00, -1.0, 1.0), 0.15))
+    if run_prevention is not None:
+        contributions.append((_clip((run_prevention - 1.0) / 0.35, -1.0, 1.0), 0.25))
+    if k_minus_bb is not None:
+        contributions.append((_clip((0.142 - k_minus_bb) / 0.10, -1.0, 1.0), 0.10))
 
     weight = sum(w for _v, w in contributions)
     centered = sum(v * w for v, w in contributions) / max(1e-12, weight)
     score = _clip(50.0 + 40.0 * centered, 0.0, 100.0)
 
     sample_conf = _clip(ip / 120.0, 0.15, 1.0) if ip > 0 else 0.45
-    metric_conf = _clip(len(contributions) / 5.0, 0.0, 1.0)
+    metric_conf = _clip(len(contributions) / 6.0, 0.0, 1.0)
     confidence = sample_conf * metric_conf
     delta = _clip(((score - 50.0) / 50.0) * MAX_STARTER_DELTA * confidence,
                   -MAX_STARTER_DELTA, MAX_STARTER_DELTA)
@@ -233,6 +241,11 @@ def lineup_strength(lineup: Any, rich_modules: dict[str, Any] | None = None,
     rich = _mapping(rich_modules)
     side_key = str(side or "").lower()
     candidate_modules: list[dict[str, Any]] = []
+    side_block = _mapping(rich.get(side_key)) if side_key else {}
+    for nested_key in ("lineup", "statcast_lineup", "platoon", "lineup_statcast"):
+        nested = side_block.get(nested_key)
+        if isinstance(nested, dict):
+            candidate_modules.append(nested)
     for key, value in rich.items():
         if not isinstance(value, dict):
             continue
@@ -392,6 +405,11 @@ def _bullpen_snapshot(row: dict[str, Any], side: str) -> dict[str, Any]:
     features = _mapping(row.get("features"))
     rich = _mapping(row.get("rich_modules"))
     for root in (features, rich):
+        nested = _mapping(root.get("bullpen"))
+        side_value = nested.get(side)
+        if isinstance(side_value, dict) and side_value:
+            return side_value
+    for root in (features, rich):
         for key in (f"{side}_bullpen", f"bullpen_{side}", f"{side}_bullpen_snapshot", f"{side}_bullpen_player"):
             value = root.get(key)
             if isinstance(value, dict):
@@ -408,6 +426,19 @@ def _supplemental(row: dict[str, Any], side: str, key: str) -> Any:
     supplemental = _mapping(row.get("v14_supplemental"))
     side_data = _mapping(supplemental.get(side))
     return side_data.get(key)
+
+
+def _rich_contains(root: Any, token: str) -> bool:
+    token = token.lower()
+    if isinstance(root, dict):
+        for key, value in root.items():
+            if token in str(key).lower():
+                return True
+            if _rich_contains(value, token):
+                return True
+    elif isinstance(root, list):
+        return any(_rich_contains(value, token) for value in root)
+    return False
 
 
 def context_overlay_from_feature_row(row: dict[str, Any] | None, home_mu: float,
@@ -432,12 +463,32 @@ def context_overlay_from_feature_row(row: dict[str, Any] | None, home_mu: float,
     context = _mapping(row.get("context"))
     rich = _mapping(row.get("rich_modules"))
 
-    away_starter = starter_vulnerability(context.get("away_starter")) if _component_provenance_safe(row, ("starter", "pitcher")) else Signal(50.0, 0.0, 0.0, False, "starter provenance rejected")
-    home_starter = starter_vulnerability(context.get("home_starter")) if _component_provenance_safe(row, ("starter", "pitcher")) else Signal(50.0, 0.0, 0.0, False, "starter provenance rejected")
-    home_lineup = lineup_strength(context.get("home_lineup"), rich, "home") if _component_provenance_safe(row, ("lineup", "platoon", "statcast")) else Signal(50.0, 0.0, 0.0, False, "lineup provenance rejected")
-    away_lineup = lineup_strength(context.get("away_lineup"), rich, "away") if _component_provenance_safe(row, ("lineup", "platoon", "statcast")) else Signal(50.0, 0.0, 0.0, False, "lineup provenance rejected")
-    away_bullpen = bullpen_stress(_bullpen_snapshot(row, "away")) if _component_provenance_safe(row, ("bullpen",)) else Signal(50.0, 0.0, 0.0, False, "bullpen provenance rejected")
-    home_bullpen = bullpen_stress(_bullpen_snapshot(row, "home")) if _component_provenance_safe(row, ("bullpen",)) else Signal(50.0, 0.0, 0.0, False, "bullpen provenance rejected")
+    home_rich = _mapping(rich.get("home"))
+    away_rich = _mapping(rich.get("away"))
+    away_starter = starter_vulnerability(
+        context.get("away_starter"), _mapping(home_rich.get("starter_against"))
+    ) if _component_provenance_safe(
+        row, ("starter", "pitcher")
+    ) else Signal(50.0, 0.0, 0.0, False, "starter provenance rejected")
+    home_starter = starter_vulnerability(
+        context.get("home_starter"), _mapping(away_rich.get("starter_against"))
+    ) if _component_provenance_safe(
+        row, ("starter", "pitcher")
+    ) else Signal(50.0, 0.0, 0.0, False, "starter provenance rejected")
+
+    home_lineup = lineup_strength(context.get("home_lineup"), rich, "home") if _component_provenance_safe(
+        row, ("lineup", "platoon", "statcast")
+    ) else Signal(50.0, 0.0, 0.0, False, "lineup provenance rejected")
+    away_lineup = lineup_strength(context.get("away_lineup"), rich, "away") if _component_provenance_safe(
+        row, ("lineup", "platoon", "statcast")
+    ) else Signal(50.0, 0.0, 0.0, False, "lineup provenance rejected")
+
+    away_bullpen = bullpen_stress(_bullpen_snapshot(row, "away")) if _component_provenance_safe(
+        row, ("bullpen",)
+    ) else Signal(50.0, 0.0, 0.0, False, "bullpen provenance rejected")
+    home_bullpen = bullpen_stress(_bullpen_snapshot(row, "home")) if _component_provenance_safe(
+        row, ("bullpen",)
+    ) else Signal(50.0, 0.0, 0.0, False, "bullpen provenance rejected")
 
     home_h2h = h2h_micro_signal(_supplemental(row, "home", "h2h"))
     away_h2h = h2h_micro_signal(_supplemental(row, "away", "h2h"))
@@ -445,13 +496,24 @@ def context_overlay_from_feature_row(row: dict[str, Any] | None, home_mu: float,
     away_form = recent_form_signal(_mapping(_supplemental(row, "away", "recent_form")))
 
     feature_contract = str(row.get("feature_contract") or "").lower()
-    rich_keys = " ".join(str(k).lower() for k in rich)
-    starter_guard = 0.35 if ("starter" in rich_keys or "starter" in feature_contract) else 0.45
-    lineup_guard = 0.35 if any(x in rich_keys for x in ("lineup", "platoon", "statcast")) else 0.55
-    bullpen_guard = 0.35 if "bullpen" in rich_keys else 0.55
+    starter_guard = 0.35 if (_rich_contains(rich, "starter") or "starter" in feature_contract) else 0.45
+    lineup_guard = 0.35 if any(_rich_contains(rich, x) for x in ("lineup", "platoon", "statcast")) else 0.55
+    bullpen_guard = 0.35 if _rich_contains(rich, "bullpen") else 0.55
 
-    home_delta = away_starter.delta * starter_guard + home_lineup.delta * lineup_guard + away_bullpen.delta * bullpen_guard + home_h2h.delta + home_form.delta
-    away_delta = home_starter.delta * starter_guard + away_lineup.delta * lineup_guard + home_bullpen.delta * bullpen_guard + away_h2h.delta + away_form.delta
+    home_delta = (
+        away_starter.delta * starter_guard
+        + home_lineup.delta * lineup_guard
+        + away_bullpen.delta * bullpen_guard
+        + home_h2h.delta
+        + home_form.delta
+    )
+    away_delta = (
+        home_starter.delta * starter_guard
+        + away_lineup.delta * lineup_guard
+        + home_bullpen.delta * bullpen_guard
+        + away_h2h.delta
+        + away_form.delta
+    )
     home_delta = _clip(home_delta, -MAX_TEAM_DELTA, MAX_TEAM_DELTA)
     away_delta = _clip(away_delta, -MAX_TEAM_DELTA, MAX_TEAM_DELTA)
 
@@ -463,8 +525,19 @@ def context_overlay_from_feature_row(row: dict[str, Any] | None, home_mu: float,
         "away_delta": away_delta,
         "home_mu": max(0.05, base_home * (1.0 + home_delta)),
         "away_mu": max(0.05, base_away * (1.0 + away_delta)),
-        "caps": {"team": MAX_TEAM_DELTA, "starter": MAX_STARTER_DELTA, "lineup": MAX_LINEUP_DELTA, "bullpen": MAX_BULLPEN_DELTA, "h2h": MAX_H2H_DELTA, "recent_form": MAX_RECENT_FORM_DELTA},
-        "double_count_guards": {"starter": starter_guard, "lineup": lineup_guard, "bullpen": bullpen_guard},
+        "caps": {
+            "team": MAX_TEAM_DELTA,
+            "starter": MAX_STARTER_DELTA,
+            "lineup": MAX_LINEUP_DELTA,
+            "bullpen": MAX_BULLPEN_DELTA,
+            "h2h": MAX_H2H_DELTA,
+            "recent_form": MAX_RECENT_FORM_DELTA,
+        },
+        "double_count_guards": {
+            "starter": starter_guard,
+            "lineup": lineup_guard,
+            "bullpen": bullpen_guard,
+        },
         "components": {
             "home_offense_vs_away_starter": away_starter.as_dict(),
             "away_offense_vs_home_starter": home_starter.as_dict(),
