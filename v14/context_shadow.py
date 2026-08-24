@@ -12,6 +12,7 @@ from .distribution import probability_surface
 from .feature_row import compact_feature_identity, feature_row_is_usable, load_latest_feature_row
 from .model import RunProjection, shadow_payload
 from .shadow import projection_from_v13_result
+from .v13_context_adapter import adapt_feature_row
 
 CONTEXT_SHADOW_SCHEMA = "v14-context-shadow-v1"
 DEFAULT_PAYLOAD = Path("runtime/v11/discord_payload.json")
@@ -27,7 +28,8 @@ def build_context_shadow(result: dict[str, Any], *, feature_row: dict[str, Any] 
     else:
         selected = load_latest_feature_row(feature_store, game_pk=base.game_pk, as_of=base.analyzed_at)
 
-    overlay = context_overlay_from_feature_row(selected, base.home_mu, base.away_mu)
+    adapted = adapt_feature_row(selected)
+    overlay = context_overlay_from_feature_row(adapted, base.home_mu, base.away_mu)
     contextual = RunProjection(
         game_pk=base.game_pk, game_date=base.game_date, analyzed_at=base.analyzed_at,
         home=base.home, away=base.away, home_mu=overlay["home_mu"], away_mu=overlay["away_mu"],
@@ -46,6 +48,7 @@ def build_context_shadow(result: dict[str, Any], *, feature_row: dict[str, Any] 
     out["transition_adapter"] = "Frozen V13.10 champion run means plus a tightly capped PIT contextual residual. No V13 probability, bookmaker probability, selector or staking decision is accepted as a V14 predictive feature."
     out["champion_reference"] = {"game_pk": base.game_pk, "home_mu": base.home_mu, "away_mu": base.away_mu, "source_generation": base.source_generation, "used_as_context_baseline": True}
     out["feature_row"] = compact_feature_identity(selected)
+    out["feature_row_adapter"] = (adapted or {}).get("v14_adapter") or {"available": False}
     out["context_overlay"] = overlay
     out["parity_migration"] = {"v13_10_remains_production_champion": True, "contextual_layer_promoted": False, "promotion_requires_out_of_sample_evidence": True}
     return out
