@@ -189,12 +189,22 @@ class V123AuditTests(unittest.TestCase):
         sd = selector._score({}, dog, dq)
         self.assertAlmostEqual(sf, sd, places=8)
 
-    def test_research_workflow_is_non_publishing_and_scheduled(self):
-        text = Path(".github/workflows/v12-3-research-collector.yml").read_text(encoding="utf-8")
-        self.assertIn("schedule:", text)
-        self.assertIn("V123_RESEARCH_ONLY: '1'", text)
-        self.assertIn("Assert no research recommendation was created", text)
-        self.assertNotIn("--send-persisted", text)
+    def test_paid_odds_workflows_are_non_publishing_and_manual_only(self):
+        research = Path(".github/workflows/v12-3-research-collector.yml").read_text(encoding="utf-8")
+        self.assertIn("workflow_dispatch:", research)
+        self.assertNotIn("schedule:", research)
+        self.assertIn("V123_RESEARCH_ONLY: '1'", research)
+        self.assertIn("Assert no research recommendation was created", research)
+        self.assertNotIn("--send-persisted", research)
+
+        for path in (
+            ".github/workflows/market-snapshot.yml",
+            ".github/workflows/v13-market-tracking.yml",
+        ):
+            text = Path(path).read_text(encoding="utf-8")
+            self.assertIn("workflow_dispatch:", text)
+            self.assertNotIn("schedule:", text)
+            self.assertIn("ODDS_API_KEY", text)
 
     def test_closing_window_covers_15_minute_snapshot_cadence(self):
         self.assertGreaterEqual(config.CLOSING_CANDIDATE_WINDOW_MIN, 20)
