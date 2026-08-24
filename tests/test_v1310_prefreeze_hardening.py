@@ -45,6 +45,19 @@ class V1310PrefreezeHardeningTests(unittest.TestCase):
         self.assertEqual(audit["RUNLINE"]["selected_via_unambiguous_real_market_fallback"], 1)
         self.assertEqual(audit["TOTAL"]["selected_via_unambiguous_real_market_fallback"], 1)
 
+    def test_captured_closing_and_t60_sharp_are_diagnostic_fallbacks_only(self):
+        runline = self._state("RUNLINE", "Home", -1.5, .59, None, canonical=True, game_pk=20)
+        runline["close_sharp_fair"] = .56
+        total = self._state("TOTAL", "Over", 8.5, .53, None, canonical=True, game_pk=21)
+        total["t60_sharp_fair"] = .51
+        report = diagnostics.build([runline, total])
+        self.assertEqual(report["by_market"]["RUNLINE"]["n"], 1)
+        self.assertEqual(report["by_market"]["TOTAL"]["n"], 1)
+        self.assertEqual(report["by_market"]["RUNLINE"]["market_benchmark_sources"], {"CLOSING_SHARP": 1})
+        self.assertEqual(report["by_market"]["TOTAL"]["market_benchmark_sources"], {"T60_SHARP": 1})
+        self.assertIn("never imputed", report["market_benchmark_policy"])
+        self.assertIn("diagnostic comparison evidence only", report["interpretation"]["benchmark_timing"])
+
     def test_ambiguous_unmarked_total_lines_fail_closed(self):
         states = [
             self._state("TOTAL", "Over", 8.5, .54, .51, game_pk=3),
