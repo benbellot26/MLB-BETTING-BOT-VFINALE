@@ -36,6 +36,7 @@ CRITICAL_TEST_MODULES = (
     "tests.test_v1310_champion_only",
     "tests.test_v1310_champion_dashboard",
     "tests.test_v1310_prefreeze_hardening",
+    "tests.test_v1310_manual_run_capture",
     "tests.test_v1311_historical_transfer",
 )
 
