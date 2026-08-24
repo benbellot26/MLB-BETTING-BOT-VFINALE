@@ -32,7 +32,20 @@ _original_send_persisted = runner.send_persisted
 
 def _tracked_allocate(results, *args, **kwargs):
     out = _original_allocate(results, *args, **kwargs)
+    # The manual champion run already paid for and analyzed the current market
+    # snapshot. Persist that same snapshot as native phase evidence first, then
+    # reuse the in-memory prices/sharp probabilities for T-60/closing tracking.
+    # observe_closing() never calls The Odds API; it only reads `results`.
     v13_daily_tracking.capture_results(results, target_date=core.TARGET_DATE)
+    observation_at = next(
+        (r.get("as_of") or r.get("analyzed_at") for r in (results or []) if r.get("as_of") or r.get("analyzed_at")),
+        None,
+    )
+    try:
+        v13_daily_tracking.observe_closing(results, observation_at)
+        v13_daily_tracking.write_report()
+    except Exception:
+        core.logging.exception("V13 manual-run market checkpoint capture failed; production probabilities remain unchanged")
     try:
         v138_book_telemetry.capture(results)
     except Exception:
