@@ -63,6 +63,13 @@ class V1310PrefreezeHardeningTests(unittest.TestCase):
         self.assertEqual(rows[0]["phase"], "LATE")
         self.assertEqual(rows[0]["p_model"], .63)
 
+    def test_repository_tracking_now_has_real_rl_and_total_comparison_targets(self):
+        report = diagnostics.build()
+        self.assertGreater(report["by_market"]["RUNLINE"]["n"], 0)
+        self.assertGreater(report["by_market"]["TOTAL"]["n"], 0)
+        self.assertGreater(report["tracking_availability"]["by_market"]["RUNLINE"]["current_generation_independent_scoreable"], 0)
+        self.assertGreater(report["tracking_availability"]["by_market"]["TOTAL"]["current_generation_independent_scoreable"], 0)
+
     def test_dashboard_exposes_market_and_run_projection_dates_separately(self):
         game = {
             "game_pk": 10,
