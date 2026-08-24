@@ -1,5 +1,5 @@
 {
-  "analyzed_at": "2026-08-24T14:35:08.173401+00:00",
+  "analyzed_at": "2026-08-24T20:23:53.041884+00:00",
   "calibration_health": {
     "by_phase": {
       "EARLY": {
@@ -2155,18 +2155,18 @@
   },
   "data_health": {
     "analyzed_games": 10,
-    "confirmed_lineups": 0,
-    "confirmed_starters": 8,
+    "confirmed_lineups": 4,
+    "confirmed_starters": 10,
     "matched_events": 10,
-    "mean_data_quality": 0.7314,
+    "mean_data_quality": 0.8684,
     "scheduled_games": 10,
     "sharp_coverage": {
       "ML": 10,
       "RUNLINE": 10,
       "TOTAL": 10
     },
-    "usable_lineups": 0,
-    "usable_starters": 8,
+    "usable_lineups": 4,
+    "usable_starters": 10,
     "winamax_coverage": {
       "ML": 10,
       "RUNLINE": 0,
@@ -2227,14 +2227,14 @@
     "generation": "V12.3.2 value-selection-v1 + V12.4 predictive shadow",
     "historical_evidence": "legacy V10 1,801-game data are diagnostic only until a V12.3 structural baseline exists",
     "ledger": "PROPOSED -> PUBLISHED -> CONFIRMED_PLACED -> SETTLED",
-    "raw_archive": "runtime/v11/snapshots/2026-08-24_450245f46cdcc22e.json.gz",
+    "raw_archive": "runtime/v11/snapshots/2026-08-24_1b96ed9132690c30.json.gz",
     "runs_model": "immutable structural baseline + validated FINAL historical prior fallback + phase-specific live residual",
     "selection": "informational recommendations use model confidence + conservative EV/edge + DQ + uncertainty + Kelly; Winamax never decides eligibility",
     "selection_confidence": "RL >= 55%; ML/TOTAL >= 58%",
     "selection_price_floor": "reference decimal odds >= 1.40",
     "selection_reference_price": "fresh configured sharp books; exact side/point; second-best effective quote when >=2 books, otherwise single fresh sharp quote",
     "sharp_disagreement": "large model-vs-sharp disagreement reduces selection score but is not a hard directional veto",
-    "source_replay": "runtime/v11/source_replays/2026-08-24_450245f46cdcc22e_sources.json.gz",
+    "source_replay": "runtime/v11/source_replays/2026-08-24_1b96ed9132690c30_sources.json.gz",
     "staking": "bankroll-aware fractional Kelly; official combos disabled",
     "starter_model": "current season + N-1/N-2 prior affects structural run means",
     "uncertainty": "empirical phase/market reliability bins + market disagreement + DQ penalty",
@@ -3643,7 +3643,7 @@
       }
     },
     "affects_v12_selection": false,
-    "analyzed_at": "2026-08-24T14:35:08.173401+00:00",
+    "analyzed_at": "2026-08-24T20:23:53.041884+00:00",
     "canonicalization": "latest settled pre-game snapshot per game_pk",
     "convergence": {
       "affects_v12_selection": false,
@@ -3668,39 +3668,39 @@
     "current_run_disagreements": [],
     "evolution": {
       "has_previous": true,
-      "settled_games_delta": 15,
+      "settled_games_delta": 0,
       "variants": {
         "all_core": {
           "accuracy": 0.0,
-          "brier": -0.0012502018854686492,
-          "gt55_hit_rate": 0.0060760363625004254,
-          "gt55_n": 31,
-          "logloss": -0.0026884686218813236,
-          "n": 102
+          "brier": 0.0,
+          "gt55_hit_rate": 0.0,
+          "gt55_n": 0,
+          "logloss": 0.0,
+          "n": 0
         },
         "baseline_v1232": {
           "accuracy": 0.0,
-          "brier": -0.0010257094361730834,
-          "gt55_hit_rate": 0.0057377049180327155,
-          "gt55_n": 31,
-          "logloss": -0.002207289011941449,
-          "n": 102
+          "brier": 0.0,
+          "gt55_hit_rate": 0.0,
+          "gt55_n": 0,
+          "logloss": 0.0,
+          "n": 0
         },
         "ensemble": {
           "accuracy": 0.0,
-          "brier": -0.00100178473246762,
-          "gt55_hit_rate": 0.0026548672566371057,
-          "gt55_n": 29,
-          "logloss": -0.002155403834771974,
-          "n": 102
+          "brier": 0.0,
+          "gt55_hit_rate": 0.0,
+          "gt55_n": 0,
+          "logloss": 0.0,
+          "n": 0
         },
         "optimized": {
           "accuracy": 0.0,
-          "brier": -0.0024714174450819193,
-          "gt55_hit_rate": 0.019909688013136306,
-          "gt55_n": 31,
-          "logloss": -0.005240321728267161,
-          "n": 102
+          "brier": 0.0,
+          "gt55_hit_rate": 0.0,
+          "gt55_n": 0,
+          "logloss": 0.0,
+          "n": 0
         }
       }
     },
@@ -3867,7 +3867,7 @@
       "weight_source": "NATIVE_ONLY"
     },
     "research_only": true,
-    "run_id": "450245f46cdcc22e",
+    "run_id": "1b96ed9132690c30",
     "schema": "v12-4-research-monitor-v1",
     "target_date": "2026-08-24",
     "v115": {
@@ -4018,7 +4018,7 @@
     },
     "version": "v12.4-research-monitor-v1"
   },
-  "run_id": "450245f46cdcc22e",
+  "run_id": "1b96ed9132690c30",
   "scheduled_games": 10,
   "schema": "v12-3-professional-v1",
   "shadow_challenger": {
