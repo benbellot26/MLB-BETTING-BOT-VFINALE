@@ -13,7 +13,7 @@ from .probability_contract_v13 import MODEL_GENERATION_FINGERPRINT, row_is_predi
 
 OUT_JSON = Path("data/v13_champion_dashboard.json")
 OUT_MD = Path("data/v13_champion_dashboard.md")
-SCHEMA = "v13.10-champion-dashboard-v2"
+SCHEMA = "v13.10-champion-dashboard-v3"
 MARKETS = ("ML", "RUNLINE", "TOTAL")
 SHRINKAGE_PRIOR_N = 12
 
@@ -42,6 +42,25 @@ def _latest_settled(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if gid not in best or rank > best[gid][0]:
             best[gid] = (rank, row)
     return [v[1] for v in best.values()]
+
+
+def _state_date(state: dict[str, Any]) -> str | None:
+    target = str(state.get("target_date") or "").strip()
+    if target:
+        return target[:10]
+    game_date = str(state.get("game_date") or "").strip()
+    return game_date[:10] if len(game_date) >= 10 else None
+
+
+def _market_settled_dates(states: list[dict[str, Any]]) -> list[str]:
+    return sorted({
+        date
+        for state in states
+        if state.get("settled_result") in {"WIN", "LOSS", "PUSH"}
+        and _current(state)
+        for date in [_state_date(state)]
+        if date
+    })
 
 
 def _prob(option: dict[str, Any]) -> float | None:
@@ -293,15 +312,36 @@ def build(rows: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     games = _latest_settled(rows)
     states = _states_for_dashboard(games, explicit_rows)
     diagnostics = market_diag.build(states, games)
-    dates = sorted({str(r.get("target_date") or "") for r in games if r.get("target_date")})
-    latest_date = dates[-1] if dates else None
-    latest = [r for r in games if str(r.get("target_date") or "") == latest_date] if latest_date else []
-    latest_states = [s for s in states if str(s.get("target_date") or "") == str(latest_date or "")]
+
+    run_dates = sorted({str(r.get("target_date") or "") for r in games if r.get("target_date")})
+    latest_run_date = run_dates[-1] if run_dates else None
+    market_dates = _market_settled_dates(states)
+    latest_market_date = market_dates[-1] if market_dates else None
+    date_candidates = [d for d in (latest_run_date, latest_market_date) if d]
+    latest_date = max(date_candidates) if date_candidates else None
+
+    latest = [r for r in games if str(r.get("target_date") or "") == str(latest_date or "")]
+    latest_states = [s for s in states if _state_date(s) == latest_date]
+    latest_tracked_games = len({
+        str(s.get("game_pk"))
+        for s in latest_states
+        if s.get("game_pk") and s.get("settled_result") in {"WIN", "LOSS", "PUSH"} and _current(s)
+    })
+    checkpoint = diagnostics.get("checkpoint_100") or {}
+
     return {
         "schema": SCHEMA,
         "model_generation": MODEL_GENERATION_FINGERPRINT,
-        "scope": "current-generation-only; latest settled pregame observation per game; market metrics use one deterministic latest side per unique game+market line",
+        "scope": "current-generation-only; run-projection metrics and market-tracking metrics expose their sample scopes separately; market metrics use one deterministic latest side per unique game+market line",
         "latest_date": latest_date,
+        "latest_run_projection_date": latest_run_date,
+        "latest_market_tracking_date": latest_market_date,
+        "sample_counts": {
+            "latest_run_projection_games": len(latest),
+            "cumulative_run_projection_games": len(games),
+            "latest_tracked_unique_games": latest_tracked_games,
+            "cumulative_tracked_unique_games": int(checkpoint.get("unique_games") or 0),
+        },
         "latest_day": _snapshot(latest, latest_states),
         "cumulative": _snapshot(games, states),
         "market_diagnostics": diagnostics,
@@ -337,11 +377,14 @@ def render_markdown(report: dict[str, Any]) -> str:
     day = report.get("latest_day") or {}
     diag = report.get("market_diagnostics") or {}
     checkpoint = diag.get("checkpoint_100") or {}
+    counts = report.get("sample_counts") or {}
     lines = [
         "# V13.10 Champion Diagnostic Dashboard",
         "",
         f"Model generation: `{report.get('model_generation')}`",
-        f"Latest settled date: `{report.get('latest_date') or 'none'}`",
+        f"Latest settled date (any monitored current-generation evidence): `{report.get('latest_date') or 'none'}`",
+        f"Run-projection sample settled through: `{report.get('latest_run_projection_date') or 'none'}`",
+        f"Market-tracking sample settled through: `{report.get('latest_market_tracking_date') or 'none'}`",
         f"100-game checkpoint: **{checkpoint.get('unique_games', 0)}/{checkpoint.get('target', 100)}** ({_fmt(checkpoint.get('progress_pct'), 1)}%) — `{checkpoint.get('status', 'COLLECTING')}`",
         "",
         "## Core scorecard",
@@ -350,7 +393,8 @@ def render_markdown(report: dict[str, Any]) -> str:
         "|---|---:|---:|",
     ]
     pairs = [
-        ("Games", day.get("games"), cum.get("games")),
+        ("Run-projection games", counts.get("latest_run_projection_games", day.get("games")), counts.get("cumulative_run_projection_games", cum.get("games"))),
+        ("Tracked unique games", counts.get("latest_tracked_unique_games"), counts.get("cumulative_tracked_unique_games")),
         ("Home run MAE", (day.get("runs") or {}).get("home_mae_runs"), (cum.get("runs") or {}).get("home_mae_runs")),
         ("Away run MAE", (day.get("runs") or {}).get("away_mae_runs"), (cum.get("runs") or {}).get("away_mae_runs")),
         ("Total run MAE", (day.get("runs") or {}).get("total_mae_runs"), (cum.get("runs") or {}).get("total_mae_runs")),
