@@ -1,19 +1,22 @@
 # V13.10 Champion Diagnostic Dashboard
 
 Model generation: `v13.10-gen-structural-nb-independent-transfer-park-extra-surface-v3`
-Latest settled date: `2026-08-22`
+Latest settled date (any monitored current-generation evidence): `2026-08-23`
+Run-projection sample settled through: `2026-08-23`
+Market-tracking sample settled through: `2026-08-23`
 100-game checkpoint: **65/100** (65.0%) — `COLLECTING`
 
 ## Core scorecard
 
 | Metric | Latest day | Cumulative |
 |---|---:|---:|
-| Games | 15 | 50 |
-| Home run MAE | 2.069 | 2.058 |
-| Away run MAE | 2.293 | 2.424 |
-| Total run MAE | 4.017 | 3.702 |
-| Brier all markets | 0.264 | 0.255 |
-| LogLoss all markets | 0.725 | 0.703 |
+| Run-projection games | 15 | 65 |
+| Tracked unique games | 15 | 65 |
+| Home run MAE | 2.007 | 2.046 |
+| Away run MAE | 2.546 | 2.452 |
+| Total run MAE | 3.636 | 3.687 |
+| Brier all markets | 0.252 | 0.255 |
+| LogLoss all markets | 0.697 | 0.703 |
 
 ## Cumulative by market
 
@@ -39,16 +42,16 @@ Latest settled date: `2026-08-22`
 
 ## Run Line diagnostic
 
-Probability sample: **65** • accuracy 50.8% • projected-margin sample **50** • margin MAE 2.604 • bias -0.158
+Probability sample: **65** • accuracy 50.8% • projected-margin sample **65** • margin MAE 2.806 • bias -0.107
 
 | |Projected margin| | N | Accuracy | Brier |
 |---|---:|---:|---:|
-| 1-2 | 14 | 57.1% | 0.246 |
-| <1 | 36 | 55.6% | 0.248 |
+| 1-2 | 16 | 56.2% | 0.245 |
+| <1 | 49 | 49.0% | 0.262 |
 
 ## Total / Over-Under diagnostic
 
-Probability sample: **72** • accuracy 40.3% • run-projection sample **59** • total MAE 3.735 • bias -0.854
+Probability sample: **72** • accuracy 40.3% • run-projection sample **75** • total MAE 3.700 • bias -0.623
 
 | Total line | N | Accuracy | Brier |
 |---|---:|---:|---:|
@@ -69,36 +72,36 @@ Probability sample: **72** • accuracy 40.3% • run-projection sample **59** �
 
 | DQ band | Games | Run MAE total | Brier | LogLoss |
 |---|---:|---:|---:|---:|
-| >=0.90 | 33 | 3.313 | 0.250 | 0.695 |
-| 0.75-0.90 | 12 | 4.244 | 0.242 | 0.676 |
-| 0.60-0.75 | 5 | 4.975 | 0.292 | 0.781 |
+| >=0.90 | 42 | 3.291 | 0.210 | 0.613 |
+| 0.75-0.90 | 16 | 4.537 | 0.242 | 0.677 |
+| 0.60-0.75 | 7 | 4.125 | 0.263 | 0.720 |
 
 ## Highest run-error teams — shrinkage protected
 
 | Team | N | Run MAE | Raw bias | Shrunk bias | Reliability |
 |---|---:|---:|---:|---:|---:|
-| Los Angeles Angels | 4 | 4.987 | 1.778 | 0.445 | 25.0% |
-| Cincinnati Reds | 4 | 3.891 | 1.754 | 0.439 | 25.0% |
-| Texas Rangers | 4 | 3.487 | -3.487 | -0.872 | 25.0% |
-| Philadelphia Phillies | 3 | 3.356 | 3.003 | 0.601 | 20.0% |
-| Colorado Rockies | 3 | 3.002 | -3.002 | -0.601 | 20.0% |
-| Washington Nationals | 4 | 2.621 | -1.934 | -0.484 | 25.0% |
-| Miami Marlins | 3 | 2.570 | -2.570 | -0.514 | 20.0% |
-| Cleveland Guardians | 4 | 2.487 | -1.098 | -0.275 | 25.0% |
-| Athletics | 4 | 2.400 | -1.360 | -0.340 | 25.0% |
-| Atlanta Braves | 3 | 2.355 | -2.355 | -0.471 | 20.0% |
+| Chicago Cubs | 3 | 5.697 | 5.697 | 1.139 | 20.0% |
+| Los Angeles Angels | 5 | 4.188 | 1.225 | 0.360 | 29.4% |
+| Cincinnati Reds | 5 | 3.464 | 1.052 | 0.309 | 29.4% |
+| Colorado Rockies | 4 | 3.043 | -3.043 | -0.761 | 25.0% |
+| Detroit Tigers | 3 | 3.028 | -1.330 | -0.266 | 20.0% |
+| Philadelphia Phillies | 4 | 2.914 | 2.649 | 0.662 | 25.0% |
+| New York Mets | 3 | 2.900 | 0.986 | 0.197 | 20.0% |
+| Texas Rangers | 5 | 2.883 | -2.696 | -0.793 | 29.4% |
+| Washington Nationals | 5 | 2.605 | -2.056 | -0.605 | 29.4% |
+| Kansas City Royals | 5 | 2.491 | 1.952 | 0.574 | 29.4% |
 
 ## Highest run-error venues — shrinkage protected
 
 | Venue | Games | Total MAE | Raw total bias | Shrunk bias |
 |---|---:|---:|---:|---:|
-| Daikin Park | 4 | 6.093 | -0.481 | -0.120 |
-| Globe Life Field | 4 | 5.125 | -5.125 | -1.281 |
-| Rate Field | 3 | 4.819 | 0.404 | 0.081 |
-| Citizens Bank Park | 3 | 4.673 | 1.642 | 0.328 |
-| Fenway Park | 3 | 3.588 | -0.452 | -0.090 |
-| Coors Field | 3 | 3.499 | -3.499 | -0.700 |
-| Kauffman Stadium | 4 | 3.435 | -0.881 | -0.220 |
+| T-Mobile Park | 3 | 6.377 | 6.377 | 1.276 |
+| Daikin Park | 5 | 5.422 | 0.163 | 0.048 |
+| Rate Field | 4 | 4.875 | -0.958 | -0.240 |
+| Kauffman Stadium | 5 | 4.544 | 1.091 | 0.321 |
+| Globe Life Field | 5 | 4.204 | -4.204 | -1.237 |
+| Citizens Bank Park | 4 | 3.909 | 1.635 | 0.409 |
+| loanDepot park | 3 | 3.544 | -3.544 | -0.709 |
 | American Family Field | 4 | 3.369 | 0.292 | 0.073 |
 
 ## Data blockers
