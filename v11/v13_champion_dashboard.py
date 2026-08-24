@@ -7,12 +7,15 @@ from pathlib import Path
 from typing import Any
 
 from . import journal, pro_model
+from . import v13_daily_tracking as tracking
+from . import v1310_market_diagnostics as market_diag
 from .probability_contract_v13 import MODEL_GENERATION_FINGERPRINT, row_is_predictively_compatible
 
 OUT_JSON = Path("data/v13_champion_dashboard.json")
 OUT_MD = Path("data/v13_champion_dashboard.md")
-SCHEMA = "v13.10-champion-dashboard-v1"
+SCHEMA = "v13.10-champion-dashboard-v2"
 MARKETS = ("ML", "RUNLINE", "TOTAL")
+SHRINKAGE_PRIOR_N = 12
 
 
 def _num(value: Any, default: float | None = None) -> float | None:
@@ -51,7 +54,11 @@ def _prob(option: dict[str, Any]) -> float | None:
 
 def _prob_metrics(options: list[dict[str, Any]]) -> dict[str, Any]:
     scored = []
+    pushes = 0
     for option in options:
+        if option.get("result") == "PUSH":
+            pushes += 1
+            continue
         if option.get("result") not in {"WIN", "LOSS"}:
             continue
         p = _prob(option)
@@ -60,7 +67,7 @@ def _prob_metrics(options: list[dict[str, Any]]) -> dict[str, Any]:
         y = 1.0 if option.get("result") == "WIN" else 0.0
         scored.append((p, y))
     if not scored:
-        return {"n": 0}
+        return {"n": 0, "pushes": pushes}
     n = len(scored)
     brier = sum((p-y)**2 for p, y in scored) / n
     logloss = sum(-(y*math.log(p)+(1-y)*math.log(1-p)) for p, y in scored) / n
@@ -68,6 +75,7 @@ def _prob_metrics(options: list[dict[str, Any]]) -> dict[str, Any]:
     outcome_rate = sum(y for _, y in scored) / n
     return {
         "n": n,
+        "pushes": pushes,
         "brier": round(brier, 6),
         "logloss": round(logloss, 6),
         "mean_probability": round(mean_p, 6),
@@ -115,7 +123,7 @@ def _canonical_options(games: list[dict[str, Any]], market: str | None = None) -
 
 def _dq_band(row: dict[str, Any]) -> str:
     dq = row.get("data_quality") or {}
-    score = _num(dq.get("model_input_score", dq.get("score")))
+    score = _num(dq.get("model_input_score", dq.get("score"))) if isinstance(dq, dict) else _num(dq)
     if score is None:
         return "unknown"
     if score < .60:
@@ -163,6 +171,13 @@ def _group_games(games: list[dict[str, Any]], key_fn, min_n: int = 1) -> dict[st
     return out
 
 
+def _shrink_bias(raw_bias: float | None, n: int, prior_n: int = SHRINKAGE_PRIOR_N) -> tuple[float | None, float]:
+    if raw_bias is None or n <= 0:
+        return None, 0.0
+    reliability = n / (n + prior_n)
+    return round(raw_bias * reliability, 4), round(reliability, 4)
+
+
 def _team_breakdown(games: list[dict[str, Any]], min_n: int = 3) -> dict[str, Any]:
     data: dict[str, dict[str, Any]] = defaultdict(lambda: {"n": 0, "abs": [], "err": []})
     for row in games:
@@ -182,10 +197,29 @@ def _team_breakdown(games: list[dict[str, Any]], min_n: int = 3) -> dict[str, An
     for team, d in sorted(data.items(), key=lambda kv: (-kv[1]["n"], kv[0])):
         if d["n"] < min_n:
             continue
+        raw_bias = sum(d["err"])/d["n"]
+        shrunk, reliability = _shrink_bias(raw_bias, d["n"])
         out[team] = {
             "n": d["n"],
             "run_mae": round(sum(d["abs"])/d["n"], 4),
-            "run_bias": round(sum(d["err"])/d["n"], 4),
+            "run_bias": round(raw_bias, 4),
+            "shrunk_run_bias": shrunk,
+            "reliability": reliability,
+            "shrinkage_prior_n": SHRINKAGE_PRIOR_N,
+        }
+    return out
+
+
+def _venue_breakdown(games: list[dict[str, Any]], min_n: int = 3) -> dict[str, Any]:
+    out = _group_games(games, _venue, min_n=min_n)
+    for payload in out.values():
+        runs = payload.get("runs") or {}
+        n = int(runs.get("n") or 0)
+        shrunk, reliability = _shrink_bias(_num(runs.get("total_bias_runs")), n)
+        payload["shrinkage"] = {
+            "shrunk_total_bias_runs": shrunk,
+            "reliability": reliability,
+            "prior_n": SHRINKAGE_PRIOR_N,
         }
     return out
 
@@ -203,15 +237,16 @@ def _dq_components(games: list[dict[str, Any]]) -> dict[str, Any]:
     n = 0
     for row in games:
         dq = row.get("data_quality") or {}
-        components = dq.get("components") or {}
+        components = dq.get("components") or {} if isinstance(dq, dict) else {}
         if components:
             n += 1
             for key, value in components.items():
                 v = _num(value)
                 if v is not None:
                     totals[key] += v
-        for blocker in dq.get("blockers") or []:
-            blockers[str(blocker)] += 1
+        if isinstance(dq, dict):
+            for blocker in dq.get("blockers") or []:
+                blockers[str(blocker)] += 1
     return {
         "n": n,
         "mean_components": {k: round(v/n, 4) for k, v in totals.items()} if n else {},
@@ -219,14 +254,22 @@ def _dq_components(games: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def _snapshot(games: list[dict[str, Any]]) -> dict[str, Any]:
+def _snapshot(games: list[dict[str, Any]], states: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    if states is None:
+        probability = {
+            "all_markets": _prob_metrics(_canonical_options(games)),
+            "by_market": {m: _prob_metrics(_canonical_options(games, m)) for m in MARKETS},
+        }
+    else:
+        prepared = market_diag.enrich_with_games(states, games)
+        probability = {
+            "all_markets": market_diag.probability_metrics(market_diag.canonical_states(prepared)),
+            "by_market": market_diag.market_scorecard(prepared),
+        }
     return {
         "games": len(games),
         "runs": _run_metrics(games),
-        "probability": {
-            "all_markets": _prob_metrics(_canonical_options(games)),
-            "by_market": {m: _prob_metrics(_canonical_options(games, m)) for m in MARKETS},
-        },
+        "probability": probability,
         "by_phase": _group_games(games, lambda r: str(r.get("phase") or "UNKNOWN").upper()),
         "by_data_quality": _group_games(games, _dq_band),
         "by_probability_band": _probability_band_breakdown(games),
@@ -234,25 +277,41 @@ def _snapshot(games: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _states_for_dashboard(games: list[dict[str, Any]], explicit_rows: bool) -> list[dict[str, Any]]:
+    if explicit_rows:
+        return market_diag.states_from_games(games)
+    try:
+        states = list(tracking.fold().values())
+    except Exception:
+        states = []
+    return states or market_diag.states_from_games(games)
+
+
 def build(rows: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    explicit_rows = rows is not None
     rows = journal.load_rows() if rows is None else list(rows)
     games = _latest_settled(rows)
+    states = _states_for_dashboard(games, explicit_rows)
+    diagnostics = market_diag.build(states, games)
     dates = sorted({str(r.get("target_date") or "") for r in games if r.get("target_date")})
     latest_date = dates[-1] if dates else None
     latest = [r for r in games if str(r.get("target_date") or "") == latest_date] if latest_date else []
+    latest_states = [s for s in states if str(s.get("target_date") or "") == str(latest_date or "")]
     return {
         "schema": SCHEMA,
         "model_generation": MODEL_GENERATION_FINGERPRINT,
-        "scope": "current-generation-only; latest settled pregame observation per game",
+        "scope": "current-generation-only; latest settled pregame observation per game; market metrics use one deterministic latest side per unique game+market line",
         "latest_date": latest_date,
-        "latest_day": _snapshot(latest),
-        "cumulative": _snapshot(games),
+        "latest_day": _snapshot(latest, latest_states),
+        "cumulative": _snapshot(games, states),
+        "market_diagnostics": diagnostics,
         "by_team": _team_breakdown(games),
-        "by_venue": _group_games(games, _venue, min_n=3),
+        "by_venue": _venue_breakdown(games, min_n=3),
         "safety": {
             "changes_predictions": False,
             "market_used_as_model_feature": False,
             "legacy_generations_in_top_level_metrics": False,
+            "diagnostic_only": True,
         },
     }
 
@@ -268,14 +327,22 @@ def _fmt(value: Any, digits: int = 3) -> str:
         return str(value)
 
 
+def _pct(value: Any) -> str:
+    x = _num(value)
+    return "—" if x is None else f"{100*x:.1f}%"
+
+
 def render_markdown(report: dict[str, Any]) -> str:
     cum = report.get("cumulative") or {}
     day = report.get("latest_day") or {}
+    diag = report.get("market_diagnostics") or {}
+    checkpoint = diag.get("checkpoint_100") or {}
     lines = [
         "# V13.10 Champion Diagnostic Dashboard",
         "",
         f"Model generation: `{report.get('model_generation')}`",
         f"Latest settled date: `{report.get('latest_date') or 'none'}`",
+        f"100-game checkpoint: **{checkpoint.get('unique_games', 0)}/{checkpoint.get('target', 100)}** ({_fmt(checkpoint.get('progress_pct'), 1)}%) — `{checkpoint.get('status', 'COLLECTING')}`",
         "",
         "## Core scorecard",
         "",
@@ -283,32 +350,67 @@ def render_markdown(report: dict[str, Any]) -> str:
         "|---|---:|---:|",
     ]
     pairs = [
-        ("Games", (day.get("games")), (cum.get("games"))),
-        ("Home run MAE", ((day.get("runs") or {}).get("home_mae_runs")), ((cum.get("runs") or {}).get("home_mae_runs"))),
-        ("Away run MAE", ((day.get("runs") or {}).get("away_mae_runs")), ((cum.get("runs") or {}).get("away_mae_runs"))),
-        ("Total run MAE", ((day.get("runs") or {}).get("total_mae_runs")), ((cum.get("runs") or {}).get("total_mae_runs"))),
-        ("Brier", (((day.get("probability") or {}).get("all_markets") or {}).get("brier")), (((cum.get("probability") or {}).get("all_markets") or {}).get("brier"))),
-        ("LogLoss", (((day.get("probability") or {}).get("all_markets") or {}).get("logloss")), (((cum.get("probability") or {}).get("all_markets") or {}).get("logloss"))),
-        ("Calibration gap", (((day.get("probability") or {}).get("all_markets") or {}).get("calibration_gap")), (((cum.get("probability") or {}).get("all_markets") or {}).get("calibration_gap"))),
+        ("Games", day.get("games"), cum.get("games")),
+        ("Home run MAE", (day.get("runs") or {}).get("home_mae_runs"), (cum.get("runs") or {}).get("home_mae_runs")),
+        ("Away run MAE", (day.get("runs") or {}).get("away_mae_runs"), (cum.get("runs") or {}).get("away_mae_runs")),
+        ("Total run MAE", (day.get("runs") or {}).get("total_mae_runs"), (cum.get("runs") or {}).get("total_mae_runs")),
+        ("Brier all markets", ((day.get("probability") or {}).get("all_markets") or {}).get("brier"), ((cum.get("probability") or {}).get("all_markets") or {}).get("brier")),
+        ("LogLoss all markets", ((day.get("probability") or {}).get("all_markets") or {}).get("logloss"), ((cum.get("probability") or {}).get("all_markets") or {}).get("logloss")),
     ]
     for label, a, b in pairs:
         lines.append(f"| {label} | {_fmt(a)} | {_fmt(b)} |")
 
-    lines.extend(["", "## Cumulative by market", "", "| Market | N | Brier | LogLoss | Mean p | Outcome rate | Calibration gap |", "|---|---:|---:|---:|---:|---:|---:|"])
+    lines.extend(["", "## Cumulative by market", "", "| Market | N | Accuracy | Brier | LogLoss | ECE | Pushes |", "|---|---:|---:|---:|---:|---:|---:|"])
     by_market = ((cum.get("probability") or {}).get("by_market") or {})
     for market in MARKETS:
         m = by_market.get(market) or {}
-        lines.append(f"| {market} | {_fmt(m.get('n'), 0)} | {_fmt(m.get('brier'))} | {_fmt(m.get('logloss'))} | {_fmt(m.get('mean_probability'))} | {_fmt(m.get('outcome_rate'))} | {_fmt(m.get('calibration_gap'))} |")
+        lines.append(f"| {market} | {_fmt(m.get('n'), 0)} | {_pct(m.get('accuracy_at_50'))} | {_fmt(m.get('brier'))} | {_fmt(m.get('logloss'))} | {_fmt(m.get('ece'))} | {_fmt(m.get('pushes'), 0)} |")
 
-    lines.extend(["", "## Data-quality bands", "", "| DQ band | Games | Run MAE total | Brier | LogLoss |", "|---|---:|---:|---:|---:|"])
+    lines.extend(["", "## Market × data quality", "", "| Market | DQ band | N | Accuracy | Brier | LogLoss |", "|---|---|---:|---:|---:|---:|"])
+    for market in MARKETS:
+        for band, payload in ((diag.get("by_data_quality") or {}).get(market) or {}).items():
+            lines.append(f"| {market} | {band} | {_fmt(payload.get('n'), 0)} | {_pct(payload.get('accuracy_at_50'))} | {_fmt(payload.get('brier'))} | {_fmt(payload.get('logloss'))} |")
+
+    rl = diag.get("runline") or {}
+    rlp = rl.get("projected_margin") or {}
+    lines.extend(["", "## Run Line diagnostic", ""])
+    lines.append(f"Probability sample: **{(rl.get('overall') or {}).get('n', 0)}** • accuracy {_pct((rl.get('overall') or {}).get('accuracy_at_50'))} • projected-margin sample **{rlp.get('n', 0)}** • margin MAE {_fmt(rlp.get('mae_runs'))} • bias {_fmt(rlp.get('bias_runs'))}")
+    if rl.get("by_abs_projected_margin"):
+        lines.extend(["", "| |Projected margin| | N | Accuracy | Brier |", "|---|---:|---:|---:|"])
+        for band, payload in rl["by_abs_projected_margin"].items():
+            lines.append(f"| {band} | {_fmt(payload.get('n'), 0)} | {_pct(payload.get('accuracy_at_50'))} | {_fmt(payload.get('brier'))} |")
+
+    total = diag.get("total") or {}
+    tp = total.get("projection") or {}
+    lines.extend(["", "## Total / Over-Under diagnostic", ""])
+    lines.append(f"Probability sample: **{(total.get('overall') or {}).get('n', 0)}** • accuracy {_pct((total.get('overall') or {}).get('accuracy_at_50'))} • run-projection sample **{tp.get('n', 0)}** • total MAE {_fmt(tp.get('mae_runs'))} • bias {_fmt(tp.get('bias_runs'))}")
+    if total.get("by_market_line"):
+        lines.extend(["", "| Total line | N | Accuracy | Brier |", "|---|---:|---:|---:|"])
+        for band, payload in total["by_market_line"].items():
+            lines.append(f"| {band} | {_fmt(payload.get('n'), 0)} | {_pct(payload.get('accuracy_at_50'))} | {_fmt(payload.get('brier'))} |")
+
+    lines.extend(["", "## Posterior shadow monitor", "", "| Market | N | Δ Brier | Δ LogLoss | Status |", "|---|---:|---:|---:|---|"])
+    for market in MARKETS:
+        payload = ((diag.get("posterior_shadow") or {}).get(market) or {})
+        lines.append(f"| {market} | {_fmt(payload.get('n'), 0)} | {_fmt(payload.get('brier_improvement'), 4)} | {_fmt(payload.get('logloss_improvement'), 4)} | {payload.get('status', 'COLLECTING')} |")
+
+    lines.extend(["", "## Data-quality bands (run projection)", "", "| DQ band | Games | Run MAE total | Brier | LogLoss |", "|---|---:|---:|---:|---:|"])
     for band, payload in (cum.get("by_data_quality") or {}).items():
         lines.append(f"| {band} | {_fmt(payload.get('games'), 0)} | {_fmt((payload.get('runs') or {}).get('total_mae_runs'))} | {_fmt((payload.get('probability') or {}).get('brier'))} | {_fmt((payload.get('probability') or {}).get('logloss'))} |")
 
     teams = report.get("by_team") or {}
     worst = sorted(teams.items(), key=lambda kv: (-float(kv[1].get("run_mae") or 0), -int(kv[1].get("n") or 0)))[:10]
-    lines.extend(["", "## Highest run-error teams (min 3 observations)", "", "| Team | N | Run MAE | Bias |", "|---|---:|---:|---:|"])
+    lines.extend(["", "## Highest run-error teams — shrinkage protected", "", "| Team | N | Run MAE | Raw bias | Shrunk bias | Reliability |", "|---|---:|---:|---:|---:|---:|"])
     for team, payload in worst:
-        lines.append(f"| {team} | {_fmt(payload.get('n'), 0)} | {_fmt(payload.get('run_mae'))} | {_fmt(payload.get('run_bias'))} |")
+        lines.append(f"| {team} | {_fmt(payload.get('n'), 0)} | {_fmt(payload.get('run_mae'))} | {_fmt(payload.get('run_bias'))} | {_fmt(payload.get('shrunk_run_bias'))} | {_pct(payload.get('reliability'))} |")
+
+    venues = report.get("by_venue") or {}
+    venue_worst = sorted(venues.items(), key=lambda kv: (-float((kv[1].get("runs") or {}).get("total_mae_runs") or 0), -int(kv[1].get("games") or 0)))[:8]
+    lines.extend(["", "## Highest run-error venues — shrinkage protected", "", "| Venue | Games | Total MAE | Raw total bias | Shrunk bias |", "|---|---:|---:|---:|---:|"])
+    for venue, payload in venue_worst:
+        runs = payload.get("runs") or {}
+        shrink = payload.get("shrinkage") or {}
+        lines.append(f"| {venue} | {_fmt(payload.get('games'), 0)} | {_fmt(runs.get('total_mae_runs'))} | {_fmt(runs.get('total_bias_runs'))} | {_fmt(shrink.get('shrunk_total_bias_runs'))} |")
 
     blockers = (((cum.get("data_quality_components") or {}).get("blockers")) or {})
     lines.extend(["", "## Data blockers", ""])
@@ -318,7 +420,7 @@ def render_markdown(report: dict[str, Any]) -> str:
     else:
         lines.append("- None recorded in the current-generation settled sample.")
     lines.append("")
-    lines.append("> Diagnostic only. This report does not modify V13.10 probabilities or selection behavior.")
+    lines.append("> Diagnostic only. Market tracking, posterior monitoring, shrinkage and the 100-game checkpoint do not modify V13.10 probabilities or selection behavior.")
     return "\n".join(lines) + "\n"
 
 
