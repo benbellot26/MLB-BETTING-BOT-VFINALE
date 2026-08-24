@@ -53,11 +53,13 @@ class V1310ManualRunCaptureTests(unittest.TestCase):
         start = text.index("def _tracked_allocate")
         end = text.index("\ndef _tracked_update_clv", start)
         block = text[start:end]
-        self.assertIn("v13_daily_tracking.capture_results", block)
-        self.assertIn("v13_daily_tracking.observe_closing", block)
-        self.assertIn("v13_daily_tracking.write_report", block)
-        self.assertLess(block.index("capture_results"), block.index("observe_closing"))
-        self.assertNotIn("odds_api", block)
+        capture_call = "v13_daily_tracking.capture_results(results, target_date=core.TARGET_DATE)"
+        closing_call = "v13_daily_tracking.observe_closing(results, observation_at)"
+        self.assertIn(capture_call, block)
+        self.assertIn(closing_call, block)
+        self.assertIn("v13_daily_tracking.write_report()", block)
+        self.assertLess(block.index(capture_call), block.index(closing_call))
+        self.assertNotIn("core.odds_api(", block)
 
 
 if __name__ == "__main__":
