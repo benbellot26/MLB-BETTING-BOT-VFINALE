@@ -1,8 +1,8 @@
 name: MLB V12.3 Market Snapshotter
 
+# Paid Odds API access is manual-only. This legacy snapshotter is retained for
+# explicit diagnostics/replay work, but it must never consume credits on a timer.
 on:
-  schedule:
-    - cron: '*/15 * * * *'
   workflow_dispatch:
 
 permissions:

@@ -1,9 +1,8 @@
 name: MLB V13 Phase Research Collector
 
+# This workflow can spend paid Odds API credits. Keep it available for explicit
+# research collection, but never trigger it automatically.
 on:
-  schedule:
-    # Cheap hourly gate; the paid Odds API is called only when a new EARLY/LATE/FINAL phase is missing.
-    - cron: '23 0-6,14-23 * * *'
   workflow_dispatch:
 
 permissions:

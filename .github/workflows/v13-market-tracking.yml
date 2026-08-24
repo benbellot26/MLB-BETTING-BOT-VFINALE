@@ -1,8 +1,8 @@
 name: V13 Market Tracking
 
+# Paid Odds API polling is manual-only. The workflow can still be launched on
+# demand, but it must never burn market-data credits on a timer.
 on:
-  schedule:
-    - cron: '*/15 * * * *'
   workflow_dispatch:
 
 permissions:
