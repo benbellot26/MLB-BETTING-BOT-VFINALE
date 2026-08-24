@@ -66,12 +66,12 @@
   "diagnostic_scope": "current-generation-only",
   "edge_evidence": {
     "ML": {
-      "brier_gain_vs_market": -0.01037054167657999,
+      "brier_gain_vs_market": -0.008679752123046131,
       "claim_allowed": false,
-      "gap_residual_slope": -0.6075010986632418,
-      "logloss_gain_vs_market": -0.02135626587108888,
+      "gap_residual_slope": -0.09866923975936742,
+      "logloss_gain_vs_market": -0.018231747502923668,
       "minimum_n": 300,
-      "n": 50,
+      "n": 65,
       "reason": "INSUFFICIENT_INDEPENDENT_MARKET_TARGETS"
     },
     "RUNLINE": {
@@ -539,19 +539,19 @@
   "model_generation": "v13.10-gen-structural-nb-independent-transfer-park-extra-surface-v3",
   "posterior": {
     "historical_observations": 255,
-    "live_observations": 301,
+    "live_observations": 354,
     "primary_probability_affected": false
   },
   "probability_drift": {
     "ML": {
-      "confidence_shift": 0.011050620000000011,
-      "mean_probability_shift": 0.012341539999999984,
-      "observations": 171,
-      "prior_mean_abs_edge_from_50": 0.06667492,
-      "prior_mean_probability": 0.53784824,
+      "confidence_shift": -0.010251160000000002,
+      "mean_probability_shift": -0.00961307999999994,
+      "observations": 201,
+      "prior_mean_abs_edge_from_50": 0.0723232,
+      "prior_mean_probability": 0.545573,
       "prior_n": 50,
-      "recent_mean_abs_edge_from_50": 0.07772554000000001,
-      "recent_mean_probability": 0.55018978,
+      "recent_mean_abs_edge_from_50": 0.06207204,
+      "recent_mean_probability": 0.53595992,
       "recent_n": 50,
       "sample_policy": "current-generation attested; one canonical settled side per game/market"
     },
@@ -582,16 +582,16 @@
   },
   "proper_scoring_vs_market": {
     "ML": {
-      "brier_gain_vs_market": -0.01037054167657999,
-      "gap_residual_slope": -0.6075010986632418,
-      "logloss_gain_vs_market": -0.02135626587108888,
-      "market_brier": 0.21830404003497997,
-      "market_logloss": 0.6286280625408044,
-      "mean_model_minus_market": -0.03133341999999999,
-      "model_brier": 0.22867458171155997,
-      "model_logloss": 0.6499843284118932,
-      "n": 50,
-      "outcome_residual_vs_market": 0.07132274000000001
+      "brier_gain_vs_market": -0.008679752123046131,
+      "gap_residual_slope": -0.09866923975936742,
+      "logloss_gain_vs_market": -0.018231747502923668,
+      "market_brier": 0.21505976255599996,
+      "market_logloss": 0.6218246435893537,
+      "mean_model_minus_market": -0.0314276923076923,
+      "model_brier": 0.2237395146790461,
+      "model_logloss": 0.6400563910922774,
+      "n": 65,
+      "outcome_residual_vs_market": 0.07938756923076924
     },
     "RUNLINE": {
       "n": 0
@@ -624,26 +624,26 @@
   "tracking_availability": {
     "by_market": {
       "ML": {
-        "canonical": 638,
-        "current_generation_attested": 171,
-        "current_generation_scoreable": 171,
-        "not_current_generation_attested": 467,
-        "settled": 1276
+        "canonical": 698,
+        "current_generation_attested": 201,
+        "current_generation_scoreable": 201,
+        "not_current_generation_attested": 497,
+        "settled": 1396
       },
       "RUNLINE": {
-        "settled": 2380
+        "settled": 2620
       },
       "TOTAL": {
-        "settled": 1250
+        "settled": 1362
       }
     },
     "note": "missing market probabilities are reported, never imputed; RL/TOTAL proper-score evidence remains unavailable until a real comparable market probability was captured",
     "total": {
-      "canonical": 638,
-      "current_generation_attested": 171,
-      "current_generation_scoreable": 171,
-      "not_current_generation_attested": 467,
-      "settled": 4906
+      "canonical": 698,
+      "current_generation_attested": 201,
+      "current_generation_scoreable": 201,
+      "not_current_generation_attested": 497,
+      "settled": 5378
     }
   },
   "v138_audit_research": {
@@ -782,7 +782,7 @@
           "ML": {
             "active": false,
             "minimum_n": 300,
-            "n": 49,
+            "n": 64,
             "reason": "INSUFFICIENT_MARKET_SPECIFIC_PIT_BOOK_TARGETS"
           },
           "RUNLINE": {
@@ -799,7 +799,7 @@
           }
         },
         "minimum_n_per_market": 300,
-        "n": 49,
+        "n": 64,
         "production_applied": false
       },
       "dynamic_calibration": {
@@ -809,7 +809,7 @@
           "ML": {
             "active": false,
             "minimum_n": 300,
-            "n": 123,
+            "n": 138,
             "reason": "INSUFFICIENT_MARKET_SPECIFIC_NATIVE_TARGETS"
           },
           "RUNLINE": {
@@ -826,10 +826,10 @@
           }
         },
         "minimum_n_per_market": 300,
-        "n": 123,
+        "n": 138,
         "production_applied": false
       },
-      "independent_targets": 123,
+      "independent_targets": 138,
       "uncertainty_coverage": {
         "activation_scope": "per-market; aggregate active only when ML, RUNLINE and TOTAL each pass independently",
         "active": false,
@@ -843,7 +843,7 @@
             "frequentist_confidence_interval": false,
             "mean_interval_half_width": null,
             "minimum_n": 300,
-            "n": 69,
+            "n": 84,
             "reason": "INSUFFICIENT_MARKET_SPECIFIC_NATIVE_TARGETS",
             "usable_bins": 0,
             "user_facing_type": "model_uncertainty_band",
@@ -881,7 +881,7 @@
           }
         },
         "minimum_n_per_market": 300,
-        "n": 69,
+        "n": 84,
         "production_applied": false
       }
     },
