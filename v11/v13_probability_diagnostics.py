@@ -13,6 +13,11 @@ OUT = Path("data/v13_probability_diagnostics.json")
 SCHEMA = "v13-probability-diagnostics-v3"
 MARKETS = ("ML", "RUNLINE", "TOTAL")
 PHASE_RANK = {"EARLY": 0, "LATE": 1, "FINAL": 2}
+MARKET_BENCHMARK_FIELDS = (
+    ("p_market", "MODEL_SNAPSHOT_SHARP"),
+    ("close_sharp_fair", "CLOSING_SHARP"),
+    ("t60_sharp_fair", "T60_SHARP"),
+)
 
 
 def _num(v: Any, d: float | None = None) -> float | None:
@@ -59,20 +64,34 @@ def _current_generation_state(s: dict[str, Any]) -> bool:
     return contract.CONTRACT.compatible_with(payload)
 
 
+def _market_benchmark(s: dict[str, Any]) -> tuple[float | None, str | None]:
+    """Return a real captured sharp probability; never synthesize one.
+
+    Prefer the sharp fair probability captured with the model snapshot. Older
+    RL/TOTAL observations often lacked that field even though the tracking poll
+    later captured a real pregame closing or T-60 sharp probability for the
+    exact same side and line. Those observations are valid diagnostic market
+    benchmarks and are used only when the contemporaneous field is absent.
+    """
+    for field, source in MARKET_BENCHMARK_FIELDS:
+        value = _num(s.get(field))
+        if value is not None and 0 < value < 1:
+            return value, source
+    return None, None
+
+
 def _scoreable(s: dict[str, Any]) -> bool:
-    return _num(s.get("p_model")) is not None and _num(s.get("p_market")) is not None
+    market_probability, _ = _market_benchmark(s)
+    return _num(s.get("p_model")) is not None and market_probability is not None
 
 
 def _preferred_side(states: list[dict[str, Any]]) -> tuple[dict[str, Any] | None, str]:
     """Choose one real, comparable market target without synthesising a line.
 
     The tracking journal historically did not always persist ``canonical=True``
-    on RUNLINE/TOTAL even when a real sharp probability existed. Requiring that
-    flag therefore discarded valid comparable targets. We now prefer a genuine
-    canonical marker, but allow a strict fallback only when the observed market
-    surface leaves exactly one unambiguous preferred side/line.
-
-    No probability, line or price is reconstructed here.
+    on RUNLINE/TOTAL. We prefer a genuine canonical marker, but allow a strict
+    fallback only when the observed market surface leaves exactly one
+    unambiguous preferred side/line with a real captured sharp benchmark.
     """
     if not states:
         return None, "EMPTY"
@@ -98,8 +117,6 @@ def _preferred_side(states: list[dict[str, Any]]) -> tuple[dict[str, Any] | None
     if not preferred:
         return None, "PREFERRED_SIDE_MISSING"
 
-    # A canonical market should contain one preferred side. If historical data
-    # presents more than one marked line, fail closed instead of cherry-picking.
     line_tokens = {
         "game" if market == "ML" else f"{_num(s.get('point')):g}"
         for s in preferred
@@ -107,8 +124,6 @@ def _preferred_side(states: list[dict[str, Any]]) -> tuple[dict[str, Any] | None
     if len(line_tokens) != 1:
         return None, "AMBIGUOUS_REAL_LINES"
 
-    # Duplicate records for the exact same side/line can exist inside a folded
-    # snapshot; pick deterministically by tracking key without changing evidence.
     chosen = sorted(
         preferred,
         key=lambda s: (
@@ -139,9 +154,9 @@ def _independent_selection(
 
     selected: list[dict[str, Any]] = []
     reasons = Counter()
+    benchmark_sources = Counter()
     by_market = {m: Counter() for m in MARKETS}
     for (_gid, market), group in groups.items():
-        # Latest *scoreable* pregame snapshot is the independent comparison unit.
         scoreable = [s for s in group if _scoreable(s)]
         if not scoreable:
             reasons["NO_REAL_MODEL_MARKET_PAIR"] += 1
@@ -154,10 +169,17 @@ def _independent_selection(
             reasons[reason] += 1
             by_market[market][f"excluded_{reason.lower()}"] += 1
             continue
+        market_probability, benchmark_source = _market_benchmark(chosen)
+        if market_probability is None or benchmark_source is None:
+            reasons["NO_REAL_MODEL_MARKET_PAIR"] += 1
+            by_market[market]["excluded_no_real_model_market_pair"] += 1
+            continue
         selected.append(chosen)
         reasons[reason] += 1
+        benchmark_sources[benchmark_source] += 1
         by_market[market]["selected"] += 1
         by_market[market][f"selected_via_{reason.lower()}"] += 1
+        by_market[market][f"benchmark_{benchmark_source.lower()}"] += 1
 
     selected.sort(
         key=lambda s: (
@@ -167,10 +189,11 @@ def _independent_selection(
         )
     )
     audit = {
-        "policy": "latest scoreable pregame snapshot per unique game+market; prefer persisted canonical marker; otherwise accept exactly one unambiguous real preferred side/line; never synthesize line or market probability",
+        "policy": "latest scoreable pregame snapshot per unique game+market; prefer persisted canonical marker; otherwise accept exactly one unambiguous real preferred side/line; benchmark priority is model-snapshot sharp then captured closing sharp then captured T-60 sharp; never synthesize line or market probability",
         "groups_seen": len(groups),
         "selected": len(selected),
         "reasons": dict(reasons),
+        "benchmark_sources": dict(benchmark_sources),
         "by_market": {m: dict(c) for m, c in by_market.items()},
         "raw_settled_state_counts": {m: raw_counts.get(f"settled_{m}", 0) for m in MARKETS},
     }
@@ -188,9 +211,15 @@ def _metrics(rows: list[dict[str, Any]]) -> dict[str, Any]:
     b_model = b_market = ll_model = ll_market = 0.0
     residuals: list[float] = []
     gaps: list[float] = []
+    source_counts = Counter()
+    scored = 0
     for s in rows:
-        pm = max(.001, min(.999, float(s["p_model"])))
-        ps = max(.001, min(.999, float(s["p_market"])))
+        benchmark, source = _market_benchmark(s)
+        pm = _num(s.get("p_model"))
+        if benchmark is None or source is None or pm is None:
+            continue
+        pm = max(.001, min(.999, pm))
+        ps = max(.001, min(.999, benchmark))
         y = 1 if s.get("settled_result") == "WIN" else 0
         gap = pm - ps
         b_model += (pm-y) ** 2
@@ -199,7 +228,11 @@ def _metrics(rows: list[dict[str, Any]]) -> dict[str, Any]:
         ll_market += -(y*math.log(ps) + (1-y)*math.log(1-ps))
         residuals.append(y-ps)
         gaps.append(gap)
-    n = len(rows)
+        source_counts[source] += 1
+        scored += 1
+    if not scored:
+        return {"n": 0}
+    n = scored
     mean_gap = sum(gaps) / n
     mean_res = sum(residuals) / n
     var = sum((x-mean_gap) ** 2 for x in gaps)
@@ -218,6 +251,7 @@ def _metrics(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "mean_model_minus_market": mean_gap,
         "outcome_residual_vs_market": mean_res,
         "gap_residual_slope": slope,
+        "market_benchmark_sources": dict(source_counts),
     }
 
 
@@ -238,9 +272,14 @@ def _availability(states: list[dict[str, Any]]) -> dict[str, Any]:
         if _num(s.get("p_model")) is None:
             totals["missing_model_probability_states"] += 1
             by_market[market]["missing_model_probability_states"] += 1
-        if _num(s.get("p_market")) is None:
+        benchmark, source = _market_benchmark(s)
+        if benchmark is None:
             totals["missing_market_probability_states"] += 1
             by_market[market]["missing_market_probability_states"] += 1
+        else:
+            totals["real_market_benchmark_states"] += 1
+            by_market[market]["real_market_benchmark_states"] += 1
+            by_market[market][f"benchmark_{str(source).lower()}_states"] += 1
         if _current_generation_state(s):
             totals["current_generation_attested_states"] += 1
             by_market[market]["current_generation_attested_states"] += 1
@@ -264,7 +303,7 @@ def _availability(states: list[dict[str, Any]]) -> dict[str, Any]:
         "by_market": {m: dict(v) for m, v in by_market.items()},
         "current_generation_selection": current_audit,
         "all_generation_selection": historical_audit,
-        "note": "market probabilities are never imputed; independent proper-score evidence uses only real model/market pairs and fails closed on ambiguous unmarked RL/TOTAL lines",
+        "note": "market probabilities are never imputed; diagnostics prefer contemporaneous captured sharp and may fall back to a real captured pregame closing/T-60 sharp benchmark; ambiguous unmarked RL/TOTAL lines fail closed",
     }
 
 
@@ -278,13 +317,17 @@ def _view(states: list[dict[str, Any]], *, current_generation_only: bool) -> dic
     bins: dict[str, Any] = {}
     for market in MARKETS:
         subset = [r for r in rows if str(r.get("market") or "").upper() == market]
-        bins[market] = {
-            name: _metrics([
-                r for r in subset
-                if _gap_bin(float(r["p_model"])-float(r["p_market"])) == name
-            ])
-            for name in names
-        }
+        bins[market] = {}
+        for name in names:
+            bucket = []
+            for row in subset:
+                benchmark, _source = _market_benchmark(row)
+                model_probability = _num(row.get("p_model"))
+                if benchmark is None or model_probability is None:
+                    continue
+                if _gap_bin(model_probability-benchmark) == name:
+                    bucket.append(row)
+            bins[market][name] = _metrics(bucket)
     return {
         "independent_targets": len(rows),
         "by_market": by_market,
@@ -302,6 +345,7 @@ def build(states: list[dict[str, Any]] | None = None) -> dict[str, Any]:
         "model_generation": contract.MODEL_GENERATION_FINGERPRINT,
         "scope": "current-generation-only",
         "sample_unit": "unique game + market; latest scoreable pregame snapshot; deterministic real representative line",
+        "market_benchmark_policy": "p_market at model snapshot preferred; otherwise real captured close_sharp_fair; otherwise real captured t60_sharp_fair; never imputed or reconstructed",
         "independent_targets": current["independent_targets"],
         "by_market": current["by_market"],
         "by_model_market_gap_bin": current["by_model_market_gap_bin"],
@@ -312,10 +356,11 @@ def build(states: list[dict[str, Any]] | None = None) -> dict[str, Any]:
             **historical,
         },
         "interpretation": {
-            "gap_residual_slope": "positive is desirable: larger model-minus-market gaps should correspond to larger positive outcome residuals versus the market probability",
+            "gap_residual_slope": "positive is desirable: larger model-minus-market gaps should correspond to larger positive outcome residuals versus the selected real sharp benchmark",
             "proper_scoring": "Brier and LogLoss are the primary comparison; repeated phases, complementary sides and ambiguous unmarked lines are excluded from the independent view",
             "generation_boundary": "top-level metrics require an explicit current model_generation and compatible predictive_contract; unattested legacy tracking rows are historical-only",
-            "line_selection": "persisted canonical markers are preferred; fallback is allowed only for one unambiguous real preferred side/line with a captured market probability",
+            "line_selection": "persisted canonical markers are preferred; fallback is allowed only for one unambiguous real preferred side/line",
+            "benchmark_timing": "closing/T-60 sharp is diagnostic comparison evidence only and never feeds the model, selection, calibration or primary probability",
         },
     }
 
