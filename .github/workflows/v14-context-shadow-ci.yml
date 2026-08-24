@@ -1,0 +1,43 @@
+name: Pulsar V14 Context Shadow CI
+
+on:
+  push:
+    branches:
+      - "agent/v14-*"
+    paths:
+      - "v14/**"
+      - "tests/test_v14_*.py"
+      - ".github/workflows/v14-context-shadow-ci.yml"
+  pull_request:
+    paths:
+      - "v14/**"
+      - "tests/test_v14_*.py"
+      - ".github/workflows/v14-context-shadow-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  v14-context-shadow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile V14
+        run: python -m py_compile v14/*.py tests/test_v14_*.py
+      - name: Run contextual V14 tests
+        run: |
+          python -m unittest \
+            tests.test_v14_context_overlay \
+            tests.test_v14_feature_row \
+            tests.test_v14_market_edge \
+            tests.test_v14_context_shadow
+      - name: Run retained V14 foundation guards
+        run: |
+          python -m unittest \
+            tests.test_v14_foundation \
+            tests.test_v14_champion_parity \
+            tests.test_v14_structural_parity
