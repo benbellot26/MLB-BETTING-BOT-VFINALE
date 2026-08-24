@@ -1,4 +1,5 @@
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from v11 import v13_champion_dashboard as dashboard
@@ -64,7 +65,8 @@ class V1310PrefreezeHardeningTests(unittest.TestCase):
         self.assertEqual(rows[0]["p_model"], .63)
 
     def test_repository_tracking_now_has_real_rl_and_total_comparison_targets(self):
-        report = diagnostics.build()
+        with patch.object(tracking, "TRACK_FILE", Path("data/v13_market_tracking.jsonl")):
+            report = diagnostics.build()
         detail = {
             "selection_audit": report.get("selection_audit"),
             "runline_availability": (report.get("tracking_availability") or {}).get("by_market", {}).get("RUNLINE"),
