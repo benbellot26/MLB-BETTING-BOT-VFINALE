@@ -121,8 +121,8 @@ class V1310MaxAuditHardeningTests(unittest.TestCase):
         report = diagnostics.build([rl, total])
         self.assertEqual(report["by_market"]["RUNLINE"]["n"], 0)
         self.assertEqual(report["by_market"]["TOTAL"]["n"], 0)
-        self.assertEqual(report["tracking_availability"]["by_market"]["RUNLINE"]["missing_market_probability"], 1)
-        self.assertEqual(report["tracking_availability"]["by_market"]["TOTAL"]["missing_market_probability"], 1)
+        self.assertEqual(report["tracking_availability"]["by_market"]["RUNLINE"]["missing_market_probability_states"], 1)
+        self.assertEqual(report["tracking_availability"]["by_market"]["TOTAL"]["missing_market_probability_states"], 1)
 
     def test_posterior_live_evidence_rejects_legacy_generation(self):
         states = {"current": _tracking_state(1), "legacy": _tracking_state(2, current=False)}
