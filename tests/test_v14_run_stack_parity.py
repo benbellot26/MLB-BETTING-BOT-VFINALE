@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 import unittest
 
-from v14.benchmark import CHAMPION_GENERATION
+from v11.probability_contract_v13 import MODEL_GENERATION_FINGERPRINT as CHAMPION_GENERATION
 from v14 import run_stack
 
 
