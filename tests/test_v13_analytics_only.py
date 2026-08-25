@@ -75,13 +75,17 @@ class V13AnalyticsOnlyTests(unittest.TestCase):
         self.assertIn("runner.send_persisted = _send_persisted_v135", text)
 
     def test_production_workflow_checks_v14_analytics_only_before_discord(self):
-        text = Path(".github/workflows/mlb-bot.yml").read_text(encoding="utf-8")
-        self.assertIn("V14 analytics payload contains recommendations", text)
-        self.assertIn("V14 analytics payload contains official combo", text)
-        self.assertIn("legacy_probability_used_for_publication", text)
-        self.assertIn("Publish Pulsar V14 Discord analytics", text)
-        self.assertIn("python -m v14.production_runtime --send-persisted", text)
-        self.assertNotIn("Publish Discord recommendations", text)
+        workflow = Path(".github/workflows/mlb-bot.yml").read_text(encoding="utf-8")
+        runtime = Path("v14/production_runtime.py").read_text(encoding="utf-8")
+        self.assertIn("Validate Pulsar V14 publication state", workflow)
+        self.assertIn("validate_production_payload(payload)", workflow)
+        self.assertIn("analytics payload contains recommendations", runtime)
+        self.assertIn("analytics payload contains official combo", runtime)
+        self.assertIn("legacy_probability_used_for_publication", runtime)
+        self.assertIn("Publish Pulsar V14 Discord analytics", workflow)
+        self.assertIn("python -m v14.production_runtime --send-persisted", workflow)
+        self.assertNotIn("Publish Discord recommendations", workflow)
+        self.assertNotIn("v11.v13_entry", workflow)
 
 
 if __name__ == "__main__":
