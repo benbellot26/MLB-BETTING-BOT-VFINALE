@@ -4,23 +4,20 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: mlb-betting-bot-state
+  group: pulsar-v14-production
   cancel-in-progress: false
 
 jobs:
   run-bot:
     name: Exécution manuelle Pulsar V14
     runs-on: ubuntu-latest
-    timeout-minutes: 55
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: true
 
       - name: Python 3.12
         uses: actions/setup-python@v5
@@ -29,174 +26,56 @@ jobs:
 
       - name: Validate Pulsar V14 production contract
         run: |
-          python -m py_compile v14/*.py v11/*.py
+          python -m py_compile v14/*.py
           python -m v14.preflight
-          # Temporary acquisition adapter guard. Remove with the V13 collector.
-          python -m v11.v13_preflight
-          python -m v11.v13_entry --self-test
 
-      - name: Ensure acquisition baseline artifact
-        run: |
-          python - <<'PY'
-          import json
-          from v11.methodology_v123 import install
-          install()
-          from v11 import v123_bootstrap as hb
-          model = hb.ensure_artifact()
-          allowed = {'PASS', 'FAIL', 'COLLECTING', 'INCOMPATIBLE_BASELINE'}
-          if model.get('status') not in allowed:
-              raise SystemExit(f"Unexpected acquisition bootstrap status: {model.get('status')}")
-          meta = model.get('metadata') or {}
-          if model.get('eligible_for_final_prior') and meta.get('baseline_schema') != hb.BASELINE_SCHEMA:
-              raise SystemExit('Historical prior baseline schema mismatch')
-          if model.get('status') == 'INCOMPATIBLE_BASELINE' and model.get('eligible_for_final_prior'):
-              raise SystemExit('Legacy baseline must never activate a prior')
-          if meta.get('test_used_for_activation') is not False:
-              raise SystemExit('Frozen historical test must remain reporting-only')
-          print(json.dumps({
-              'status': model.get('status'),
-              'eligible_for_final_prior': model.get('eligible_for_final_prior'),
-              'baseline_schema': meta.get('baseline_schema'),
-          }, indent=2, sort_keys=True))
-          PY
-
-      - name: Build temporary acquisition calibration
-        run: python -m v11.v13_train
-
-      - name: Persist acquisition pre-run artifacts
-        run: |
-          git config user.name 'Pulsar V14'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-          [ -f data/v12_3_historical_bootstrap_model.json ] && git add data/v12_3_historical_bootstrap_model.json
-          [ -f data/v13_baseball_calibration.json ] && git add -f data/v13_baseball_calibration.json
-          if ! git diff --cached --quiet; then
-            git commit -m 'data: persist acquisition artifacts [skip ci]'
-            git pull --rebase --autostash origin "$GITHUB_REF_NAME"
-            git push origin "HEAD:$GITHUB_REF_NAME"
-          fi
-
-      - name: Acquire pregame state without Discord
-        env:
-          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          BANKROLL: ${{ vars.BANKROLL }}
-          UNIT: ${{ vars.UNIT }}
-          MIN_EV: ${{ vars.MIN_EV }}
-          MIN_EDGE: ${{ vars.MIN_EDGE }}
-          V12_DEFER_DISCORD: '1'
-          V1231_ENABLE_ALT_RUNLINES: '1'
-          V123_MIN_REFERENCE_PRICE: '1.40'
-          V123_MIN_CONFIDENCE_RUNLINE: '0.55'
-          V123_MIN_CONFIDENCE_ML: '0.58'
-          V123_MIN_CONFIDENCE_TOTAL: '0.58'
-          V1232_ENABLE_V115_SHADOW: '0'
-          V124_ENABLE_SHADOW: '0'
-        run: |
-          mkdir -p data runtime/v11 runtime/v14
-          # V13 is temporary acquisition plumbing only; its probabilities are not published.
-          python -m v11.v13_entry
-
-      - name: Build non-publishing native V14 parity candidate
-        continue-on-error: true
-        env:
-          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+      - name: Resolve slate date natively
+        id: slate
         run: |
           TARGET_DATE=$(python - <<'PY'
           from v14.acquisition import resolve_target_date
           print(resolve_target_date())
           PY
           )
-          python -m v14.native_candidate "$TARGET_DATE" \
-            --legacy-payload runtime/v11/discord_payload.json \
-            --destination runtime/v14/native_candidate.json \
-            --parity-output runtime/v14/native_legacy_parity.json
+          echo "target_date=$TARGET_DATE" >> "$GITHUB_OUTPUT"
+          echo "PULSAR_V14_PRODUCTION_DATE=$TARGET_DATE"
 
-      - name: Build Pulsar V14 production payload
-        run: python -m v14.production_runtime
+      - name: Build native Pulsar V14 production payload
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: |
+          mkdir -p runtime/v14
+          python -m v14.production_runtime \
+            --target-date "${{ steps.slate.outputs.target_date }}" \
+            --destination runtime/v14/discord_payload.json \
+            --candidate-destination runtime/v14/native_candidate.json
 
       - name: Validate Pulsar V14 publication state
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
-          from v14 import MODEL_GENERATION
+          from v14.production_runtime import validate_production_payload
 
           path = Path('runtime/v14/discord_payload.json')
           payload = json.loads(path.read_text(encoding='utf-8'))
-          if payload.get('role') != 'PRODUCTION':
-              raise SystemExit('V14 payload is not production')
-          if payload.get('model_generation') != MODEL_GENERATION:
-              raise SystemExit('V14 payload generation mismatch')
-          if payload.get('legacy_probability_used_for_publication') is not False:
-              raise SystemExit('Legacy probability publication leak')
-          if payload.get('chosen'):
-              raise SystemExit('V14 analytics payload contains recommendations')
-          if (payload.get('combo') or {}).get('official'):
-              raise SystemExit('V14 analytics payload contains official combo')
-
-          for result in payload.get('results') or []:
-              if result.get('model_generation') != MODEL_GENERATION:
-                  raise SystemExit(f"Game {result.get('game_pk')} is not V14")
-              prediction = result.get('v14_prediction') or {}
-              if prediction.get('model_generation') != MODEL_GENERATION or prediction.get('role') != 'PRODUCTION':
-                  raise SystemExit(f"Game {result.get('game_pk')} missing V14 production prediction")
-              if prediction.get('market_probability_used_as_feature') is not False:
-                  raise SystemExit(f"Game {result.get('game_pk')} used market probability as model feature")
-              surface = prediction.get('probabilities') or {}
-              pairs = (
-                  ('ML', surface.get('away_ml'), surface.get('home_ml')),
-                  ('RL1', surface.get('away_plus_1_5'), surface.get('home_minus_1_5')),
-                  ('RL2', surface.get('home_plus_1_5'), surface.get('away_minus_1_5')),
-                  ('TOTAL', surface.get('over'), surface.get('under')),
-              )
-              for label, left, right in pairs:
-                  if left is None or right is None or abs(float(left) + float(right) - 1.0) > 1e-9:
-                      raise SystemExit(f"Game {result.get('game_pk')} invalid {label} surface")
-              displayed = [o for o in result.get('options') or [] if o.get('model_generation') == MODEL_GENERATION]
-              if len(displayed) != 8:
-                  raise SystemExit(f"Game {result.get('game_pk')} expected 8 V14 display probabilities, got {len(displayed)}")
-          print('PULSAR V14 PUBLICATION STATE OK games=', len(payload.get('results') or []))
+          validate_production_payload(payload)
+          print('PULSAR_V14_PUBLICATION_STATE_OK games=', len(payload.get('results') or []))
+          print('PULSAR_V14_AUTHORIZATION=', json.dumps(payload.get('authorization_basis'), sort_keys=True))
           PY
-
-      - name: Persist acquisition evidence
-        run: |
-          git config user.name 'Pulsar V14'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-          [ -f data/v11_3_live.jsonl ] && git add data/v11_3_live.jsonl
-          [ -f data/v11_3_live_report.json ] && git add data/v11_3_live_report.json
-          [ -f data/v13_feature_store.jsonl ] && git add -f data/v13_feature_store.jsonl
-          [ -f data/v13_label_store.jsonl ] && git add -f data/v13_label_store.jsonl
-          [ -f data/v13_market_tracking.jsonl ] && git add -f data/v13_market_tracking.jsonl
-          [ -f data/v13_market_tracking_report.json ] && git add -f data/v13_market_tracking_report.json
-          if ! git diff --cached --quiet; then
-            git commit -m 'data: persist Pulsar acquisition evidence [skip ci]'
-            git pull --rebase --autostash origin "$GITHUB_REF_NAME"
-            git push origin "HEAD:$GITHUB_REF_NAME"
-          fi
 
       - name: Publish Pulsar V14 Discord analytics
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-        run: python -m v14.production_runtime --send-persisted
+        run: python -m v14.production_runtime --send-persisted --destination runtime/v14/discord_payload.json
 
-      - name: Prepare point-in-time archive
-        if: always()
-        run: |
-          mkdir -p runtime/v11/snapshots
-          if [ -f data/v11_market_snapshots.jsonl ]; then
-            gzip -9 -c data/v11_market_snapshots.jsonl > "runtime/v11/snapshots/market_${GITHUB_RUN_ID}.jsonl.gz"
-          fi
-
-      - name: Archive point-in-time sources 90 days
+      - name: Archive native point-in-time state 90 days
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pulsar-v14-point-in-time-${{ github.run_id }}
+          name: pulsar-v14-production-${{ github.run_id }}
           path: |
-            runtime/v11/snapshots/
-            runtime/v11/source_replays/
             runtime/v14/discord_payload.json
             runtime/v14/native_candidate.json
-            runtime/v14/native_legacy_parity.json
           if-no-files-found: ignore
           retention-days: 90
