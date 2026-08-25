@@ -1,48 +1,48 @@
 # V13.10 Champion Diagnostic Dashboard
 
 Model generation: `v13.10-gen-structural-nb-independent-transfer-park-extra-surface-v3`
-Latest settled date (any monitored current-generation evidence): `2026-08-23`
+Latest settled date (any monitored current-generation evidence): `2026-08-24`
 Run-projection sample settled through: `2026-08-23`
-Market-tracking sample settled through: `2026-08-23`
-100-game checkpoint: **65/100** (65.0%) — `COLLECTING`
+Market-tracking sample settled through: `2026-08-24`
+100-game checkpoint: **75/100** (75.0%) — `COLLECTING`
 
 ## Core scorecard
 
 | Metric | Latest day | Cumulative |
 |---|---:|---:|
-| Run-projection games | 15 | 65 |
-| Tracked unique games | 15 | 65 |
-| Home run MAE | 2.007 | 2.046 |
-| Away run MAE | 2.546 | 2.452 |
-| Total run MAE | 3.636 | 3.687 |
-| Brier all markets | 0.252 | 0.255 |
-| LogLoss all markets | 0.697 | 0.703 |
+| Run-projection games | 0 | 65 |
+| Tracked unique games | 10 | 75 |
+| Home run MAE | — | 2.046 |
+| Away run MAE | — | 2.452 |
+| Total run MAE | — | 3.687 |
+| Brier all markets | 0.261 | 0.255 |
+| LogLoss all markets | 0.714 | 0.705 |
 
 ## Cumulative by market
 
 | Market | N | Accuracy | Brier | LogLoss | ECE | Pushes |
 |---|---:|---:|---:|---:|---:|---:|
-| ML | 65 | 72.3% | 0.224 | 0.640 | 0.160 | 0 |
-| RUNLINE | 65 | 50.8% | 0.258 | 0.709 | 0.112 | 0 |
-| TOTAL | 72 | 40.3% | 0.279 | 0.754 | 0.192 | 3 |
+| ML | 75 | 72.0% | 0.225 | 0.642 | 0.160 | 0 |
+| RUNLINE | 75 | 49.3% | 0.260 | 0.713 | 0.135 | 0 |
+| TOTAL | 83 | 38.6% | 0.279 | 0.753 | 0.208 | 3 |
 
 ## Market × data quality
 
 | Market | DQ band | N | Accuracy | Brier | LogLoss |
 |---|---|---:|---:|---:|---:|
-| ML | 0.60-0.75 | 7 | 57.1% | 0.263 | 0.720 |
+| ML | 0.60-0.75 | 13 | 61.5% | 0.257 | 0.709 |
 | ML | 0.75-0.90 | 16 | 56.2% | 0.242 | 0.677 |
-| ML | >=0.90 | 42 | 81.0% | 0.210 | 0.613 |
-| RUNLINE | 0.60-0.75 | 7 | 42.9% | 0.301 | 0.798 |
+| ML | >=0.90 | 46 | 80.4% | 0.210 | 0.611 |
+| RUNLINE | 0.60-0.75 | 13 | 46.2% | 0.280 | 0.753 |
 | RUNLINE | 0.75-0.90 | 16 | 68.8% | 0.231 | 0.655 |
-| RUNLINE | >=0.90 | 42 | 45.2% | 0.261 | 0.715 |
-| TOTAL | 0.60-0.75 | 15 | 26.7% | 0.294 | 0.783 |
+| RUNLINE | >=0.90 | 46 | 43.5% | 0.264 | 0.722 |
+| TOTAL | 0.60-0.75 | 22 | 22.7% | 0.299 | 0.792 |
 | TOTAL | 0.75-0.90 | 16 | 18.8% | 0.279 | 0.751 |
-| TOTAL | >=0.90 | 41 | 53.7% | 0.274 | 0.745 |
+| TOTAL | >=0.90 | 45 | 53.3% | 0.269 | 0.734 |
 
 ## Run Line diagnostic
 
-Probability sample: **65** • accuracy 50.8% • projected-margin sample **65** • margin MAE 2.806 • bias -0.107
+Probability sample: **75** • accuracy 49.3% • projected-margin sample **65** • margin MAE 2.806 • bias -0.107
 
 | |Projected margin| | N | Accuracy | Brier |
 |---|---:|---:|---:|
@@ -51,30 +51,30 @@ Probability sample: **65** • accuracy 50.8% • projected-margin sample **65**
 
 ## Total / Over-Under diagnostic
 
-Probability sample: **72** • accuracy 40.3% • run-projection sample **75** • total MAE 3.700 • bias -0.623
+Probability sample: **83** • accuracy 38.6% • run-projection sample **75** • total MAE 3.700 • bias -0.623
 
 | Total line | N | Accuracy | Brier |
 |---|---:|---:|---:|
-| 8.0-8.5 | 38 | 52.6% | 0.262 |
-| 9.0-9.5 | 5 | 80.0% | 0.219 |
-| <=7.5 | 24 | 20.8% | 0.310 |
-| >=10.0 | 5 | 0.0% | 0.323 |
+| 8.0-8.5 | 40 | 55.0% | 0.254 |
+| 9.0-9.5 | 6 | 66.7% | 0.237 |
+| <=7.5 | 31 | 16.1% | 0.313 |
+| >=10.0 | 6 | 16.7% | 0.309 |
 
 ## Posterior shadow monitor
 
 | Market | N | Δ Brier | Δ LogLoss | Status |
 |---|---:|---:|---:|---|
-| ML | 65 | 0.0014 | 0.0029 | COLLECTING |
-| RUNLINE | 65 | -0.0002 | -0.0005 | COLLECTING |
-| TOTAL | 72 | 0.0143 | 0.0307 | COLLECTING |
+| ML | 75 | 0.0024 | 0.0050 | COLLECTING |
+| RUNLINE | 75 | 0.0002 | 0.0005 | COLLECTING |
+| TOTAL | 83 | 0.0161 | 0.0339 | COLLECTING |
 
 ## Data-quality bands (run projection)
 
 | DQ band | Games | Run MAE total | Brier | LogLoss |
 |---|---:|---:|---:|---:|
-| >=0.90 | 42 | 3.291 | 0.210 | 0.613 |
-| 0.75-0.90 | 16 | 4.537 | 0.242 | 0.677 |
-| 0.60-0.75 | 7 | 4.125 | 0.263 | 0.720 |
+| >=0.90 | 42 | 3.291 | 0.247 | 0.688 |
+| 0.75-0.90 | 16 | 4.537 | 0.249 | 0.692 |
+| 0.60-0.75 | 7 | 4.125 | 0.288 | 0.771 |
 
 ## Highest run-error teams — shrinkage protected
 

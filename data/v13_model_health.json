@@ -70,30 +70,30 @@
   "diagnostic_scope": "current-generation-only",
   "edge_evidence": {
     "ML": {
-      "brier_gain_vs_market": -0.008679752123046131,
+      "brier_gain_vs_market": -0.008402131201586656,
       "claim_allowed": false,
-      "gap_residual_slope": -0.09866923975936742,
-      "logloss_gain_vs_market": -0.018231747502923668,
+      "gap_residual_slope": -0.6846980270928258,
+      "logloss_gain_vs_market": -0.017607202256172152,
       "minimum_n": 300,
-      "n": 65,
+      "n": 75,
       "reason": "INSUFFICIENT_INDEPENDENT_MARKET_TARGETS"
     },
     "RUNLINE": {
-      "brier_gain_vs_market": -0.005279275366952332,
+      "brier_gain_vs_market": -0.00988155276084307,
       "claim_allowed": false,
-      "gap_residual_slope": -0.5497169391136095,
-      "logloss_gain_vs_market": -0.011528110259265796,
+      "gap_residual_slope": -1.1796300697124524,
+      "logloss_gain_vs_market": -0.020840033779945803,
       "minimum_n": 300,
-      "n": 42,
+      "n": 51,
       "reason": "INSUFFICIENT_INDEPENDENT_MARKET_TARGETS"
     },
     "TOTAL": {
-      "brier_gain_vs_market": -0.025528427491984078,
+      "brier_gain_vs_market": -0.025313558601547947,
       "claim_allowed": false,
-      "gap_residual_slope": -0.9147392473785543,
-      "logloss_gain_vs_market": -0.05374708318949071,
+      "gap_residual_slope": -0.7645681261470774,
+      "logloss_gain_vs_market": -0.052789924362735816,
       "minimum_n": 300,
-      "n": 63,
+      "n": 73,
       "reason": "INSUFFICIENT_INDEPENDENT_MARKET_TARGETS"
     }
   },
@@ -543,19 +543,19 @@
   "model_generation": "v13.10-gen-structural-nb-independent-transfer-park-extra-surface-v3",
   "posterior": {
     "historical_observations": 255,
-    "live_observations": 354,
+    "live_observations": 396,
     "primary_probability_affected": false
   },
   "probability_drift": {
     "ML": {
-      "confidence_shift": -0.010251160000000002,
-      "mean_probability_shift": -0.00961307999999994,
-      "observations": 201,
-      "prior_mean_abs_edge_from_50": 0.0723232,
-      "prior_mean_probability": 0.545573,
+      "confidence_shift": -0.018644960000000002,
+      "mean_probability_shift": -0.02307951999999991,
+      "observations": 215,
+      "prior_mean_abs_edge_from_50": 0.07384496,
+      "prior_mean_probability": 0.5475563999999999,
       "prior_n": 50,
-      "recent_mean_abs_edge_from_50": 0.06207204,
-      "recent_mean_probability": 0.53595992,
+      "recent_mean_abs_edge_from_50": 0.0552,
+      "recent_mean_probability": 0.52447688,
       "recent_n": 50,
       "sample_policy": "current-generation attested; one canonical settled side per game/market"
     },
@@ -586,49 +586,49 @@
   },
   "proper_scoring_vs_market": {
     "ML": {
-      "brier_gain_vs_market": -0.008679752123046131,
-      "gap_residual_slope": -0.09866923975936742,
-      "logloss_gain_vs_market": -0.018231747502923668,
+      "brier_gain_vs_market": -0.008402131201586656,
+      "gap_residual_slope": -0.6846980270928258,
+      "logloss_gain_vs_market": -0.017607202256172152,
       "market_benchmark_sources": {
-        "MODEL_SNAPSHOT_SHARP": 65
+        "MODEL_SNAPSHOT_SHARP": 75
       },
-      "market_brier": 0.21505976255599996,
-      "market_logloss": 0.6218246435893537,
-      "mean_model_minus_market": -0.0314276923076923,
-      "model_brier": 0.2237395146790461,
-      "model_logloss": 0.6400563910922774,
-      "n": 65,
-      "outcome_residual_vs_market": 0.07938756923076924
+      "market_brier": 0.21649655891619995,
+      "market_logloss": 0.6247807447587186,
+      "mean_model_minus_market": -0.025479693333333327,
+      "model_brier": 0.2248986901177866,
+      "model_logloss": 0.6423879470148907,
+      "n": 75,
+      "outcome_residual_vs_market": 0.04521046666666668
     },
     "RUNLINE": {
-      "brier_gain_vs_market": -0.005279275366952332,
-      "gap_residual_slope": -0.5497169391136095,
-      "logloss_gain_vs_market": -0.011528110259265796,
+      "brier_gain_vs_market": -0.00988155276084307,
+      "gap_residual_slope": -1.1796300697124524,
+      "logloss_gain_vs_market": -0.020840033779945803,
       "market_benchmark_sources": {
-        "MODEL_SNAPSHOT_SHARP": 42
+        "MODEL_SNAPSHOT_SHARP": 51
       },
-      "market_brier": 0.26291707303588097,
-      "market_logloss": 0.719414442284301,
-      "mean_model_minus_market": -0.017134809523809517,
-      "model_brier": 0.2681963484028333,
-      "model_logloss": 0.7309425525435668,
-      "n": 42,
-      "outcome_residual_vs_market": -0.012173738095238088
+      "market_brier": 0.26215336111817644,
+      "market_logloss": 0.7177114399006811,
+      "mean_model_minus_market": -0.004607078431372542,
+      "model_brier": 0.2720349138790195,
+      "model_logloss": 0.7385514736806269,
+      "n": 51,
+      "outcome_residual_vs_market": -0.04499119607843137
     },
     "TOTAL": {
-      "brier_gain_vs_market": -0.025528427491984078,
-      "gap_residual_slope": -0.9147392473785543,
-      "logloss_gain_vs_market": -0.05374708318949071,
+      "brier_gain_vs_market": -0.025313558601547947,
+      "gap_residual_slope": -0.7645681261470774,
+      "logloss_gain_vs_market": -0.052789924362735816,
       "market_benchmark_sources": {
-        "MODEL_SNAPSHOT_SHARP": 63
+        "MODEL_SNAPSHOT_SHARP": 73
       },
-      "market_brier": 0.2497072945592064,
-      "market_logloss": 0.6925604008884108,
-      "mean_model_minus_market": 0.04935785714285715,
-      "model_brier": 0.27523572205119046,
-      "model_logloss": 0.7463074840779015,
-      "n": 63,
-      "outcome_residual_vs_market": -0.05514038095238095
+      "market_brier": 0.24971519903090417,
+      "market_logloss": 0.6925764817940492,
+      "mean_model_minus_market": 0.05281554794520549,
+      "model_brier": 0.2750287576324521,
+      "model_logloss": 0.745366406156785,
+      "n": 73,
+      "outcome_residual_vs_market": -0.06246098630136986
     }
   },
   "rich_native": {
@@ -655,118 +655,118 @@
   "tracking_availability": {
     "all_generation_selection": {
       "benchmark_sources": {
-        "MODEL_SNAPSHOT_SHARP": 361
+        "MODEL_SNAPSHOT_SHARP": 390
       },
       "by_market": {
         "ML": {
-          "benchmark_model_snapshot_sharp": 138,
-          "selected": 138,
-          "selected_via_canonical_marker": 138
+          "benchmark_model_snapshot_sharp": 148,
+          "selected": 148,
+          "selected_via_canonical_marker": 148
         },
         "RUNLINE": {
-          "benchmark_model_snapshot_sharp": 87,
-          "excluded_ambiguous_real_lines": 51,
-          "selected": 87,
-          "selected_via_unambiguous_real_market_fallback": 87
+          "benchmark_model_snapshot_sharp": 96,
+          "excluded_ambiguous_real_lines": 52,
+          "selected": 96,
+          "selected_via_unambiguous_real_market_fallback": 96
         },
         "TOTAL": {
-          "benchmark_model_snapshot_sharp": 136,
-          "selected": 136,
-          "selected_via_unambiguous_real_market_fallback": 136
+          "benchmark_model_snapshot_sharp": 146,
+          "selected": 146,
+          "selected_via_unambiguous_real_market_fallback": 146
         }
       },
-      "groups_seen": 412,
+      "groups_seen": 442,
       "policy": "latest scoreable pregame snapshot per unique game+market; prefer persisted canonical marker; otherwise accept exactly one unambiguous real preferred side/line; benchmark priority is model-snapshot sharp then captured closing sharp then captured T-60 sharp; never synthesize line or market probability",
       "raw_settled_state_counts": {
-        "ML": 1396,
-        "RUNLINE": 2620,
-        "TOTAL": 1362
+        "ML": 1464,
+        "RUNLINE": 2756,
+        "TOTAL": 1430
       },
       "reasons": {
-        "AMBIGUOUS_REAL_LINES": 51,
-        "CANONICAL_MARKER": 138,
-        "UNAMBIGUOUS_REAL_MARKET_FALLBACK": 223
+        "AMBIGUOUS_REAL_LINES": 52,
+        "CANONICAL_MARKER": 148,
+        "UNAMBIGUOUS_REAL_MARKET_FALLBACK": 242
       },
-      "selected": 361
+      "selected": 390
     },
     "by_market": {
       "ML": {
-        "all_generation_independent_scoreable": 138,
-        "benchmark_model_snapshot_sharp_states": 1396,
-        "current_generation_attested_states": 402,
-        "current_generation_independent_scoreable": 65,
-        "not_current_generation_attested_states": 994,
-        "persisted_canonical_states": 1396,
-        "real_market_benchmark_states": 1396,
-        "settled_states": 1396
+        "all_generation_independent_scoreable": 148,
+        "benchmark_model_snapshot_sharp_states": 1464,
+        "current_generation_attested_states": 430,
+        "current_generation_independent_scoreable": 75,
+        "not_current_generation_attested_states": 1034,
+        "persisted_canonical_states": 1464,
+        "real_market_benchmark_states": 1464,
+        "settled_states": 1464
       },
       "RUNLINE": {
-        "all_generation_independent_scoreable": 87,
+        "all_generation_independent_scoreable": 96,
         "benchmark_closing_sharp_states": 4,
-        "benchmark_model_snapshot_sharp_states": 1868,
-        "current_generation_attested_states": 804,
-        "current_generation_independent_scoreable": 42,
-        "missing_market_probability_states": 748,
-        "not_current_generation_attested_states": 1816,
-        "real_market_benchmark_states": 1872,
-        "settled_states": 2620
+        "benchmark_model_snapshot_sharp_states": 1942,
+        "current_generation_attested_states": 860,
+        "current_generation_independent_scoreable": 51,
+        "missing_market_probability_states": 810,
+        "not_current_generation_attested_states": 1896,
+        "real_market_benchmark_states": 1946,
+        "settled_states": 2756
       },
       "TOTAL": {
-        "all_generation_independent_scoreable": 136,
-        "benchmark_model_snapshot_sharp_states": 1362,
-        "current_generation_attested_states": 386,
-        "current_generation_independent_scoreable": 63,
-        "not_current_generation_attested_states": 976,
-        "real_market_benchmark_states": 1362,
-        "settled_states": 1362
+        "all_generation_independent_scoreable": 146,
+        "benchmark_model_snapshot_sharp_states": 1430,
+        "current_generation_attested_states": 414,
+        "current_generation_independent_scoreable": 73,
+        "not_current_generation_attested_states": 1016,
+        "real_market_benchmark_states": 1430,
+        "settled_states": 1430
       }
     },
     "current_generation_selection": {
       "benchmark_sources": {
-        "MODEL_SNAPSHOT_SHARP": 170
+        "MODEL_SNAPSHOT_SHARP": 199
       },
       "by_market": {
         "ML": {
-          "benchmark_model_snapshot_sharp": 65,
-          "selected": 65,
-          "selected_via_canonical_marker": 65
+          "benchmark_model_snapshot_sharp": 75,
+          "selected": 75,
+          "selected_via_canonical_marker": 75
         },
         "RUNLINE": {
-          "benchmark_model_snapshot_sharp": 42,
-          "excluded_ambiguous_real_lines": 23,
-          "selected": 42,
-          "selected_via_unambiguous_real_market_fallback": 42
+          "benchmark_model_snapshot_sharp": 51,
+          "excluded_ambiguous_real_lines": 24,
+          "selected": 51,
+          "selected_via_unambiguous_real_market_fallback": 51
         },
         "TOTAL": {
-          "benchmark_model_snapshot_sharp": 63,
-          "selected": 63,
-          "selected_via_unambiguous_real_market_fallback": 63
+          "benchmark_model_snapshot_sharp": 73,
+          "selected": 73,
+          "selected_via_unambiguous_real_market_fallback": 73
         }
       },
-      "groups_seen": 193,
+      "groups_seen": 223,
       "policy": "latest scoreable pregame snapshot per unique game+market; prefer persisted canonical marker; otherwise accept exactly one unambiguous real preferred side/line; benchmark priority is model-snapshot sharp then captured closing sharp then captured T-60 sharp; never synthesize line or market probability",
       "raw_settled_state_counts": {
-        "ML": 402,
-        "RUNLINE": 804,
-        "TOTAL": 386
+        "ML": 430,
+        "RUNLINE": 860,
+        "TOTAL": 414
       },
       "reasons": {
-        "AMBIGUOUS_REAL_LINES": 23,
-        "CANONICAL_MARKER": 65,
-        "UNAMBIGUOUS_REAL_MARKET_FALLBACK": 105
+        "AMBIGUOUS_REAL_LINES": 24,
+        "CANONICAL_MARKER": 75,
+        "UNAMBIGUOUS_REAL_MARKET_FALLBACK": 124
       },
-      "selected": 170
+      "selected": 199
     },
     "note": "market probabilities are never imputed; diagnostics prefer contemporaneous captured sharp and may fall back to a real captured pregame closing/T-60 sharp benchmark; ambiguous unmarked RL/TOTAL lines fail closed",
     "total": {
-      "all_generation_independent_scoreable": 361,
-      "current_generation_attested_states": 1592,
-      "current_generation_independent_scoreable": 170,
-      "missing_market_probability_states": 748,
-      "not_current_generation_attested_states": 3786,
-      "persisted_canonical_states": 1396,
-      "real_market_benchmark_states": 4630,
-      "settled_states": 5378
+      "all_generation_independent_scoreable": 390,
+      "current_generation_attested_states": 1704,
+      "current_generation_independent_scoreable": 199,
+      "missing_market_probability_states": 810,
+      "not_current_generation_attested_states": 3946,
+      "persisted_canonical_states": 1464,
+      "real_market_benchmark_states": 4840,
+      "settled_states": 5650
     }
   },
   "v138_audit_research": {
