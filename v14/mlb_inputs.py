@@ -3,8 +3,9 @@ from __future__ import annotations
 """Build Pulsar V14 structural inputs directly from point-in-time MLB data."""
 
 from dataclasses import asdict, dataclass
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 import math
+import re
 from typing import Any, Callable
 
 from .acquisition import http_json
@@ -22,7 +23,6 @@ from .structural import (
 MLB_API = "https://statsapi.mlb.com/api/"
 MLBGetter = Callable[[str, dict[str, Any]], Any]
 
-# Frozen static fallback factors inherited from the validated structural contract.
 STATIC_PARK = {
     "Arizona Diamondbacks": 1.04, "Athletics": 1.05, "Atlanta Braves": 1.01,
     "Baltimore Orioles": 1.01, "Boston Red Sox": 1.03, "Chicago White Sox": 1.00,
@@ -61,6 +61,16 @@ def _num(value: Any, default: float = 0.0) -> float:
         return out if math.isfinite(out) else float(default)
     except Exception:
         return float(default)
+
+
+def _parse_dt(value: Any) -> datetime | None:
+    try:
+        dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc)
+    except Exception:
+        return None
 
 
 def _mlb(path: str, params: dict[str, Any] | None = None, *, getter: MLBGetter = http_json) -> Any:
@@ -142,7 +152,7 @@ def lineup(game_pk: Any, side: str, season: int, *, getter: MLBGetter = http_jso
     try:
         box = _mlb(f"v1/game/{game_pk}/boxscore", getter=getter) or {}
     except Exception:
-        return {"count": 0, "players": [], "weighted_ops": None, "confirmed": False}
+        return {"count": 0, "players": [], "weighted_ops": None, "confirmed": False, "status": "UNAVAILABLE"}
     team = ((box.get("teams") or {}).get(side) or {})
     players = team.get("players") or {}
     hitters = []
@@ -164,11 +174,13 @@ def lineup(game_pk: Any, side: str, season: int, *, getter: MLBGetter = http_jso
     hitters.sort(key=lambda row: int(_num(row.get("batting_order"), 999)))
     usable = [(row["ops"], weights[min(i, 8)]) for i, row in enumerate(hitters[:9]) if row.get("ops") is not None]
     weighted_ops = sum(value * weight for value, weight in usable) / sum(weight for _, weight in usable) if len(usable) >= 5 else None
+    count = len(hitters)
     return {
-        "count": len(hitters),
+        "count": count,
         "players": hitters,
         "weighted_ops": weighted_ops,
-        "confirmed": len(hitters) >= 7,
+        "confirmed": count >= 9,
+        "status": "CONFIRMED" if count >= 9 else ("PARTIAL" if count else "UNAVAILABLE"),
         "source": "official MLB boxscore batting order",
     }
 
@@ -211,43 +223,55 @@ def _distance_km(a: tuple[float, float] | None, b: tuple[float, float] | None) -
     return 12742 * math.asin(min(1.0, math.sqrt(h)))
 
 
-def _previous_game(team_id: Any, target_date: str, *, getter: MLBGetter) -> dict[str, Any] | None:
+def _recent_completed_games(
+    team_id: Any,
+    target_date: str,
+    *,
+    current_game_pk: Any | None = None,
+    current_game_date: Any | None = None,
+    getter: MLBGetter,
+) -> list[dict[str, Any]]:
     try:
         target = date.fromisoformat(str(target_date))
     except Exception:
-        return None
-    for back in range(1, 5):
+        return []
+    current_dt = _parse_dt(current_game_date)
+    games: list[dict[str, Any]] = []
+    # Include target day so Game 2 of a doubleheader can see a completed Game 1.
+    for back in range(0, 4):
         day = (target - timedelta(days=back)).isoformat()
         payload = _mlb(
             "v1/schedule",
             {"sportId": 1, "date": day, "hydrate": "linescore", "teamId": team_id},
             getter=getter,
         ) or {}
-        games = [g for block in payload.get("dates") or [] for g in block.get("games") or []]
-        finals = [g for g in games if str((g.get("status") or {}).get("abstractGameState") or "").lower() == "final" or str((g.get("status") or {}).get("codedGameState") or "").upper() == "F"]
-        if finals:
-            game = finals[-1]
-            teams = game.get("teams") or {}
-            home_name = ((teams.get("home") or {}).get("team") or {}).get("name")
-            innings = int(_num((game.get("linescore") or {}).get("currentInning"), 9))
-            return {
-                "game_pk": game.get("gamePk"), "days_back": back,
-                "venue_home_team": home_name, "extra_innings": innings > 9,
-                "doubleheader": str(game.get("doubleHeader") or "N") != "N",
-            }
-    return None
+        for game in [g for block in payload.get("dates") or [] for g in block.get("games") or []]:
+            if str(game.get("gamePk") or "") == str(current_game_pk or ""):
+                continue
+            game_dt = _parse_dt(game.get("gameDate"))
+            if current_dt and game_dt and game_dt >= current_dt:
+                continue
+            status = game.get("status") or {}
+            final = str(status.get("abstractGameState") or "").lower() == "final" or str(status.get("codedGameState") or "").upper() == "F"
+            if final:
+                games.append(game)
+    games.sort(key=lambda g: _parse_dt(g.get("gameDate")) or datetime.min.replace(tzinfo=timezone.utc), reverse=True)
+    return games
 
 
-def _bullpen_usage(team_id: Any, previous: dict[str, Any] | None, *, getter: MLBGetter) -> dict[str, Any]:
-    if not previous or not previous.get("game_pk"):
-        return {"relief_pitches": 0, "heavy_relievers": 0, "relievers_used": 0}
-    box = _mlb(f"v1/game/{previous['game_pk']}/boxscore", getter=getter) or {}
-    team = None
+def _game_team_side(box: dict[str, Any], team_id: Any) -> dict[str, Any]:
     for side in ("home", "away"):
         candidate = ((box.get("teams") or {}).get(side) or {})
         if str((candidate.get("team") or {}).get("id") or "") == str(team_id):
-            team = candidate
-            break
+            return candidate
+    return {}
+
+
+def _bullpen_usage(team_id: Any, game_pk: Any | None, *, getter: MLBGetter) -> dict[str, Any]:
+    if not game_pk:
+        return {"relief_pitches": 0, "heavy_relievers": 0, "relievers_used": 0}
+    box = _mlb(f"v1/game/{game_pk}/boxscore", getter=getter) or {}
+    team = _game_team_side(box, team_id)
     if not team:
         return {"relief_pitches": 0, "heavy_relievers": 0, "relievers_used": 0}
     pitcher_ids = list(team.get("pitchers") or [])
@@ -264,20 +288,115 @@ def _bullpen_usage(team_id: Any, previous: dict[str, Any] | None, *, getter: MLB
     }
 
 
-def operational(game: dict[str, Any], *, target_date: str, home: str, home_id: Any, away_id: Any, getter: MLBGetter = http_json) -> dict[str, Any]:
+def bullpen_three_day_snapshot(team_id: Any, games: list[dict[str, Any]], *, getter: MLBGetter) -> dict[str, Any]:
+    usage: dict[str, dict[str, Any]] = {}
+    for game in games[:4]:
+        game_pk = game.get("gamePk")
+        box = _mlb(f"v1/game/{game_pk}/boxscore", getter=getter) or {}
+        team = _game_team_side(box, team_id)
+        pitcher_ids = list(team.get("pitchers") or [])
+        reliever_ids = pitcher_ids[1:] if len(pitcher_ids) > 1 else []
+        players = team.get("players") or {}
+        for pid in reliever_ids:
+            player = players.get(f"ID{pid}") or {}
+            person = player.get("person") or {}
+            pitching = ((player.get("stats") or {}).get("pitching") or {})
+            row = usage.setdefault(str(pid), {
+                "id": pid,
+                "name": person.get("fullName"),
+                "uses_last_3d": 0,
+                "pitches_last_3d": 0,
+                "game_pitches": [],
+            })
+            pitches = int(_num(pitching.get("pitchesThrown"), 0))
+            row["uses_last_3d"] += 1
+            row["pitches_last_3d"] += pitches
+            row["game_pitches"].append(pitches)
+
+    relievers = list(usage.values())
+    for row in relievers:
+        pitches = int(row.get("pitches_last_3d") or 0)
+        uses = int(row.get("uses_last_3d") or 0)
+        row["taxed"] = pitches >= 35 or uses >= 2
+        row["likely_unavailable"] = pitches >= 55 or uses >= 3
+        row["available"] = not row["likely_unavailable"]
+    return {
+        "coverage": min(1.0, len(relievers) / 7.0),
+        "relievers": relievers,
+        "games_considered": min(len(games), 4),
+        "source": "MLB boxscores last 3 days including earlier same-day completed game",
+    }
+
+
+def _wind_speed_mph(text: Any) -> float | None:
+    match = re.search(r"(\d+(?:\.\d+)?)\s*mph", str(text or ""), flags=re.I)
+    return float(match.group(1)) if match else None
+
+
+def game_environment(game_pk: Any, *, getter: MLBGetter) -> dict[str, Any]:
+    try:
+        feed = _mlb(f"v1.1/game/{game_pk}/feed/live", getter=getter) or {}
+    except Exception:
+        return {"available": False, "reason": "game feed unavailable"}
+    game_data = feed.get("gameData") or {}
+    weather = game_data.get("weather") or {}
+    venue = game_data.get("venue") or {}
+    field_info = venue.get("fieldInfo") or {}
+    condition = str(weather.get("condition") or "")
+    wind = str(weather.get("wind") or "")
+    roof = field_info.get("roofType") or venue.get("roofType")
+    temp = _num(weather.get("temp"), math.nan)
+    if not math.isfinite(temp):
+        temp = None
+    return {
+        "available": bool(weather or roof),
+        "temperature_f": temp,
+        "condition": condition or None,
+        "wind": wind or None,
+        "wind_mph": _wind_speed_mph(wind),
+        "roof": roof,
+        "source": "MLB live gameData.weather/venue",
+    }
+
+
+def operational(
+    game: dict[str, Any],
+    *,
+    target_date: str,
+    home: str,
+    home_id: Any,
+    away_id: Any,
+    getter: MLBGetter = http_json,
+) -> dict[str, Any]:
     current = COORD.get(home)
+    game_pk = game.get("gamePk")
+    game_date = game.get("gameDate")
     out: dict[str, Any] = {"current_doubleheader": str(game.get("doubleHeader") or "N") != "N"}
     for side, team_id in (("home", home_id), ("away", away_id)):
-        previous = _previous_game(team_id, target_date, getter=getter)
-        previous_coord = COORD.get(previous.get("venue_home_team")) if previous else None
+        recent = _recent_completed_games(
+            team_id,
+            target_date,
+            current_game_pk=game_pk,
+            current_game_date=game_date,
+            getter=getter,
+        )
+        previous = recent[0] if recent else None
+        teams = (previous or {}).get("teams") or {}
+        previous_home = ((teams.get("home") or {}).get("team") or {}).get("name") if previous else None
+        previous_coord = COORD.get(previous_home)
         distance = _distance_km(previous_coord, current)
+        previous_dt = _parse_dt((previous or {}).get("gameDate"))
+        current_dt = _parse_dt(game_date)
+        days_back = max(0, (current_dt.date() - previous_dt.date()).days) if previous_dt and current_dt else None
+        innings = int(_num(((previous or {}).get("linescore") or {}).get("currentInning"), 9)) if previous else 9
         out[side] = {
-            "rest_days": max(0, int(previous.get("days_back", 1)) - 1) if previous else None,
+            "rest_days": max(0, days_back - 1) if days_back is not None else None,
             "travel_km": round(distance, 1) if distance is not None else None,
             "timezone_shift_hours_approx": round((current[1] - previous_coord[1]) / 15, 2) if current and previous_coord else None,
-            "previous_extra_innings": bool(previous.get("extra_innings")) if previous else None,
-            "previous_doubleheader": bool(previous.get("doubleheader")) if previous else None,
-            "bullpen_previous_game": _bullpen_usage(team_id, previous, getter=getter),
+            "previous_extra_innings": bool(previous and innings > 9),
+            "previous_doubleheader": bool(previous and str(previous.get("doubleHeader") or "N") != "N"),
+            "bullpen_previous_game": _bullpen_usage(team_id, (previous or {}).get("gamePk"), getter=getter),
+            "bullpen_three_day": bullpen_three_day_snapshot(team_id, recent, getter=getter),
         }
     return out
 
@@ -315,6 +434,7 @@ def build_game_inputs(game: dict[str, Any], *, target_date: str, analyzed_at: st
     home_starter, home_enhanced, home_starter_ctx = _raw_starter(game, "home", league, season, getter=getter)
     away_starter, away_enhanced, away_starter_ctx = _raw_starter(game, "away", league, season, getter=getter)
     oper = operational(game, target_date=target_date, home=home, home_id=home_id, away_id=away_id, getter=getter)
+    environment = game_environment(game_pk, getter=getter)
     park_factor = float(STATIC_PARK.get(home, 1.0))
 
     structural_inputs = StructuralInputs(
@@ -356,25 +476,39 @@ def build_game_inputs(game: dict[str, Any], *, target_date: str, analyzed_at: st
         "home_sp": home_starter_ctx.get("name"), "away_sp": away_starter_ctx.get("name"),
         "home_starter": home_starter_ctx, "away_starter": away_starter_ctx,
         "home_lineup": home_lineup, "away_lineup": away_lineup,
+        "environment": environment,
     }
     feature_row = {
-        "schema": "pulsar-v14-native-feature-row-v1",
+        "schema": "pulsar-v14-native-feature-row-v2",
         "game_pk": str(game_pk),
         "game_date": str(game_date),
         "as_of": str(analyzed_at),
-        "phase": "FINAL",
+        "phase": "UNRESOLVED",
         "model_generation": "pulsar-v14-native-inputs",
-        "feature_contract": "pulsar-v14-native-pit-v1",
+        "feature_contract": "pulsar-v14-native-pit-v2",
         "point_in_time": True,
         "point_in_time_validation_reasons": [],
         "home": home, "away": away,
         "context": context,
-        "features": {"operational": oper},
+        "features": {
+            "operational": oper,
+            "bullpen": {
+                "home": ((oper.get("home") or {}).get("bullpen_three_day") or {}),
+                "away": ((oper.get("away") or {}).get("bullpen_three_day") or {}),
+            },
+            "environment": environment,
+        },
         "rich_modules": {},
         "feature_provenance": {
-            "mlb": {"point_in_time": True, "source_timestamp_attested": True, "postgame_identity": False}
+            "mlb": {
+                "point_in_time": True,
+                "retrieval_timestamp_attested": True,
+                "source_timestamp_attested": None,
+                "postgame_identity": False,
+            }
         },
         "data_quality": {"eligible": True},
+        "disabled_unvalidated_modules": ["h2h", "recent_form"],
     }
     return NativeGameInputs(
         structural=structural,
@@ -386,6 +520,7 @@ def build_game_inputs(game: dict[str, Any], *, target_date: str, analyzed_at: st
             "league": asdict(league),
             "projection": projected,
             "operational": oper,
+            "environment": environment,
             "static_park_factor": park_factor,
         },
     )
