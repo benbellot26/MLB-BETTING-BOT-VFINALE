@@ -88,6 +88,8 @@ class V14NativeCandidateTests(unittest.TestCase):
         self.assertFalse(candidate["market_probability_used_as_feature"])
         self.assertEqual(candidate["coverage"]["priced_games"], 1)
         result = candidate["results"][0]
+        self.assertEqual(result["phase"], "EARLY")
+        self.assertEqual(result["v14_prediction"]["phase"], "EARLY")
         self.assertEqual(result["canonical_lines"]["TOTAL"], 8.5)
         self.assertEqual(result["v14_prediction"]["model_generation"], MODEL_GENERATION)
         self.assertEqual(result["v14_prediction"]["role"], "PRODUCTION")
