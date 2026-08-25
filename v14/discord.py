@@ -45,6 +45,17 @@ def _starter_status(name:str|None)->str:return f"🟡 PROBABLE/ANNONCÉ — {nam
 def _phase_display(phase:str)->str:return "FINAL UPDATE" if str(phase).upper()=="FINAL" else str(phase).upper()
 
 
+def _starter_fallback_field(result:dict[str,Any])->dict[str,Any]|None:
+    fallback=result.get("starter_fallback") or (result.get("ctx") or {}).get("starter_fallback") or {}
+    if not fallback.get("degraded"):return None
+    sides=", ".join(str(s).upper() for s in fallback.get("sides") or []) or "UNKNOWN"
+    return {
+        "name":"⚠️ DATA QUALITY — STARTER CONFLICT",
+        "value":f"Starter identity not safely confirmed for **{sides}**. Pulsar kept this game in the slate using a **neutral league-average starter fallback** for the affected side(s). Treat this projection as degraded until official starter consensus is restored.",
+        "inline":False,
+    }
+
+
 def build_game_embed(result:dict[str,Any])->dict[str,Any]:
     prediction=result.get("v14_prediction") or {}
     if prediction.get("model_generation")!=MODEL_GENERATION or prediction.get("role")!="PRODUCTION":raise ValueError("result missing Pulsar V14 production prediction")
@@ -54,13 +65,16 @@ def build_game_embed(result:dict[str,Any])->dict[str,Any]:
     try:color=_MATCH_COLORS[int(gid)%len(_MATCH_COLORS)]
     except Exception:color=_MATCH_COLORS[sum(ord(ch) for ch in gid)%len(_MATCH_COLORS)]
     context=prediction.get("context_adjustment") or {}; context_label="ACTIVE" if context.get("eligible") else "BASE"; feature_as_of=context.get("feature_as_of") or "—"
+    fallback=result.get("starter_fallback") or ctx.get("starter_fallback") or {}; quality_label="DEGRADED" if fallback.get("degraded") else "VERIFIED"
     fields=[
         {"name":"🏆 MONEYLINE","value":f"✈️ **{away}**  ·  {_pct(probabilities['away_ml'])}\n🏠 **{home}**  ·  {_pct(probabilities['home_ml'])}","inline":False},
         {"name":"⚾ RUN LINE ±1.5","value":f"✈️ **{away}**   `+1.5` {_pct(probabilities['away_plus_1_5'])}   │   `-1.5` {_pct(probabilities['away_minus_1_5'])}\n🏠 **{home}**   `+1.5` {_pct(probabilities['home_plus_1_5'])}   │   `-1.5` {_pct(probabilities['home_minus_1_5'])}","inline":False},
         {"name":f"📊 TOTAL {line:g}","value":f"📈 **OVER**  {_pct(probabilities['over'])}    │    📉 **UNDER**  {_pct(probabilities['under'])}","inline":False},
-        {"name":"🧭 GAME SNAPSHOT","value":f"🎯 Projection  {away} **{_num(projection.get('away_mu')):.1f}**  —  **{_num(projection.get('home_mu')):.1f}** {home}\n🧠 Phase **{phase_display}**  •  Context **{context_label}**  •  Model **{VERSION}**\n🕒 PIT context **{feature_as_of}**","inline":False},
+        {"name":"🧭 GAME SNAPSHOT","value":f"🎯 Projection  {away} **{_num(projection.get('away_mu')):.1f}**  —  **{_num(projection.get('home_mu')):.1f}** {home}\n🧠 Phase **{phase_display}**  •  Context **{context_label}**  •  Data **{quality_label}**  •  Model **{VERSION}**\n🕒 PIT context **{feature_as_of}**","inline":False},
         {"name":"👥 Lineups & starters","value":f"✈️ {_lineup_status(ctx.get('away_lineup'))}  •  SP {_starter_status(_starter_name(ctx,'away'))}\n🏠 {_lineup_status(ctx.get('home_lineup'))}  •  SP {_starter_status(_starter_name(ctx,'home'))}","inline":False},
     ]
+    warning=_starter_fallback_field(result)
+    if warning:fields.insert(0,warning)
     return {"title":f"⚾ {away} @ {home}  •  {phase_display}","color":color,"fields":fields,"footer":{"text":f"Pulsar V14 • {MODEL_GENERATION}"}}
 
 
