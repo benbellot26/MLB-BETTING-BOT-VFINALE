@@ -9,7 +9,7 @@ tests/replays.
 """
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import json
 import math
 import os
@@ -18,9 +18,11 @@ from typing import Any, Callable
 from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
+from zoneinfo import ZoneInfo
 
 MLB_SCHEDULE_URL = "https://statsapi.mlb.com/api/v1/schedule"
 ODDS_URL = "https://api.the-odds-api.com/v4/sports/baseball_mlb/odds"
+PARIS = ZoneInfo("Europe/Paris")
 DEFAULT_TIMEOUT = int(os.getenv("HTTP_TIMEOUT", "25") or 25)
 DEFAULT_BOOKMAKERS = tuple(
     x.strip()
@@ -32,6 +34,30 @@ DEFAULT_BOOKMAKERS = tuple(
 )
 
 JsonGetter = Callable[[str, dict[str, Any]], Any]
+
+
+def resolve_target_date(*, now: datetime | None = None, override: str | None = None) -> str:
+    """Resolve the MLB slate date using the historical production convention.
+
+    The slate follows Europe/Paris. Before 06:00 local time it remains attached
+    to the previous calendar date so late US games are not accidentally shifted
+    into the next slate. MLB_DATE, or the explicit override, wins when supplied.
+    """
+    explicit = override if override is not None else os.getenv("MLB_DATE")
+    if explicit:
+        value = str(explicit).strip()
+        try:
+            datetime.strptime(value, "%Y-%m-%d")
+        except ValueError as exc:
+            raise ValueError("MLB_DATE must use YYYY-MM-DD") from exc
+        return value
+
+    current = now or datetime.now(timezone.utc)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=timezone.utc)
+    local = current.astimezone(PARIS)
+    day = local.date() - timedelta(days=1) if local.hour < 6 else local.date()
+    return day.isoformat()
 
 
 def norm_name(value: Any) -> str:
