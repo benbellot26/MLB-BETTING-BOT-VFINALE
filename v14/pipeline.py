@@ -4,12 +4,17 @@ from __future__ import annotations
 
 from typing import Any
 
-from .champion_contract import parameters_from_champion_result
+from .champion_contract import (
+    CHAMPION_DISPERSION,
+    CHAMPION_ENVIRONMENT_SIGMA,
+    parameters_from_champion_result,
+    validated_extra_innings_home_probability,
+)
 from .context_overlay import context_overlay_from_feature_row
 from .distribution import probability_surface
 from .feature_row import feature_row_is_usable
 from .model import RunProjection, prediction_payload
-from .run_stack import reproduce_from_champion_result
+from .run_stack import StructuralRunInput, apply_current_champion, reproduce_from_champion_result
 from .v13_context_adapter import adapt_feature_row
 
 
@@ -43,32 +48,33 @@ def _identity(result: dict[str, Any]) -> tuple[str, str, str]:
     return str(game_pk), str(game_date), str(analyzed_at)
 
 
-def predict_from_result(
-    result: dict[str, Any],
-    *,
-    total_line: float,
-    feature_row: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    """Build one production V14 prediction from the current pregame state.
-
-    The compatibility input may still have the legacy V13-shaped schema while
-    acquisition is being migrated. V14 never consumes legacy probabilities,
-    selectors, staking decisions or bookmaker probabilities as model features.
-    """
-    game_pk, game_date, analyzed_at = _identity(result)
-    home, away = _team_name(result, "home"), _team_name(result, "away")
-
-    base = reproduce_from_champion_result(result)
-    parameters = parameters_from_champion_result(result)
-
-    selected = None
+def _selected_feature_row(feature_row: dict[str, Any] | None, *, game_pk: str, analyzed_at: str) -> dict[str, Any] | None:
     if feature_row_is_usable(feature_row, game_pk=game_pk, as_of=analyzed_at):
-        selected = adapt_feature_row(feature_row)
+        return adapt_feature_row(feature_row)
+    return None
 
+
+def _finish_prediction(
+    *,
+    structural_base: dict[str, Any],
+    game_pk: str,
+    game_date: str,
+    analyzed_at: str,
+    home: str,
+    away: str,
+    total_line: float,
+    phase: str,
+    feature_row: dict[str, Any] | None,
+    dispersion: float,
+    environment_sigma: float,
+    extra_innings_home_probability: float,
+    source_generation: str,
+) -> dict[str, Any]:
+    selected = _selected_feature_row(feature_row, game_pk=game_pk, analyzed_at=analyzed_at)
     overlay = context_overlay_from_feature_row(
         selected,
-        float(base["home_mu"]),
-        float(base["away_mu"]),
+        float(structural_base["home_mu"]),
+        float(structural_base["away_mu"]),
     )
 
     projection = RunProjection(
@@ -80,19 +86,19 @@ def predict_from_result(
         home_mu=float(overlay["home_mu"]),
         away_mu=float(overlay["away_mu"]),
         total_line=float(total_line),
-        phase=str(result.get("phase") or "FINAL"),
-        dispersion=float(parameters["dispersion"]),
-        environment_sigma=float(parameters["environment_sigma"]),
-        extra_innings_home_probability=float(parameters["extra_innings_home_probability"]),
-        source_generation=str(result.get("model_generation") or "legacy-input"),
+        phase=str(phase or "FINAL").upper(),
+        dispersion=float(dispersion),
+        environment_sigma=float(environment_sigma),
+        extra_innings_home_probability=float(extra_innings_home_probability),
+        source_generation=source_generation,
     ).validated()
 
     surface, tail_mass = probability_surface(projection)
     output = prediction_payload(projection, surface, tail_mass=tail_mass)
     output["base_run_projection"] = {
-        "home_mu": float(base["home_mu"]),
-        "away_mu": float(base["away_mu"]),
-        "active_layers": list(base.get("active_layers") or []),
+        "home_mu": float(structural_base["home_mu"]),
+        "away_mu": float(structural_base["away_mu"]),
+        "active_layers": list(structural_base.get("active_layers") or []),
     }
     output["context_adjustment"] = {
         "eligible": bool(overlay.get("eligible")),
@@ -101,3 +107,76 @@ def predict_from_result(
         "feature_as_of": (feature_row or {}).get("as_of") if selected is not None else None,
     }
     return output
+
+
+def predict_from_structural(
+    structural: StructuralRunInput,
+    *,
+    analyzed_at: str,
+    home: str,
+    away: str,
+    total_line: float,
+    feature_row: dict[str, Any] | None = None,
+    phase: str = "FINAL",
+    dispersion: float = CHAMPION_DISPERSION,
+    environment_sigma: float = CHAMPION_ENVIRONMENT_SIGMA,
+    extra_innings_home_probability: float | None = None,
+) -> dict[str, Any]:
+    """Build a V14 prediction from a native structural input.
+
+    This is the target production boundary: no V11/V13 result object is needed.
+    Bookmaker prices may determine which market line is displayed, but they are
+    never consumed by the run projection or probability model.
+    """
+    s = structural.validated()
+    extra = extra_innings_home_probability
+    if extra is None:
+        extra, _meta = validated_extra_innings_home_probability()
+    base = apply_current_champion(s)
+    return _finish_prediction(
+        structural_base=base,
+        game_pk=s.game_pk,
+        game_date=s.game_date,
+        analyzed_at=str(analyzed_at),
+        home=str(home),
+        away=str(away),
+        total_line=float(total_line),
+        phase=phase,
+        feature_row=feature_row,
+        dispersion=float(dispersion),
+        environment_sigma=float(environment_sigma),
+        extra_innings_home_probability=float(extra),
+        source_generation="pulsar-v14-native-structural",
+    )
+
+
+def predict_from_result(
+    result: dict[str, Any],
+    *,
+    total_line: float,
+    feature_row: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Compatibility bridge from the legacy-shaped acquisition payload.
+
+    This path remains only while the native V14 structural data assembler is
+    replacing the final V13 acquisition dependency.
+    """
+    game_pk, game_date, analyzed_at = _identity(result)
+    home, away = _team_name(result, "home"), _team_name(result, "away")
+    base = reproduce_from_champion_result(result)
+    parameters = parameters_from_champion_result(result)
+    return _finish_prediction(
+        structural_base=base,
+        game_pk=game_pk,
+        game_date=game_date,
+        analyzed_at=analyzed_at,
+        home=home,
+        away=away,
+        total_line=float(total_line),
+        phase=str(result.get("phase") or "FINAL"),
+        feature_row=feature_row,
+        dispersion=float(parameters["dispersion"]),
+        environment_sigma=float(parameters["environment_sigma"]),
+        extra_innings_home_probability=float(parameters["extra_innings_home_probability"]),
+        source_generation=str(result.get("model_generation") or "legacy-input"),
+    )
