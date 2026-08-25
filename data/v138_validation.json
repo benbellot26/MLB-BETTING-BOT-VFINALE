@@ -1,79 +1,79 @@
 {
   "ablation": {
     "available": true,
-    "full_rmse": 3.582699032063311,
+    "full_rmse": 3.5856778768835262,
     "groups": [
       {
-        "delta_rmse": 0.0024091863398085778,
+        "delta_rmse": 0.0023553723873774857,
         "group": "recent_14",
-        "rmse_full": 3.582699032063311,
-        "rmse_without": 3.5851082184031196
+        "rmse_full": 3.5856778768835262,
+        "rmse_without": 3.5880332492709037
       },
       {
-        "delta_rmse": 0.0019815483325382743,
+        "delta_rmse": 0.002060268235736018,
         "group": "talent_shrinkage",
-        "rmse_full": 3.582699032063311,
-        "rmse_without": 3.5846805803958492
+        "rmse_full": 3.5856778768835262,
+        "rmse_without": 3.5877381451192623
       },
       {
-        "delta_rmse": 0.0005751322016580573,
+        "delta_rmse": 0.0006951127519738698,
         "group": "recent_7",
-        "rmse_full": 3.582699032063311,
-        "rmse_without": 3.583274164264969
+        "rmse_full": 3.5856778768835262,
+        "rmse_without": 3.5863729896355
       },
       {
         "delta_rmse": 0.0,
         "group": "park",
-        "rmse_full": 3.582699032063311,
-        "rmse_without": 3.582699032063311
+        "rmse_full": 3.5856778768835262,
+        "rmse_without": 3.5856778768835262
       },
       {
-        "delta_rmse": -0.0004772865604802945,
-        "group": "offense_defense_interaction",
-        "rmse_full": 3.582699032063311,
-        "rmse_without": 3.5822217455028307
-      },
-      {
-        "delta_rmse": -0.0006301447679177841,
-        "group": "rest",
-        "rmse_full": 3.582699032063311,
-        "rmse_without": 3.582068887295393
-      },
-      {
-        "delta_rmse": -0.0007750579713277084,
+        "delta_rmse": -0.0004066790780790086,
         "group": "recent_30",
-        "rmse_full": 3.582699032063311,
-        "rmse_without": 3.5819239740919833
+        "rmse_full": 3.5856778768835262,
+        "rmse_without": 3.5852711978054472
       },
       {
-        "delta_rmse": -0.0029542397888393523,
+        "delta_rmse": -0.0004980287517080129,
+        "group": "offense_defense_interaction",
+        "rmse_full": 3.5856778768835262,
+        "rmse_without": 3.5851798481318182
+      },
+      {
+        "delta_rmse": -0.0006387379897452305,
+        "group": "rest",
+        "rmse_full": 3.5856778768835262,
+        "rmse_without": 3.585039138893781
+      },
+      {
+        "delta_rmse": -0.00276694505873909,
         "group": "team_season",
-        "rmse_full": 3.582699032063311,
-        "rmse_without": 3.5797447922744716
+        "rmse_full": 3.5856778768835262,
+        "rmse_without": 3.582910931824787
       }
     ],
-    "holdout_n": 2823,
+    "holdout_n": 2825,
     "interpretation": "positive delta means the removed feature group helped on the temporal holdout",
-    "train_n": 11289
+    "train_n": 11297
   },
   "baselines": {
     "coin_flip": {
       "brier": 0.25,
       "logloss": 0.6931471805599453,
-      "n": 14112
+      "n": 14122
     },
     "home_field_54": {
-      "brier": 0.24911700680272106,
-      "logloss": 0.6913808430942774,
-      "n": 14112
+      "brier": 0.2491300948874097,
+      "logloss": 0.6914070753215696,
+      "n": 14122
     },
     "market_if_present": {
       "n": 0,
       "status": "NO_PIT_MARKET_IN_FREE_DATA"
     },
     "naive_team_runs": {
-      "away_mae": 2.5308522743007997,
-      "away_rmse": 3.2358885700748585,
+      "away_mae": 2.5307620276662397,
+      "away_rmse": 3.235805673654874,
       "calibration_bins": [
         {
           "empirical_rate": 0.35,
@@ -104,18 +104,18 @@
           "n": 714
         },
         {
-          "empirical_rate": 0.4822078447230085,
+          "empirical_rate": 0.4819228438699253,
           "high": 0.5,
           "low": 0.4,
-          "mean_probability": 0.4605234027700835,
-          "n": 4946
+          "mean_probability": 0.4605415554411584,
+          "n": 4951
         },
         {
-          "empirical_rate": 0.5548707155742634,
+          "empirical_rate": 0.5547543938711131,
           "high": 0.6,
           "low": 0.5,
-          "mean_probability": 0.5429262541884546,
-          "n": 6652
+          "mean_probability": 0.5429197755941803,
+          "n": 6657
         },
         {
           "empirical_rate": 0.654532967032967,
@@ -146,29 +146,29 @@
           "n": 24
         }
       ],
-      "home_mae": 2.4395161593956627,
-      "home_rmse": 3.1146164389638815,
-      "ml_brier": 0.2466715377077162,
-      "ml_ece": 0.021623515963359423,
-      "ml_logloss": 0.6880941524377783,
-      "n": 14112
+      "home_mae": 2.4400245850866398,
+      "home_rmse": 3.115055942943948,
+      "ml_brier": 0.2466701013598975,
+      "ml_ece": 0.021462049505574902,
+      "ml_logloss": 0.6880901154881394,
+      "n": 14122
     }
   },
   "claim": "research validation only; no automatic champion promotion",
-  "dataset_content_sha256": "96b8ec9e3ce5a27a6969702e7647b7e9988aa4eaf04ee9adec6d3b9cb22e580d",
+  "dataset_content_sha256": "50061745f1a5634b927b4376f7caf4a745efd87bfd76591a6905a6e8daed396c",
   "dataset_integrity": {
     "bound": true,
-    "content_sha256": "96b8ec9e3ce5a27a6969702e7647b7e9988aa4eaf04ee9adec6d3b9cb22e580d",
+    "content_sha256": "50061745f1a5634b927b4376f7caf4a745efd87bfd76591a6905a6e8daed396c",
     "feature_contract_sha256": "08b35bb22ea34adb3113de13d335975ca00e401b9c1d80deada2473a9b661a61",
-    "feature_rows": 14112,
-    "label_rows": 14112,
+    "feature_rows": 14122,
+    "label_rows": 14122,
     "legacy_identity_fingerprint": null,
     "legacy_identity_fingerprint_sufficient": false,
     "policy": "model/validation evidence is bound to SHA256 of every compressed source feature/label file",
     "schema": "v13-10-research-dataset-integrity-v1",
     "source": "data/v138_dataset_manifest.json"
   },
-  "games": 14112,
+  "games": 14122,
   "schema": "v13-8-validation-suite-v1",
   "walk_forward": {
     "folds": [
@@ -950,20 +950,20 @@
           "coin_flip": {
             "brier": 0.25,
             "logloss": 0.6931471805599453,
-            "n": 1964
+            "n": 1974
           },
           "home_field_54": {
-            "brier": 0.2492782077393075,
-            "logloss": 0.6917039354113633,
-            "n": 1964
+            "brier": 0.2493710233029382,
+            "logloss": 0.6918899640793729,
+            "n": 1974
           },
           "market_if_present": {
             "n": 0,
             "status": "NO_PIT_MARKET_IN_FREE_DATA"
           },
           "naive_team_runs": {
-            "away_mae": 2.613064184033408,
-            "away_rmse": 3.2985526358225763,
+            "away_mae": 2.612002085720041,
+            "away_rmse": 3.297656314804552,
             "calibration_bins": [
               {
                 "empirical_rate": 0.2,
@@ -994,18 +994,18 @@
                 "n": 67
               },
               {
-                "empirical_rate": 0.49782293178519593,
+                "empirical_rate": 0.4956772334293948,
                 "high": 0.5,
                 "low": 0.4,
-                "mean_probability": 0.46423125038210594,
-                "n": 689
+                "mean_probability": 0.4643340380426701,
+                "n": 694
               },
               {
-                "empirical_rate": 0.5401387512388504,
+                "empirical_rate": 0.539447731755424,
                 "high": 0.6,
                 "low": 0.5,
-                "mean_probability": 0.5385686654792925,
-                "n": 1009
+                "mean_probability": 0.5385476200566711,
+                "n": 1014
               },
               {
                 "empirical_rate": 0.6066666666666667,
@@ -1036,17 +1036,17 @@
                 "n": 5
               }
             ],
-            "home_mae": 2.4845995479919076,
-            "home_rmse": 3.1868029730753,
-            "ml_brier": 0.2516275961263073,
-            "ml_ece": 0.02503232599984713,
-            "ml_logloss": 0.6977583249554107,
-            "n": 1964
+            "home_mae": 2.4880084404549394,
+            "home_rmse": 3.189513482886006,
+            "ml_brier": 0.2515922138121829,
+            "ml_ece": 0.023859926092451512,
+            "ml_logloss": 0.6976804873019274,
+            "n": 1974
           }
         },
         "candidate": {
-          "away_mae": 2.600981545749049,
-          "away_rmse": 3.296167165118337,
+          "away_mae": 2.5998349262114138,
+          "away_rmse": 3.295293554192964,
           "calibration_bins": [
             {
               "empirical_rate": 0.2,
@@ -1077,18 +1077,18 @@
               "n": 78
             },
             {
-              "empirical_rate": 0.5059880239520959,
+              "empirical_rate": 0.5037147102526003,
               "high": 0.5,
               "low": 0.4,
-              "mean_probability": 0.46388388970486416,
-              "n": 668
+              "mean_probability": 0.46398884025475706,
+              "n": 673
             },
             {
-              "empirical_rate": 0.5369458128078818,
+              "empirical_rate": 0.5362745098039216,
               "high": 0.6,
               "low": 0.5,
-              "mean_probability": 0.5388052054971064,
-              "n": 1015
+              "mean_probability": 0.538793178098363,
+              "n": 1020
             },
             {
               "empirical_rate": 0.6103896103896104,
@@ -1119,25 +1119,25 @@
               "n": 5
             }
           ],
-          "home_mae": 2.4735973135208407,
-          "home_rmse": 3.1834755863864266,
-          "ml_brier": 0.2514768320949039,
-          "ml_ece": 0.026487058566240732,
-          "ml_logloss": 0.697310054998516,
-          "n": 1964
+          "home_mae": 2.4769558570945356,
+          "home_rmse": 3.1861008478508333,
+          "ml_brier": 0.2514386101115285,
+          "ml_ece": 0.02599406785018329,
+          "ml_logloss": 0.6972272123107562,
+          "n": 1974
         },
         "candidate_vs_naive_brier_bootstrap": {
           "available": true,
-          "ci95_high": -2.1860535504902856e-05,
-          "ci95_low": -0.00027640051984462177,
-          "difference": -0.00015076403140340533,
+          "ci95_high": -2.159759022768437e-05,
+          "ci95_low": -0.0002758964806913733,
+          "difference": -0.00015360370065437,
           "iterations": 600,
-          "n": 1964,
-          "probability_a_better": 0.995
+          "n": 1974,
+          "probability_a_better": 0.9983333333333333
         },
         "season": 2026,
         "status": "PASS",
-        "test_games": 1964,
+        "test_games": 1974,
         "train_games": 12148
       }
     ],
