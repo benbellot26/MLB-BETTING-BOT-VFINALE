@@ -227,9 +227,12 @@ class V122Tests(unittest.TestCase):
 
     def test_workflow_orders_v14_build_validate_publish(self):
         text = Path(".github/workflows/mlb-bot.yml").read_text(encoding="utf-8")
-        self.assertLess(text.index("Acquire pregame state without Discord"), text.index("Build Pulsar V14 production payload"))
-        self.assertLess(text.index("Build Pulsar V14 production payload"), text.index("Validate Pulsar V14 publication state"))
+        self.assertLess(text.index("Validate Pulsar V14 production contract"), text.index("Resolve slate date natively"))
+        self.assertLess(text.index("Resolve slate date natively"), text.index("Build native Pulsar V14 production payload"))
+        self.assertLess(text.index("Build native Pulsar V14 production payload"), text.index("Validate Pulsar V14 publication state"))
         self.assertLess(text.index("Validate Pulsar V14 publication state"), text.index("Publish Pulsar V14 Discord analytics"))
+        self.assertNotIn("v11.v13_entry", text)
+        self.assertNotIn("runtime/v11", text)
         self.assertTrue(Path(".github/workflows/market-snapshot.yml").exists())
 
 
