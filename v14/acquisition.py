@@ -4,8 +4,8 @@ from __future__ import annotations
 
 Only public MLB schedule data and bookmaker market snapshots are acquired here.
 No probability is computed and no market probability is converted into a model
-feature. The functions are intentionally small and injectable for deterministic
-tests/replays.
+feature. Requests are retried and cached only for the lifetime of the Python
+process so repeated team/player lookups within one slate do not hammer MLB.
 """
 
 from dataclasses import dataclass
@@ -34,15 +34,15 @@ DEFAULT_BOOKMAKERS = tuple(
 )
 
 JsonGetter = Callable[[str, dict[str, Any]], Any]
+_HTTP_CACHE: dict[str, Any] = {}
+
+
+def clear_http_cache() -> None:
+    """Clear the process-local GET cache at the start of a new slate build."""
+    _HTTP_CACHE.clear()
 
 
 def resolve_target_date(*, now: datetime | None = None, override: str | None = None) -> str:
-    """Resolve the MLB slate date using the historical production convention.
-
-    The slate follows Europe/Paris. Before 06:00 local time it remains attached
-    to the previous calendar date so late US games are not accidentally shifted
-    into the next slate. MLB_DATE, or the explicit override, wins when supplied.
-    """
     explicit = override if override is not None else os.getenv("MLB_DATE")
     if explicit:
         value = str(explicit).strip()
@@ -71,7 +71,22 @@ def parse_time(value: Any) -> datetime:
     return dt.astimezone(timezone.utc)
 
 
-def http_json(url: str, params: dict[str, Any], *, timeout: int = DEFAULT_TIMEOUT, retries: int = 2) -> Any:
+def _cache_key(url: str, params: dict[str, Any]) -> str:
+    return f"{url}?{urlencode(sorted((str(k), str(v)) for k, v in params.items()), safe=',')}"
+
+
+def http_json(
+    url: str,
+    params: dict[str, Any],
+    *,
+    timeout: int = DEFAULT_TIMEOUT,
+    retries: int = 2,
+    use_cache: bool = True,
+) -> Any:
+    key = _cache_key(url, params)
+    if use_cache and key in _HTTP_CACHE:
+        return _HTTP_CACHE[key]
+
     query = urlencode(params, safe=",")
     target = f"{url}?{query}" if query else url
     request = Request(target, headers={"User-Agent": "Pulsar-V14", "Accept": "application/json"})
@@ -80,12 +95,20 @@ def http_json(url: str, params: dict[str, Any], *, timeout: int = DEFAULT_TIMEOU
         try:
             with urlopen(request, timeout=timeout) as response:
                 body = response.read().decode("utf-8", "replace")
-                return json.loads(body) if body else None
+                payload = json.loads(body) if body else None
+                if use_cache:
+                    _HTTP_CACHE[key] = payload
+                return payload
         except HTTPError as exc:
             last = exc
             if exc.code not in {429, 500, 502, 503, 504} or attempt >= retries:
                 raise
-            time.sleep(1.2 * (attempt + 1))
+            retry_after = exc.headers.get("Retry-After") if exc.headers else None
+            try:
+                wait = max(0.5, float(retry_after)) if retry_after else 1.2 * (attempt + 1)
+            except Exception:
+                wait = 1.2 * (attempt + 1)
+            time.sleep(wait)
         except Exception as exc:
             last = exc
             if attempt >= retries:
@@ -126,10 +149,22 @@ def odds_snapshot(
     return [event for event in payload if isinstance(event, dict)]
 
 
+TEAM_ALIASES = {
+    "oaklandathletics": "athletics",
+    "sacramentoathletics": "athletics",
+    "athletics": "athletics",
+}
+
+
+def canonical_team_name(value: Any) -> str:
+    normalized = norm_name(value)
+    return TEAM_ALIASES.get(normalized, normalized)
+
+
 def match_events(games: list[dict[str, Any]], events: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     index: dict[tuple[str, str], dict[str, Any]] = {}
     for event in events:
-        key = (norm_name(event.get("home_team")), norm_name(event.get("away_team")))
+        key = (canonical_team_name(event.get("home_team")), canonical_team_name(event.get("away_team")))
         if all(key):
             index[key] = event
 
@@ -138,7 +173,7 @@ def match_events(games: list[dict[str, Any]], events: list[dict[str, Any]]) -> d
         teams = game.get("teams") or {}
         home = ((teams.get("home") or {}).get("team") or {}).get("name")
         away = ((teams.get("away") or {}).get("team") or {}).get("name")
-        event = index.get((norm_name(home), norm_name(away)))
+        event = index.get((canonical_team_name(home), canonical_team_name(away)))
         game_pk = game.get("gamePk")
         if event is not None and game_pk is not None:
             matched[str(game_pk)] = event
@@ -198,6 +233,7 @@ def collect_pregame(
     schedule_getter: JsonGetter = http_json,
     odds_getter: JsonGetter = http_json,
 ) -> PregameSnapshot:
+    clear_http_cache()
     at = analyzed_at or datetime.now(timezone.utc).isoformat()
     games = future_games(mlb_schedule(target_date, getter=schedule_getter), as_of=at)
     events = odds_snapshot(api_key=api_key, getter=odds_getter)
