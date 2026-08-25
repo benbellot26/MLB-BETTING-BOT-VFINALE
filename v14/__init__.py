@@ -1,13 +1,7 @@
-"""V14 clean MLB probability engine.
+"""Pulsar V14 production model package."""
 
-V14 starts from behavioral parity with the frozen V13.10 production champion,
-then removes or replaces components only when evidence shows no predictive
-regression. Nothing in this package can publish bets or alter V13 production
-probabilities while V14 remains shadow-only.
-"""
-
-VERSION = "14.0.0-v13.10-champion-parity-shadow"
-MODEL_GENERATION = "v14-v13.10-champion-parity-shadow-v1"
-SCHEMA = "v14-shadow-probability-v2"
+VERSION = "14.0.0"
+MODEL_GENERATION = "pulsar-v14-context-v1"
+SCHEMA = "pulsar-v14-probability-v1"
 
 __all__ = ["VERSION", "MODEL_GENERATION", "SCHEMA"]
