@@ -1,130 +1,100 @@
-# MLB Betting Bot — V13.10 Champion
+# Pulsar V14 — MLB Probability Engine
 
-V13.10 is the single production champion of this repository.
+Pulsar V14 is the production MLB probability engine in this repository.
 
-The objective is not to create a new version number. The objective is to make V13.10 the most accurate, robust and reproducible MLB probability engine possible. A change belongs in the champion only when it fixes a real defect or is supported by point-in-time, out-of-sample evidence. V14 has been abandoned and removed.
+V13.10 is frozen as historical rollback/regression code only. It is not used by the live production workflow.
 
-## Production rule
+## Production path
 
-The production probability is baseball-first and market-independent:
+`MLB/Odds acquisition -> native V14 structural inputs -> run model -> contextual overlay -> score distribution -> probability surface -> validation -> Discord analytics`
 
-1. `p_baseball_raw` — baseball model probability before V13 calibration.
-2. `p_baseball_calibrated` — baseball-only calibrated probability.
-3. `p_market` — de-vig market consensus used as a benchmark only.
-4. `p_posterior` — research-only market-aware comparison.
-5. `p_predictive_final` — the production probability; it must remain equal to `p_baseball_calibrated` unless an explicit future promotion is supported by independent evidence.
+The live workflow is `.github/workflows/mlb-bot.yml` (`Pulsar V14 Production`).
 
-Market probability is forbidden from entering baseball calibration or silently changing `p_predictive_final`.
+V14 is baseball-first and market-independent: bookmaker prices may be used to choose the market line to price and to calculate post-model edge diagnostics, but bookmaker probability is never a predictive feature.
 
-## Champion runtime
+## Core V14 modules
 
-The V13.10 runtime is explicit and intentionally reuses mature V12.3 primitives where they are still required:
+- `v14/acquisition.py` — MLB schedule and Odds API acquisition.
+- `v14/mlb_inputs.py` — native pregame baseball inputs.
+- `v14/structural.py` — structural run projection.
+- `v14/run_stack.py` / `v14/park.py` — run environment and park handling.
+- `v14/context_overlay.py` — starter, confirmed lineup/matchup and bullpen context with bounded residual adjustments.
+- `v14/distribution.py` — ML, ±1.5 run line and total probabilities from one coherent score distribution.
+- `v14/pipeline.py` — single model orchestration entry point.
+- `v14/production_runtime.py` — native production payload and Discord execution.
+- `v14/market_edge.py` — fair odds, no-vig, edge and EV diagnostics after prediction.
+- `v14/tracking.py` — immutable pregame prediction snapshots, settlement and live performance metrics.
+- `v14/preflight.py` — production test gate.
 
-`PregameSnapshot -> V12.3 structural primitives -> V13 park/run stack -> score distribution -> validated extra innings -> baseball calibration -> probability-surface reconciliation`
+## Safety rules
 
-The `v11/` directory name is historical. It contains both legacy compatibility code and current V13.10 production modules. Files must therefore be judged by dependency and evidence, not by their directory/version prefix.
+- Pregame information only in production.
+- Missing data never becomes an invented advantage.
+- Market probability is forbidden as a model feature.
+- Contextual adjustments are bounded.
+- Production payloads contain analytics, not automatic betting recommendations.
+- Every production prediction is persisted before the game for later scoring.
 
-Core V13.10 responsibilities include:
+## Commands
 
-- point-in-time input provenance;
-- structural home/away run means;
-- prior-season park factor handling;
-- validated run-mean and distribution priors;
-- extra-innings home-win probability;
-- ML, standard ±1.5 runline and total probability generation;
-- baseball-only calibration;
-- uncertainty and probability-surface consistency;
-- strict model-generation fingerprints;
-- analytics-only output safety;
-- feature/label leakage guards.
-
-## Legacy and challenger policy
-
-V11.5 and V12.4 predictive shadows are disabled by default when V13.10 starts. Dedicated research may opt into them explicitly, but they are not part of the champion production path.
-
-Posterior, rich/native, run-mean and score-distribution candidates may exist only when they provide useful evidence for V13.10. A candidate must not affect the production probability merely because it exists in the repository.
-
-No challenger is promoted automatically. A promotion requires chronological point-in-time evidence, an untouched holdout, proper-score improvement and an explicit decision to change the champion.
-
-## Point-in-time evidence
-
-Pregame evidence and final labels are separated. Historical replay must preserve the original `as_of`, model generation and pregame provenance. Final MLB scores are labels only and must never become features.
-
-For RUNLINE/TOTAL markets with PUSH probability, binary scoring uses:
-
-`P(WIN | no PUSH) = P(WIN) / (1 - P(PUSH))`
-
-The push mass remains stored separately.
-
-Reconstructed historical data may support research and transfer tests, but it must never masquerade as exact native current-generation evidence.
-
-## Calibration
-
-Baseball calibration is baseball-only. Sportsbook probabilities are not calibration features.
-
-Activation remains evidence-gated. If the evidence is insufficient or unstable, the identity transform is preferred over an unproven correction.
-
-The current strict evidence floors are:
-
-- GLOBAL: 600 observations;
-- per market: 400 unique game-market targets;
-- per phase/market: 300 game-phase-market targets.
-
-Method selection uses chronological validation and an untouched holdout.
-
-## Historical transfer
-
-Historical run-mean and score-distribution transfer remains useful because V13.10 can consume these artifacts when their safety and exact-transfer gates pass. The historical-transfer workflow is therefore retained even if some filenames contain older version labels.
-
-Activation must remain FINAL-only, point-in-time safe, market-independent and protected by exact current-generation transfer evidence.
-
-## Production workflow
-
-`.github/workflows/mlb-bot.yml` is champion-only. It performs:
-
-- a cheap schedule gate;
-- V13.10 contract/invariant tests;
-- validation of the historical reference required by the V13.10 base layer;
-- baseball calibration;
-- V13.10 analysis with legacy predictive shadows forced off;
-- post-run probability/leakage/lifecycle checks;
-- evidence persistence and Discord analytics publication;
-- durable point-in-time source archiving.
-
-It no longer trains V12.3 challengers, runs V12.3 backtests, retrains the rich/native challenger or rebuilds the posterior policy on every production analysis.
-
-Research remains separated in dedicated workflows so evidence can improve V13.10 without contaminating its production path.
-
-## Useful supporting workflows
-
-- `.github/workflows/ci.yml` — broad regression and statistical invariants.
-- `.github/workflows/v13-historical-backfill.yml` — historical replay/backfill and evidence rebuilding.
-- `.github/workflows/v13-11-historical-transfer.yml` — strict run-mean/distribution transfer validation used by V13.10.
-- `.github/workflows/v13-daily-postmortem.yml` — settled-game scoring and cumulative evidence.
-- `.github/workflows/v13-market-tracking.yml` — market/settlement checkpoints.
-- `.github/workflows/v13-7-free-data-collector.yml` — free Statcast/MLB/weather/park data foundation.
-- `.github/workflows/v13-provider-hardening-ci.yml` — provider/fallback contract checks.
-- `.github/workflows/v13-8-audit-closure.yml` — evidence/engineering guardrails.
-- `.github/workflows/v12-3-research-collector.yml` — legacy-named evidence collector retained only while it contributes useful point-in-time research inputs.
-
-## Critical validation
+Production validation:
 
 ```bash
-python -m py_compile v11/*.py tests/*.py
-python -m v11.v13_preflight --verbose
-python -m v11.v13_entry --self-test
+python -m py_compile v14/*.py
+python -m v14.preflight
 ```
 
-The preflight includes a V13.10 champion-only guard that verifies V11.5/V12.4 shadows are off by default.
+Build the native production payload locally when the required API key is available:
 
-A green CI validates implementation invariants. It does not by itself prove predictive superiority or profitability.
+```bash
+python -m v14.production_runtime --target-date YYYY-MM-DD
+```
+
+Persist a pregame prediction snapshot:
+
+```bash
+python -m v14.tracking snapshot --payload runtime/v14/discord_payload.json
+```
+
+Settle completed games and rebuild performance:
+
+```bash
+python -m v14.tracking settle
+```
+
+## Live evidence
+
+`data/v14_predictions.jsonl` is the canonical V14 point-in-time prediction ledger. A production run adds predictions before publication; settlement later adds only final scores and settlement timestamps.
+
+`data/v14_performance.json` reports:
+
+- Brier score;
+- Log Loss;
+- accuracy at 50%;
+- observed vs predicted rates;
+- ML performance;
+- home/away -1.5 run-line performance;
+- totals performance;
+- team-run and total-run MAE.
+
+ROI is intentionally not reported until an official bet/stake ledger exists. CLV is intentionally not reported until canonical closing prices are persisted. The repository does not manufacture either metric.
+
+## Workflows
+
+- `Pulsar V14 Production` — live native V14 analysis and Discord publication.
+- `Pulsar V14 Performance` — daily settlement and performance refresh.
+- `Pulsar V14 CI` — focused V14 production tests.
+- `Pulsar Regression CI` — broad historical regression/rollback guard.
+- `Pulsar V14 Native Parity` — temporary rollback diagnostic comparing native V14 acquisition with the frozen legacy reference; it cannot publish.
+
+Older V12/V13 historical, backfill and research workflows are retained only where they still provide rollback or historical evidence. They are not part of the production path.
+
+## Legacy policy
+
+The `v11/` directory is legacy. New production code must not import it. V14 has an import-boundary test that protects this rule.
+
+Legacy code may remain only when it is needed for historical replay, regression evidence or rollback. Dead production/runtime compatibility code should be removed rather than carried forward.
 
 ## Change policy
 
-Before changing the champion, answer three questions:
-
-1. Does this directly improve V13.10 accuracy, robustness, data quality, reproducibility or evidence quality?
-2. Is the change protected against point-in-time leakage and regression?
-3. Is the gain measurable on independent data rather than inferred from a small recent sample?
-
-If the answer is no, the change does not belong in the production champion.
+A V14 model change should improve accuracy, robustness, data quality or reproducibility and remain point-in-time safe. Predictive changes should be judged on stored pregame evidence using proper scoring metrics, not on a few recent wins or losses.
