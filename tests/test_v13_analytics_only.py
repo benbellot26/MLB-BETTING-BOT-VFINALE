@@ -74,11 +74,14 @@ class V13AnalyticsOnlyTests(unittest.TestCase):
         self.assertIn("v13_analytics_only.assert_payload_file", text)
         self.assertIn("runner.send_persisted = _send_persisted_v135", text)
 
-    def test_production_workflow_checks_analytics_only_before_discord(self):
+    def test_production_workflow_checks_v14_analytics_only_before_discord(self):
         text = Path(".github/workflows/mlb-bot.yml").read_text(encoding="utf-8")
-        self.assertIn("analytics-only payload contains chosen recommendations", text)
-        self.assertIn("analytics-only payload contains an official combo", text)
-        self.assertIn("analytics-only run wrote betting ledger events", text)
+        self.assertIn("V14 analytics payload contains recommendations", text)
+        self.assertIn("V14 analytics payload contains official combo", text)
+        self.assertIn("legacy_probability_used_for_publication", text)
+        self.assertIn("Publish Pulsar V14 Discord analytics", text)
+        self.assertIn("python -m v14.production_runtime --send-persisted", text)
+        self.assertNotIn("Publish Discord recommendations", text)
 
 
 if __name__ == "__main__":
