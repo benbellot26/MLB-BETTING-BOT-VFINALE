@@ -102,8 +102,8 @@ jobs:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: |
           TARGET_DATE=$(python - <<'PY'
-          from v11 import core
-          print(core.TARGET_DATE)
+          from v14.acquisition import resolve_target_date
+          print(resolve_target_date())
           PY
           )
           python -m v14.native_candidate "$TARGET_DATE" \
