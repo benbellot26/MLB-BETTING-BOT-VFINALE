@@ -16,6 +16,8 @@ NATIVE_MODULES = (
     "mlb_inputs.py",
     "model.py",
     "native_candidate.py",
+    "native_payload.py",
+    "parity_gate.py",
     "park.py",
     "pipeline.py",
     "production_runtime.py",
