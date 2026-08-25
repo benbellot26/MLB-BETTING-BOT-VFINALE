@@ -16,7 +16,9 @@ class V14ParityWorkflowTests(unittest.TestCase):
         text = Path('.github/workflows/v14-native-parity.yml').read_text(encoding='utf-8')
         self.assertIn("candidate.get('role') != 'CANDIDATE_NON_PUBLISHING'", text)
         self.assertIn("parity.get('cutover_authorized') is not False", text)
+        self.assertIn("assessment.get('publication_authorized') is not False", text)
         self.assertIn('market probability leaked into native model features', text)
+        self.assertIn('native_parity_assessment.json', text)
         self.assertIn('actions/upload-artifact@v4', text)
 
 
