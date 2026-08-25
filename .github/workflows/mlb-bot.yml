@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: mlb-betting-bot-state
@@ -18,6 +18,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
 
       - name: Python 3.12
         uses: actions/setup-python@v5
@@ -63,6 +66,20 @@ jobs:
           print('PULSAR_V14_PUBLICATION_STATE_OK games=', len(payload.get('results') or []))
           print('PULSAR_V14_AUTHORIZATION=', json.dumps(payload.get('authorization_basis'), sort_keys=True))
           PY
+
+      - name: Persist point-in-time V14 predictions
+        run: |
+          python -m v14.tracking snapshot \
+            --payload runtime/v14/discord_payload.json \
+            --predictions data/v14_predictions.jsonl
+          git config user.name 'Pulsar V14'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add -f data/v14_predictions.jsonl
+          if ! git diff --cached --quiet; then
+            git commit -m 'data: persist V14 pregame predictions [skip ci]'
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
 
       - name: Publish Pulsar V14 Discord analytics
         env:
