@@ -4,6 +4,7 @@ import argparse
 import unittest
 
 CRITICAL_TEST_MODULES = (
+    "tests.test_v14_acquisition",
     "tests.test_v14_context_overlay",
     "tests.test_v14_discord",
     "tests.test_v14_feature_row",
