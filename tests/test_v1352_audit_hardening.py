@@ -65,7 +65,7 @@ class V1352AuditHardeningTests(unittest.TestCase):
 
     def test_shared_preflight_is_used_by_ci_production_backfill_and_research(self):
         # Historical registry identifier intentionally preserved. Production is
-        # now native V14; historical/research workflows retain the legacy guard.
+        # fully native V14; historical/research workflows retain the legacy guard.
         prod=Path(".github/workflows/mlb-bot.yml").read_text(encoding="utf-8")
         self.assertIn("python -m v14.preflight",prod)
         self.assertNotIn("v11.v13_preflight",prod)
