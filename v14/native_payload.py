@@ -41,10 +41,9 @@ def native_result_for_discord(result: dict[str, Any]) -> dict[str, Any]:
         "ctx": deepcopy(result.get("ctx") or {}),
         "canonical_lines": {"TOTAL": float(line)},
         "line_selection": deepcopy(result.get("line_selection") or {}),
-        # Market data is diagnostic/audit state only. It must survive the
-        # candidate -> production boundary so tracking can persist edge/EV/CLV.
         "market_snapshot": deepcopy(result.get("market_snapshot") or {}),
         "market_diagnostics": deepcopy(result.get("market_diagnostics") or {}),
+        "starter_fallback": deepcopy(result.get("starter_fallback") or {}),
         "v14_prediction": prediction,
         "model_generation": MODEL_GENERATION,
         "model": {"version": VERSION, "generation": MODEL_GENERATION, "role": "PRODUCTION"},
