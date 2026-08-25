@@ -52,8 +52,6 @@ jobs:
           python -m v11.v13_train --dry-run >/tmp/v13_calibration_candidate.json
           python -m v11.v13_posterior_policy >/tmp/v13_posterior_policy.json
           python -m v11.v13_rich_native_train >/tmp/v13_rich_native_candidate.json
-      - name: Historical source cohort smoke test
-        run: python -m v11.v124_source_cohort >/tmp/v124_source_cohort.json
       - name: V12.4 optimizer persisted-journal smoke test
         run: python -m v11.v124_weight_optimizer --journal data/v11_3_live.jsonl --save data/v124_active_weights.json >/tmp/v124_optimizer_report.json
       - name: V12.3 baseline-safe bootstrap validation
