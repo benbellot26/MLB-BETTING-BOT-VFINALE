@@ -1,7 +1,8 @@
 import unittest
 
 from v14 import MODEL_GENERATION
-from v14.pipeline import predict_from_result
+from v14.pipeline import predict_from_result, predict_from_structural
+from v14.run_stack import StructuralRunInput
 
 
 def _starter(name, era, whip, k9=8.5, bb9=3.0, hr9=1.1, ip=100):
@@ -83,6 +84,30 @@ class V14PipelineTests(unittest.TestCase):
         self.assertAlmostEqual(p["home_minus_1_5"] + p["away_plus_1_5"], 1.0, places=12)
         self.assertAlmostEqual(p["home_plus_1_5"] + p["away_minus_1_5"], 1.0, places=12)
         self.assertAlmostEqual(p["over"] + p["under"], 1.0, places=12)
+
+    def test_native_structural_boundary_needs_no_legacy_result(self):
+        structural = StructuralRunInput(
+            game_pk="123",
+            game_date="2026-08-25T23:00:00+00:00",
+            venue="Unknown Test Park",
+            structural_home_mu=4.5,
+            structural_away_mu=4.2,
+            static_park_factor=1.0,
+        )
+        out = predict_from_structural(
+            structural,
+            analyzed_at="2026-08-25T18:00:00+00:00",
+            home="Home",
+            away="Away",
+            total_line=8.5,
+            feature_row=_feature(),
+            extra_innings_home_probability=.5,
+        )
+        self.assertEqual(out["role"], "PRODUCTION")
+        self.assertEqual(out["model_generation"], MODEL_GENERATION)
+        self.assertEqual(out["source_generation"], "pulsar-v14-native-structural")
+        self.assertTrue(out["context_adjustment"]["eligible"])
+        self.assertFalse(out["market_probability_used_as_feature"])
 
     def test_future_feature_is_rejected(self):
         out = predict_from_result(
