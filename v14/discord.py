@@ -8,6 +8,8 @@ has no dependency on the legacy V11/V13 runtime or probability fields.
 
 import json
 import os
+import random
+import time
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -24,6 +26,8 @@ _MATCH_COLORS = (
     0x1ABC9C,
     0xE91E63,
 )
+_DISCORD_MAX_ATTEMPTS = 6
+_DISCORD_MIN_GAP_SECONDS = 0.35
 
 
 def _num(value: Any, default: float = 0.0) -> float:
@@ -143,18 +147,62 @@ def build_game_embed(result: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _retry_after_seconds(exc: HTTPError, attempt: int) -> float:
+    header = exc.headers.get("Retry-After") if exc.headers else None
+    if header:
+        try:
+            value = float(header)
+            # Discord normally sends seconds, but tolerate millisecond-style values.
+            return max(0.25, value / 1000.0 if value > 100.0 else value)
+        except Exception:
+            pass
+    try:
+        raw = exc.read().decode("utf-8", errors="replace")
+        payload = json.loads(raw)
+        value = float(payload.get("retry_after"))
+        return max(0.25, value / 1000.0 if value > 100.0 else value)
+    except Exception:
+        return min(8.0, 1.0 * (2 ** attempt))
+
+
 def _post_webhook(payload: dict[str, Any], webhook_url: str | None = None) -> bool:
     url = webhook_url or os.getenv("DISCORD_WEBHOOK_URL")
     if not url:
         raise RuntimeError("DISCORD_WEBHOOK_URL absent")
     body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-    request = Request(url, data=body, headers={"Content-Type": "application/json", "User-Agent": "Pulsar-V14"}, method="POST")
-    try:
-        with urlopen(request, timeout=20) as response:
-            return 200 <= int(response.status) < 300
-    except (HTTPError, URLError, TimeoutError) as exc:
-        raise RuntimeError(f"Discord webhook failed: {exc}") from exc
+
+    for attempt in range(_DISCORD_MAX_ATTEMPTS):
+        request = Request(
+            url,
+            data=body,
+            headers={"Content-Type": "application/json", "User-Agent": "Pulsar-V14"},
+            method="POST",
+        )
+        try:
+            with urlopen(request, timeout=20) as response:
+                if 200 <= int(response.status) < 300:
+                    return True
+                raise RuntimeError(f"Discord webhook unexpected HTTP {response.status}")
+        except HTTPError as exc:
+            if exc.code == 429 and attempt + 1 < _DISCORD_MAX_ATTEMPTS:
+                delay = _retry_after_seconds(exc, attempt) + random.uniform(0.05, 0.20)
+                print(f"PULSAR_V14_DISCORD rate_limited attempt={attempt + 1}/{_DISCORD_MAX_ATTEMPTS} retry_in={delay:.2f}s")
+                time.sleep(delay)
+                continue
+            raise RuntimeError(f"Discord webhook failed: HTTP Error {exc.code}: {exc.reason}") from exc
+        except (URLError, TimeoutError) as exc:
+            if attempt + 1 < _DISCORD_MAX_ATTEMPTS:
+                delay = min(8.0, 0.75 * (2 ** attempt)) + random.uniform(0.05, 0.20)
+                print(f"PULSAR_V14_DISCORD transient_error attempt={attempt + 1}/{_DISCORD_MAX_ATTEMPTS} retry_in={delay:.2f}s error={exc}")
+                time.sleep(delay)
+                continue
+            raise RuntimeError(f"Discord webhook failed after retries: {exc}") from exc
+    return False
 
 
 def send_game(result: dict[str, Any], webhook_url: str | None = None) -> bool:
     return _post_webhook({"username": "Pulsar V14", "embeds": [build_game_embed(result)]}, webhook_url=webhook_url)
+
+
+def publication_gap_seconds() -> float:
+    return _DISCORD_MIN_GAP_SECONDS
