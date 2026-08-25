@@ -1,0 +1,103 @@
+from __future__ import annotations
+
+"""Single production orchestration path for Pulsar V14."""
+
+from typing import Any
+
+from .champion_contract import parameters_from_champion_result
+from .context_overlay import context_overlay_from_feature_row
+from .distribution import probability_surface
+from .feature_row import feature_row_is_usable
+from .model import RunProjection, prediction_payload
+from .run_stack import reproduce_from_champion_result
+from .v13_context_adapter import adapt_feature_row
+
+
+def _team_name(result: dict[str, Any], side: str) -> str:
+    direct = result.get(side)
+    if direct:
+        return str(direct)
+    ctx = result.get("ctx") or {}
+    if ctx.get(side):
+        return str(ctx[side])
+    game = result.get("game") or {}
+    teams = game.get("teams") or {}
+    team = ((teams.get(side) or {}).get("team") or {})
+    name = team.get("name")
+    if name:
+        return str(name)
+    raise ValueError(f"missing {side} team")
+
+
+def _identity(result: dict[str, Any]) -> tuple[str, str, str]:
+    game = result.get("game") or {}
+    game_pk = result.get("game_pk") or game.get("gamePk")
+    game_date = result.get("game_date") or game.get("gameDate")
+    analyzed_at = result.get("analyzed_at") or result.get("as_of")
+    if not game_pk:
+        raise ValueError("missing game_pk")
+    if not game_date:
+        raise ValueError("missing game_date")
+    if not analyzed_at:
+        raise ValueError("missing analyzed_at")
+    return str(game_pk), str(game_date), str(analyzed_at)
+
+
+def predict_from_result(
+    result: dict[str, Any],
+    *,
+    total_line: float,
+    feature_row: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Build one production V14 prediction from the current pregame state.
+
+    The compatibility input may still have the legacy V13-shaped schema while
+    acquisition is being migrated. V14 never consumes legacy probabilities,
+    selectors, staking decisions or bookmaker probabilities as model features.
+    """
+    game_pk, game_date, analyzed_at = _identity(result)
+    home, away = _team_name(result, "home"), _team_name(result, "away")
+
+    base = reproduce_from_champion_result(result)
+    parameters = parameters_from_champion_result(result)
+
+    selected = None
+    if feature_row_is_usable(feature_row, game_pk=game_pk, as_of=analyzed_at):
+        selected = adapt_feature_row(feature_row)
+
+    overlay = context_overlay_from_feature_row(
+        selected,
+        float(base["home_mu"]),
+        float(base["away_mu"]),
+    )
+
+    projection = RunProjection(
+        game_pk=game_pk,
+        game_date=game_date,
+        analyzed_at=analyzed_at,
+        home=home,
+        away=away,
+        home_mu=float(overlay["home_mu"]),
+        away_mu=float(overlay["away_mu"]),
+        total_line=float(total_line),
+        phase=str(result.get("phase") or "FINAL"),
+        dispersion=float(parameters["dispersion"]),
+        environment_sigma=float(parameters["environment_sigma"]),
+        extra_innings_home_probability=float(parameters["extra_innings_home_probability"]),
+        source_generation=str(result.get("model_generation") or "legacy-input"),
+    ).validated()
+
+    surface, tail_mass = probability_surface(projection)
+    output = prediction_payload(projection, surface, tail_mass=tail_mass)
+    output["base_run_projection"] = {
+        "home_mu": float(base["home_mu"]),
+        "away_mu": float(base["away_mu"]),
+        "active_layers": list(base.get("active_layers") or []),
+    }
+    output["context_adjustment"] = {
+        "eligible": bool(overlay.get("eligible")),
+        "home_delta": float(overlay.get("home_delta") or 0.0),
+        "away_delta": float(overlay.get("away_delta") or 0.0),
+        "feature_as_of": (feature_row or {}).get("as_of") if selected is not None else None,
+    }
+    return output
