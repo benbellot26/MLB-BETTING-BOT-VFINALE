@@ -61,6 +61,23 @@ jobs:
             --destination runtime/v14/native_candidate.json \
             --parity-output runtime/v14/native_legacy_parity.json
 
+      - name: Assess native parity thresholds
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from v14.parity_gate import assess_parity
+
+          candidate = json.loads(Path('runtime/v14/native_candidate.json').read_text(encoding='utf-8'))
+          parity = json.loads(Path('runtime/v14/native_legacy_parity.json').read_text(encoding='utf-8'))
+          assessment = assess_parity(candidate, parity)
+          Path('runtime/v14/native_parity_assessment.json').write_text(
+              json.dumps(assessment, ensure_ascii=False, indent=2, sort_keys=True),
+              encoding='utf-8',
+          )
+          print('PULSAR_V14_NATIVE_PARITY_ASSESSMENT', json.dumps(assessment, sort_keys=True))
+          PY
+
       - name: Validate evidence is non-publishing
         run: |
           python - <<'PY'
@@ -69,6 +86,7 @@ jobs:
 
           candidate = json.loads(Path('runtime/v14/native_candidate.json').read_text(encoding='utf-8'))
           parity = json.loads(Path('runtime/v14/native_legacy_parity.json').read_text(encoding='utf-8'))
+          assessment = json.loads(Path('runtime/v14/native_parity_assessment.json').read_text(encoding='utf-8'))
           if candidate.get('role') != 'CANDIDATE_NON_PUBLISHING':
               raise SystemExit('native candidate unexpectedly publishable')
           if candidate.get('legacy_acquisition_adapter') is not False:
@@ -77,11 +95,14 @@ jobs:
               raise SystemExit('market probability leaked into native model features')
           if parity.get('cutover_authorized') is not False:
               raise SystemExit('parity evidence must never auto-authorize cutover')
+          if assessment.get('publication_authorized') is not False or assessment.get('cutover_authorized') is not False:
+              raise SystemExit('parity assessment must never authorize publication')
           print('PULSAR_V14_NATIVE_PARITY_EVIDENCE', json.dumps({
               'coverage': candidate.get('coverage'),
               'comparable_games': parity.get('comparable_games'),
               'mean_abs_structural_run_delta': parity.get('mean_abs_structural_run_delta'),
               'max_abs_structural_run_delta': parity.get('max_abs_structural_run_delta'),
+              'assessment_status': assessment.get('status'),
           }, sort_keys=True))
           PY
 
@@ -92,5 +113,6 @@ jobs:
           path: |
             runtime/v14/native_candidate.json
             runtime/v14/native_legacy_parity.json
+            runtime/v14/native_parity_assessment.json
           if-no-files-found: error
           retention-days: 90
