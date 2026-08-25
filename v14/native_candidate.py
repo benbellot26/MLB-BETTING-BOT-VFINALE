@@ -7,7 +7,6 @@ It acquires MLB/Odds data directly, builds native structural inputs and prices
 the selected display total with V14. No V11/V13 object is required.
 """
 
-from dataclasses import asdict
 from datetime import datetime, timezone
 import json
 from pathlib import Path
@@ -17,6 +16,7 @@ from . import MODEL_GENERATION, VERSION
 from .acquisition import PregameSnapshot, collect_pregame
 from .market_lines import choose_total_line
 from .mlb_inputs import NativeGameInputs, build_game_inputs
+from .phase import infer_phase
 from .pipeline import predict_from_structural
 
 NATIVE_CANDIDATE = Path("runtime/v14/native_candidate.json")
@@ -35,6 +35,11 @@ def build_native_result(
 ) -> dict[str, Any]:
     native = input_builder(game, target_date=target_date, analyzed_at=analyzed_at)
     line_meta = choose_total_line(event)
+    phase = infer_phase(
+        analyzed_at=analyzed_at,
+        game_date=native.structural.game_date,
+        context=native.context,
+    )
     prediction = predict_from_structural(
         native.structural,
         analyzed_at=analyzed_at,
@@ -42,13 +47,13 @@ def build_native_result(
         away=native.away,
         total_line=float(line_meta["line"]),
         feature_row=native.feature_row,
-        phase="FINAL",
+        phase=phase,
     )
     return {
         "game_pk": native.structural.game_pk,
         "game_date": native.structural.game_date,
         "analyzed_at": analyzed_at,
-        "phase": "FINAL",
+        "phase": phase,
         "home": native.home,
         "away": native.away,
         "ctx": native.context,
