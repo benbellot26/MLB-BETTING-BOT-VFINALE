@@ -15,7 +15,6 @@ from .distribution import probability_surface
 from .feature_row import feature_row_is_usable
 from .model import RunProjection, prediction_payload
 from .run_stack import StructuralRunInput, apply_current_champion, reproduce_from_champion_result
-from .v13_context_adapter import adapt_feature_row
 
 
 def _team_name(result: dict[str, Any], side: str) -> str:
@@ -50,7 +49,7 @@ def _identity(result: dict[str, Any]) -> tuple[str, str, str]:
 
 def _selected_feature_row(feature_row: dict[str, Any] | None, *, game_pk: str, analyzed_at: str) -> dict[str, Any] | None:
     if feature_row_is_usable(feature_row, game_pk=game_pk, as_of=analyzed_at):
-        return adapt_feature_row(feature_row)
+        return feature_row
     return None
 
 
@@ -122,12 +121,7 @@ def predict_from_structural(
     environment_sigma: float = CHAMPION_ENVIRONMENT_SIGMA,
     extra_innings_home_probability: float | None = None,
 ) -> dict[str, Any]:
-    """Build a V14 prediction from a native structural input.
-
-    This is the target production boundary: no V11/V13 result object is needed.
-    Bookmaker prices may determine which market line is displayed, but they are
-    never consumed by the run projection or probability model.
-    """
+    """Build a V14 prediction from a native structural input."""
     s = structural.validated()
     extra = extra_innings_home_probability
     if extra is None:
@@ -156,11 +150,7 @@ def predict_from_result(
     total_line: float,
     feature_row: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Compatibility bridge from the legacy-shaped acquisition payload.
-
-    This path remains only while the native V14 structural data assembler is
-    replacing the final V13 acquisition dependency.
-    """
+    """Historical compatibility bridge used only by rollback/regression tests."""
     game_pk, game_date, analyzed_at = _identity(result)
     home, away = _team_name(result, "home"), _team_name(result, "away")
     base = reproduce_from_champion_result(result)
