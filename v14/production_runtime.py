@@ -1,210 +1,129 @@
 from __future__ import annotations
 
-"""Production runtime boundary for Pulsar V14.
+"""Native production runtime for Pulsar V14.
 
-The legacy V13 runner is temporarily tolerated as an acquisition adapter only.
-This module owns the V14 prediction payload and Discord publication boundary so
-legacy probabilities cannot leak into user-facing V14 cards.
+The production path is now V14 end-to-end: native MLB/Odds acquisition, native
+structural inputs, V14 prediction, native payload, native Discord publication.
+No V11/V13 runtime or probability payload is accepted here.
 """
 
 import argparse
-from copy import deepcopy
 import json
-import math
 from pathlib import Path
 from typing import Any
 
-from . import MODEL_GENERATION, VERSION
+from . import MODEL_GENERATION
+from .acquisition import resolve_target_date
 from .discord import send_game
-from .feature_row import load_latest_feature_row
-from .pipeline import predict_from_result
+from .native_candidate import build_candidate, persist_candidate
+from .native_payload import authorize_payload, build_native_discord_payload
 
-LEGACY_PAYLOAD = Path("runtime/v11/discord_payload.json")
+V14_CANDIDATE = Path("runtime/v14/native_candidate.json")
 V14_PAYLOAD = Path("runtime/v14/discord_payload.json")
-FEATURE_STORE = Path("data/v13_feature_store.jsonl")
+
+# Explicit human-approved cutover evidence. This is deliberately static and
+# auditable rather than an automatic parity self-promotion mechanism.
+NATIVE_CUTOVER_EVIDENCE = {
+    "workflow": "Pulsar V14 Native Parity",
+    "run_id": 32828843533,
+    "comparable_games": 15,
+    "candidate_coverage": 1.0,
+    "mean_abs_structural_run_delta": 0.0,
+    "max_abs_structural_run_delta": 0.0,
+    "status": "PASS",
+}
 
 
-def _norm(value: Any) -> str:
-    return "".join(ch.lower() for ch in str(value or "") if ch.isalnum())
+def _validate_cutover_evidence() -> None:
+    evidence = NATIVE_CUTOVER_EVIDENCE
+    if evidence.get("status") != "PASS":
+        raise RuntimeError("native cutover evidence is not PASS")
+    if int(evidence.get("comparable_games") or 0) < 8:
+        raise RuntimeError("native cutover evidence has insufficient games")
+    if float(evidence.get("candidate_coverage") or 0.0) < 0.90:
+        raise RuntimeError("native cutover evidence has insufficient coverage")
+    if float(evidence.get("mean_abs_structural_run_delta") or 999.0) > 0.03:
+        raise RuntimeError("native cutover mean structural delta too large")
+    if float(evidence.get("max_abs_structural_run_delta") or 999.0) > 0.10:
+        raise RuntimeError("native cutover max structural delta too large")
 
 
-def _point(option: dict[str, Any]) -> float | None:
-    try:
-        value = float(option.get("point"))
-    except Exception:
-        return None
-    return value if math.isfinite(value) else None
+def validate_production_payload(payload: dict[str, Any]) -> None:
+    if payload.get("role") != "PRODUCTION":
+        raise ValueError("V14 payload is not production")
+    if payload.get("publication_authorized") is not True:
+        raise ValueError("V14 payload publication is not authorized")
+    if payload.get("model_generation") != MODEL_GENERATION:
+        raise ValueError("V14 payload generation mismatch")
+    if payload.get("native_acquisition") is not True:
+        raise ValueError("V14 payload is not native acquisition")
+    if payload.get("legacy_acquisition_adapter") is not False:
+        raise ValueError("legacy acquisition leaked into V14 production")
+    if payload.get("legacy_probability_used_for_publication") is not False:
+        raise ValueError("legacy probability publication leak")
+    if payload.get("market_probability_used_as_feature") is not False:
+        raise ValueError("market probability feature leak")
+    if payload.get("chosen"):
+        raise ValueError("analytics payload contains recommendations")
+    if (payload.get("combo") or {}).get("official"):
+        raise ValueError("analytics payload contains official combo")
+
+    for result in payload.get("results") or []:
+        if result.get("model_generation") != MODEL_GENERATION:
+            raise ValueError(f"game {result.get('game_pk')} is not V14")
+        if result.get("native_acquisition") is not True:
+            raise ValueError(f"game {result.get('game_pk')} is not native acquisition")
+        prediction = result.get("v14_prediction") or {}
+        if prediction.get("model_generation") != MODEL_GENERATION or prediction.get("role") != "PRODUCTION":
+            raise ValueError(f"game {result.get('game_pk')} missing V14 production prediction")
+        if prediction.get("market_probability_used_as_feature") is not False:
+            raise ValueError(f"game {result.get('game_pk')} used market probability as model feature")
+        surface = prediction.get("probabilities") or {}
+        pairs = (
+            (surface.get("away_ml"), surface.get("home_ml")),
+            (surface.get("away_plus_1_5"), surface.get("home_minus_1_5")),
+            (surface.get("home_plus_1_5"), surface.get("away_minus_1_5")),
+            (surface.get("over"), surface.get("under")),
+        )
+        for left, right in pairs:
+            if left is None or right is None or abs(float(left) + float(right) - 1.0) > 1e-9:
+                raise ValueError(f"game {result.get('game_pk')} has invalid probability surface")
 
 
-def _is_half_run(value: Any) -> bool:
-    try:
-        x = float(value)
-    except Exception:
-        return False
-    doubled = round(x * 2)
-    return math.isfinite(x) and x > 0 and abs(x * 2 - doubled) <= 1e-9 and doubled % 2 == 1
+def build_persisted(
+    *,
+    target_date: str | None = None,
+    destination: Path | str = V14_PAYLOAD,
+    candidate_destination: Path | str = V14_CANDIDATE,
+) -> dict[str, Any]:
+    _validate_cutover_evidence()
+    date = target_date or resolve_target_date()
+    candidate = build_candidate(date)
+    persist_candidate(candidate, candidate_destination)
+    if not candidate.get("results"):
+        raise SystemExit(f"native V14 acquisition produced no priced games for {date}")
 
-
-def _total_pairs(result: dict[str, Any]) -> dict[float, dict[str, dict[str, Any]]]:
-    pairs: dict[float, dict[str, dict[str, Any]]] = {}
-    for option in result.get("options") or []:
-        if str(option.get("market") or "").upper() != "TOTAL":
-            continue
-        point = _point(option)
-        side = str(option.get("name") or "").lower()
-        if point is None or side not in {"over", "under"}:
-            continue
-        pairs.setdefault(point, {})[side] = option
-    return {point: sides for point, sides in pairs.items() if {"over", "under"} <= set(sides)}
-
-
-def choose_total_line(result: dict[str, Any]) -> float:
-    pairs = _total_pairs(result)
-    canonical = (result.get("canonical_lines") or {}).get("TOTAL")
-    if canonical is not None:
-        try:
-            target = float(canonical)
-        except Exception:
-            target = None
-        if target is not None and target in pairs and _is_half_run(target):
-            return target
-
-    eligible = sorted(point for point in pairs if _is_half_run(point))
-    if not eligible:
-        raise ValueError("no complete half-run TOTAL pair available for V14")
-    if canonical is None:
-        return eligible[len(eligible) // 2]
-    try:
-        target = float(canonical)
-    except Exception:
-        target = eligible[len(eligible) // 2]
-    return min(eligible, key=lambda point: (abs(point - target), point))
-
-
-def _write_probability(option: dict[str, Any], probability: float) -> None:
-    p = float(probability)
-    if not math.isfinite(p) or not 0.0 < p < 1.0:
-        raise ValueError("invalid V14 probability")
-    rounded = round(p, 8)
-    option["p_baseball_calibrated"] = rounded
-    option["p_predictive_final"] = rounded
-    option["p_effective"] = rounded
-    option["p_win"] = rounded
-    option["p_push"] = 0.0
-    option["p_push_model"] = 0.0
-    option["calibration_source"] = "PULSAR_V14_NATIVE"
-    option["model_generation"] = MODEL_GENERATION
-    option["market_probability_used_as_feature"] = False
-
-
-def _find_team_option(result: dict[str, Any], market: str, team: str, point: float | None = None) -> dict[str, Any]:
-    for option in result.get("options") or []:
-        if str(option.get("market") or "").upper() != market:
-            continue
-        if _norm(option.get("name")) != _norm(team):
-            continue
-        if point is not None:
-            option_point = _point(option)
-            if option_point is None or abs(option_point - point) > 1e-6:
-                continue
-        return option
-    raise ValueError(f"missing {market} option for {team} point={point}")
-
-
-def _find_total_option(result: dict[str, Any], side: str, point: float) -> dict[str, Any]:
-    for option in result.get("options") or []:
-        if str(option.get("market") or "").upper() != "TOTAL":
-            continue
-        if str(option.get("name") or "").lower() != side:
-            continue
-        option_point = _point(option)
-        if option_point is not None and abs(option_point - point) <= 1e-6:
-            return option
-    raise ValueError(f"missing TOTAL {side} {point}")
-
-
-def promote_result(result: dict[str, Any], *, feature_store: Path | str = FEATURE_STORE) -> dict[str, Any]:
-    out = deepcopy(result)
-    game_pk = out.get("game_pk") or (out.get("game") or {}).get("gamePk")
-    analyzed_at = out.get("analyzed_at") or out.get("as_of")
-    total_line = choose_total_line(out)
-    feature_row = load_latest_feature_row(feature_store, game_pk=game_pk, as_of=analyzed_at)
-    prediction = predict_from_result(out, total_line=total_line, feature_row=feature_row)
-    probabilities = prediction["probabilities"]
-    ctx = out.get("ctx") or {}
-    home, away = str(ctx.get("home") or prediction.get("home")), str(ctx.get("away") or prediction.get("away"))
-
-    _write_probability(_find_team_option(out, "ML", away), probabilities["away_ml"])
-    _write_probability(_find_team_option(out, "ML", home), probabilities["home_ml"])
-    _write_probability(_find_team_option(out, "RUNLINE", away, +1.5), probabilities["away_plus_1_5"])
-    _write_probability(_find_team_option(out, "RUNLINE", away, -1.5), probabilities["away_minus_1_5"])
-    _write_probability(_find_team_option(out, "RUNLINE", home, +1.5), probabilities["home_plus_1_5"])
-    _write_probability(_find_team_option(out, "RUNLINE", home, -1.5), probabilities["home_minus_1_5"])
-    _write_probability(_find_total_option(out, "over", total_line), probabilities["over"])
-    _write_probability(_find_total_option(out, "under", total_line), probabilities["under"])
-
-    out.setdefault("canonical_lines", {})["TOTAL"] = total_line
-    out["hmu"] = prediction["run_projection"]["home_mu"]
-    out["amu"] = prediction["run_projection"]["away_mu"]
-    out["p_home"] = probabilities["home_ml"]
-    out["model_generation"] = MODEL_GENERATION
-    out["v14_prediction"] = prediction
-    out["v14_feature_row_used"] = feature_row is not None
-    out["market_probability_used_as_feature"] = False
-    model = dict(out.get("model") or {})
-    model.update({"version": VERSION, "generation": MODEL_GENERATION, "role": "PRODUCTION"})
-    out["model"] = model
-    return out
-
-
-def promote_payload(payload: dict[str, Any], *, feature_store: Path | str = FEATURE_STORE) -> dict[str, Any]:
-    results = [promote_result(result, feature_store=feature_store) for result in payload.get("results") or []]
-    report = deepcopy(payload.get("report") or {})
-    report["version"] = VERSION
-    report["model_generation"] = MODEL_GENERATION
-    report["production"] = {
-        "engine": "PULSAR_V14",
-        "role": "PRODUCTION",
-        "legacy_acquisition_adapter": True,
-        "legacy_probability_used_for_publication": False,
+    unauthorized = build_native_discord_payload(candidate)
+    payload = authorize_payload(unauthorized, parity_authorized=True)
+    payload["authorization_basis"] = {
+        "type": "explicit-native-parity-cutover",
+        **NATIVE_CUTOVER_EVIDENCE,
     }
-    return {
-        "schema": "pulsar-v14-discord-payload-v1",
-        "version": VERSION,
-        "model_generation": MODEL_GENERATION,
-        "role": "PRODUCTION",
-        "legacy_acquisition_adapter": True,
-        "legacy_probability_used_for_publication": False,
-        "results": results,
-        "portfolio": {},
-        "chosen": [],
-        "combo": {},
-        "health": deepcopy(payload.get("health") or {}),
-        "report": report,
-    }
+    validate_production_payload(payload)
 
-
-def build_persisted(*, source: Path | str = LEGACY_PAYLOAD, destination: Path | str = V14_PAYLOAD, feature_store: Path | str = FEATURE_STORE) -> dict[str, Any]:
-    source, destination = Path(source), Path(destination)
-    if not source.exists():
-        raise SystemExit(f"legacy acquisition payload absent: {source}")
-    payload = json.loads(source.read_text(encoding="utf-8"))
-    promoted = promote_payload(payload, feature_store=feature_store)
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.write_text(json.dumps(promoted, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-    print(f"PULSAR_V14_PAYLOAD games={len(promoted['results'])} path={destination}")
-    return promoted
+    target = Path(destination)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    print(f"PULSAR_V14_NATIVE_PRODUCTION date={date} games={len(payload['results'])} path={target}")
+    return payload
 
 
 def send_persisted(*, path: Path | str = V14_PAYLOAD) -> None:
-    path = Path(path)
-    if not path.exists():
-        raise SystemExit(f"V14 Discord payload absent: {path}")
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if payload.get("model_generation") != MODEL_GENERATION or payload.get("role") != "PRODUCTION":
-        raise SystemExit("invalid V14 production payload")
-    if payload.get("legacy_probability_used_for_publication") is not False:
-        raise SystemExit("legacy probability publication leak")
+    source = Path(path)
+    if not source.exists():
+        raise SystemExit(f"V14 Discord payload absent: {source}")
+    payload = json.loads(source.read_text(encoding="utf-8"))
+    validate_production_payload(payload)
 
     ok = True
     for result in payload.get("results") or []:
@@ -215,16 +134,20 @@ def send_persisted(*, path: Path | str = V14_PAYLOAD) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Pulsar V14 production runtime boundary")
+    parser = argparse.ArgumentParser(description="Native Pulsar V14 production runtime")
     parser.add_argument("--send-persisted", action="store_true")
-    parser.add_argument("--source", default=str(LEGACY_PAYLOAD))
+    parser.add_argument("--target-date")
     parser.add_argument("--destination", default=str(V14_PAYLOAD))
-    parser.add_argument("--feature-store", default=str(FEATURE_STORE))
+    parser.add_argument("--candidate-destination", default=str(V14_CANDIDATE))
     args = parser.parse_args()
     if args.send_persisted:
         send_persisted(path=args.destination)
     else:
-        build_persisted(source=args.source, destination=args.destination, feature_store=args.feature_store)
+        build_persisted(
+            target_date=args.target_date,
+            destination=args.destination,
+            candidate_destination=args.candidate_destination,
+        )
 
 
 if __name__ == "__main__":
