@@ -46,7 +46,7 @@ class V1352AuditHardeningTests(unittest.TestCase):
         self.assertEqual(opt["posterior_weight_v13"],1.0)
         self.assertFalse(opt["posterior_allowed_for_edge"])
 
-    def test_production_is_manual_only_and_native_v14_publishes(self):
+    def test_production_is_manual_only_and_research_version_check_is_fingerprint_based(self):
         prod=Path(".github/workflows/mlb-bot.yml").read_text(encoding="utf-8")
         research=Path(".github/workflows/v12-3-research-collector.yml").read_text(encoding="utf-8")
         self.assertIn("workflow_dispatch:",prod)
