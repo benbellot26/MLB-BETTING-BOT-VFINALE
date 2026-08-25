@@ -96,6 +96,21 @@ jobs:
           # V13 is temporary acquisition plumbing only; its probabilities are not published.
           python -m v11.v13_entry
 
+      - name: Build non-publishing native V14 parity candidate
+        continue-on-error: true
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: |
+          TARGET_DATE=$(python - <<'PY'
+          from v11 import core
+          print(core.TARGET_DATE)
+          PY
+          )
+          python -m v14.native_candidate "$TARGET_DATE" \
+            --legacy-payload runtime/v11/discord_payload.json \
+            --destination runtime/v14/native_candidate.json \
+            --parity-output runtime/v14/native_legacy_parity.json
+
       - name: Build Pulsar V14 production payload
         run: python -m v14.production_runtime
 
@@ -162,22 +177,7 @@ jobs:
       - name: Publish Pulsar V14 Discord analytics
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          V13_DISCORD_FINAL_ONLY: '0'
-          V13_FORCE_DISCORD_RESEND: '1'
         run: python -m v14.production_runtime --send-persisted
-
-      - name: Persist Discord delivery checkpoint
-        if: always()
-        run: |
-          git config user.name 'Pulsar V14'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-          [ -f data/v11_discord_delivery.json ] && git add -f data/v11_discord_delivery.json
-          [ -f data/v13_discord_delivery.json ] && git add -f data/v13_discord_delivery.json
-          if ! git diff --cached --quiet; then
-            git commit -m 'data: persist Pulsar Discord checkpoint [skip ci]'
-            git pull --rebase --autostash origin "$GITHUB_REF_NAME"
-            git push origin "HEAD:$GITHUB_REF_NAME"
-          fi
 
       - name: Prepare point-in-time archive
         if: always()
@@ -196,5 +196,7 @@ jobs:
             runtime/v11/snapshots/
             runtime/v11/source_replays/
             runtime/v14/discord_payload.json
+            runtime/v14/native_candidate.json
+            runtime/v14/native_legacy_parity.json
           if-no-files-found: ignore
           retention-days: 90
