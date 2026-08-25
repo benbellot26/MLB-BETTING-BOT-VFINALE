@@ -11,7 +11,7 @@
     "nll_gain": -0.034329476782666735,
     "team_observations": 66
   },
-  "dataset_content_sha256": "d2e159528ee5ee59389fe87a5784c2dfecf46c841afefa10eee72bcec083bae9",
+  "dataset_content_sha256": "202c8f1ec148d5b8e24008d0f012f8083e5815bab7dbfb09684415be5ab9edab",
   "dispersion": 3.5,
   "environment_sigma": 0.08,
   "evidence_boundary": "Applies only to score-distribution dispersion in FINAL phase. Historical evidence cannot masquerade as native V13 evidence.",
@@ -64,10 +64,10 @@
     "824800",
     "824801"
   ],
-  "full_history_nb_nll": 2.454103599084184,
+  "full_history_nb_nll": 2.4541404123141493,
   "generation_gate": true,
   "historical_candidate_active": true,
-  "historical_games": 13140,
+  "historical_games": 13150,
   "historical_odds_used": false,
   "historical_seasons": [
     2021,
@@ -94,9 +94,9 @@
   "schema": "v13-distribution-prior-v2",
   "selection_rule": "fit the single NB dispersion on strictly prior seasons; no market feature or target-season outcome is available during fitting",
   "source": "2021-2026 leakage-separated free reconstructed team history",
-  "source_games": 14112,
-  "test_games": 1779,
-  "test_nll_gain": 0.03676369882624719,
+  "source_games": 14122,
+  "test_games": 1789,
+  "test_nll_gain": 0.03693519793517863,
   "transfer_caveat": "Reconstructed history establishes a distribution candidate only; production activation still requires independent current-generation FINAL transfer.",
   "validation_games": 2276,
   "validation_nll_gain": 0.039381066360032246,
@@ -171,12 +171,12 @@
       },
       {
         "baseline_dispersion": 7.5,
-        "baseline_nb_nll": 2.504586048796556,
-        "candidate_nb_nll": 2.4678223499703087,
+        "baseline_nb_nll": 2.504955613673015,
+        "candidate_nb_nll": 2.4680204157378363,
         "fitted_dispersion": 3.55,
-        "nll_gain": 0.03676369882624719,
+        "nll_gain": 0.03693519793517863,
         "passes": true,
-        "test_games": 1779,
+        "test_games": 1789,
         "test_season": 2026,
         "train_games": 11361,
         "train_nb_nll": 2.451967312610153,
@@ -204,5 +204,5 @@
     ],
     "stable": true
   },
-  "warm_games": 13140
+  "warm_games": 13150
 }
