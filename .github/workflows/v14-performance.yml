@@ -1,0 +1,46 @@
+name: Pulsar V14 Performance
+
+on:
+  schedule:
+    - cron: '30 9 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mlb-betting-bot-state
+  cancel-in-progress: false
+
+jobs:
+  settle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate V14 tracking
+        run: |
+          python -m py_compile v14/*.py
+          python -m unittest tests.test_v14_tracking
+      - name: Settle finished games and rebuild performance
+        run: |
+          python -m v14.tracking settle \
+            --predictions data/v14_predictions.jsonl \
+            --report data/v14_performance.json
+      - name: Persist V14 settled performance
+        run: |
+          git config user.name 'Pulsar V14'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          [ -f data/v14_predictions.jsonl ] && git add -f data/v14_predictions.jsonl
+          [ -f data/v14_performance.json ] && git add -f data/v14_performance.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'data: settle V14 predictions and performance [skip ci]'
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
