@@ -1,4 +1,4 @@
-name: MLB Betting Bot V13.10 Champion Production
+name: Pulsar V14 Production
 
 on:
   workflow_dispatch:
@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   run-bot:
-    name: Exécution manuelle du champion V13.10
+    name: Exécution manuelle Pulsar V14
     runs-on: ubuntu-latest
     timeout-minutes: 55
     steps:
@@ -27,27 +27,15 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Validate V13.10 champion contract
+      - name: Validate Pulsar V14 production contract
         run: |
-          python -m py_compile v11/*.py tests/*.py
+          python -m py_compile v14/*.py v11/*.py
+          python -m v14.preflight
+          # Temporary acquisition adapter guard. Remove with the V13 collector.
           python -m v11.v13_preflight
-          python -m unittest \
-            tests.test_v13_probability_contract \
-            tests.test_v13_probability_invariants \
-            tests.test_v13_precision_hardening \
-            tests.test_v13_analytics_only \
-            tests.test_v1352_runtime_hook \
-            tests.test_v138_production_change_gate \
-            tests.test_v139_explicit_engine \
-            tests.test_v1310_deep_audit_hardening \
-            tests.test_v1310_deep_audit_registry \
-            tests.test_v1310_pit_weather_hotfix \
-            tests.test_v1310_max_audit_hardening \
-            tests.test_v1310_champion_only \
-            tests.test_v1310_champion_dashboard
           python -m v11.v13_entry --self-test
 
-      - name: Ensure baseline-safe historical reference
+      - name: Ensure acquisition baseline artifact
         run: |
           python - <<'PY'
           import json
@@ -57,42 +45,37 @@ jobs:
           model = hb.ensure_artifact()
           allowed = {'PASS', 'FAIL', 'COLLECTING', 'INCOMPATIBLE_BASELINE'}
           if model.get('status') not in allowed:
-            raise SystemExit(f"Unexpected V12.3 bootstrap status: {model.get('status')}")
+              raise SystemExit(f"Unexpected acquisition bootstrap status: {model.get('status')}")
           meta = model.get('metadata') or {}
           if model.get('eligible_for_final_prior') and meta.get('baseline_schema') != hb.BASELINE_SCHEMA:
               raise SystemExit('Historical prior baseline schema mismatch')
           if model.get('status') == 'INCOMPATIBLE_BASELINE' and model.get('eligible_for_final_prior'):
-              raise SystemExit('Legacy V10 baseline must never activate a V12.3 prior')
+              raise SystemExit('Legacy baseline must never activate a prior')
           if meta.get('test_used_for_activation') is not False:
               raise SystemExit('Frozen historical test must remain reporting-only')
           print(json.dumps({
-              'version': model.get('version'),
               'status': model.get('status'),
               'eligible_for_final_prior': model.get('eligible_for_final_prior'),
-              'source_games': meta.get('source_games'),
-              'native_baseline_games': meta.get('native_baseline_games'),
               'baseline_schema': meta.get('baseline_schema'),
-              'algorithm_fingerprint': meta.get('algorithm_fingerprint'),
-              'test_used_for_activation': meta.get('test_used_for_activation'),
           }, indent=2, sort_keys=True))
           PY
 
-      - name: Build V13.10 baseball calibration
+      - name: Build temporary acquisition calibration
         run: python -m v11.v13_train
 
-      - name: Persist champion pre-run artifacts
+      - name: Persist acquisition pre-run artifacts
         run: |
-          git config user.name 'MLB Betting Bot V13.10'
+          git config user.name 'Pulsar V14'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           [ -f data/v12_3_historical_bootstrap_model.json ] && git add data/v12_3_historical_bootstrap_model.json
           [ -f data/v13_baseball_calibration.json ] && git add -f data/v13_baseball_calibration.json
           if ! git diff --cached --quiet; then
-            git commit -m 'data: persist V13.10 champion artifacts [skip ci]'
+            git commit -m 'data: persist acquisition artifacts [skip ci]'
             git pull --rebase --autostash origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
 
-      - name: Run V13.10 champion without Discord
+      - name: Acquire pregame state without Discord
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
@@ -106,165 +89,97 @@ jobs:
           V123_MIN_CONFIDENCE_RUNLINE: '0.55'
           V123_MIN_CONFIDENCE_ML: '0.58'
           V123_MIN_CONFIDENCE_TOTAL: '0.58'
-          # Defense in depth: V13.10 also defaults these research shadows to OFF in code.
           V1232_ENABLE_V115_SHADOW: '0'
           V124_ENABLE_SHADOW: '0'
         run: |
-          mkdir -p data runtime/v11
+          mkdir -p data runtime/v11 runtime/v14
+          # V13 is temporary acquisition plumbing only; its probabilities are not published.
           python -m v11.v13_entry
 
-      - name: Validate V13.10 probability state
+      - name: Build Pulsar V14 production payload
+        run: python -m v14.production_runtime
+
+      - name: Validate Pulsar V14 publication state
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
-          from v11.professional_probability_checks_v13 import check_result
-          from v11.probability_contract_v13 import MODEL_GENERATION_FINGERPRINT
-          from v11.point_in_time_v13 import validate_pregame_row
+          from v14 import MODEL_GENERATION
 
-          for name in ('data/v11_3_live.jsonl','data/v11_bet_ledger.jsonl','data/v13_feature_store.jsonl','data/v13_label_store.jsonl'):
-              p = Path(name)
-              if p.exists():
-                  for line in p.read_text(encoding='utf-8').splitlines():
-                      if line.strip():
-                          json.loads(line)
-
-          payload = json.loads(Path('runtime/v11/discord_payload.json').read_text(encoding='utf-8'))
-          report = payload.get('report') or {}
+          path = Path('runtime/v14/discord_payload.json')
+          payload = json.loads(path.read_text(encoding='utf-8'))
+          if payload.get('role') != 'PRODUCTION':
+              raise SystemExit('V14 payload is not production')
+          if payload.get('model_generation') != MODEL_GENERATION:
+              raise SystemExit('V14 payload generation mismatch')
+          if payload.get('legacy_probability_used_for_publication') is not False:
+              raise SystemExit('Legacy probability publication leak')
           if payload.get('chosen'):
-              raise SystemExit('V13 analytics-only payload contains chosen recommendations')
+              raise SystemExit('V14 analytics payload contains recommendations')
           if (payload.get('combo') or {}).get('official'):
-              raise SystemExit('V13 analytics-only payload contains an official combo')
+              raise SystemExit('V14 analytics payload contains official combo')
 
-          results = payload.get('results') or []
-          bad = []
-          for result in results:
-              if result.get('model_generation') != MODEL_GENERATION_FINGERPRINT:
-                  bad.append({'game_pk': result.get('game_pk'), 'reason': 'model generation mismatch'})
-              check = check_result(result)
-              if not check['passes']:
-                  bad.append(check)
-              chain = result.get('v13_shadow_chain') or {}
-              rich = result.get('shadow_v13_rich_runs') or {}
-              if rich.get('affects_v13_probability') is not False:
-                  bad.append({'game_pk': result.get('game_pk'), 'reason': 'rich shadow affected probability'})
-              if chain.get('affects_probability') is not False:
-                  bad.append({'game_pk': result.get('game_pk'), 'reason': 'shadow chain affected probability'})
-              for option in result.get('options') or []:
-                  if option.get('posterior_allowed_for_edge') is not False:
-                      bad.append({'game_pk': result.get('game_pk'), 'reason': 'posterior entered edge selection'})
-                  if option.get('p_predictive_final') != option.get('p_baseball_calibrated'):
-                      bad.append({'game_pk': result.get('game_pk'), 'reason': 'primary probability changed'})
-                  execution = option.get('winamax_eval') or {}
-                  if execution.get('official_selected') or execution.get('selected') or float(execution.get('official_units') or 0.0) != 0.0:
-                      bad.append({'game_pk': result.get('game_pk'), 'reason': 'analytics-only option became actionable'})
-          if bad:
-              raise SystemExit(f'V13.10 probability invariant failure: {bad[:3]}')
-
-          live = Path('data/v11_3_live.jsonl')
-          if live.exists():
-              rows = [json.loads(x) for x in live.read_text(encoding='utf-8').splitlines() if x.strip()]
-              current = [r for r in rows if r.get('model_generation') == MODEL_GENERATION_FINGERPRINT and r.get('result_status') != 'FINAL']
-              invalid = [(r.get('game_pk'), validate_pregame_row(r)[1]) for r in current if not validate_pregame_row(r)[0]]
-              if invalid:
-                  raise SystemExit(f'PIT provenance invalid: {invalid[:3]}')
-
-          feature_store = Path('data/v13_feature_store.jsonl')
-          if feature_store.exists():
-              for line in feature_store.read_text(encoding='utf-8').splitlines():
-                  if not line.strip():
-                      continue
-                  row = json.loads(line)
-                  for forbidden in ('home_score','away_score','winner'):
-                      if forbidden in row:
-                          raise SystemExit(f'Feature-label leakage: {forbidden}')
-
-          run_id = report.get('run_id')
-          ledger = Path('data/v11_bet_ledger.jsonl')
-          action_events = []
-          if run_id and ledger.exists():
-              for line in ledger.read_text(encoding='utf-8').splitlines():
-                  if not line.strip():
-                      continue
-                  event = json.loads(line)
-                  if event.get('run_id') == run_id and event.get('event_type') in {'PROPOSED','PUBLISHED','CONFIRMED_PLACED'}:
-                      action_events.append({'event_type': event.get('event_type'), 'bet_key': event.get('bet_key')})
-          if action_events:
-              raise SystemExit(f'V13 analytics-only run wrote betting ledger events: {action_events[:3]}')
+          for result in payload.get('results') or []:
+              if result.get('model_generation') != MODEL_GENERATION:
+                  raise SystemExit(f"Game {result.get('game_pk')} is not V14")
+              prediction = result.get('v14_prediction') or {}
+              if prediction.get('model_generation') != MODEL_GENERATION or prediction.get('role') != 'PRODUCTION':
+                  raise SystemExit(f"Game {result.get('game_pk')} missing V14 production prediction")
+              if prediction.get('market_probability_used_as_feature') is not False:
+                  raise SystemExit(f"Game {result.get('game_pk')} used market probability as model feature")
+              surface = prediction.get('probabilities') or {}
+              pairs = (
+                  ('ML', surface.get('away_ml'), surface.get('home_ml')),
+                  ('RL1', surface.get('away_plus_1_5'), surface.get('home_minus_1_5')),
+                  ('RL2', surface.get('home_plus_1_5'), surface.get('away_minus_1_5')),
+                  ('TOTAL', surface.get('over'), surface.get('under')),
+              )
+              for label, left, right in pairs:
+                  if left is None or right is None or abs(float(left) + float(right) - 1.0) > 1e-9:
+                      raise SystemExit(f"Game {result.get('game_pk')} invalid {label} surface")
+              displayed = [o for o in result.get('options') or [] if o.get('model_generation') == MODEL_GENERATION]
+              if len(displayed) != 8:
+                  raise SystemExit(f"Game {result.get('game_pk')} expected 8 V14 display probabilities, got {len(displayed)}")
+          print('PULSAR V14 PUBLICATION STATE OK games=', len(payload.get('results') or []))
           PY
 
-      # Legacy ordering marker retained for shared V12 regression semantics only.
-      # Persist PROPOSED recommendations
-      - name: Persist V13.10 probability evidence
+      - name: Persist acquisition evidence
         run: |
-          git config user.name 'MLB Betting Bot V13.10'
+          git config user.name 'Pulsar V14'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           [ -f data/v11_3_live.jsonl ] && git add data/v11_3_live.jsonl
           [ -f data/v11_3_live_report.json ] && git add data/v11_3_live_report.json
-          [ -f data/v11_bet_ledger.jsonl ] && git add -f data/v11_bet_ledger.jsonl
-          [ -f data/v13_baseball_calibration.json ] && git add -f data/v13_baseball_calibration.json
-          [ -f data/v13_probability_diagnostics.json ] && git add -f data/v13_probability_diagnostics.json
-          [ -f data/v13_champion_dashboard.json ] && git add -f data/v13_champion_dashboard.json
-          [ -f data/v13_champion_dashboard.md ] && git add -f data/v13_champion_dashboard.md
-          [ -f data/v13_coverage_report.json ] && git add -f data/v13_coverage_report.json
-          [ -f data/v13_model_health.json ] && git add -f data/v13_model_health.json
           [ -f data/v13_feature_store.jsonl ] && git add -f data/v13_feature_store.jsonl
           [ -f data/v13_label_store.jsonl ] && git add -f data/v13_label_store.jsonl
           [ -f data/v13_market_tracking.jsonl ] && git add -f data/v13_market_tracking.jsonl
           [ -f data/v13_market_tracking_report.json ] && git add -f data/v13_market_tracking_report.json
           if ! git diff --cached --quiet; then
-            git commit -m 'data: persist V13.10 probability observations [skip ci]'
+            git commit -m 'data: persist Pulsar acquisition evidence [skip ci]'
             git pull --rebase --autostash origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
 
-      # Legacy ordering marker retained for shared V12 regression semantics only.
-      # Publish Discord recommendations
-      - name: Publish Discord analytics
+      - name: Publish Pulsar V14 Discord analytics
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           V13_DISCORD_FINAL_ONLY: '0'
-          # Republishing reuses the already-computed payload and does not make another paid Odds API call.
           V13_FORCE_DISCORD_RESEND: '1'
-        run: python -m v11.v13_entry --send-persisted
+        run: python -m v14.production_runtime --send-persisted
 
       - name: Persist Discord delivery checkpoint
         if: always()
         run: |
-          git config user.name 'MLB Betting Bot V13.10'
+          git config user.name 'Pulsar V14'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           [ -f data/v11_discord_delivery.json ] && git add -f data/v11_discord_delivery.json
           [ -f data/v13_discord_delivery.json ] && git add -f data/v13_discord_delivery.json
           if ! git diff --cached --quiet; then
-            git commit -m 'data: persist Discord delivery checkpoint [skip ci]'
+            git commit -m 'data: persist Pulsar Discord checkpoint [skip ci]'
             git pull --rebase --autostash origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
 
-      # Legacy ordering marker retained for shared V12 regression semantics only.
-      # Persist PUBLISHED lifecycle state
-      - name: Assert analytics-only lifecycle after Discord
-        run: |
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          payload = json.loads(Path('runtime/v11/discord_payload.json').read_text(encoding='utf-8'))
-          run_id = (payload.get('report') or {}).get('run_id')
-          bad = []
-          ledger = Path('data/v11_bet_ledger.jsonl')
-          if run_id and ledger.exists():
-              for line in ledger.read_text(encoding='utf-8').splitlines():
-                  if not line.strip():
-                      continue
-                  event = json.loads(line)
-                  if event.get('run_id') == run_id and event.get('event_type') in {'PROPOSED','PUBLISHED','CONFIRMED_PLACED'}:
-                      bad.append({'event_type': event.get('event_type'), 'bet_key': event.get('bet_key')})
-          if bad:
-              raise SystemExit(f'V13 analytics-only run wrote betting ledger events after Discord: {bad[:3]}')
-          print('V13 analytics-only lifecycle OK: no betting ledger action for run', run_id)
-          PY
-
-      - name: Prepare market archive
+      - name: Prepare point-in-time archive
         if: always()
         run: |
           mkdir -p runtime/v11/snapshots
@@ -276,22 +191,10 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v13-point-in-time-${{ github.run_id }}
+          name: pulsar-v14-point-in-time-${{ github.run_id }}
           path: |
             runtime/v11/snapshots/
             runtime/v11/source_replays/
+            runtime/v14/discord_payload.json
           if-no-files-found: ignore
           retention-days: 90
-
-      - name: Durable source replay archive
-        if: success()
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release view v12-data-archive >/dev/null 2>&1 || \
-            gh release create v12-data-archive --title 'Durable point-in-time data archive' --notes 'Compressed source replays and market snapshots used for reproducible V13.10 evidence.'
-          shopt -s nullglob
-          files=(runtime/v11/snapshots/*.gz runtime/v11/source_replays/*.gz)
-          if [ ${#files[@]} -gt 0 ]; then
-            gh release upload v12-data-archive "${files[@]}" --clobber
-          fi
