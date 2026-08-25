@@ -20,6 +20,7 @@ from .starter_integrity import starter_integrity_evidence
 NATIVE_CANDIDATE = Path("runtime/v14/native_candidate.json")
 Collector = Callable[..., PregameSnapshot]
 InputBuilder = Callable[..., NativeGameInputs]
+StarterEvidenceBuilder = Callable[[dict[str, Any]], dict[str, Any]]
 
 
 def _phase_quality_gate(native: NativeGameInputs, phase: str) -> None:
@@ -34,18 +35,26 @@ def _phase_quality_gate(native: NativeGameInputs, phase: str) -> None:
             raise ValueError("FINAL snapshot requires both confirmed 9/9 lineups")
 
 
-def build_native_result(game: dict[str, Any], event: dict[str, Any], *, target_date: str, analyzed_at: str, input_builder: InputBuilder=build_game_inputs) -> dict[str, Any]:
+def build_native_result(
+    game: dict[str, Any],
+    event: dict[str, Any],
+    *,
+    target_date: str,
+    analyzed_at: str,
+    input_builder: InputBuilder=build_game_inputs,
+    starter_evidence_builder: StarterEvidenceBuilder=starter_integrity_evidence,
+) -> dict[str, Any]:
     native=input_builder(game,target_date=target_date,analyzed_at=analyzed_at)
     line_meta=choose_total_line(event,as_of=analyzed_at)
     phase=infer_phase(analyzed_at=analyzed_at,game_date=native.structural.game_date,context=native.context)
 
-    starter_integrity=starter_integrity_evidence(game)
+    starter_integrity=starter_evidence_builder(game)
     degraded_sides=degraded_sides_from_evidence(starter_integrity,phase)
     fallback=degradation_summary(starter_integrity,degraded_sides)
 
-    # Keep the full slate even when MLB starter sources disagree. In that case
-    # rebuild only the affected side(s) with no pitcher identity so mlb_inputs
-    # falls back to a league-average starter rather than trusting stale data.
+    # Preserve full-slate coverage: conflicts never silently trust a stale
+    # pitcher and never remove the game. Rebuild affected side(s) without a
+    # pitcher identity so mlb_inputs uses its neutral league-average starter.
     if degraded_sides:
         sanitized_game=neutralize_probable_pitchers(game,degraded_sides)
         native=input_builder(sanitized_game,target_date=target_date,analyzed_at=analyzed_at)
@@ -60,38 +69,38 @@ def build_native_result(game: dict[str, Any], event: dict[str, Any], *, target_d
     quality["starter_fallback_mode"]=fallback.get("mode")
     feature_row["data_quality"]=quality
 
-    _phase_quality_gate(native=NativeGameInputs(
-        structural=native.structural,
-        home=native.home,
-        away=native.away,
-        context=native.context,
-        feature_row=feature_row,
-        structural_debug=native.structural_debug,
-    ),phase=phase)
+    gated=NativeGameInputs(
+        structural=native.structural,home=native.home,away=native.away,
+        context=native.context,feature_row=feature_row,structural_debug=native.structural_debug,
+    )
+    _phase_quality_gate(gated,phase)
 
     prediction=predict_from_structural(native.structural,analyzed_at=analyzed_at,home=native.home,away=native.away,total_line=float(line_meta["line"]),feature_row=feature_row,phase=phase)
     market_snapshot=canonical_market_snapshot(event,total_line=float(line_meta["line"]),as_of=analyzed_at)
     market_diagnostics=diagnostics_from_snapshot(prediction,market_snapshot)
-    context=dict(native.context)
-    context["starter_integrity"]=starter_integrity
-    context["starter_fallback"]=fallback
+    context=dict(native.context); context["starter_integrity"]=starter_integrity; context["starter_fallback"]=fallback
     return {
         "game_pk":native.structural.game_pk,"game_date":native.structural.game_date,"analyzed_at":analyzed_at,"phase":phase,"home":native.home,"away":native.away,"ctx":context,
         "canonical_lines":{"TOTAL":float(line_meta["line"])},"line_selection":line_meta,"market_snapshot":market_snapshot,"market_diagnostics":market_diagnostics,
         "native_structural":{"game_pk":native.structural.game_pk,"game_date":native.structural.game_date,"venue":native.structural.venue,"structural_home_mu":native.structural.structural_home_mu,"structural_away_mu":native.structural.structural_away_mu,"static_park_factor":native.structural.static_park_factor,"debug":native.structural_debug},
-        "starter_fallback":fallback,
-        "v14_prediction":prediction,"model_generation":MODEL_GENERATION,"market_probability_used_as_feature":False,
+        "starter_fallback":fallback,"v14_prediction":prediction,"model_generation":MODEL_GENERATION,"market_probability_used_as_feature":False,
     }
 
 
-def build_candidate(target_date: str, *, analyzed_at: str|None=None, api_key: str|None=None, collector: Collector=collect_pregame, input_builder: InputBuilder=build_game_inputs) -> dict[str,Any]:
+def build_candidate(
+    target_date: str, *, analyzed_at: str|None=None, api_key: str|None=None,
+    collector: Collector=collect_pregame, input_builder: InputBuilder=build_game_inputs,
+    starter_evidence_builder: StarterEvidenceBuilder=starter_integrity_evidence,
+) -> dict[str,Any]:
     at=analyzed_at or datetime.now(timezone.utc).isoformat(); snapshot=collector(target_date,analyzed_at=at,api_key=api_key); results=[]; skipped=[]
     for game in snapshot.games:
         game_pk=str(game.get("gamePk") or ""); event=snapshot.matches.get(game_pk)
         if event is None:
             skipped.append({"game_pk":game_pk,"reason":"odds_event_unmatched"}); continue
-        try: results.append(build_native_result(game,event,target_date=target_date,analyzed_at=at,input_builder=input_builder))
-        except Exception as exc: skipped.append({"game_pk":game_pk,"reason":f"{type(exc).__name__}: {exc}"})
+        try:
+            results.append(build_native_result(game,event,target_date=target_date,analyzed_at=at,input_builder=input_builder,starter_evidence_builder=starter_evidence_builder))
+        except Exception as exc:
+            skipped.append({"game_pk":game_pk,"reason":f"{type(exc).__name__}: {exc}"})
     return {
         "schema":"pulsar-v14-native-candidate-v2","version":VERSION,"model_generation":MODEL_GENERATION,"role":"CANDIDATE_NON_PUBLISHING","native_acquisition":True,"legacy_acquisition_adapter":False,"market_probability_used_as_feature":False,
         "target_date":target_date,"analyzed_at":at,"results":results,"skipped":skipped,
