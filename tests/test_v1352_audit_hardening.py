@@ -63,7 +63,9 @@ class V1352AuditHardeningTests(unittest.TestCase):
         self.assertNotIn("startswith('13.5-')",research)
         self.assertIn("v13_research_gate",research)
 
-    def test_v14_preflight_is_used_by_production_while_legacy_research_keeps_legacy_guard(self):
+    def test_shared_preflight_is_used_by_ci_production_backfill_and_research(self):
+        # Historical registry identifier intentionally preserved. Production is
+        # now native V14; historical/research workflows retain the legacy guard.
         prod=Path(".github/workflows/mlb-bot.yml").read_text(encoding="utf-8")
         self.assertIn("python -m v14.preflight",prod)
         self.assertNotIn("v11.v13_preflight",prod)
