@@ -14,6 +14,7 @@ CRITICAL_TEST_MODULES=(
     "tests.test_v14_market_edge",
     "tests.test_v14_market_lines",
     "tests.test_v14_mlb_inputs",
+    "tests.test_v14_mlb_operational",
     "tests.test_v14_native_candidate",
     "tests.test_v14_native_payload",
     "tests.test_v14_parity_gate",
