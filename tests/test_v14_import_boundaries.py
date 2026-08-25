@@ -4,7 +4,7 @@ import ast
 from pathlib import Path
 import unittest
 
-NATIVE_MODULES=("acquisition.py","context_overlay.py","discord.py","distribution.py","market_edge.py","market_lines.py","mlb_inputs.py","model.py","native_candidate.py","native_payload.py","parity_gate.py","park.py","phase.py","pipeline.py","production_runtime.py","run_stack.py","structural.py","tracking.py")
+NATIVE_MODULES=("acquisition.py","context_overlay.py","discord.py","distribution.py","market_edge.py","market_lines.py","mlb_inputs.py","model.py","native_candidate.py","native_payload.py","parity_gate.py","park.py","phase.py","pipeline.py","production_runtime.py","run_stack.py","starter_integrity.py","structural.py","tracking.py")
 
 class V14ImportBoundaryTests(unittest.TestCase):
     def test_native_v14_modules_do_not_import_v11(self):
