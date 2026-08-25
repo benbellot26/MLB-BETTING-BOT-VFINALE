@@ -225,10 +225,11 @@ class V122Tests(unittest.TestCase):
         g = pro_model.production_evidence_gate({"settled_singles": 0, "settled_combos": 0, "close_candidate_clv_n": 0})
         self.assertFalse(g["passes"]); self.assertEqual(g["status"], "COLLECTING")
 
-    def test_workflow_orders_persist_publish_persist(self):
+    def test_workflow_orders_v14_build_validate_publish(self):
         text = Path(".github/workflows/mlb-bot.yml").read_text(encoding="utf-8")
-        self.assertLess(text.index("Persist PROPOSED recommendations"), text.index("Publish Discord recommendations"))
-        self.assertLess(text.index("Publish Discord recommendations"), text.index("Persist PUBLISHED lifecycle state"))
+        self.assertLess(text.index("Acquire pregame state without Discord"), text.index("Build Pulsar V14 production payload"))
+        self.assertLess(text.index("Build Pulsar V14 production payload"), text.index("Validate Pulsar V14 publication state"))
+        self.assertLess(text.index("Validate Pulsar V14 publication state"), text.index("Publish Pulsar V14 Discord analytics"))
         self.assertTrue(Path(".github/workflows/market-snapshot.yml").exists())
 
 
