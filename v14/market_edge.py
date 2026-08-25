@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-"""Post-prediction market diagnostics for V14. Odds never become model features."""
+"""Post-prediction market diagnostics for Pulsar V14."""
 
 from datetime import datetime, timezone
 import json
 import math
 from pathlib import Path
 from typing import Any
+
+from . import MODEL_GENERATION
 
 
 def _num(value: Any) -> float | None:
@@ -21,7 +23,7 @@ def odds_to_decimal(odds: Any) -> float:
     value = _num(odds)
     if value is None:
         raise ValueError("odds must be numeric")
-    if value >= 1.01 and value < 20.0:
+    if 1.01 <= value < 20.0:
         return value
     if value >= 100:
         return 1.0 + value / 100.0
@@ -49,18 +51,18 @@ def fair_decimal(probability: Any) -> float:
     return 1.0 / p
 
 
-def edge_report(model_probability: Any, selection_odds: Any, opposite_odds: Any | None = None) -> dict[str, Any]:
+def edge_report(
+    model_probability: Any,
+    selection_odds: Any,
+    opposite_odds: Any | None = None,
+) -> dict[str, Any]:
     p_model = _num(model_probability)
     if p_model is None or not 0 <= p_model <= 1:
         raise ValueError("model_probability must be in [0,1]")
     decimal = odds_to_decimal(selection_odds)
     raw_market = 1.0 / decimal
-    if opposite_odds is not None:
-        no_vig, _ = remove_vig_two_way(selection_odds, opposite_odds)
-    else:
-        no_vig = raw_market
+    no_vig = remove_vig_two_way(selection_odds, opposite_odds)[0] if opposite_odds is not None else raw_market
     edge = p_model - no_vig
-    ev = p_model * decimal - 1.0
     return {
         "model_probability": p_model,
         "market_implied_probability": raw_market,
@@ -69,12 +71,26 @@ def edge_report(model_probability: Any, selection_odds: Any, opposite_odds: Any 
         "edge_pp": edge * 100.0,
         "fair_decimal_odds": fair_decimal(p_model) if 0 < p_model < 1 else None,
         "selection_decimal_odds": decimal,
-        "expected_value_per_unit": ev,
+        "expected_value_per_unit": p_model * decimal - 1.0,
         "market_probability_used_as_feature": False,
     }
 
 
-def make_tracking_record(*, game_pk: Any, market: str, selection: str, model_probability: Any, selection_odds: Any, opposite_odds: Any | None = None, model_version: str = "PULSAR_V14_CONTEXT_SHADOW", prediction_timestamp: str | None = None, stake_units: Any | None = None, result: str | None = None, profit_units: Any | None = None, closing_odds: Any | None = None) -> dict[str, Any]:
+def make_tracking_record(
+    *,
+    game_pk: Any,
+    market: str,
+    selection: str,
+    model_probability: Any,
+    selection_odds: Any,
+    opposite_odds: Any | None = None,
+    model_version: str = MODEL_GENERATION,
+    prediction_timestamp: str | None = None,
+    stake_units: Any | None = None,
+    result: str | None = None,
+    profit_units: Any | None = None,
+    closing_odds: Any | None = None,
+) -> dict[str, Any]:
     diagnostics = edge_report(model_probability, selection_odds, opposite_odds)
     close_clv_pp = None
     if closing_odds is not None:
@@ -96,7 +112,10 @@ def make_tracking_record(*, game_pk: Any, market: str, selection: str, model_pro
     }
 
 
-def append_tracking_record(record: dict[str, Any], path: Path | str = Path("data/v14_pick_audit.jsonl")) -> None:
+def append_tracking_record(
+    record: dict[str, Any],
+    path: Path | str = Path("data/v14_pick_audit.jsonl"),
+) -> None:
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
     with target.open("a", encoding="utf-8") as handle:
