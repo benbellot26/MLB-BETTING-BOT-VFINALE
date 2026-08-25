@@ -46,14 +46,16 @@ class V1352AuditHardeningTests(unittest.TestCase):
         self.assertEqual(opt["posterior_weight_v13"],1.0)
         self.assertFalse(opt["posterior_allowed_for_edge"])
 
-    def test_production_is_manual_only_and_research_version_check_is_fingerprint_based(self):
+    def test_production_is_manual_only_and_native_v14_publishes(self):
         prod=Path(".github/workflows/mlb-bot.yml").read_text(encoding="utf-8")
         research=Path(".github/workflows/v12-3-research-collector.yml").read_text(encoding="utf-8")
         self.assertIn("workflow_dispatch:",prod)
         self.assertNotIn("schedule:",prod)
         self.assertNotIn("v13_production_gate",prod)
         self.assertNotIn("needs.gate.outputs.run_needed == 'true'",prod)
-        self.assertIn("V13_DISCORD_FINAL_ONLY: '0'",prod)
+        self.assertIn("Publish Pulsar V14 Discord analytics",prod)
+        self.assertIn("python -m v14.production_runtime --send-persisted",prod)
+        self.assertNotIn("V13_DISCORD_FINAL_ONLY",prod)
         self.assertIn("MODEL_GENERATION_FINGERPRINT",research)
         self.assertNotIn("startswith('13.5-')",research)
         self.assertIn("v13_research_gate",research)
