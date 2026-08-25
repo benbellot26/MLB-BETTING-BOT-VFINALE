@@ -81,9 +81,16 @@ class RunProjection:
         )
         total_line = _half_run_line(self.total_line)
         return RunProjection(
-            game_pk=str(self.game_pk), game_date=str(self.game_date), analyzed_at=str(self.analyzed_at),
-            home=str(self.home), away=str(self.away), home_mu=home_mu, away_mu=away_mu,
-            total_line=total_line, phase=str(self.phase or "FINAL").upper(), dispersion=dispersion,
+            game_pk=str(self.game_pk),
+            game_date=str(self.game_date),
+            analyzed_at=str(self.analyzed_at),
+            home=str(self.home),
+            away=str(self.away),
+            home_mu=home_mu,
+            away_mu=away_mu,
+            total_line=total_line,
+            phase=str(self.phase or "FINAL").upper(),
+            dispersion=dispersion,
             environment_sigma=environment_sigma,
             extra_innings_home_probability=extra_probability,
             source_generation=self.source_generation,
@@ -121,15 +128,19 @@ class ProbabilitySurface:
         return asdict(self)
 
 
-def shadow_payload(projection: RunProjection, probabilities: ProbabilitySurface, *, tail_mass: float) -> dict[str, Any]:
+def prediction_payload(
+    projection: RunProjection,
+    probabilities: ProbabilitySurface,
+    *,
+    tail_mass: float,
+) -> dict[str, Any]:
     p = projection.validated()
     s = probabilities.validated()
     return {
         "schema": SCHEMA,
         "software_version": VERSION,
         "model_generation": MODEL_GENERATION,
-        "role": "SHADOW_ONLY",
-        "affects_production": False,
+        "role": "PRODUCTION",
         "market_probability_used_as_feature": False,
         "game_pk": p.game_pk,
         "game_date": p.game_date,
@@ -144,15 +155,12 @@ def shadow_payload(projection: RunProjection, probabilities: ProbabilitySurface,
             "dispersion": p.dispersion,
             "environment_sigma": p.environment_sigma,
             "extra_innings_home_probability": p.extra_innings_home_probability,
-            "source": "V13.10 champion-parity migration input until native V14 run stack wins",
         },
         "total_line": p.total_line,
         "probabilities": s.as_dict(),
         "distribution": {
             "family": "correlated-negative-binomial-environment-mixture",
             "regulation_tie_resolution": "validated historical extra-innings home prior",
-            "environment_sigma": p.environment_sigma,
-            "tail_mass_truncated_before_renormalization": tail_mass,
-            "parity_target": "V13.10 champion score-distribution behavior",
+            "tail_mass_truncated_before_renormalization": float(tail_mass),
         },
     }
