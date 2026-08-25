@@ -20,7 +20,7 @@ CRITICAL_TEST_MODULES = (
     "tests.test_v14_production_runtime",
     "tests.test_v14_run_stack_parity",
     "tests.test_v14_structural_parity",
-    "tests.test_v14_v13_context_adapter",
+    "tests.test_v14_tracking",
 )
 
 
