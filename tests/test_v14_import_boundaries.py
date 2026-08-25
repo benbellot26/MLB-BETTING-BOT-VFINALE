@@ -5,8 +5,6 @@ from pathlib import Path
 import unittest
 
 
-# Compatibility modules may understand legacy-shaped data, but the native
-# production path must never import or execute V11/V13 code.
 NATIVE_MODULES = (
     "acquisition.py",
     "context_overlay.py",
@@ -23,6 +21,7 @@ NATIVE_MODULES = (
     "production_runtime.py",
     "run_stack.py",
     "structural.py",
+    "tracking.py",
 )
 
 
