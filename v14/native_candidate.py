@@ -14,7 +14,8 @@ from .market_lines import canonical_market_snapshot, choose_total_line
 from .mlb_inputs import NativeGameInputs, build_game_inputs
 from .phase import infer_phase
 from .pipeline import predict_from_structural
-from .starter_integrity import validate_starters_for_phase
+from .starter_fallback import degraded_sides_from_evidence, degradation_summary, neutralize_probable_pitchers
+from .starter_integrity import starter_integrity_evidence
 
 NATIVE_CANDIDATE = Path("runtime/v14/native_candidate.json")
 Collector = Callable[..., PregameSnapshot]
@@ -23,8 +24,9 @@ InputBuilder = Callable[..., NativeGameInputs]
 
 def _phase_quality_gate(native: NativeGameInputs, phase: str) -> None:
     quality = native.feature_row.get("data_quality") or {}
-    if phase in {"LATE", "FINAL"} and quality.get("starter_complete") is not True:
-        raise ValueError(f"{phase} snapshot requires both announced starting pitchers")
+    starter_ok = quality.get("starter_complete") is True or quality.get("starter_degraded") is True
+    if phase in {"LATE", "FINAL"} and not starter_ok:
+        raise ValueError(f"{phase} snapshot requires confirmed starters or neutral starter fallback")
     if phase == "FINAL":
         home_count = int(quality.get("home_lineup_count") or 0)
         away_count = int(quality.get("away_lineup_count") or 0)
@@ -32,22 +34,52 @@ def _phase_quality_gate(native: NativeGameInputs, phase: str) -> None:
             raise ValueError("FINAL snapshot requires both confirmed 9/9 lineups")
 
 
-def build_native_result(game: dict[str, Any], event: dict[str, Any], *, target_date: str, analyzed_at: str, input_builder: InputBuilder=build_game_inputs, starter_validator: Callable[..., dict[str, Any]]=validate_starters_for_phase) -> dict[str, Any]:
+def build_native_result(game: dict[str, Any], event: dict[str, Any], *, target_date: str, analyzed_at: str, input_builder: InputBuilder=build_game_inputs) -> dict[str, Any]:
     native=input_builder(game,target_date=target_date,analyzed_at=analyzed_at)
     line_meta=choose_total_line(event,as_of=analyzed_at)
     phase=infer_phase(analyzed_at=analyzed_at,game_date=native.structural.game_date,context=native.context)
-    _phase_quality_gate(native,phase)
-    starter_integrity=starter_validator(game,phase)
-    feature_row=dict(native.feature_row); feature_row["phase"]=phase
+
+    starter_integrity=starter_integrity_evidence(game)
+    degraded_sides=degraded_sides_from_evidence(starter_integrity,phase)
+    fallback=degradation_summary(starter_integrity,degraded_sides)
+
+    # Keep the full slate even when MLB starter sources disagree. In that case
+    # rebuild only the affected side(s) with no pitcher identity so mlb_inputs
+    # falls back to a league-average starter rather than trusting stale data.
+    if degraded_sides:
+        sanitized_game=neutralize_probable_pitchers(game,degraded_sides)
+        native=input_builder(sanitized_game,target_date=target_date,analyzed_at=analyzed_at)
+        phase=infer_phase(analyzed_at=analyzed_at,game_date=native.structural.game_date,context=native.context)
+
+    feature_row=dict(native.feature_row)
+    feature_row["phase"]=phase
     feature_row["starter_integrity"]=starter_integrity
+    quality=dict(feature_row.get("data_quality") or {})
+    quality["starter_degraded"]=bool(degraded_sides)
+    quality["starter_degraded_sides"]=list(degraded_sides)
+    quality["starter_fallback_mode"]=fallback.get("mode")
+    feature_row["data_quality"]=quality
+
+    _phase_quality_gate(native=NativeGameInputs(
+        structural=native.structural,
+        home=native.home,
+        away=native.away,
+        context=native.context,
+        feature_row=feature_row,
+        structural_debug=native.structural_debug,
+    ),phase=phase)
+
     prediction=predict_from_structural(native.structural,analyzed_at=analyzed_at,home=native.home,away=native.away,total_line=float(line_meta["line"]),feature_row=feature_row,phase=phase)
     market_snapshot=canonical_market_snapshot(event,total_line=float(line_meta["line"]),as_of=analyzed_at)
     market_diagnostics=diagnostics_from_snapshot(prediction,market_snapshot)
-    context=dict(native.context); context["starter_integrity"]=starter_integrity
+    context=dict(native.context)
+    context["starter_integrity"]=starter_integrity
+    context["starter_fallback"]=fallback
     return {
         "game_pk":native.structural.game_pk,"game_date":native.structural.game_date,"analyzed_at":analyzed_at,"phase":phase,"home":native.home,"away":native.away,"ctx":context,
         "canonical_lines":{"TOTAL":float(line_meta["line"])},"line_selection":line_meta,"market_snapshot":market_snapshot,"market_diagnostics":market_diagnostics,
         "native_structural":{"game_pk":native.structural.game_pk,"game_date":native.structural.game_date,"venue":native.structural.venue,"structural_home_mu":native.structural.structural_home_mu,"structural_away_mu":native.structural.structural_away_mu,"static_park_factor":native.structural.static_park_factor,"debug":native.structural_debug},
+        "starter_fallback":fallback,
         "v14_prediction":prediction,"model_generation":MODEL_GENERATION,"market_probability_used_as_feature":False,
     }
 
