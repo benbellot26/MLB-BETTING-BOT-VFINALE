@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from . import MODEL_GENERATION, VERSION
+from .discord import send_game
 from .feature_row import load_latest_feature_row
 from .pipeline import predict_from_result
 
@@ -202,21 +203,12 @@ def send_persisted(*, path: Path | str = V14_PAYLOAD) -> None:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if payload.get("model_generation") != MODEL_GENERATION or payload.get("role") != "PRODUCTION":
         raise SystemExit("invalid V14 production payload")
+    if payload.get("legacy_probability_used_for_publication") is not False:
+        raise SystemExit("legacy probability publication leak")
 
-    # Renderer is intentionally still reused while Discord I/O is migrated.
-    # It receives only V14-overwritten probabilities from this payload.
-    from v11 import core, discord_v13
-
-    discord_v13.VERSION_LABEL = "PULSAR V14"
-    try:
-        discord_v13.base.VERSION_LABEL = "PULSAR V14"
-    except Exception:
-        pass
-    if not core.discord_test():
-        raise SystemExit("Discord webhook unavailable")
     ok = True
     for result in payload.get("results") or []:
-        ok = bool(discord_v13.send_game(result, {})) and ok
+        ok = bool(send_game(result)) and ok
     if not ok:
         raise SystemExit("Pulsar V14 Discord publication incomplete")
     print(f"PULSAR_V14_DISCORD published_games={len(payload.get('results') or [])}")
