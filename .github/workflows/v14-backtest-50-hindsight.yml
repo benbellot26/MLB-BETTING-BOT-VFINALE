@@ -1,0 +1,32 @@
+name: Pulsar V13 vs V14 50-Game Hindsight
+
+on:
+  pull_request:
+    paths:
+      - "v14/backtest_50_hindsight.py"
+      - ".github/workflows/v14-backtest-50-hindsight.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hindsight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile
+        run: python -m py_compile v14/backtest_50_hindsight.py
+      - name: Run deliberately biased hindsight comparison
+        run: python -m v14.backtest_50_hindsight
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: v13-v14-hindsight-50
+          path: |
+            data/v14_backtest_50_hindsight.json
+            data/v14_backtest_50_hindsight.md
