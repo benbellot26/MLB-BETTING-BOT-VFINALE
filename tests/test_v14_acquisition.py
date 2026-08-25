@@ -1,9 +1,25 @@
 import unittest
+from datetime import datetime, timezone
 
-from v14.acquisition import collect_pregame, future_games, match_events, mlb_schedule, odds_snapshot
+from v14.acquisition import collect_pregame, future_games, match_events, mlb_schedule, odds_snapshot, resolve_target_date
 
 
 class V14AcquisitionTests(unittest.TestCase):
+    def test_target_date_matches_paris_slate_convention(self):
+        # 03:30 UTC = 05:30 Paris in summer: still previous MLB slate.
+        self.assertEqual(
+            resolve_target_date(now=datetime(2026, 8, 25, 3, 30, tzinfo=timezone.utc), override=""),
+            "2026-08-24",
+        )
+        # 04:30 UTC = 06:30 Paris: current local calendar date.
+        self.assertEqual(
+            resolve_target_date(now=datetime(2026, 8, 25, 4, 30, tzinfo=timezone.utc), override=""),
+            "2026-08-25",
+        )
+        self.assertEqual(resolve_target_date(override="2026-09-01"), "2026-09-01")
+        with self.assertRaisesRegex(ValueError, "YYYY-MM-DD"):
+            resolve_target_date(override="09/01/2026")
+
     def test_schedule_and_odds_contracts(self):
         def schedule_getter(url, params):
             self.assertEqual(params["sportId"], 1)
