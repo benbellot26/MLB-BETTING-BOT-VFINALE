@@ -55,19 +55,25 @@ class V1352AuditHardeningTests(unittest.TestCase):
         self.assertNotIn("needs.gate.outputs.run_needed == 'true'",prod)
         self.assertIn("Publish Pulsar V14 Discord analytics",prod)
         self.assertIn("python -m v14.production_runtime --send-persisted",prod)
+        self.assertNotIn("v11.v13_entry",prod)
+        self.assertNotIn("v11.v13_preflight",prod)
+        self.assertNotIn("runtime/v11",prod)
         self.assertNotIn("V13_DISCORD_FINAL_ONLY",prod)
         self.assertIn("MODEL_GENERATION_FINGERPRINT",research)
         self.assertNotIn("startswith('13.5-')",research)
         self.assertIn("v13_research_gate",research)
 
-    def test_shared_preflight_is_used_by_ci_production_backfill_and_research(self):
-        paths=(
+    def test_v14_preflight_is_used_by_production_while_legacy_research_keeps_legacy_guard(self):
+        prod=Path(".github/workflows/mlb-bot.yml").read_text(encoding="utf-8")
+        self.assertIn("python -m v14.preflight",prod)
+        self.assertNotIn("v11.v13_preflight",prod)
+
+        legacy_paths=(
             ".github/workflows/ci.yml",
-            ".github/workflows/mlb-bot.yml",
             ".github/workflows/v13-historical-backfill.yml",
             ".github/workflows/v12-3-research-collector.yml",
         )
-        for path in paths:
+        for path in legacy_paths:
             text=Path(path).read_text(encoding="utf-8")
             self.assertIn("v11.v13_preflight",text,path)
 
