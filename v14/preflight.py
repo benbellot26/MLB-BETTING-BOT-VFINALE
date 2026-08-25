@@ -8,6 +8,7 @@ CRITICAL_TEST_MODULES = (
     "tests.test_v14_context_overlay",
     "tests.test_v14_discord",
     "tests.test_v14_feature_row",
+    "tests.test_v14_import_boundaries",
     "tests.test_v14_market_edge",
     "tests.test_v14_market_lines",
     "tests.test_v14_mlb_inputs",
