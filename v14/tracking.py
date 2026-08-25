@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Minimal native prediction tracking and settlement for Pulsar V14."""
+"""Native prediction tracking and settlement for Pulsar V14."""
 
 import argparse
 from collections import defaultdict
@@ -66,12 +66,13 @@ def snapshot_rows(payload: dict[str, Any]) -> list[dict[str, Any]]:
         if total_line is None:
             total_line = _num((result.get("canonical_lines") or {}).get("TOTAL"))
         rows.append({
-            "schema": "pulsar-v14-prediction-record-v1",
+            "schema": "pulsar-v14-prediction-record-v2",
             "model_generation": MODEL_GENERATION,
             "game_pk": str(result.get("game_pk") or ""),
             "target_date": target_date or str(result.get("game_date") or "")[:10],
             "game_date": result.get("game_date"),
             "analyzed_at": result.get("analyzed_at") or payload.get("analyzed_at"),
+            "phase": result.get("phase") or prediction.get("phase"),
             "home": result.get("home"),
             "away": result.get("away"),
             "home_mu": _num(projection.get("home_mu")),
@@ -84,6 +85,8 @@ def snapshot_rows(payload: dict[str, Any]) -> list[dict[str, Any]]:
                     "away_minus_1_5", "home_plus_1_5", "over", "under",
                 )
             },
+            "market_snapshot": result.get("market_snapshot") or {},
+            "market_diagnostics": result.get("market_diagnostics") or {},
             "settled": False,
             "home_score": None,
             "away_score": None,
@@ -198,6 +201,40 @@ def _canonical_settled(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]]
     return canonical, len(settled_records)
 
 
+def _price(row: dict[str, Any], market: str, selection: str) -> float | None:
+    markets = ((row.get("market_snapshot") or {}).get("markets") or {})
+    return _num((((markets.get(market) or {}).get("selections") or {}).get(selection) or {}).get("price"))
+
+
+def _clv_proxy(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Compare earlier snapshot prices with the latest pregame snapshot price.
+
+    This is an auditable closing-price proxy until a dedicated closing feed is
+    added. It never affects predictions or historical settlement.
+    """
+    by_game: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        if row.get("model_generation") == MODEL_GENERATION:
+            by_game[str(row.get("game_pk") or "")].append(row)
+    diffs: list[float] = []
+    for game_rows in by_game.values():
+        ordered = sorted(game_rows, key=lambda r: str(r.get("analyzed_at") or ""))
+        if len(ordered) < 2:
+            continue
+        close = ordered[-1]
+        for early in ordered[:-1]:
+            for market, selection in (("ML", "home"), ("ML", "away"), ("TOTAL", "over"), ("TOTAL", "under")):
+                old, new = _price(early, market, selection), _price(close, market, selection)
+                if old and new and old > 1 and new > 1:
+                    diffs.append((1.0 / new - 1.0 / old) * 100.0)
+    return {
+        "status": "AVAILABLE_PROXY" if diffs else "UNAVAILABLE",
+        "definition": "latest persisted pregame snapshot used as closing-price proxy",
+        "n": len(diffs),
+        "mean_implied_probability_move_pp": sum(diffs) / len(diffs) if diffs else None,
+    }
+
+
 def performance_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
     settled, settled_record_count = _canonical_settled(rows)
     markets: dict[str, list[tuple[float, int]]] = defaultdict(list)
@@ -227,14 +264,16 @@ def performance_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
             total_errors.append(abs((hmu + amu) - (hs + aws)))
 
     all_items = [item for values in markets.values() for item in values]
+    overall = _binary_metrics(all_items)
+    overall["interpretation"] = "dashboard-only; markets within the same game are correlated and this aggregate must not drive model promotion"
     return {
-        "schema": "pulsar-v14-performance-v1",
+        "schema": "pulsar-v14-performance-v2",
         "model_generation": MODEL_GENERATION,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "prediction_records_settled": settled_record_count,
         "games_settled": len(settled),
         "canonical_snapshot_policy": "latest pregame snapshot per game",
-        "overall": _binary_metrics(all_items),
+        "overall": overall,
         "calibration": _calibration(all_items),
         "markets": {name: {**_binary_metrics(values), "calibration": _calibration(values)} for name, values in sorted(markets.items())},
         "runs": {
@@ -242,7 +281,7 @@ def performance_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "total_run_mae": sum(total_errors) / len(total_errors) if total_errors else None,
         },
         "roi": {"status": "UNAVAILABLE", "reason": "No official bet/stake ledger in V14 analytics-only production."},
-        "clv": {"status": "UNAVAILABLE", "reason": "Closing prices are not yet persisted as a canonical V14 input."},
+        "clv": _clv_proxy(rows),
     }
 
 

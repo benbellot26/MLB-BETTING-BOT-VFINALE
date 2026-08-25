@@ -1,11 +1,6 @@
 from __future__ import annotations
 
-"""Native end-to-end candidate builder for Pulsar V14.
-
-This path is intentionally non-publishing until parity evidence is collected.
-It acquires MLB/Odds data directly, builds native structural inputs and prices
-the selected display total with V14. No V11/V13 object is required.
-"""
+"""Native end-to-end candidate builder for Pulsar V14."""
 
 from datetime import datetime, timezone
 import json
@@ -14,7 +9,8 @@ from typing import Any, Callable
 
 from . import MODEL_GENERATION, VERSION
 from .acquisition import PregameSnapshot, collect_pregame
-from .market_lines import choose_total_line
+from .market_edge import diagnostics_from_snapshot
+from .market_lines import canonical_market_snapshot, choose_total_line
 from .mlb_inputs import NativeGameInputs, build_game_inputs
 from .phase import infer_phase
 from .pipeline import predict_from_structural
@@ -34,21 +30,34 @@ def build_native_result(
     input_builder: InputBuilder = build_game_inputs,
 ) -> dict[str, Any]:
     native = input_builder(game, target_date=target_date, analyzed_at=analyzed_at)
-    line_meta = choose_total_line(event)
+    line_meta = choose_total_line(event, as_of=analyzed_at)
     phase = infer_phase(
         analyzed_at=analyzed_at,
         game_date=native.structural.game_date,
         context=native.context,
     )
+
+    # Phase is resolved only after lineup/game-time context is available. Never
+    # persist a fake FINAL marker in a PIT feature row.
+    feature_row = dict(native.feature_row)
+    feature_row["phase"] = phase
+
     prediction = predict_from_structural(
         native.structural,
         analyzed_at=analyzed_at,
         home=native.home,
         away=native.away,
         total_line=float(line_meta["line"]),
-        feature_row=native.feature_row,
+        feature_row=feature_row,
         phase=phase,
     )
+    market_snapshot = canonical_market_snapshot(
+        event,
+        total_line=float(line_meta["line"]),
+        as_of=analyzed_at,
+    )
+    market_diagnostics = diagnostics_from_snapshot(prediction, market_snapshot)
+
     return {
         "game_pk": native.structural.game_pk,
         "game_date": native.structural.game_date,
@@ -59,6 +68,8 @@ def build_native_result(
         "ctx": native.context,
         "canonical_lines": {"TOTAL": float(line_meta["line"])},
         "line_selection": line_meta,
+        "market_snapshot": market_snapshot,
+        "market_diagnostics": market_diagnostics,
         "native_structural": {
             "game_pk": native.structural.game_pk,
             "game_date": native.structural.game_date,
