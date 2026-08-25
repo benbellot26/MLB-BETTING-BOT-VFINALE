@@ -1,11 +1,6 @@
 from __future__ import annotations
 
-"""Native production runtime for Pulsar V14.
-
-The production path is now V14 end-to-end: native MLB/Odds acquisition, native
-structural inputs, V14 prediction, native payload, native Discord publication.
-No V11/V13 runtime or probability payload is accepted here.
-"""
+"""Native production runtime for Pulsar V14."""
 
 import argparse
 import json
@@ -21,39 +16,21 @@ from .native_payload import authorize_payload, build_native_discord_payload
 
 V14_CANDIDATE = Path("runtime/v14/native_candidate.json")
 V14_PAYLOAD = Path("runtime/v14/discord_payload.json")
-
-# Explicit human-approved cutover evidence. This is deliberately static and
-# auditable rather than an automatic parity self-promotion mechanism.
-NATIVE_CUTOVER_EVIDENCE = {
-    "workflow": "Pulsar V14 Native Parity",
-    "run_id": 32828843533,
-    "comparable_games": 15,
-    "candidate_coverage": 1.0,
-    "mean_abs_structural_run_delta": 0.0,
-    "max_abs_structural_run_delta": 0.0,
-    "status": "PASS",
-}
+MIN_PRICED_MATCHED_COVERAGE = 0.80
 
 
-def _required_float(mapping: dict[str, Any], key: str) -> float:
-    value = mapping.get(key)
-    if value is None:
-        raise RuntimeError(f"native cutover evidence missing {key}")
-    return float(value)
-
-
-def _validate_cutover_evidence() -> None:
-    evidence = NATIVE_CUTOVER_EVIDENCE
-    if evidence.get("status") != "PASS":
-        raise RuntimeError("native cutover evidence is not PASS")
-    if int(evidence.get("comparable_games") or 0) < 8:
-        raise RuntimeError("native cutover evidence has insufficient games")
-    if _required_float(evidence, "candidate_coverage") < 0.90:
-        raise RuntimeError("native cutover evidence has insufficient coverage")
-    if _required_float(evidence, "mean_abs_structural_run_delta") > 0.03:
-        raise RuntimeError("native cutover mean structural delta too large")
-    if _required_float(evidence, "max_abs_structural_run_delta") > 0.10:
-        raise RuntimeError("native cutover max structural delta too large")
+def validate_candidate_coverage(candidate: dict[str, Any]) -> None:
+    coverage = candidate.get("coverage") or {}
+    matched = int(coverage.get("matched_odds_games") or 0)
+    priced = int(coverage.get("priced_games") or 0)
+    if priced <= 0:
+        raise RuntimeError("native V14 acquisition produced no priced games")
+    if matched > 0:
+        ratio = priced / matched
+        if ratio < MIN_PRICED_MATCHED_COVERAGE:
+            raise RuntimeError(
+                f"native V14 priced/matched coverage too low: {priced}/{matched}={ratio:.1%} < {MIN_PRICED_MATCHED_COVERAGE:.0%}"
+            )
 
 
 def validate_production_payload(payload: dict[str, Any]) -> None:
@@ -96,26 +73,24 @@ def validate_production_payload(payload: dict[str, Any]) -> None:
         for left, right in pairs:
             if left is None or right is None or abs(float(left) + float(right) - 1.0) > 1e-9:
                 raise ValueError(f"game {result.get('game_pk')} has invalid probability surface")
+        # Market state is audit-only, but once generated it must survive the
+        # production boundary for PIT tracking.
+        if "market_snapshot" not in result or "market_diagnostics" not in result:
+            raise ValueError(f"game {result.get('game_pk')} missing market audit state")
 
 
-def build_persisted(
-    *,
-    target_date: str | None = None,
-    destination: Path | str = V14_PAYLOAD,
-    candidate_destination: Path | str = V14_CANDIDATE,
-) -> dict[str, Any]:
-    _validate_cutover_evidence()
+def build_persisted(*, target_date: str | None = None, destination: Path | str = V14_PAYLOAD, candidate_destination: Path | str = V14_CANDIDATE) -> dict[str, Any]:
     date = target_date or resolve_target_date()
     candidate = build_candidate(date)
     persist_candidate(candidate, candidate_destination)
-    if not candidate.get("results"):
-        raise SystemExit(f"native V14 acquisition produced no priced games for {date}")
+    validate_candidate_coverage(candidate)
 
     unauthorized = build_native_discord_payload(candidate)
-    payload = authorize_payload(unauthorized, parity_authorized=True)
+    payload = authorize_payload(unauthorized, production_authorized=True)
     payload["authorization_basis"] = {
-        "type": "explicit-native-parity-cutover",
-        **NATIVE_CUTOVER_EVIDENCE,
+        "type": "native-v14-production-contract",
+        "model_generation": MODEL_GENERATION,
+        "coverage_gate": MIN_PRICED_MATCHED_COVERAGE,
     }
     validate_production_payload(payload)
 
@@ -132,7 +107,6 @@ def send_persisted(*, path: Path | str = V14_PAYLOAD) -> None:
         raise SystemExit(f"V14 Discord payload absent: {source}")
     payload = json.loads(source.read_text(encoding="utf-8"))
     validate_production_payload(payload)
-
     results = list(payload.get("results") or [])
     ok = True
     gap = publication_gap_seconds()
@@ -155,11 +129,7 @@ def main() -> None:
     if args.send_persisted:
         send_persisted(path=args.destination)
     else:
-        build_persisted(
-            target_date=args.target_date,
-            destination=args.destination,
-            candidate_destination=args.candidate_destination,
-        )
+        build_persisted(target_date=args.target_date, destination=args.destination, candidate_destination=args.candidate_destination)
 
 
 if __name__ == "__main__":
