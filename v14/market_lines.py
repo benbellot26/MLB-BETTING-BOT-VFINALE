@@ -3,8 +3,7 @@ from __future__ import annotations
 """Market-line and price snapshot helpers for V14.
 
 Prices are persisted only for post-prediction diagnostics (edge/EV/CLV). They
-never enter the baseball probability model. Total-line selection remains based
-on complete paired lines, with an optional freshness gate in production.
+never enter the baseball probability model.
 """
 
 from collections import Counter
@@ -15,6 +14,7 @@ from typing import Any
 
 PREFERRED_DISPLAY_BOOKS = ("winamax_fr", "pinnacle")
 DEFAULT_MAX_MARKET_AGE_MINUTES = 20.0
+MAX_FUTURE_CLOCK_SKEW_MINUTES = 2.0
 
 
 def _num(value: Any) -> float | None:
@@ -52,35 +52,36 @@ def market_age_minutes(book: dict[str, Any], as_of: Any) -> float | None:
     at = _time(as_of)
     if updated is None or at is None:
         return None
-    return max(0.0, (at - updated).total_seconds() / 60.0)
+    return (at - updated).total_seconds() / 60.0
 
 
-def _fresh_books(
-    event: dict[str, Any],
-    *,
-    as_of: Any | None = None,
-    max_age_minutes: float = DEFAULT_MAX_MARKET_AGE_MINUTES,
-) -> list[dict[str, Any]]:
+def _book_freshness(book: dict[str, Any], as_of: Any, max_age_minutes: float) -> str:
+    age = market_age_minutes(book, as_of)
+    if age is None:
+        return "UNVERIFIED"
+    if age < -MAX_FUTURE_CLOCK_SKEW_MINUTES:
+        return "INVALID_FUTURE"
+    if age <= max_age_minutes:
+        return "VERIFIED_FRESH"
+    return "STALE"
+
+
+def _eligible_books(event: dict[str, Any], *, as_of: Any | None = None, max_age_minutes: float = DEFAULT_MAX_MARKET_AGE_MINUTES) -> tuple[list[dict[str, Any]], bool]:
     books = [b for b in event.get("bookmakers") or [] if isinstance(b, dict)]
     if as_of is None:
-        return books
-    fresh = []
-    for book in books:
-        age = market_age_minutes(book, as_of)
-        # Fail closed only when the source actually provides a timestamp.
-        if age is None or age <= max_age_minutes:
-            fresh.append(book)
-    return fresh
+        return books, False
+    verified = [b for b in books if _book_freshness(b, as_of, max_age_minutes) == "VERIFIED_FRESH"]
+    if verified:
+        return verified, True
+    # Unknown timestamps are fallback-only. Stale/future timestamps never pass.
+    unverified = [b for b in books if _book_freshness(b, as_of, max_age_minutes) == "UNVERIFIED"]
+    return unverified, False
 
 
-def complete_total_lines_by_book(
-    event: dict[str, Any],
-    *,
-    as_of: Any | None = None,
-    max_age_minutes: float = DEFAULT_MAX_MARKET_AGE_MINUTES,
-) -> dict[str, set[float]]:
+def complete_total_lines_by_book(event: dict[str, Any], *, as_of: Any | None = None, max_age_minutes: float = DEFAULT_MAX_MARKET_AGE_MINUTES) -> dict[str, set[float]]:
+    books, _verified = _eligible_books(event, as_of=as_of, max_age_minutes=max_age_minutes)
     result: dict[str, set[float]] = {}
-    for book in _fresh_books(event, as_of=as_of, max_age_minutes=max_age_minutes):
+    for book in books:
         key = str(book.get("key") or "")
         if not key:
             continue
@@ -99,26 +100,22 @@ def complete_total_lines_by_book(
     return result
 
 
-def choose_total_line(
-    event: dict[str, Any],
-    *,
-    as_of: Any | None = None,
-    max_age_minutes: float = DEFAULT_MAX_MARKET_AGE_MINUTES,
-) -> dict[str, Any]:
+def choose_total_line(event: dict[str, Any], *, as_of: Any | None = None, max_age_minutes: float = DEFAULT_MAX_MARKET_AGE_MINUTES) -> dict[str, Any]:
     """Choose a complete half-run line without looking at prices."""
-    by_book = complete_total_lines_by_book(event, as_of=as_of, max_age_minutes=max_age_minutes)
+    books, freshness_verified = _eligible_books(event, as_of=as_of, max_age_minutes=max_age_minutes)
+    scoped_event = {**event, "bookmakers": books}
+    by_book = complete_total_lines_by_book(scoped_event)
     if not by_book:
-        raise ValueError("no fresh complete half-run total line available")
+        raise ValueError("no eligible complete half-run total line available")
 
     for key in PREFERRED_DISPLAY_BOOKS:
         lines = sorted(by_book.get(key) or [])
         if len(lines) == 1:
             return {
-                "line": lines[0],
-                "source": key,
-                "method": "preferred-book-complete-pair",
+                "line": lines[0], "source": key, "method": "preferred-book-complete-pair",
                 "books_at_line": sum(lines[0] in values for values in by_book.values()),
                 "max_market_age_minutes": max_age_minutes if as_of is not None else None,
+                "freshness_verified": freshness_verified,
                 "market_price_used_as_feature": False,
             }
 
@@ -129,11 +126,10 @@ def choose_total_line(
     center = median(occurrences)
     chosen = min(candidates, key=lambda line: (abs(line - center), line))
     return {
-        "line": chosen,
-        "source": "cross-book",
-        "method": "modal-complete-pair",
+        "line": chosen, "source": "cross-book", "method": "modal-complete-pair",
         "books_at_line": counts[chosen],
         "max_market_age_minutes": max_age_minutes if as_of is not None else None,
+        "freshness_verified": freshness_verified,
         "market_price_used_as_feature": False,
     }
 
@@ -147,75 +143,51 @@ def _market_outcomes(book: dict[str, Any], key: str) -> list[dict[str, Any]]:
 
 def _preferred_book_order(books: list[dict[str, Any]]) -> list[dict[str, Any]]:
     rank = {name: i for i, name in enumerate(PREFERRED_DISPLAY_BOOKS)}
-    return sorted(
-        books,
-        key=lambda b: (
-            rank.get(str(b.get("key") or ""), len(rank)),
-            -(_time(b.get("last_update")).timestamp() if _time(b.get("last_update")) else 0.0),
-        ),
-    )
+    return sorted(books, key=lambda b: (rank.get(str(b.get("key") or ""), len(rank)), -(_time(b.get("last_update")).timestamp() if _time(b.get("last_update")) else 0.0)))
 
 
-def canonical_market_snapshot(
-    event: dict[str, Any],
-    *,
-    total_line: float,
-    as_of: Any,
-    max_age_minutes: float = DEFAULT_MAX_MARKET_AGE_MINUTES,
-) -> dict[str, Any]:
-    """Persist one fresh paired price source for ML, RL ±1.5 and selected total."""
-    books = _preferred_book_order(_fresh_books(event, as_of=as_of, max_age_minutes=max_age_minutes))
+def canonical_market_snapshot(event: dict[str, Any], *, total_line: float, as_of: Any, max_age_minutes: float = DEFAULT_MAX_MARKET_AGE_MINUTES) -> dict[str, Any]:
+    """Persist one eligible paired price source for ML, RL ±1.5 and total."""
+    eligible, freshness_verified = _eligible_books(event, as_of=as_of, max_age_minutes=max_age_minutes)
+    books = _preferred_book_order(eligible)
     snapshot: dict[str, Any] = {
-        "schema": "pulsar-v14-market-snapshot-v1",
-        "captured_at": str(as_of),
-        "event_id": event.get("id"),
-        "commence_time": event.get("commence_time"),
-        "max_age_minutes": max_age_minutes,
-        "market_probability_used_as_feature": False,
-        "markets": {},
+        "schema": "pulsar-v14-market-snapshot-v2",
+        "captured_at": str(as_of), "event_id": event.get("id"), "commence_time": event.get("commence_time"),
+        "max_age_minutes": max_age_minutes, "freshness_verified": freshness_verified,
+        "market_probability_used_as_feature": False, "markets": {},
     }
 
     def store(name: str, book: dict[str, Any], selections: dict[str, dict[str, Any]]) -> None:
         snapshot["markets"][name] = {
-            "bookmaker": book.get("key"),
-            "bookmaker_title": book.get("title"),
-            "last_update": book.get("last_update"),
-            "age_minutes": market_age_minutes(book, as_of),
-            "selections": selections,
+            "bookmaker": book.get("key"), "bookmaker_title": book.get("title"),
+            "last_update": book.get("last_update"), "age_minutes": market_age_minutes(book, as_of),
+            "freshness": _book_freshness(book, as_of, max_age_minutes), "selections": selections,
         }
 
+    home, away = str(event.get("home_team") or ""), str(event.get("away_team") or "")
     for book in books:
-        outcomes = _market_outcomes(book, "h2h")
-        by_name = {str(x.get("name") or ""): x for x in outcomes}
-        home, away = str(event.get("home_team") or ""), str(event.get("away_team") or "")
+        by_name = {str(x.get("name") or ""): x for x in _market_outcomes(book, "h2h")}
         if home in by_name and away in by_name:
-            store("ML", book, {
-                "home": {"name": home, "price": _num(by_name[home].get("price"))},
-                "away": {"name": away, "price": _num(by_name[away].get("price"))},
-            })
+            store("ML", book, {"home": {"name": home, "price": _num(by_name[home].get("price"))}, "away": {"name": away, "price": _num(by_name[away].get("price"))}})
             break
 
     for book in books:
         outcomes = _market_outcomes(book, "spreads")
-        home, away = str(event.get("home_team") or ""), str(event.get("away_team") or "")
-        home_rows = [x for x in outcomes if str(x.get("name") or "") == home]
-        away_rows = [x for x in outcomes if str(x.get("name") or "") == away]
         selections: dict[str, dict[str, Any]] = {}
-        for row in home_rows:
+        for row in outcomes:
+            name = str(row.get("name") or "")
             point = _num(row.get("point"))
-            if point in {-1.5, 1.5}:
-                selections[f"home_{point:+.1f}"] = {"name": home, "point": point, "price": _num(row.get("price"))}
-        for row in away_rows:
-            point = _num(row.get("point"))
-            if point in {-1.5, 1.5}:
-                selections[f"away_{point:+.1f}"] = {"name": away, "point": point, "price": _num(row.get("price"))}
-        if len(selections) >= 2:
+            if name not in {home, away} or point not in {-1.5, 1.5}:
+                continue
+            side = "home" if name == home else "away"
+            selections[f"{side}_{point:+.1f}"] = {"name": name, "point": point, "price": _num(row.get("price"))}
+        has_pair = ("home_-1.5" in selections and "away_+1.5" in selections) or ("away_-1.5" in selections and "home_+1.5" in selections)
+        if has_pair:
             store("RL", book, selections)
             break
 
     for book in books:
-        outcomes = _market_outcomes(book, "totals")
-        selected = [x for x in outcomes if _num(x.get("point")) == float(total_line)]
+        selected = [x for x in _market_outcomes(book, "totals") if _num(x.get("point")) == float(total_line)]
         by_side = {str(x.get("name") or "").lower(): x for x in selected}
         if "over" in by_side and "under" in by_side:
             store("TOTAL", book, {
@@ -223,5 +195,4 @@ def canonical_market_snapshot(
                 "under": {"name": "Under", "point": float(total_line), "price": _num(by_side["under"].get("price"))},
             })
             break
-
     return snapshot

@@ -1,10 +1,6 @@
 from __future__ import annotations
 
-"""Build the final V14 Discord payload from native acquisition results only.
-
-This module is cutover-ready plumbing, but it does not authorize publication.
-Authorization remains an external workflow decision backed by parity evidence.
-"""
+"""Build the final V14 production payload from native acquisition results only."""
 
 from copy import deepcopy
 from typing import Any
@@ -39,12 +35,16 @@ def native_result_for_discord(result: dict[str, Any]) -> dict[str, Any]:
         "game_pk": game_pk,
         "game_date": game_date,
         "analyzed_at": analyzed_at,
-        "phase": str(result.get("phase") or prediction.get("phase") or "FINAL").upper(),
+        "phase": str(result.get("phase") or prediction.get("phase") or "EARLY").upper(),
         "home": home,
         "away": away,
         "ctx": deepcopy(result.get("ctx") or {}),
         "canonical_lines": {"TOTAL": float(line)},
         "line_selection": deepcopy(result.get("line_selection") or {}),
+        # Market data is diagnostic/audit state only. It must survive the
+        # candidate -> production boundary so tracking can persist edge/EV/CLV.
+        "market_snapshot": deepcopy(result.get("market_snapshot") or {}),
+        "market_diagnostics": deepcopy(result.get("market_diagnostics") or {}),
         "v14_prediction": prediction,
         "model_generation": MODEL_GENERATION,
         "model": {"version": VERSION, "generation": MODEL_GENERATION, "role": "PRODUCTION"},
@@ -66,7 +66,7 @@ def build_native_discord_payload(candidate: dict[str, Any]) -> dict[str, Any]:
 
     results = [native_result_for_discord(result) for result in candidate.get("results") or []]
     return {
-        "schema": "pulsar-v14-native-discord-payload-v1",
+        "schema": "pulsar-v14-native-discord-payload-v2",
         "version": VERSION,
         "model_generation": MODEL_GENERATION,
         "role": "PRODUCTION_PAYLOAD_UNAUTHORIZED",
@@ -84,10 +84,10 @@ def build_native_discord_payload(candidate: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def authorize_payload(payload: dict[str, Any], *, parity_authorized: bool) -> dict[str, Any]:
-    """Explicit final switch used only after an external parity gate passes."""
-    if not parity_authorized:
-        raise ValueError("native cutover parity is not authorized")
+def authorize_payload(payload: dict[str, Any], *, production_authorized: bool) -> dict[str, Any]:
+    """Explicit production switch; migration/parity is no longer a runtime dependency."""
+    if not production_authorized:
+        raise ValueError("native production publication is not authorized")
     if payload.get("role") != "PRODUCTION_PAYLOAD_UNAUTHORIZED":
         raise ValueError("unexpected native payload role")
     if payload.get("publication_authorized") is not False:
@@ -95,5 +95,5 @@ def authorize_payload(payload: dict[str, Any], *, parity_authorized: bool) -> di
     out = deepcopy(payload)
     out["role"] = "PRODUCTION"
     out["publication_authorized"] = True
-    out["authorization_basis"] = "external-native-parity-gate"
+    out["authorization_basis"] = "native-v14-production-contract"
     return out

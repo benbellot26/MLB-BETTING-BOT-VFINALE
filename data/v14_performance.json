@@ -1,30 +1,37 @@
 {
-  "calibration": [],
-  "canonical_snapshot_policy": "latest pregame snapshot per game",
-  "clv": {
-    "reason": "Closing prices are not yet persisted as a canonical V14 input.",
-    "status": "UNAVAILABLE"
-  },
+  "schema": "pulsar-v14-performance-v3",
+  "model_generation": "pulsar-v14-context-v3",
+  "generated_at": null,
+  "prediction_records_settled": 0,
   "games_settled": 0,
-  "generated_at": "2026-08-25T11:02:34.392650+00:00",
-  "markets": {},
-  "model_generation": "pulsar-v14-context-v1",
+  "canonical_snapshot_policy": "latest strictly-pregame snapshot per game",
   "overall": {
-    "accuracy_50": null,
+    "n": 0,
     "brier": null,
     "log_loss": null,
+    "accuracy_50": null,
     "mean_probability": null,
-    "n": 0,
-    "observed_rate": null
+    "observed_rate": null,
+    "interpretation": "dashboard-only; correlated markets must not drive model promotion"
   },
-  "prediction_records_settled": 0,
-  "roi": {
-    "reason": "No official bet/stake ledger in V14 analytics-only production.",
-    "status": "UNAVAILABLE"
-  },
+  "calibration": [],
+  "markets": {},
   "runs": {
     "team_run_mae": null,
     "total_run_mae": null
   },
-  "schema": "pulsar-v14-performance-v1"
+  "roi": {
+    "status": "UNAVAILABLE",
+    "reason": "No official bet/stake ledger in V14 analytics-only production."
+  },
+  "clv": {
+    "status": "UNAVAILABLE",
+    "reason": "No official bet ledger plus canonical closing-price feed; market movement proxy is reported separately."
+  },
+  "market_movement_proxy": {
+    "status": "UNAVAILABLE",
+    "definition": "market-wide movement to latest persisted pregame price; not bet CLV",
+    "n": 0,
+    "mean_implied_probability_move_pp": null
+  }
 }
