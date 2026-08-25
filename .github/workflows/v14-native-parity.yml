@@ -1,0 +1,96 @@
+name: Pulsar V14 Native Parity
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pulsar-v14-native-parity
+  cancel-in-progress: false
+
+jobs:
+  parity:
+    name: Native vs legacy acquisition parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate native V14
+        run: |
+          python -m py_compile v14/*.py
+          python -m v14.preflight
+
+      - name: Resolve slate date natively
+        id: slate
+        run: |
+          TARGET_DATE=$(python - <<'PY'
+          from v14.acquisition import resolve_target_date
+          print(resolve_target_date())
+          PY
+          )
+          echo "target_date=$TARGET_DATE" >> "$GITHUB_OUTPUT"
+          echo "PULSAR_V14_PARITY_DATE=$TARGET_DATE"
+
+      - name: Build temporary legacy acquisition reference
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          V12_DEFER_DISCORD: '1'
+          V1232_ENABLE_V115_SHADOW: '0'
+          V124_ENABLE_SHADOW: '0'
+        run: |
+          mkdir -p runtime/v11 runtime/v14 data
+          # Reference acquisition only. No Discord credential is exposed to this job.
+          python -m v11.v13_entry
+          test -s runtime/v11/discord_payload.json
+
+      - name: Build native V14 candidate and parity report
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: |
+          python -m v14.native_candidate "${{ steps.slate.outputs.target_date }}" \
+            --legacy-payload runtime/v11/discord_payload.json \
+            --destination runtime/v14/native_candidate.json \
+            --parity-output runtime/v14/native_legacy_parity.json
+
+      - name: Validate evidence is non-publishing
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          candidate = json.loads(Path('runtime/v14/native_candidate.json').read_text(encoding='utf-8'))
+          parity = json.loads(Path('runtime/v14/native_legacy_parity.json').read_text(encoding='utf-8'))
+          if candidate.get('role') != 'CANDIDATE_NON_PUBLISHING':
+              raise SystemExit('native candidate unexpectedly publishable')
+          if candidate.get('legacy_acquisition_adapter') is not False:
+              raise SystemExit('native candidate still reports legacy acquisition')
+          if candidate.get('market_probability_used_as_feature') is not False:
+              raise SystemExit('market probability leaked into native model features')
+          if parity.get('cutover_authorized') is not False:
+              raise SystemExit('parity evidence must never auto-authorize cutover')
+          print('PULSAR_V14_NATIVE_PARITY_EVIDENCE', json.dumps({
+              'coverage': candidate.get('coverage'),
+              'comparable_games': parity.get('comparable_games'),
+              'mean_abs_structural_run_delta': parity.get('mean_abs_structural_run_delta'),
+              'max_abs_structural_run_delta': parity.get('max_abs_structural_run_delta'),
+          }, sort_keys=True))
+          PY
+
+      - name: Upload parity evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: pulsar-v14-native-parity-${{ github.run_id }}
+          path: |
+            runtime/v14/native_candidate.json
+            runtime/v14/native_legacy_parity.json
+          if-no-files-found: error
+          retention-days: 90
