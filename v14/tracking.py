@@ -167,8 +167,39 @@ def _binary_metrics(items: list[tuple[float, int]]) -> dict[str, Any]:
     }
 
 
+def _calibration(items: list[tuple[float, int]], bins: int = 10) -> list[dict[str, Any]]:
+    grouped: list[list[tuple[float, int]]] = [[] for _ in range(bins)]
+    for p, y in items:
+        idx = min(bins - 1, max(0, int(p * bins)))
+        grouped[idx].append((p, y))
+    out = []
+    for idx, values in enumerate(grouped):
+        if not values:
+            continue
+        out.append({
+            "lower": idx / bins,
+            "upper": (idx + 1) / bins,
+            "n": len(values),
+            "mean_probability": sum(p for p, _ in values) / len(values),
+            "observed_rate": sum(y for _, y in values) / len(values),
+        })
+    return out
+
+
+def _canonical_settled(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], int]:
+    settled_records = [row for row in rows if row.get("settled") and row.get("model_generation") == MODEL_GENERATION]
+    latest_by_game: dict[str, dict[str, Any]] = {}
+    for row in settled_records:
+        key = str(row.get("game_pk") or "")
+        current = latest_by_game.get(key)
+        if current is None or str(row.get("analyzed_at") or "") > str(current.get("analyzed_at") or ""):
+            latest_by_game[key] = row
+    canonical = sorted(latest_by_game.values(), key=lambda row: (str(row.get("target_date") or ""), str(row.get("game_pk") or "")))
+    return canonical, len(settled_records)
+
+
 def performance_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    settled = [row for row in rows if row.get("settled") and row.get("model_generation") == MODEL_GENERATION]
+    settled, settled_record_count = _canonical_settled(rows)
     markets: dict[str, list[tuple[float, int]]] = defaultdict(list)
     run_errors: list[float] = []
     total_errors: list[float] = []
@@ -200,9 +231,12 @@ def performance_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "schema": "pulsar-v14-performance-v1",
         "model_generation": MODEL_GENERATION,
         "generated_at": datetime.now(timezone.utc).isoformat(),
+        "prediction_records_settled": settled_record_count,
         "games_settled": len(settled),
+        "canonical_snapshot_policy": "latest pregame snapshot per game",
         "overall": _binary_metrics(all_items),
-        "markets": {name: _binary_metrics(values) for name, values in sorted(markets.items())},
+        "calibration": _calibration(all_items),
+        "markets": {name: {**_binary_metrics(values), "calibration": _calibration(values)} for name, values in sorted(markets.items())},
         "runs": {
             "team_run_mae": sum(run_errors) / len(run_errors) if run_errors else None,
             "total_run_mae": sum(total_errors) / len(total_errors) if total_errors else None,
