@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-"""Post-prediction market diagnostics for Pulsar V14."""
+"""Post-prediction market diagnostics for Pulsar V14.
+
+Market prices are diagnostic-only. They are evaluated after the independent
+baseball probability surface has been produced and are never fed back as model
+features.
+"""
 
 from datetime import datetime, timezone
 import json
@@ -74,6 +79,50 @@ def edge_report(
         "expected_value_per_unit": p_model * decimal - 1.0,
         "market_probability_used_as_feature": False,
     }
+
+
+def diagnostics_from_snapshot(prediction: dict[str, Any], snapshot: dict[str, Any]) -> dict[str, Any]:
+    """Build paired no-vig edge/EV diagnostics from a canonical market snapshot."""
+    probabilities = prediction.get("probabilities") or {}
+    markets = snapshot.get("markets") or {}
+    out: dict[str, Any] = {
+        "schema": "pulsar-v14-market-diagnostics-v1",
+        "market_probability_used_as_feature": False,
+        "markets": {},
+    }
+
+    def paired(market_name: str, left_key: str, right_key: str, left_prob: str, right_prob: str) -> None:
+        market = markets.get(market_name) or {}
+        selections = market.get("selections") or {}
+        left = selections.get(left_key) or {}
+        right = selections.get(right_key) or {}
+        lp, rp = _num(left.get("price")), _num(right.get("price"))
+        lmodel, rmodel = _num(probabilities.get(left_prob)), _num(probabilities.get(right_prob))
+        if None in {lp, rp, lmodel, rmodel}:
+            return
+        out["markets"].setdefault(market_name, {
+            "bookmaker": market.get("bookmaker"),
+            "last_update": market.get("last_update"),
+            "age_minutes": market.get("age_minutes"),
+            "selections": {},
+        })
+        out["markets"][market_name]["selections"][left_key] = edge_report(lmodel, lp, rp)
+        out["markets"][market_name]["selections"][right_key] = edge_report(rmodel, rp, lp)
+
+    paired("ML", "home", "away", "home_ml", "away_ml")
+
+    rl = markets.get("RL") or {}
+    rl_sel = rl.get("selections") or {}
+    rl_pairs = (
+        ("home_-1.5", "away_+1.5", "home_minus_1_5", "away_plus_1_5"),
+        ("away_-1.5", "home_+1.5", "away_minus_1_5", "home_plus_1_5"),
+    )
+    for a, b, pa, pb in rl_pairs:
+        if a in rl_sel and b in rl_sel:
+            paired("RL", a, b, pa, pb)
+
+    paired("TOTAL", "over", "under", "over", "under")
+    return out
 
 
 def make_tracking_record(
