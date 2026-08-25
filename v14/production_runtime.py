@@ -34,17 +34,24 @@ NATIVE_CUTOVER_EVIDENCE = {
 }
 
 
+def _required_float(mapping: dict[str, Any], key: str) -> float:
+    value = mapping.get(key)
+    if value is None:
+        raise RuntimeError(f"native cutover evidence missing {key}")
+    return float(value)
+
+
 def _validate_cutover_evidence() -> None:
     evidence = NATIVE_CUTOVER_EVIDENCE
     if evidence.get("status") != "PASS":
         raise RuntimeError("native cutover evidence is not PASS")
     if int(evidence.get("comparable_games") or 0) < 8:
         raise RuntimeError("native cutover evidence has insufficient games")
-    if float(evidence.get("candidate_coverage") or 0.0) < 0.90:
+    if _required_float(evidence, "candidate_coverage") < 0.90:
         raise RuntimeError("native cutover evidence has insufficient coverage")
-    if float(evidence.get("mean_abs_structural_run_delta") or 999.0) > 0.03:
+    if _required_float(evidence, "mean_abs_structural_run_delta") > 0.03:
         raise RuntimeError("native cutover mean structural delta too large")
-    if float(evidence.get("max_abs_structural_run_delta") or 999.0) > 0.10:
+    if _required_float(evidence, "max_abs_structural_run_delta") > 0.10:
         raise RuntimeError("native cutover max structural delta too large")
 
 
