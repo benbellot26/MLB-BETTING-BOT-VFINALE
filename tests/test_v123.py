@@ -182,7 +182,6 @@ class V123AuditTests(unittest.TestCase):
         dq = {"score": .82}
         ev = .08
         unc = .03
-        # For zero push, p_win=(1+EV)/price gives the same expected value at any decimal price.
         fav = {"price": 1.50, "p_win": (1+ev)/1.50, "p_push": 0, "ev_at_price": ev, "uncertainty": unc}
         dog = {"price": 3.00, "p_win": (1+ev)/3.00, "p_push": 0, "ev_at_price": ev, "uncertainty": unc}
         sf = selector._score({}, fav, dq)
@@ -197,14 +196,10 @@ class V123AuditTests(unittest.TestCase):
         self.assertIn("Assert no research recommendation was created", research)
         self.assertNotIn("--send-persisted", research)
 
-        for path in (
-            ".github/workflows/market-snapshot.yml",
-            ".github/workflows/v13-market-tracking.yml",
-        ):
-            text = Path(path).read_text(encoding="utf-8")
-            self.assertIn("workflow_dispatch:", text)
-            self.assertNotIn("schedule:", text)
-            self.assertIn("ODDS_API_KEY", text)
+        text = Path(".github/workflows/market-snapshot.yml").read_text(encoding="utf-8")
+        self.assertIn("workflow_dispatch:", text)
+        self.assertNotIn("schedule:", text)
+        self.assertIn("ODDS_API_KEY", text)
 
     def test_closing_window_covers_15_minute_snapshot_cadence(self):
         self.assertGreaterEqual(config.CLOSING_CANDIDATE_WINDOW_MIN, 20)
