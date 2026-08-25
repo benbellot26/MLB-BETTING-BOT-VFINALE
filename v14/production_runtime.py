@@ -10,11 +10,12 @@ No V11/V13 runtime or probability payload is accepted here.
 import argparse
 import json
 from pathlib import Path
+import time
 from typing import Any
 
 from . import MODEL_GENERATION
 from .acquisition import resolve_target_date
-from .discord import send_game
+from .discord import publication_gap_seconds, send_game
 from .native_candidate import build_candidate, persist_candidate
 from .native_payload import authorize_payload, build_native_discord_payload
 
@@ -132,12 +133,16 @@ def send_persisted(*, path: Path | str = V14_PAYLOAD) -> None:
     payload = json.loads(source.read_text(encoding="utf-8"))
     validate_production_payload(payload)
 
+    results = list(payload.get("results") or [])
     ok = True
-    for result in payload.get("results") or []:
+    gap = publication_gap_seconds()
+    for index, result in enumerate(results):
         ok = bool(send_game(result)) and ok
+        if index + 1 < len(results) and gap > 0:
+            time.sleep(gap)
     if not ok:
         raise SystemExit("Pulsar V14 Discord publication incomplete")
-    print(f"PULSAR_V14_DISCORD published_games={len(payload.get('results') or [])}")
+    print(f"PULSAR_V14_DISCORD published_games={len(results)}")
 
 
 def main() -> None:
