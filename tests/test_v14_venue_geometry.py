@@ -1,6 +1,6 @@
 import unittest
 
-from v14.venue_geometry import fetch, parse
+from v14.venue_geometry import fetch, fetch_nearest, parse
 
 
 class VenueGeometryTests(unittest.TestCase):
@@ -34,6 +34,22 @@ class VenueGeometryTests(unittest.TestCase):
         self.assertEqual(calls[0][1],{"hydrate":"location"})
         self.assertEqual(out["outfield_bearing_deg"],58.0)
         self.assertEqual(out["retrieved_at"],"2026-08-26T17:00:00+00:00")
+
+    def test_nearest_resolution_keys_to_place_not_team_name(self):
+        calls=[]
+        def getter(url,params):
+            calls.append((url,dict(params)))
+            return {"venues":[
+                {"id":1,"name":"Old Park","location":{"azimuthAngle":55,"defaultCoordinates":{"latitude":37.75,"longitude":-122.20}}},
+                {"id":2,"name":"Temporary Home","location":{"azimuthAngle":20,"defaultCoordinates":{"latitude":38.5806,"longitude":-121.5130}}},
+            ]}
+        out=fetch_nearest(38.5806,-121.5130,season=2026,getter=getter,retrieved_at="2026-08-26T17:00:00+00:00")
+        self.assertEqual(out["venue_id"],"2")
+        self.assertEqual(out["outfield_bearing_deg"],20.0)
+        self.assertLess(out["nearest_distance_km"],0.01)
+        self.assertEqual(calls[0][1]["sportIds"],1)
+        self.assertEqual(calls[0][1]["season"],2026)
+        self.assertEqual(calls[0][1]["hydrate"],"location")
 
 
 if __name__=="__main__":
