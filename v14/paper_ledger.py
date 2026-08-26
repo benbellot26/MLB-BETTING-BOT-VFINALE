@@ -103,16 +103,7 @@ def record_payload(payload:dict[str,Any],path:Path|str=LEDGER)->int:
             if price is None or price<=1 or not execution_book or robust_sharp is None or robust_sharp<=0: continue
             selection=str(candidate.get("selection") or ""); entry_sharp=_num((sharp.get(selection) or {}).get("fair_probability"))
             if entry_sharp is None or not 0<entry_sharp<1: continue
-            row={
-                "schema":"pulsar-v14-paper-bet-v5","paper_bet_id":f"{game_pk}:{canonical}","model_generation":MODEL_GENERATION,
-                "game_pk":game_pk,"odds_event_id":result.get("odds_event_id"),"target_date":str(payload.get("target_date") or ""),"game_date":game_date,"analyzed_at":analyzed_at,
-                "home":result.get("home"),"away":result.get("away"),"market":candidate.get("market"),"canonical_market":canonical,"selection":selection,"total_line":total_line,
-                "execution_odds":price,"execution_book":execution_book,"probability":candidate.get("probability"),"raw_probability":_num(raw.get(selection)),"lower_probability":candidate.get("lower_probability"),
-                "entry_sharp_probability":entry_sharp,"model_edge_pp":candidate.get("model_edge_pp"),"robust_edge_pp":candidate.get("robust_edge_pp"),"sharp_edge_pp":candidate.get("sharp_edge_pp"),"robust_sharp_edge_pp":robust_sharp,
-                "entry_market_freshness_verified":True,"entry_sharp_freshness_verified":True,"entry_execution_freshness_verified":True,
-                "close_history":[],"close_captured_at":None,"close_minutes_to_game":None,"close_quality":None,"closing_sharp_probability":None,"sharp_fair_close_odds":None,"sharp_clv_pp":None,"execution_close_odds":None,"execution_price_clv_pp":None,
-                "result":None,"flat_1u_profit":None,"home_score":None,"away_score":None,"settled_at":None,
-            }
+            row={"schema":"pulsar-v14-paper-bet-v5","paper_bet_id":f"{game_pk}:{canonical}","model_generation":MODEL_GENERATION,"game_pk":game_pk,"odds_event_id":result.get("odds_event_id"),"target_date":str(payload.get("target_date") or ""),"game_date":game_date,"analyzed_at":analyzed_at,"home":result.get("home"),"away":result.get("away"),"market":candidate.get("market"),"canonical_market":canonical,"selection":selection,"total_line":total_line,"execution_odds":price,"execution_book":execution_book,"probability":candidate.get("probability"),"raw_probability":_num(raw.get(selection)),"lower_probability":candidate.get("lower_probability"),"entry_sharp_probability":entry_sharp,"model_edge_pp":candidate.get("model_edge_pp"),"robust_edge_pp":candidate.get("robust_edge_pp"),"sharp_edge_pp":candidate.get("sharp_edge_pp"),"robust_sharp_edge_pp":robust_sharp,"entry_market_freshness_verified":True,"entry_sharp_freshness_verified":True,"entry_execution_freshness_verified":True,"close_history":[],"close_captured_at":None,"close_minutes_to_game":None,"close_quality":None,"closing_sharp_probability":None,"sharp_fair_close_odds":None,"sharp_clv_pp":None,"execution_close_odds":None,"execution_price_clv_pp":None,"result":None,"flat_1u_profit":None,"home_score":None,"away_score":None,"settled_at":None}
             existing.append(row); occupied.add(key)
     ordered=sorted(existing,key=lambda r:(str(r.get("game_date") or ""),str(r.get("game_pk") or ""),_row_market(r),str(r.get("analyzed_at") or "")))
     _write(ordered,path); return len(existing)-before
@@ -226,12 +217,6 @@ def _ci(values:list[float])->dict[str,Any]:
 
 
 def _canonical_rows(rows:list[dict[str,Any]])->list[dict[str,Any]]:
-    """One immutable first qualifying observation per game × canonical market.
-
-    Legacy ledgers may contain repeated snapshots. For those only, the earliest
-    strictly pregame entry is retained, matching the first-entry policy rather
-    than selecting a more favorable time retrospectively.
-    """
     earliest={}
     for row in rows:
         if row.get("model_generation")!=MODEL_GENERATION: continue
@@ -256,7 +241,7 @@ def _slice(rows:list[dict[str,Any]])->dict[str,Any]:
 def report(rows:list[dict[str,Any]])->dict[str,Any]:
     current=[r for r in rows if r.get("model_generation")==MODEL_GENERATION]; excluded=len(rows)-len(current); overall=_slice(current); by_market={}
     for market in sorted({_row_market(r) for r in current if _row_market(r)}): by_market[market]=_slice([r for r in current if _row_market(r)==market])
-    return {"schema":"pulsar-v14-paper-bet-performance-v5","role":"CERTIFICATION_EVIDENCE_ONLY","model_generation":MODEL_GENERATION,"excluded_other_generation_rows":excluded,**overall,"by_market":by_market,"close_policy":{"certified_max_minutes_to_game":CERTIFIED_CLOSE_MAX_MINUTES,"capture_window_minutes":CLOSE_WINDOW_MINUTES,"event_match":"persisted odds event id is authoritative; strict time/team fallback only for legacy rows without id","execution_close_requires_fresh_book":True},"entry_policy":"first strict verified qualifying game x canonical market; no retrospective timing selection"}
+    return {"schema":"pulsar-v14-paper-bet-performance-v5","role":"CERTIFICATION_EVIDENCE_ONLY","model_generation":MODEL_GENERATION,"generated_at":datetime.now(timezone.utc).isoformat(),"excluded_other_generation_rows":excluded,**overall,"by_market":by_market,"close_policy":{"certified_max_minutes_to_game":CERTIFIED_CLOSE_MAX_MINUTES,"capture_window_minutes":CLOSE_WINDOW_MINUTES,"event_match":"persisted odds event id is authoritative; strict time/team fallback only for legacy rows without id","execution_close_requires_fresh_book":True},"entry_policy":"first strict verified qualifying game x canonical market; no retrospective timing selection"}
 
 
 def write_report(path:Path|str=LEDGER,output:Path|str=REPORT)->dict[str,Any]:
