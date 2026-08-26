@@ -11,13 +11,13 @@ from v14.statcast_enrichment import aggregate_statcast_priors
 from v14.statcast_shadow import load_priors
 
 
-def pitch(day:str,batter:str,pitcher:str,ptype:str,event:str="single",xwoba:str="0.410",description:str="hit_into_play"):
-    return {"game_date":day,"game_pk":"1","at_bat_number":batter,"pitch_number":"1","batter":batter,"pitcher":pitcher,"pitch_type":ptype,"events":event,"description":description,"estimated_woba_using_speedangle":xwoba,"launch_speed":"100","launch_speed_angle":"6","release_speed":"95"}
+def pitch(day:str,batter:str,pitcher:str,ptype:str,pitch_number:int=1,event:str="single",xwoba:str="0.410",description:str="hit_into_play"):
+    return {"game_date":day,"game_pk":"1","at_bat_number":"1","pitch_number":str(pitch_number),"batter":batter,"pitcher":pitcher,"pitch_type":ptype,"events":event,"description":description,"estimated_woba_using_speedangle":xwoba,"launch_speed":"100","launch_speed_angle":"6","release_speed":"95"}
 
 
 class StatcastEnrichmentTests(unittest.TestCase):
     def test_enrichment_keeps_exact_pitch_codes_and_excludes_cutoff_day(self):
-        rows=[pitch("2026-08-24","101","201","FF"),pitch("2026-08-24","101","201","SL"),pitch("2026-08-25","101","201","CH")]
+        rows=[pitch("2026-08-24","101","201","FF",1),pitch("2026-08-24","101","201","SL",2),pitch("2026-08-25","101","201","CH",3)]
         out=aggregate_statcast_priors(rows,"2026-08-25")
         self.assertEqual(out["schema"],"pulsar-v14-statcast-id-priors-v2")
         self.assertTrue(out["point_in_time"]); self.assertTrue(out["stable_id_only"])
