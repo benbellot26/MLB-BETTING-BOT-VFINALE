@@ -24,14 +24,12 @@ def _num(value:Any,default:float=0.0)->float:
 def _pct(value:Any)->str:return f"**{100*_num(value):.1f}%**"
 def _team(result:dict[str,Any],side:str)->str:
     ctx=result.get("ctx") or {}; return str(ctx.get(side) or result.get(side) or "—")
-
 def _lineup_status(lineup:Any)->str:
     if not isinstance(lineup,dict):return "⚪ NON PUBLIÉE"
     count=int(_num(lineup.get("count"),len(lineup.get("players") or []))); confirmed=lineup.get("confirmed") is True
     if count>=9 or (confirmed and len(lineup.get("players") or [])>=9):return "✅ CONFIRMÉE 9/9"
     if count>0:return f"🟡 PARTIELLE {count}/9"
     return "⚪ NON PUBLIÉE"
-
 def _starter_name(ctx:dict[str,Any],side:str)->str|None:
     for key in (f"{side}_sp",f"{side}_starter"):
         value=ctx.get(key)
@@ -40,7 +38,6 @@ def _starter_name(ctx:dict[str,Any],side:str)->str|None:
             if name:return str(name)
         elif value:return str(value)
     return None
-
 def _starter_status(name:str|None)->str:return f"🟡 PROBABLE/ANNONCÉ — {name}" if name else "⚪ NON ANNONCÉ"
 def _phase_display(phase:str)->str:return "FINAL UPDATE" if str(phase).upper()=="FINAL" else str(phase).upper()
 
@@ -49,11 +46,27 @@ def _starter_fallback_field(result:dict[str,Any])->dict[str,Any]|None:
     fallback=result.get("starter_fallback") or (result.get("ctx") or {}).get("starter_fallback") or {}
     if not fallback.get("degraded"):return None
     sides=", ".join(str(s).upper() for s in fallback.get("sides") or []) or "UNKNOWN"
-    return {
-        "name":"⚠️ DATA QUALITY — STARTER CONFLICT",
-        "value":f"Starter identity not safely confirmed for **{sides}**. Pulsar kept this game in the slate using a **neutral league-average starter fallback** for the affected side(s). Treat this projection as degraded until official starter consensus is restored.",
-        "inline":False,
-    }
+    return {"name":"⚠️ DATA QUALITY — STARTER CONFLICT","value":f"Starter identity not safely confirmed for **{sides}**. Pulsar kept this game in the slate using a **neutral league-average starter fallback** for the affected side(s). **No betting action is authorized** while this state is degraded.","inline":False}
+
+
+def _quality_field(result:dict[str,Any],prediction:dict[str,Any])->dict[str,Any]:
+    certification=result.get("betting_certification") or {}
+    status=str(certification.get("betting_status") or "RESEARCH_ONLY")
+    calibration=prediction.get("calibration") or {}; active=[name for name,row in (calibration.get("markets") or {}).items() if row.get("active")]
+    cal_label=", ".join(active) if active else "collecting / identity"
+    sharp=result.get("sharp_market") or {}; sharp_label="verified" if sharp.get("freshness_verified") else "unavailable/unverified"
+    best=(result.get("decision") or {}).get("best") or {}; decision=str(best.get("status") or "NO_BET")
+    reason=""
+    blockers=best.get("blockers") or []
+    if blockers: reason="\n🔒 " + ", ".join(str(x) for x in blockers[:4])
+    return {"name":"🧪 PROBABILITY QUALITY","value":f"Calibration **{cal_label}**  •  Sharp benchmark **{sharp_label}**\nBetting status **{status}**  •  Decision **{decision}**{reason}","inline":False}
+
+
+def _interval_suffix(prediction:dict[str,Any],key:str)->str:
+    row=((prediction.get("probability_intervals") or {}).get("selections") or {}).get(key) or {}
+    lo=row.get("lower"); hi=row.get("upper")
+    if lo is None or hi is None:return ""
+    return f"  `[{100*float(lo):.1f}–{100*float(hi):.1f}]`"
 
 
 def build_game_embed(result:dict[str,Any])->dict[str,Any]:
@@ -67,15 +80,16 @@ def build_game_embed(result:dict[str,Any])->dict[str,Any]:
     context=prediction.get("context_adjustment") or {}; context_label="ACTIVE" if context.get("eligible") else "BASE"; feature_as_of=context.get("feature_as_of") or "—"
     fallback=result.get("starter_fallback") or ctx.get("starter_fallback") or {}; quality_label="DEGRADED" if fallback.get("degraded") else "VERIFIED"
     fields=[
-        {"name":"🏆 MONEYLINE","value":f"✈️ **{away}**  ·  {_pct(probabilities['away_ml'])}\n🏠 **{home}**  ·  {_pct(probabilities['home_ml'])}","inline":False},
+        {"name":"🏆 MONEYLINE","value":f"✈️ **{away}**  ·  {_pct(probabilities['away_ml'])}{_interval_suffix(prediction,'away_ml')}\n🏠 **{home}**  ·  {_pct(probabilities['home_ml'])}{_interval_suffix(prediction,'home_ml')}","inline":False},
         {"name":"⚾ RUN LINE ±1.5","value":f"✈️ **{away}**   `+1.5` {_pct(probabilities['away_plus_1_5'])}   │   `-1.5` {_pct(probabilities['away_minus_1_5'])}\n🏠 **{home}**   `+1.5` {_pct(probabilities['home_plus_1_5'])}   │   `-1.5` {_pct(probabilities['home_minus_1_5'])}","inline":False},
-        {"name":f"📊 TOTAL {line:g}","value":f"📈 **OVER**  {_pct(probabilities['over'])}    │    📉 **UNDER**  {_pct(probabilities['under'])}","inline":False},
+        {"name":f"📊 TOTAL {line:g}","value":f"📈 **OVER**  {_pct(probabilities['over'])}{_interval_suffix(prediction,'over')}    │    📉 **UNDER**  {_pct(probabilities['under'])}{_interval_suffix(prediction,'under')}","inline":False},
         {"name":"🧭 GAME SNAPSHOT","value":f"🎯 Projection  {away} **{_num(projection.get('away_mu')):.1f}**  —  **{_num(projection.get('home_mu')):.1f}** {home}\n🧠 Phase **{phase_display}**  •  Context **{context_label}**  •  Data **{quality_label}**  •  Model **{VERSION}**\n🕒 PIT context **{feature_as_of}**","inline":False},
+        _quality_field(result,prediction),
         {"name":"👥 Lineups & starters","value":f"✈️ {_lineup_status(ctx.get('away_lineup'))}  •  SP {_starter_status(_starter_name(ctx,'away'))}\n🏠 {_lineup_status(ctx.get('home_lineup'))}  •  SP {_starter_status(_starter_name(ctx,'home'))}","inline":False},
     ]
     warning=_starter_fallback_field(result)
     if warning:fields.insert(0,warning)
-    return {"title":f"⚾ {away} @ {home}  •  {phase_display}","color":color,"fields":fields,"footer":{"text":f"Pulsar V14 • {MODEL_GENERATION}"}}
+    return {"title":f"⚾ {away} @ {home}  •  {phase_display}","color":color,"fields":fields,"footer":{"text":f"Pulsar V14 • {MODEL_GENERATION} • software production ≠ betting certification"}}
 
 
 def _retry_after_seconds(exc:HTTPError,attempt:int)->float:
