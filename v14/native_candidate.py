@@ -9,13 +9,17 @@ from typing import Any, Callable
 
 from . import MODEL_GENERATION, VERSION
 from .acquisition import PregameSnapshot, collect_pregame
+from .certification import load_status as load_certification_status
+from .decision import evaluate as decision_diagnostics
 from .market_edge import diagnostics_from_snapshot
 from .market_lines import canonical_market_snapshot, choose_total_line
 from .mlb_inputs import NativeGameInputs, build_game_inputs
 from .phase import infer_phase
 from .pipeline import predict_from_structural
+from .sharp_market import sharp_consensus
 from .starter_fallback import degraded_sides_from_evidence, degradation_summary, neutralize_probable_pitchers
 from .starter_integrity import starter_integrity_evidence
+from .uncertainty import intervals as probability_intervals
 
 NATIVE_CANDIDATE = Path("runtime/v14/native_candidate.json")
 Collector = Callable[..., PregameSnapshot]
@@ -35,6 +39,28 @@ def _phase_quality_gate(native: NativeGameInputs, phase: str) -> None:
             raise ValueError("FINAL snapshot requires both confirmed 9/9 lineups")
 
 
+def _compact_training_features(feature_row: dict[str, Any], prediction: dict[str, Any]) -> dict[str, Any]:
+    """Persist only PIT covariates needed for future residual challengers."""
+    ctx = feature_row.get("context") or {}
+    features = feature_row.get("features") or {}
+    quality = feature_row.get("data_quality") or {}
+    return {
+        "schema": "pulsar-v14-training-features-v1",
+        "as_of": feature_row.get("as_of"),
+        "point_in_time": feature_row.get("point_in_time") is True,
+        "base_run_projection": prediction.get("base_run_projection") or {},
+        "context_adjustment": prediction.get("context_adjustment") or {},
+        "home_starter": ctx.get("home_starter") or {},
+        "away_starter": ctx.get("away_starter") or {},
+        "home_lineup": {k: (ctx.get("home_lineup") or {}).get(k) for k in ("count", "weighted_ops", "coverage", "status")},
+        "away_lineup": {k: (ctx.get("away_lineup") or {}).get(k) for k in ("count", "weighted_ops", "coverage", "status")},
+        "bullpen": features.get("bullpen") or {},
+        "operational": features.get("operational") or {},
+        "environment": features.get("environment") or {},
+        "data_quality": quality,
+    }
+
+
 def build_native_result(
     game: dict[str, Any],
     event: dict[str, Any],
@@ -52,9 +78,9 @@ def build_native_result(
     degraded_sides=degraded_sides_from_evidence(starter_integrity,phase)
     fallback=degradation_summary(starter_integrity,degraded_sides)
 
-    # Preserve full-slate coverage: conflicts never silently trust a stale
-    # pitcher and never remove the game. Rebuild affected side(s) without a
-    # pitcher identity so mlb_inputs uses its neutral league-average starter.
+    # Preserve full-slate analytics coverage: conflicts never silently trust a
+    # stale pitcher. Affected sides are rebuilt with a neutral starter, while
+    # the decision layer later blocks the game from actionable betting.
     if degraded_sides:
         sanitized_game=neutralize_probable_pitchers(game,degraded_sides)
         native=input_builder(sanitized_game,target_date=target_date,analyzed_at=analyzed_at)
@@ -77,12 +103,32 @@ def build_native_result(
 
     prediction=predict_from_structural(native.structural,analyzed_at=analyzed_at,home=native.home,away=native.away,total_line=float(line_meta["line"]),feature_row=feature_row,phase=phase)
     market_snapshot=canonical_market_snapshot(event,total_line=float(line_meta["line"]),as_of=analyzed_at)
+    # Once the actual market freshness is known, refresh the decision-safety
+    # intervals. This never feeds market probability back into the model.
+    prediction["probability_intervals"]=probability_intervals(
+        prediction.get("probabilities") or {},
+        prediction.get("calibration") or {},
+        data_quality=quality,
+        starter_degraded=bool(degraded_sides),
+        market_fresh=market_snapshot.get("freshness_verified"),
+    )
     market_diagnostics=diagnostics_from_snapshot(prediction,market_snapshot)
+    sharp=sharp_consensus(event,total_line=float(line_meta["line"]),as_of=analyzed_at)
+    certification=load_certification_status()
+    decision=decision_diagnostics(
+        prediction=prediction,
+        market_snapshot=market_snapshot,
+        sharp_market=sharp,
+        certification=certification,
+        starter_degraded=bool(degraded_sides),
+    )
     context=dict(native.context); context["starter_integrity"]=starter_integrity; context["starter_fallback"]=fallback
     return {
         "game_pk":native.structural.game_pk,"game_date":native.structural.game_date,"analyzed_at":analyzed_at,"phase":phase,"home":native.home,"away":native.away,"ctx":context,
         "canonical_lines":{"TOTAL":float(line_meta["line"])},"line_selection":line_meta,"market_snapshot":market_snapshot,"market_diagnostics":market_diagnostics,
+        "sharp_market":sharp,"betting_certification":certification,"decision":decision,
         "native_structural":{"game_pk":native.structural.game_pk,"game_date":native.structural.game_date,"venue":native.structural.venue,"structural_home_mu":native.structural.structural_home_mu,"structural_away_mu":native.structural.structural_away_mu,"static_park_factor":native.structural.static_park_factor,"debug":native.structural_debug},
+        "training_features":_compact_training_features(feature_row,prediction),
         "starter_fallback":fallback,"v14_prediction":prediction,"model_generation":MODEL_GENERATION,"market_probability_used_as_feature":False,
     }
 
@@ -102,7 +148,7 @@ def build_candidate(
         except Exception as exc:
             skipped.append({"game_pk":game_pk,"reason":f"{type(exc).__name__}: {exc}"})
     return {
-        "schema":"pulsar-v14-native-candidate-v2","version":VERSION,"model_generation":MODEL_GENERATION,"role":"CANDIDATE_NON_PUBLISHING","native_acquisition":True,"legacy_acquisition_adapter":False,"market_probability_used_as_feature":False,
+        "schema":"pulsar-v14-native-candidate-v3","version":VERSION,"model_generation":MODEL_GENERATION,"role":"CANDIDATE_NON_PUBLISHING","native_acquisition":True,"legacy_acquisition_adapter":False,"market_probability_used_as_feature":False,
         "target_date":target_date,"analyzed_at":at,"results":results,"skipped":skipped,
         "coverage":{"scheduled_future_games":len(snapshot.games),"matched_odds_games":len(snapshot.matches),"priced_games":len(results),"skipped_games":len(skipped)},
     }
