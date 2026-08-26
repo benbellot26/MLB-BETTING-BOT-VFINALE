@@ -3,9 +3,10 @@ from __future__ import annotations
 """Sharp-market consensus separated from execution/display prices.
 
 Weights are market-specific and can be supplied by a validated research
-artifact; conservative defaults are used otherwise. Consensus uncertainty and
-per-book fair contributors are persisted so future weights can be learned on
-proper-score evidence instead of remaining hand-picked forever.
+artifact. Unadjusted exchange back-price proxies are intentionally discounted
+until commission, liquidity and lay-side information are available. Consensus
+uncertainty and per-book contributors are persisted so weights can be learned
+with strict OOS evidence rather than hand-picked forever.
 """
 
 import json
@@ -17,7 +18,7 @@ from typing import Any
 from .market_lines import DEFAULT_MAX_MARKET_AGE_MINUTES, _book_freshness, _market_outcomes, _num
 
 WEIGHTS_ARTIFACT=Path("data/v14_sharp_book_weights.json")
-DEFAULT_SHARP_BOOK_WEIGHTS={"pinnacle":1.00,"betfair_ex_eu":0.95,"matchbook":0.90,"betonlineag":0.65}
+DEFAULT_SHARP_BOOK_WEIGHTS={"pinnacle":1.00,"betfair_ex_eu":0.55,"matchbook":0.55,"betonlineag":0.65}
 EXCHANGE_BOOKS={"betfair_ex_eu","matchbook"}
 
 
@@ -40,7 +41,7 @@ def power_devig(a:float,b:float)->tuple[float,float]:
 
 
 def additive_devig(a:float,b:float)->tuple[float,float]:
-    q1,q2=1/float(a),1/float(b); margin=q1+q2-1.0; p1=q1-margin/2; p2=q2-margin/2
+    q1,q2=1/float(a),1/float(b); margin=q1+q2-1; p1=q1-margin/2; p2=q2-margin/2
     if min(p1,p2)<=0: return proportional_devig(a,b)
     s=p1+p2; return p1/s,p2/s
 
@@ -76,8 +77,8 @@ def _consensus(rows:list[tuple[float,float,str,str]])->dict[str,Any]|None:
     if not rows: return None
     probs=[p for p,_w,_b,_t in rows]; med=median(probs); bounded=[(max(med-.08,min(med+.08,p)),w,b,t,p) for p,w,b,t in rows]; total=sum(w for _p,w,_b,_t,_raw in bounded)
     mean=sum(p*w for p,w,_b,_t,_raw in bounded)/max(1e-12,total); variance=sum(w*(p-mean)**2 for p,w,_b,_t,_raw in bounded)/max(1e-12,total)
-    contributors=[{"bookmaker":b,"source_type":t,"fair_probability":raw,"winsorized_probability":p,"weight":w} for p,w,b,t,raw in bounded]
-    return {"fair_probability":mean,"source_count":len(rows),"books":[b for _p,_w,b,_t in rows],"source_types":[t for _p,_w,_b,t in rows],"contributors":contributors,"dispersion_pp":100*math.sqrt(max(0.0,variance)),"range_pp":100*(max(probs)-min(probs)) if len(probs)>1 else 0.0,"consensus_method":"weighted winsorized cross-book fair probability"}
+    contributors=[{"bookmaker":b,"source_type":t,"fair_probability":raw,"winsorized_probability":p,"weight":w,"proxy_discounted":t=="EXCHANGE_PROXY"} for p,w,b,t,raw in bounded]
+    return {"fair_probability":mean,"source_count":len(rows),"sportsbook_source_count":sum(t=="SPORTSBOOK" for _p,_w,_b,t in rows),"exchange_proxy_source_count":sum(t=="EXCHANGE_PROXY" for _p,_w,_b,t in rows),"books":[b for _p,_w,b,_t in rows],"source_types":[t for _p,_w,_b,t in rows],"contributors":contributors,"dispersion_pp":100*math.sqrt(max(0,variance)),"range_pp":100*(max(probs)-min(probs)) if len(probs)>1 else 0.0,"consensus_method":"weighted winsorized cross-book fair probability"}
 
 
 def _price_pair(outcomes:list[dict[str,Any]],name_a:str,name_b:str,*,point_a:float|None=None,point_b:float|None=None)->tuple[float,float]|None:
@@ -106,7 +107,7 @@ def sharp_consensus(event:dict[str,Any],*,total_line:float,as_of:Any,max_age_min
         weight=_weight(key,"TOTAL_OVER",artifact); totals=[r for r in _market_outcomes(book,"totals") if _num(r.get("point"))==float(total_line)]; pair=_price_pair(totals,"Over","Under")
         if pair and weight is not None:
             p,_q,meta=_fair_pair(*pair); accum["over"].append((p,weight,key,source_type)); used.append("TOTAL_OVER"); devig_meta.append({"bookmaker":key,"market":"TOTAL_OVER","method_spread_pp":meta["method_spread_pp"]})
-        if used: book_rows.append({"bookmaker":key,"source_type":source_type,"freshness":freshness,"markets":used,"exchange_commission_adjusted":False if source_type=="EXCHANGE_PROXY" else None})
+        if used: book_rows.append({"bookmaker":key,"source_type":source_type,"freshness":freshness,"markets":used,"exchange_commission_adjusted":False if source_type=="EXCHANGE_PROXY" else None,"default_proxy_weight":DEFAULT_SHARP_BOOK_WEIGHTS.get(key) if source_type=="EXCHANGE_PROXY" else None})
     selections={}
     for key,rows in accum.items():
         row=_consensus(rows)
@@ -115,4 +116,4 @@ def sharp_consensus(event:dict[str,Any],*,total_line:float,as_of:Any,max_age_min
         if left in selections:
             base=selections[left]; contributors=[{**c,"fair_probability":1-float(c["fair_probability"]),"winsorized_probability":1-float(c["winsorized_probability"])} for c in base.get("contributors") or []]; selections[right]={**base,"fair_probability":1-float(base["fair_probability"]),"contributors":contributors}
     required={"home_ml","away_ml","over","under"}; actionable=required<=set(selections) and bool(book_rows)
-    return {"schema":"pulsar-v14-sharp-consensus-v2","market_probability_used_as_feature":False,"benchmark_only":True,"actionable":actionable,"freshness_verified":bool(book_rows),"total_line":float(total_line),"selections":selections,"books":book_rows,"weights_status":artifact.get("status") or ("VALIDATED" if artifact.get("validated") else "DEFAULT"),"devig_methods":["proportional","power","additive"],"devig_method_diagnostics":devig_meta,"exchange_note":"Exchange sources are proxy fair quotes unless commission/liquidity fields are available."}
+    return {"schema":"pulsar-v14-sharp-consensus-v3","market_probability_used_as_feature":False,"benchmark_only":True,"actionable":actionable,"freshness_verified":bool(book_rows),"total_line":float(total_line),"selections":selections,"books":book_rows,"weights_status":artifact.get("status") or ("VALIDATED" if artifact.get("validated") else "DEFAULT"),"devig_methods":["proportional","power","additive"],"devig_method_diagnostics":devig_meta,"exchange_note":"Exchange sources are downweighted proxies unless commission/liquidity/lay fields become available and are validated OOS."}
