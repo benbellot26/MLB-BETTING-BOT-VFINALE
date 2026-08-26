@@ -5,37 +5,13 @@ from pathlib import Path
 import unittest
 
 NATIVE_MODULES=(
-    "acquisition.py",
-    "certification.py",
-    "context_overlay.py",
-    "decision.py",
-    "discord.py",
-    "distribution.py",
-    "distribution_tuning.py",
-    "environment_physics_challenger.py",
-    "market_edge.py",
-    "market_lines.py",
-    "mlb_inputs.py",
-    "model.py",
-    "native_candidate.py",
-    "native_payload.py",
-    "parity_gate.py",
-    "park.py",
-    "phase.py",
-    "pipeline.py",
-    "probability_calibration.py",
-    "production_runtime.py",
-    "residual_challenger.py",
-    "run_decomposition_challenger.py",
-    "run_stack.py",
-    "sharp_market.py",
-    "starter_fallback.py",
-    "starter_integrity.py",
-    "starter_usage_challenger.py",
-    "structural.py",
-    "timezone_challenger.py",
-    "tracking.py",
-    "uncertainty.py",
+    "acquisition.py","certification.py","context_overlay.py","decision.py","defense_baserunning_challenger.py","discord.py","distribution.py","distribution_tuning.py",
+    "environment_physics_challenger.py","execution_market.py","historical_pit.py","heteroskedastic_distribution_challenger.py","inning_simulator_challenger.py",
+    "market_edge.py","market_lines.py","mlb_inputs.py","model.py","native_candidate.py","native_payload.py","parity_gate.py","park.py","phase.py","pipeline.py",
+    "pitch_matchup_challenger.py","probability_calibration.py","production_runtime.py","residual_challenger.py","run_decomposition_challenger.py","run_stack.py",
+    "sharp_market.py","sharp_weight_challenger.py","starter_fallback.py","starter_integrity.py","starter_recent_usage.py","starter_usage_challenger.py","statcast_shadow.py",
+    "structural.py","timezone_challenger.py","total_market.py","tracking.py","true_talent_challenger.py","uncertainty.py","uncertainty_fit.py","venue_park_challenger.py",
+    "calibration_methods_challenger.py",
 )
 
 
@@ -65,14 +41,19 @@ class V14ImportBoundaryTests(unittest.TestCase):
 
     def test_research_extensions_cannot_auto_activate(self):
         for filename in (
-            "starter_usage_challenger.py",
-            "environment_physics_challenger.py",
-            "run_decomposition_challenger.py",
-            "timezone_challenger.py",
+            "starter_usage_challenger.py","environment_physics_challenger.py","run_decomposition_challenger.py","timezone_challenger.py","pitch_matchup_challenger.py",
+            "defense_baserunning_challenger.py","venue_park_challenger.py","true_talent_challenger.py","heteroskedastic_distribution_challenger.py","inning_simulator_challenger.py",
+            "sharp_weight_challenger.py","calibration_methods_challenger.py",
         ):
             text=(Path("v14")/filename).read_text(encoding="utf-8")
             self.assertIn("CHALLENGER_ONLY",text)
             self.assertIn("auto_activation",text)
 
+    def test_historical_pit_contract_rejects_live_season_backfill(self):
+        text=Path("v14/historical_pit.py").read_text(encoding="utf-8")
+        self.assertIn("historical leakage",text)
+        self.assertIn("mlb_stats_season_live",text)
 
-if __name__=="__main__": unittest.main()
+
+if __name__ == "__main__":
+    unittest.main()

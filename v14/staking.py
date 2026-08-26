@@ -1,9 +1,12 @@
 from __future__ import annotations
 
-"""Conservative staking policy for statistically certified Pulsar bets.
+"""Conservative portfolio staking for statistically certified Pulsar bets.
 
-Sizing uses the LOWER probability confidence bound, quarter Kelly, and hard
-portfolio caps. It returns zero stake for every non-BET / uncertified decision.
+Sizing uses the LOWER probability confidence bound and quarter Kelly. Caps are
+applied to the whole slate, not independently inside each game: per-bet, per-game
+(correlation proxy), per-market and per-day exposure are all fail-closed. Existing
+same-day official bets can be supplied as initial exposure so repeated runtime
+snapshots cannot reset the portfolio limits.
 """
 
 import math
@@ -11,6 +14,7 @@ from typing import Any
 
 KELLY_FRACTION = 0.25
 MAX_BET_BANKROLL_FRACTION = 0.010
+MAX_GAME_BANKROLL_FRACTION = 0.015
 MAX_DAILY_BANKROLL_FRACTION = 0.030
 MAX_MARKET_BANKROLL_FRACTION = 0.020
 
@@ -46,8 +50,44 @@ def unit_tier(stake_fraction: float) -> int:
     return 3
 
 
-def size_candidates(candidates: list[dict[str, Any]], *, certified: bool) -> list[dict[str, Any]]:
-    sized=[]; daily_used=0.0; market_used: dict[str,float]={}
-    for row in sorted(candidates,key=lambda r:float(r.get("robust_edge_pp") or -999),reverse=True):
-        out=dict(row); desired=conservative_stake_fraction(row,certified=certified); market=str(row.get("market") or "UNKNOWN"); remaining_day=max(0.0,MAX_DAILY_BANKROLL_FRACTION-daily_used); remaining_market=max(0.0,MAX_MARKET_BANKROLL_FRACTION-market_used.get(market,0.0)); stake=min(desired,remaining_day,remaining_market); out["stake_fraction"]=stake; out["unit_tier"]=unit_tier(stake); out["staking_method"]="lower-bound quarter-Kelly with per-bet/market/day caps" if stake>0 else "zero-stake fail-closed"; sized.append(out); daily_used+=stake; market_used[market]=market_used.get(market,0.0)+stake
+def _game_key(row:dict[str,Any])->str:
+    return str(row.get("game_pk") or row.get("_game_pk") or "UNKNOWN_GAME")
+
+
+def _market_key(row:dict[str,Any])->str:
+    # Broad market exposure is intentional: both run-line orientations share RL.
+    return str(row.get("market") or "UNKNOWN")
+
+
+def size_portfolio(
+    candidates:list[dict[str,Any]],
+    *,
+    certified:bool,
+    initial_daily_used:float=0.0,
+    initial_game_used:dict[str,float]|None=None,
+    initial_market_used:dict[str,float]|None=None,
+)->list[dict[str,Any]]:
+    """Size an entire incremental slate in one globally ranked pass."""
+    daily_used=max(0.0,float(initial_daily_used)); market_used={str(k):max(0.0,float(v)) for k,v in (initial_market_used or {}).items()}; game_used={str(k):max(0.0,float(v)) for k,v in (initial_game_used or {}).items()}; sized=[]
+    ordered=sorted(candidates,key=lambda r:(float(r.get("robust_edge_pp") or -999),float(r.get("model_edge_pp") or -999)),reverse=True)
+    for row in ordered:
+        out=dict(row); desired=conservative_stake_fraction(row,certified=certified); game=_game_key(row); market=_market_key(row)
+        remaining_day=max(0.0,MAX_DAILY_BANKROLL_FRACTION-daily_used)
+        remaining_market=max(0.0,MAX_MARKET_BANKROLL_FRACTION-market_used.get(market,0.0))
+        remaining_game=max(0.0,MAX_GAME_BANKROLL_FRACTION-game_used.get(game,0.0))
+        stake=min(desired,remaining_day,remaining_market,remaining_game)
+        out["stake_fraction"]=stake; out["unit_tier"]=unit_tier(stake)
+        out["staking_method"]="lower-bound quarter-Kelly with persistent per-bet/game/market/day portfolio caps" if stake>0 else "zero-stake fail-closed"
+        out["staking_limits"]={"per_bet":MAX_BET_BANKROLL_FRACTION,"per_game":MAX_GAME_BANKROLL_FRACTION,"per_market":MAX_MARKET_BANKROLL_FRACTION,"per_day":MAX_DAILY_BANKROLL_FRACTION}
+        out["portfolio_exposure_before"]={"day":daily_used,"game":game_used.get(game,0.0),"market":market_used.get(market,0.0)}
+        out["portfolio_exposure_after"]={"day":daily_used+stake,"game":game_used.get(game,0.0)+stake,"market":market_used.get(market,0.0)+stake}
+        sized.append(out); daily_used+=stake; game_used[game]=game_used.get(game,0.0)+stake; market_used[market]=market_used.get(market,0.0)+stake
     return sized
+
+
+def size_candidates(candidates: list[dict[str, Any]], *, certified: bool) -> list[dict[str, Any]]:
+    """Compatibility wrapper for one same-game candidate set."""
+    prepared=[]
+    for row in candidates:
+        item=dict(row); item.setdefault("_game_pk","__SINGLE_GAME_CALL__"); prepared.append(item)
+    return size_portfolio(prepared,certified=certified)

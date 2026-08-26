@@ -9,7 +9,7 @@ def _prediction():
 
 
 def _payload():
-    return {"role":"PRODUCTION","publication_authorized":True,"model_generation":MODEL_GENERATION,"native_acquisition":True,"legacy_acquisition_adapter":False,"legacy_probability_used_for_publication":False,"market_probability_used_as_feature":False,"chosen":[],"combo":{},"results":[{"game_pk":"123","model_generation":MODEL_GENERATION,"native_acquisition":True,"market_snapshot":{},"market_diagnostics":{},"v14_prediction":_prediction()}]}
+    return {"role":"PRODUCTION","publication_authorized":True,"model_generation":MODEL_GENERATION,"native_acquisition":True,"legacy_acquisition_adapter":False,"legacy_probability_used_for_publication":False,"market_probability_used_as_feature":False,"chosen":[],"combo":{},"results":[{"game_pk":"123","model_generation":MODEL_GENERATION,"native_acquisition":True,"market_snapshot":{},"execution_market":{},"market_diagnostics":{},"v14_prediction":_prediction()}]}
 
 class V14ProductionRuntimeTests(unittest.TestCase):
     def test_native_production_payload_contract(self): validate_production_payload(_payload())
@@ -25,6 +25,9 @@ class V14ProductionRuntimeTests(unittest.TestCase):
     def test_market_audit_state_is_required(self):
         payload=_payload(); del payload["results"][0]["market_snapshot"]
         with self.assertRaisesRegex(ValueError,"market audit"): validate_production_payload(payload)
+    def test_execution_market_state_is_required(self):
+        payload=_payload(); del payload["results"][0]["execution_market"]
+        with self.assertRaisesRegex(ValueError,"execution state"): validate_production_payload(payload)
     def test_candidate_coverage_gate(self):
         validate_candidate_coverage({"coverage":{"matched_odds_games":10,"priced_games":8}})
         self.assertEqual(MIN_PRICED_MATCHED_COVERAGE,.80)

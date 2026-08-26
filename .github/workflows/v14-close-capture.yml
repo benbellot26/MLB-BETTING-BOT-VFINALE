@@ -2,7 +2,7 @@ name: Pulsar V14 Close Capture
 
 on:
   schedule:
-    - cron: '17 * * * *'
+    - cron: '*/10 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   capture:
-    name: Capture prospective verified-sharp closes
+    name: Capture prospective verified closes
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -47,7 +47,7 @@ jobs:
           [ -f data/v14_paper_bet_ledger.jsonl ] && git add -f data/v14_paper_bet_ledger.jsonl
           [ -f data/v14_bet_ledger.jsonl ] && git add -f data/v14_bet_ledger.jsonl
           if ! git diff --cached --quiet; then
-            git commit -m 'data: capture V14 prospective sharp closes [skip ci]'
+            git commit -m 'data: capture V14 prospective closes [skip ci]'
             git pull --rebase origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi

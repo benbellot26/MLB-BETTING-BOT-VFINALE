@@ -6,6 +6,7 @@ import unittest
 CRITICAL_TEST_MODULES=(
     "tests.test_v14_acquisition",
     "tests.test_v14_artifacts",
+    "tests.test_v14_certification_strict",
     "tests.test_v14_context_overlay",
     "tests.test_v14_discord",
     "tests.test_v14_distribution_extra_innings",
@@ -26,11 +27,15 @@ CRITICAL_TEST_MODULES=(
     "tests.test_v14_production_runtime",
     "tests.test_v14_professional_hardening",
     "tests.test_v14_research_extensions",
+    "tests.test_v14_4_professional_data_model",
     "tests.test_v14_run_stack_parity",
+    "tests.test_v14_staking",
     "tests.test_v14_starter_fallback",
     "tests.test_v14_starter_integrity",
+    "tests.test_v14_starter_recent_usage",
     "tests.test_v14_structural_parity",
     "tests.test_v14_tracking",
+    "tests.test_v14_venue_park_builder",
 )
 
 def run(verbosity:int=1)->bool:

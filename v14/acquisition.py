@@ -26,7 +26,11 @@ DEFAULT_BOOKMAKERS = tuple(
     ).split(",")
     if x.strip()
 )
-MATCH_TIME_TOLERANCE_MINUTES = 150.0
+# Odds providers can lag schedule moves, but 150 minutes was permissive enough to
+# cross-match doubleheaders. 75 minutes tolerates routine moves while failing
+# closed on materially different events.
+MATCH_TIME_TOLERANCE_MINUTES = 75.0
+MATCH_AMBIGUITY_MARGIN_MINUTES = 20.0
 
 JsonGetter = Callable[[str, dict[str, Any]], Any]
 _HTTP_CACHE: dict[str, Any] = {}
@@ -148,12 +152,32 @@ def _team_pair(obj: dict[str, Any], *, mlb: bool) -> tuple[str, str]:
     return canonical_team_name(home), canonical_team_name(away)
 
 
+def _timed_distance(game: dict[str, Any], event: dict[str, Any]) -> float | None:
+    try:
+        game_dt = parse_time(game.get("gameDate"))
+        event_dt = parse_time(event.get("commence_time"))
+    except Exception:
+        return None
+    return abs((game_dt - event_dt).total_seconds()) / 60.0
+
+
+def _unambiguous_best(rows: list[tuple[float, Any]]) -> tuple[float, Any] | None:
+    eligible = sorted((delta, item) for delta, item in rows if delta <= MATCH_TIME_TOLERANCE_MINUTES)
+    if not eligible:
+        return None
+    if len(eligible) > 1 and eligible[1][0] - eligible[0][0] < MATCH_AMBIGUITY_MARGIN_MINUTES:
+        return None
+    return eligible[0]
+
+
 def match_events(games: list[dict[str, Any]], events: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     """Match MLB games to unique Odds events by teams and start time.
 
-    Team-only matching is unsafe for doubleheaders. Events are consumed at most
-    once and a timed match must be within MATCH_TIME_TOLERANCE_MINUTES. If event
-    timestamps are missing, fallback is allowed only for an unambiguous 1:1 pair.
+    For a true 1:1 team pair, a missing timestamp is tolerated because there is
+    no alternate event to confuse it with. For doubleheaders/multi-event pairs,
+    timestamps are mandatory and a match is accepted only when MLB and Odds are
+    mutual unambiguous nearest neighbours. This intentionally prefers missing a
+    market to attaching prices to the wrong baseball game.
     """
     by_pair_games: dict[tuple[str, str], list[dict[str, Any]]] = {}
     by_pair_events: dict[tuple[str, str], list[dict[str, Any]]] = {}
@@ -171,43 +195,48 @@ def match_events(games: list[dict[str, Any]], events: list[dict[str, Any]]) -> d
         pair_events = list(by_pair_events.get(pair) or [])
         if not pair_events:
             continue
+
         if len(pair_games) == 1 and len(pair_events) == 1:
             game, event = pair_games[0], pair_events[0]
             gid = game.get("gamePk")
             if gid is None:
                 continue
-            try:
-                delta = abs((parse_time(game.get("gameDate")) - parse_time(event.get("commence_time"))).total_seconds()) / 60.0
-                if delta > MATCH_TIME_TOLERANCE_MINUTES:
-                    continue
-            except Exception:
-                pass
+            delta = _timed_distance(game, event)
+            if delta is not None and delta > MATCH_TIME_TOLERANCE_MINUTES:
+                continue
             matched[str(gid)] = event
             continue
 
-        available = list(pair_events)
-        for game in sorted(pair_games, key=lambda g: str(g.get("gameDate") or "")):
-            gid = game.get("gamePk")
-            if gid is None:
+        game_best: dict[int, tuple[float, int]] = {}
+        event_best: dict[int, tuple[float, int]] = {}
+        for gi, game in enumerate(pair_games):
+            candidates=[]
+            for ei, event in enumerate(pair_events):
+                delta=_timed_distance(game,event)
+                if delta is not None:
+                    candidates.append((delta,ei))
+            best=_unambiguous_best(candidates)
+            if best is not None:
+                game_best[gi]=(best[0],int(best[1]))
+
+        for ei, event in enumerate(pair_events):
+            candidates=[]
+            for gi, game in enumerate(pair_games):
+                delta=_timed_distance(game,event)
+                if delta is not None:
+                    candidates.append((delta,gi))
+            best=_unambiguous_best(candidates)
+            if best is not None:
+                event_best[ei]=(best[0],int(best[1]))
+
+        for gi,(delta,ei) in game_best.items():
+            reverse=event_best.get(ei)
+            if reverse is None or reverse[1] != gi:
                 continue
-            try:
-                game_dt = parse_time(game.get("gameDate"))
-            except Exception:
+            game=pair_games[gi]; event=pair_events[ei]; gid=game.get("gamePk")
+            if gid is None or event.get("id") is None:
                 continue
-            timed: list[tuple[float, int, dict[str, Any]]] = []
-            for idx, event in enumerate(available):
-                try:
-                    event_dt = parse_time(event.get("commence_time"))
-                except Exception:
-                    continue
-                delta = abs((game_dt - event_dt).total_seconds()) / 60.0
-                timed.append((delta, idx, event))
-            if not timed:
-                continue
-            delta, idx, event = min(timed, key=lambda item: item[0])
-            if delta <= MATCH_TIME_TOLERANCE_MINUTES:
-                matched[str(gid)] = event
-                available.pop(idx)
+            matched[str(gid)] = event
     return matched
 
 
@@ -262,6 +291,4 @@ def collect_pregame(target_date: str, *, analyzed_at: str | None = None, api_key
     games = future_games(mlb_schedule(target_date, getter=schedule_getter), as_of=at)
     events = odds_snapshot(api_key=api_key, getter=odds_getter)
     matches = match_events(games, events)
-    return PregameSnapshot(
-        target_date=str(target_date), analyzed_at=str(at), games=games, events=events, matches=matches,
-    ).validated()
+    return PregameSnapshot(target_date=str(target_date), analyzed_at=str(at), games=games, events=events, matches=matches).validated()
