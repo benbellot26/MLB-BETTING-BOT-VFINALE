@@ -31,6 +31,25 @@ def _chunks(start:date,end:date,days:int=3):
         stop=min(end,cur+timedelta(days=days-1));yield cur,stop;cur=stop+timedelta(days=1)
 
 
+def _normalize_row(row:dict[str,Any])->dict[str,Any]:
+    """Normalize provider CSV headers without altering values.
+
+    Baseball Savant CSV downloads may carry a UTF-8 BOM on the first header
+    (normally ``pitch_type``). ``csv.DictReader`` preserves that BOM in the key,
+    which silently makes ``row.get('pitch_type')`` empty while the rest of the
+    row remains usable. Strip BOM/outer whitespace from every key at the V14
+    ingestion boundary so pitch-mix enrichment uses the documented schema.
+    """
+    out:dict[str,Any]={}
+    for key,value in row.items():
+        if key is None:
+            continue
+        normalized=str(key).lstrip("\ufeff").strip()
+        if normalized:
+            out[normalized]=value
+    return out
+
+
 def _hash_rows(rows:list[dict[str,Any]])->str:
     h=hashlib.sha256()
     for row in sorted(rows,key=lambda r:(str(r.get("game_date") or ""),str(r.get("game_pk") or ""),str(r.get("at_bat_number") or ""),str(r.get("pitch_number") or ""),str(r.get("batter") or ""),str(r.get("pitcher") or ""))):
@@ -44,7 +63,7 @@ def build(cutoff_day:str,*,season_start:str|None=None,fetch_chunk:FetchChunk=fet
     rows=[];requests=[]
     for a,b in _chunks(start,end,3):
         chunk,diag=fetch_chunk(a.isoformat(),b.isoformat(),season=season)
-        rows.extend(chunk);requests.append({"start":a.isoformat(),"end":b.isoformat(),"diagnostics":diag})
+        rows.extend(_normalize_row(row) for row in chunk);requests.append({"start":a.isoformat(),"end":b.isoformat(),"diagnostics":diag})
     rows=dedupe_statcast_rows(rows)
     bad=[r for r in rows if str(r.get("game_date") or "")[:10]>=cutoff.isoformat()]
     if bad:raise ValueError(f"future/current-day Statcast rows present before aggregation: {len(bad)}")
@@ -54,7 +73,7 @@ def build(cutoff_day:str,*,season_start:str|None=None,fetch_chunk:FetchChunk=fet
         max_dates.extend(str(v.get("max_game_date")) for v in bucket.values() if v.get("max_game_date"))
     if max_dates and max(max_dates)>=cutoff.isoformat():raise ValueError("aggregated Statcast prior crossed cutoff")
     diag=priors.get("diagnostics") or {}
-    return {"schema":"pulsar-v14-statcast-pit-backfill-v2","role":ROLE,"auto_activation":False,"point_in_time":True,"stable_id_only":True,"cutoff_day":cutoff.isoformat(),"source_start":start.isoformat(),"source_end":end.isoformat(),"source":"Baseball Savant Statcast Search CSV via V137 audited bounded fetcher + V14 pitch-type enrichment","raw_pitch_rows":len(rows),"raw_rows_sha256":_hash_rows(rows),"requests":requests,"priors":priors,"coverage":{"hitters":len(priors.get("hitters") or {}),"pitchers":len(priors.get("pitchers") or {}),"hitter_pitch_split_players":int(diag.get("hitter_pitch_split_players") or 0),"hitter_pitch_split_buckets":int(diag.get("hitter_pitch_split_buckets") or 0)},"champion_impact":False,"native_live_confirmation_required":True}
+    return {"schema":"pulsar-v14-statcast-pit-backfill-v2","role":ROLE,"auto_activation":False,"point_in_time":True,"stable_id_only":True,"cutoff_day":cutoff.isoformat(),"source_start":start.isoformat(),"source_end":end.isoformat(),"source":"Baseball Savant Statcast Search CSV via V137 audited bounded fetcher + V14 pitch-type enrichment","header_normalization":"UTF-8 BOM and outer whitespace stripped from provider CSV keys","raw_pitch_rows":len(rows),"raw_rows_sha256":_hash_rows(rows),"requests":requests,"priors":priors,"coverage":{"hitters":len(priors.get("hitters") or {}),"pitchers":len(priors.get("pitchers") or {}),"hitter_pitch_split_players":int(diag.get("hitter_pitch_split_players") or 0),"hitter_pitch_split_buckets":int(diag.get("hitter_pitch_split_buckets") or 0)},"champion_impact":False,"native_live_confirmation_required":True}
 
 
 def write(cutoff_day:str,output:Path|str,*,season_start:str|None=None,fetch_chunk:FetchChunk=fetch_statcast_rows_adaptive)->dict[str,Any]:
