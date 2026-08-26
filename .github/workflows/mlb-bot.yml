@@ -43,6 +43,15 @@ jobs:
           echo "target_date=$TARGET_DATE" >> "$GITHUB_OUTPUT"
           echo "PULSAR_V14_PRODUCTION_DATE=$TARGET_DATE"
 
+      - name: Build deterministic PIT venue-park shadow
+        run: |
+          TARGET_DATE="${{ steps.slate.outputs.target_date }}"
+          TARGET_SEASON="${TARGET_DATE:0:4}"
+          python -m v14.venue_park_builder \
+            --target-season "$TARGET_SEASON" \
+            --source data/v137_park_factors.json \
+            --output data/v14_venue_park_factors.json
+
       - name: Build native Pulsar V14 production payload
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
@@ -103,5 +112,6 @@ jobs:
           path: |
             runtime/v14/discord_payload.json
             runtime/v14/native_candidate.json
+            data/v14_venue_park_factors.json
           if-no-files-found: ignore
           retention-days: 90
