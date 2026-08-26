@@ -1,0 +1,45 @@
+{
+  "schema": "pulsar-v14-historical-distribution-candidate-v1",
+  "role": "SHADOW_ONLY",
+  "status": "HISTORICAL_VALIDATED_SHADOW",
+  "auto_activation": false,
+  "champion_impact": false,
+  "native_live_confirmation_required": true,
+  "source_run_id": 32985097883,
+  "dataset": {
+    "games": 14122,
+    "dataset_content_sha256": "50061745f1a5634b927b4376f7caf4a745efd87bfd76591a6905a6e8daed396c",
+    "feature_contract_sha256": "08b35bb22ea34adb3113de13d335975ca00e401b9c1d80deada2473a9b661a61",
+    "split": {
+      "tuning_2021_2024": 9718,
+      "validation_2025": 2430,
+      "frozen_test_2026": 1974,
+      "frozen_2026_used_for_parameter_selection": false
+    }
+  },
+  "champion_parameters": {
+    "dispersion": 7.5,
+    "environment_sigma": 0.08
+  },
+  "candidate_parameters": {
+    "dispersion": 5.5,
+    "environment_sigma": 0.16
+  },
+  "validation_2025": {
+    "sample_n": 400,
+    "score_nll_gain_mean": 0.06184200805978433,
+    "score_nll_gain_ci95_lower": 0.03883623716116995,
+    "score_nll_gain_ci95_upper": 0.0848477789583987,
+    "market_nonregression": true
+  },
+  "frozen_2026": {
+    "sample_n": 400,
+    "score_nll_gain_mean": 0.057034476869864174,
+    "score_nll_gain_ci95_lower": 0.03748374317575212,
+    "score_nll_gain_ci95_upper": 0.07658521056397623,
+    "market_nonregression": true,
+    "total_over_brier_gain_mean": 0.0018834864750797739,
+    "total_over_brier_gain_ci95_lower": 0.000009603525220303185
+  },
+  "promotion_policy": "Historical evidence may authorize prospective shadow collection only. Champion promotion still requires current-generation native-live paired evidence."
+}
