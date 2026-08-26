@@ -2,11 +2,11 @@ from __future__ import annotations
 
 """Statistical betting certification, separate from software PRODUCTION.
 
-Certification is market-specific.  A weak Total model can no longer block a
-strong ML model, and a strong ML model cannot authorize Total bets.  New V14.4
-performance reports require paired model-vs-sharp confidence intervals.  Older
-synthetic/test artifacts remain readable for backwards compatibility but are
-labelled as legacy inference.
+Certification is market-specific. A weak Total model can no longer block a
+strong ML model, and a strong ML model cannot authorize Total bets. New V14.4
+performance reports require paired model-vs-sharp confidence intervals and new
+paper-ledger reports require market-specific, independent CLV evidence with a
+positive confidence bound.
 """
 
 from datetime import datetime, timezone
@@ -39,14 +39,16 @@ def _load(path: Path | str) -> dict[str,Any]:
 
 
 def _calibration_accepted(calibrator: dict[str,Any]) -> bool:
-    # v1 compatibility: an active transform had already passed strict OOS.
     return calibrator.get("accepted") is True or calibrator.get("active") is True
 
 
 def _paper_for_market(paper: dict[str,Any], market: str) -> dict[str,Any]:
     by_market=paper.get("by_market") or {}
-    scoped=by_market.get(market) or {}
-    return (scoped.get("clv") or scoped) if scoped else (paper.get("clv") or {})
+    if by_market:
+        scoped=by_market.get(market) or {}
+        return (scoped.get("clv") or scoped) if scoped else {}
+    # Backward compatibility only for legacy reports that predate by_market.
+    return paper.get("clv") or {}
 
 
 def _drift_failures(performance: dict[str,Any], market: str) -> list[str]:
@@ -67,8 +69,6 @@ def _sharp_failures(sharp: dict[str,Any], *, strict_ci: bool) -> list[str]:
     if strict_ci:
         b_lower=sharp.get("brier_gain_ci95_lower"); l_lower=sharp.get("logloss_gain_ci95_lower")
         if b_lower is None or float(b_lower)<=0: failures.append("paired_brier_gain_ci95_not_positive")
-        # LogLoss is a secondary non-regression gate; allow a tiny statistical
-        # tolerance but never a clearly negative lower bound.
         if l_lower is None or float(l_lower)<-0.001: failures.append("paired_logloss_ci95_regression")
     else:
         if sharp.get("brier_gain_vs_sharp") is None or float(sharp.get("brier_gain_vs_sharp"))<0: failures.append("model_not_beating_sharp_brier")
@@ -80,6 +80,7 @@ def evaluate(performance: dict[str,Any]|None=None, calibration: dict[str,Any]|No
     perf=performance or {}; cal=calibration or {}; paper=_load(PAPER_PERFORMANCE) if paper_performance is None else paper_performance
     generation_ok=perf.get("model_generation") in {None,MODEL_GENERATION}; games=int(perf.get("games_settled") or 0)
     strict_ci=str(perf.get("schema") or "").startswith("pulsar-v14-performance-v5")
+    strict_paper_ci=str(paper.get("schema") or "").startswith("pulsar-v14-paper-bet-performance-v2")
     global_probability_reasons=[]
     if not generation_ok: global_probability_reasons.append("generation_mismatch")
     if games<MIN_GAMES: global_probability_reasons.append(f"games_settled<{MIN_GAMES}")
@@ -101,21 +102,19 @@ def evaluate(performance: dict[str,Any]|None=None, calibration: dict[str,Any]|No
         if mean is None or float(mean)<=0: betting_failures.append("paper_mean_clv_not_positive")
         if positive is None or float(positive)<MIN_POSITIVE_CLV_RATE: betting_failures.append(f"paper_positive_clv_rate<{MIN_POSITIVE_CLV_RATE:.2f}")
         ci=clv.get("mean_clv_ci95_lower")
-        if ci is not None and float(ci)<=0: betting_failures.append("paper_clv_ci95_not_positive")
+        if strict_paper_ci and ci is None: betting_failures.append("paper_clv_ci95_missing")
+        elif ci is not None and float(ci)<=0: betting_failures.append("paper_clv_ci95_not_positive")
         betting_certified=probability_certified and not betting_failures; any_betting=any_betting or betting_certified
         market_status[market]={"probability_certified":probability_certified,"betting_certified":betting_certified,"probability_status":"PROBABILITY_CERTIFIED" if probability_certified else "PROBABILITY_RESEARCH","betting_status":"BETTING_CERTIFIED" if betting_certified else "RESEARCH_ONLY","n":n,"ece":ece,"calibration_status":calibrator.get("status"),"failures":failures,"betting_failures":betting_failures,"paper_clv":{"n":clv_n,"mean_clv":mean,"positive_rate":positive,"mean_clv_ci95_lower":ci}}
 
-    # Compatibility: previous callers interpreted `probability_certified` and
-    # `certified` globally.  They now mean at least one market is authorized;
-    # the decision layer must additionally check its own market flag.
     probability_reasons=sorted({reason for row in market_status.values() for reason in row["failures"]}) if not any_probability else []
     betting_reasons=sorted({reason for row in market_status.values() for reason in row["betting_failures"]}) if not any_betting else []
-    return {"schema":"pulsar-v14-betting-certification-v3","model_generation":MODEL_GENERATION,"software_role":"PRODUCTION","generated_at":datetime.now(timezone.utc).isoformat(),
+    return {"schema":"pulsar-v14-betting-certification-v4","model_generation":MODEL_GENERATION,"software_role":"PRODUCTION","generated_at":datetime.now(timezone.utc).isoformat(),
             "probability_status":"PROBABILITY_CERTIFIED" if any_probability else "PROBABILITY_RESEARCH","probability_certified":any_probability,
             "betting_status":"BETTING_CERTIFIED" if any_betting else "RESEARCH_ONLY","certified":any_betting,"markets":market_status,
-            "probability_reasons":probability_reasons,"reasons":betting_reasons,"paired_inference_required":strict_ci,
+            "probability_reasons":probability_reasons,"reasons":betting_reasons,"paired_inference_required":strict_ci,"paper_ci_required":strict_paper_ci,
             "paper_clv":paper.get("clv") or {},
-            "policy":{"min_games":MIN_GAMES,"min_market_n":MIN_MARKET_N,"max_ece":MAX_ECE,"min_paired_sharp_n":MIN_PAIRED_SHARP_N,"min_paper_clv_n":MIN_PAPER_CLV_N,"min_positive_clv_rate":MIN_POSITIVE_CLV_RATE,"market_specific_authorization":True,"rolling_drift_window_days":60}}
+            "policy":{"min_games":MIN_GAMES,"min_market_n":MIN_MARKET_N,"max_ece":MAX_ECE,"min_paired_sharp_n":MIN_PAIRED_SHARP_N,"min_paper_clv_n":MIN_PAPER_CLV_N,"min_positive_clv_rate":MIN_POSITIVE_CLV_RATE,"market_specific_authorization":True,"rolling_drift_window_days":60,"paper_market_specific":True,"paper_independent_observations_required":True}}
 
 
 def load_status(performance_path: Path|str=PERFORMANCE, calibration_path: Path|str=CALIBRATION, paper_path: Path|str=PAPER_PERFORMANCE) -> dict[str,Any]:
