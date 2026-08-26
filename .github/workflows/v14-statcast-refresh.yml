@@ -36,7 +36,7 @@ jobs:
       - name: Compile and test V14 Statcast contract
         run: |
           python -m py_compile v14/statcast_enrichment.py v14/statcast_pit_backfill.py v14/statcast_daily.py v14/statcast_shadow.py v14/pitch_matchup_challenger.py
-          python -m unittest tests.test_v14_statcast_pit_backfill tests.test_v14_statcast_enrichment -v
+          python -m unittest tests.test_v14_statcast_pit_backfill tests.test_v14_statcast_enrichment tests.test_v14_statcast_daily -v
       - name: Refresh enriched rolling priors
         run: |
           CUTOFF=$(date -u +%F)
