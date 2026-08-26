@@ -35,6 +35,7 @@ CRITICAL_TEST_MODULES=(
     "tests.test_v14_starter_recent_usage",
     "tests.test_v14_structural_parity",
     "tests.test_v14_tracking",
+    "tests.test_v14_venue_park_builder",
 )
 
 def run(verbosity:int=1)->bool:
