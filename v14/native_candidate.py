@@ -38,6 +38,11 @@ NATIVE_CANDIDATE=Path("runtime/v14/native_candidate.json")
 Collector=Callable[...,PregameSnapshot]
 InputBuilder=Callable[...,NativeGameInputs]
 StarterEvidenceBuilder=Callable[[dict[str,Any]],dict[str,Any]]
+TeamHistoryBuilder=Callable[[str],dict[str,Any]]
+
+
+def _empty_team_history(target_date:str,reason:str)->dict[str,Any]:
+    return {"schema":"pulsar-v14-native-team-history-v1","role":"SHADOW_ONLY","champion_impact":False,"point_in_time":True,"target_date":target_date,"status":"COLLECTING","reason":reason,"teams":{}}
 
 
 def _phase_quality_gate(native:NativeGameInputs,phase:str)->None:
@@ -83,8 +88,14 @@ def build_native_result(game:dict[str,Any],event:dict[str,Any],*,target_date:str
     return {"game_pk":native.structural.game_pk,"odds_event_id":event.get("id"),"game_date":native.structural.game_date,"analyzed_at":analyzed_at,"phase":phase,"home":native.home,"away":native.away,"ctx":context,"canonical_lines":{"TOTAL":float(line_meta["line"])},"line_selection":line_meta,"market_snapshot":market_snapshot,"execution_market":execution,"market_diagnostics":market_diagnostics,"sharp_market":sharp,"betting_certification":certification,"decision":decision,"native_structural":{"game_pk":native.structural.game_pk,"game_date":native.structural.game_date,"venue":native.structural.venue,"structural_home_mu":native.structural.structural_home_mu,"structural_away_mu":native.structural.structural_away_mu,"static_park_factor":native.structural.static_park_factor,"debug":native.structural_debug},"training_features":_compact_training_features(feature_row,prediction,statcast,research,pitch_matchup,true_talent,analyzed_at=analyzed_at,game_date=native.structural.game_date),"statcast_shadow":statcast,"research_challengers":research,"pitch_matchup_shadow":pitch_matchup,"true_talent_shadow":true_talent,"starter_fallback":fallback,"v14_prediction":prediction,"model_generation":MODEL_GENERATION,"market_probability_used_as_feature":False}
 
 
-def build_candidate(target_date:str,*,analyzed_at:str|None=None,api_key:str|None=None,collector:Collector=collect_pregame_strict,input_builder:InputBuilder=build_game_inputs,starter_evidence_builder:StarterEvidenceBuilder=starter_integrity_evidence)->dict[str,Any]:
-    at=analyzed_at or datetime.now(timezone.utc).isoformat(); snapshot=collector(target_date,analyzed_at=at,api_key=api_key); results=[]; skipped=[]; team_history=live_team_history(target_date)
+def build_candidate(target_date:str,*,analyzed_at:str|None=None,api_key:str|None=None,collector:Collector=collect_pregame_strict,input_builder:InputBuilder=build_game_inputs,starter_evidence_builder:StarterEvidenceBuilder=starter_integrity_evidence,team_history_builder:TeamHistoryBuilder|None=None)->dict[str,Any]:
+    at=analyzed_at or datetime.now(timezone.utc).isoformat(); snapshot=collector(target_date,analyzed_at=at,api_key=api_key); results=[]; skipped=[]
+    if team_history_builder is not None:
+        team_history=team_history_builder(target_date)
+    elif collector is collect_pregame_strict and input_builder is build_game_inputs:
+        team_history=live_team_history(target_date)
+    else:
+        team_history=_empty_team_history(target_date,"nonproduction dependencies injected; network shadow acquisition skipped")
     for game in snapshot.games:
         game_pk=str(game.get("gamePk") or ""); event=snapshot.matches.get(game_pk)
         if event is None: skipped.append({"game_pk":game_pk,"reason":"odds_event_unmatched"}); continue
