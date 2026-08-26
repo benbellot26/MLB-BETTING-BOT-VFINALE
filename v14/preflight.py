@@ -12,6 +12,7 @@ CRITICAL_TEST_MODULES=(
     "tests.test_v14_distribution_extra_innings",
     "tests.test_v14_end_to_end_tracking",
     "tests.test_v14_feature_row",
+    "tests.test_v14_historical_validation",
     "tests.test_v14_import_boundaries",
     "tests.test_v14_ledgers",
     "tests.test_v14_market_edge",
