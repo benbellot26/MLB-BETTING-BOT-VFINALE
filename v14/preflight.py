@@ -17,6 +17,8 @@ CRITICAL_TEST_MODULES=(
     "tests.test_v14_historical_distribution_shadow",
     "tests.test_v14_historical_identity_reconstruction",
     "tests.test_v14_historical_rich_validation",
+    "tests.test_v14_historical_team_live_validation",
+    "tests.test_v14_historical_team_shadow",
     "tests.test_v14_historical_validation",
     "tests.test_v14_import_boundaries",
     "tests.test_v14_ledgers",
