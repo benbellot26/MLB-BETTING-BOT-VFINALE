@@ -8,8 +8,10 @@ from .champion_contract import CHAMPION_DISPERSION, CHAMPION_ENVIRONMENT_SIGMA, 
 from .context_overlay import context_overlay_from_feature_row
 from .distribution import probability_surface
 from .feature_row import feature_row_is_usable
-from .model import RunProjection, prediction_payload
+from .model import ProbabilitySurface, RunProjection, prediction_payload
+from .probability_calibration import calibrate_surface
 from .run_stack import StructuralRunInput, apply_current_champion, reproduce_from_champion_result
+from .uncertainty import intervals as probability_intervals
 
 
 def _team_name(result:dict[str,Any],side:str)->str:
@@ -35,9 +37,28 @@ def _selected_feature_row(feature_row:dict[str,Any]|None,*,game_pk:str,analyzed_
 
 
 def _finish_prediction(*,structural_base:dict[str,Any],game_pk:str,game_date:str,analyzed_at:str,home:str,away:str,total_line:float,phase:str,feature_row:dict[str,Any]|None,dispersion:float,environment_sigma:float,extra_innings_home_probability:float,source_generation:str)->dict[str,Any]:
-    selected=_selected_feature_row(feature_row,game_pk=game_pk,analyzed_at=analyzed_at); overlay=context_overlay_from_feature_row(selected,float(structural_base["home_mu"]),float(structural_base["away_mu"]))
+    selected=_selected_feature_row(feature_row,game_pk=game_pk,analyzed_at=analyzed_at)
+    overlay=context_overlay_from_feature_row(selected,float(structural_base["home_mu"]),float(structural_base["away_mu"]))
     projection=RunProjection(game_pk=game_pk,game_date=game_date,analyzed_at=analyzed_at,home=home,away=away,home_mu=float(overlay["home_mu"]),away_mu=float(overlay["away_mu"]),total_line=float(total_line),phase=str(phase or "EARLY").upper(),dispersion=float(dispersion),environment_sigma=float(environment_sigma),extra_innings_home_probability=float(extra_innings_home_probability),source_generation=source_generation).validated()
-    surface,tail_mass=probability_surface(projection); output=prediction_payload(projection,surface,tail_mass=tail_mass)
+
+    raw_surface,tail_mass=probability_surface(projection)
+    raw_probabilities=raw_surface.as_dict()
+    calibrated_probabilities,calibration=calibrate_surface(raw_probabilities,phase=projection.phase)
+    calibrated_surface=ProbabilitySurface(**calibrated_probabilities).validated()
+    output=prediction_payload(projection,calibrated_surface,tail_mass=tail_mass)
+
+    quality=(selected or {}).get("data_quality") or {}
+    starter_degraded=bool(quality.get("starter_degraded"))
+    output["raw_probabilities"]=raw_probabilities
+    output["calibration"]=calibration
+    output["probability_intervals"]=probability_intervals(output["probabilities"],calibration,data_quality=quality,starter_degraded=starter_degraded,market_fresh=None)
+    output["probability_contract"]={
+        "raw_generation":output.get("model_generation"),
+        "calibration_schema":calibration.get("schema"),
+        "calibration_active":bool(calibration.get("any_active")),
+        "market_probability_used_as_feature":False,
+        "note":"Calibration is identity until strict chronological OOS gates activate a market/phase calibrator.",
+    }
     output["base_run_projection"]={"home_mu":float(structural_base["home_mu"]),"away_mu":float(structural_base["away_mu"]),"active_layers":list(structural_base.get("active_layers") or [])}
     output["context_adjustment"]={"eligible":bool(overlay.get("eligible")),"home_delta":float(overlay.get("home_delta") or 0),"away_delta":float(overlay.get("away_delta") or 0),"feature_as_of":(feature_row or {}).get("as_of") if selected is not None else None,"components":overlay.get("components") or {}}
     return output
