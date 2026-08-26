@@ -8,7 +8,8 @@ from pathlib import Path
 from typing import Any, Callable
 
 from . import MODEL_GENERATION, VERSION
-from .acquisition import PregameSnapshot, collect_pregame
+from .acquisition import PregameSnapshot
+from .acquisition_strict import collect_pregame_strict
 from .certification import load_status as load_certification_status
 from .decision import evaluate as decision_diagnostics
 from .market_edge import diagnostics_from_snapshot
@@ -19,6 +20,7 @@ from .pipeline import predict_from_structural
 from .sharp_market import sharp_consensus
 from .starter_fallback import degraded_sides_from_evidence, degradation_summary, neutralize_probable_pitchers
 from .starter_integrity import starter_integrity_evidence
+from .statcast_shadow import build_shadow_features
 from .uncertainty import intervals as probability_intervals
 
 NATIVE_CANDIDATE = Path("runtime/v14/native_candidate.json")
@@ -39,13 +41,13 @@ def _phase_quality_gate(native: NativeGameInputs, phase: str) -> None:
             raise ValueError("FINAL snapshot requires both confirmed 9/9 lineups")
 
 
-def _compact_training_features(feature_row: dict[str, Any], prediction: dict[str, Any]) -> dict[str, Any]:
+def _compact_training_features(feature_row: dict[str, Any], prediction: dict[str, Any], statcast_shadow: dict[str, Any]) -> dict[str, Any]:
     """Persist only PIT covariates needed for future residual challengers."""
     ctx = feature_row.get("context") or {}
     features = feature_row.get("features") or {}
     quality = feature_row.get("data_quality") or {}
     return {
-        "schema": "pulsar-v14-training-features-v1",
+        "schema": "pulsar-v14-training-features-v2",
         "as_of": feature_row.get("as_of"),
         "point_in_time": feature_row.get("point_in_time") is True,
         "base_run_projection": prediction.get("base_run_projection") or {},
@@ -57,6 +59,7 @@ def _compact_training_features(feature_row: dict[str, Any], prediction: dict[str
         "bullpen": features.get("bullpen") or {},
         "operational": features.get("operational") or {},
         "environment": features.get("environment") or {},
+        "statcast_shadow": statcast_shadow,
         "data_quality": quality,
     }
 
@@ -101,6 +104,10 @@ def build_native_result(
     )
     _phase_quality_gate(gated,phase)
 
+    # Statcast is collected as a PIT shadow feature only. It becomes eligible
+    # for champion use only through a later OOS challenger promotion.
+    statcast=build_shadow_features(feature_row,target_date=target_date)
+
     prediction=predict_from_structural(native.structural,analyzed_at=analyzed_at,home=native.home,away=native.away,total_line=float(line_meta["line"]),feature_row=feature_row,phase=phase)
     market_snapshot=canonical_market_snapshot(event,total_line=float(line_meta["line"]),as_of=analyzed_at)
     # Once the actual market freshness is known, refresh the decision-safety
@@ -128,14 +135,15 @@ def build_native_result(
         "canonical_lines":{"TOTAL":float(line_meta["line"])},"line_selection":line_meta,"market_snapshot":market_snapshot,"market_diagnostics":market_diagnostics,
         "sharp_market":sharp,"betting_certification":certification,"decision":decision,
         "native_structural":{"game_pk":native.structural.game_pk,"game_date":native.structural.game_date,"venue":native.structural.venue,"structural_home_mu":native.structural.structural_home_mu,"structural_away_mu":native.structural.structural_away_mu,"static_park_factor":native.structural.static_park_factor,"debug":native.structural_debug},
-        "training_features":_compact_training_features(feature_row,prediction),
+        "training_features":_compact_training_features(feature_row,prediction,statcast),
+        "statcast_shadow":statcast,
         "starter_fallback":fallback,"v14_prediction":prediction,"model_generation":MODEL_GENERATION,"market_probability_used_as_feature":False,
     }
 
 
 def build_candidate(
     target_date: str, *, analyzed_at: str|None=None, api_key: str|None=None,
-    collector: Collector=collect_pregame, input_builder: InputBuilder=build_game_inputs,
+    collector: Collector=collect_pregame_strict, input_builder: InputBuilder=build_game_inputs,
     starter_evidence_builder: StarterEvidenceBuilder=starter_integrity_evidence,
 ) -> dict[str,Any]:
     at=analyzed_at or datetime.now(timezone.utc).isoformat(); snapshot=collector(target_date,analyzed_at=at,api_key=api_key); results=[]; skipped=[]
