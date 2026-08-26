@@ -5,8 +5,8 @@ import unittest
 from v14.savant_run_value_builder import build
 
 
-FIELDING="team,inf_of_runs,catcher_runs,total_innings\nCubs,12,3,900\n"
-BASERUN="team,runner_runs_tot\nCubs,10\n"
+FIELDING="team,inf_of_runs,catching_runs\nCubs,12,3\n"
+BASERUN="team_name,runner_runs_tot\nCHC,10\n"
 
 
 def text_getter(url:str)->str:
@@ -15,9 +15,13 @@ def text_getter(url:str)->str:
 
 def json_getter(url:str,params:dict):
     if url.endswith("/teams"):
-        return {"teams":[{"id":112,"name":"Chicago Cubs"}]}
+        return {"teams":[{"id":112,"name":"Chicago Cubs","clubName":"Cubs","abbreviation":"CHC","teamCode":"chn"}]}
     if "/teams/112/stats" in url:
-        return {"stats":[{"splits":[{"stat":{"plateAppearances":6000}}]}]}
+        if params.get("stats")=="byDateRange":
+            self_stat={"gamesPlayed":100}
+        else:
+            self_stat={"plateAppearances":6000}
+        return {"stats":[{"splits":[{"stat":self_stat}]}]}
     raise AssertionError(url)
 
 
@@ -30,6 +34,7 @@ class SavantRunValueBuilderTests(unittest.TestCase):
         self.assertAlmostEqual(row["baserunning_runs_per_600_pa"],1.0)
         self.assertEqual(out["cutoff_day"],"2026-08-25")
         self.assertEqual(out["baserunning_source"]["source_season"],2025)
+        self.assertEqual(out["coverage"]["complete_teams"],1)
         self.assertFalse(out["promotion_ready"])
         self.assertFalse(out["champion_impact"])
 
