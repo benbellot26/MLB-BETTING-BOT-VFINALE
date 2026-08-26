@@ -50,6 +50,7 @@ CRITICAL_TEST_MODULES=(
     "tests.test_v14_team_history_shadow",
     "tests.test_v14_tracking",
     "tests.test_v14_venue_park_builder",
+    "tests.test_v14_weather_live_shadow",
     "tests.test_v14_weather_pit_backfill",
 )
 
