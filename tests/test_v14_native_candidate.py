@@ -22,12 +22,17 @@ def _provisional_evidence(game): return {"game_pk":"123","away":{"sources":[],"d
 def _conflict_evidence(game):
     def side(schedule,feed): return {"sources":[{"source":"schedule.probablePitcher","id":schedule,"name":"Schedule","available":True},{"source":"feed.gameData.probablePitchers","id":feed,"name":"Feed","available":True},{"source":"boxscore.pitchers[0]","id":None,"name":None,"available":False}],"distinct_pitcher_ids":[schedule,feed]}
     return {"game_pk":"123","away":side("10","11"),"home":side("20","20")}
+def _team_history(target_date):
+    def team(rf,ra):
+        return {"season_to_date":{"games":50,"runs_for_pg":rf,"runs_against_pg":ra,"run_diff_pg":rf-ra,"win_pct":.55},"last_7_games":{"games":7,"runs_for_pg":rf,"runs_against_pg":ra,"run_diff_pg":rf-ra,"win_pct":.55},"last_14_games":{"games":14,"runs_for_pg":rf,"runs_against_pg":ra,"run_diff_pg":rf-ra,"win_pct":.55},"last_30_games":{"games":30,"runs_for_pg":rf,"runs_against_pg":ra,"run_diff_pg":rf-ra,"win_pct":.55},"rest_days":1}
+    return {"schema":"pulsar-v14-native-team-history-shadow-v1","role":"SHADOW_ONLY","champion_impact":False,"point_in_time":True,"target_day":target_date,"rule":"strictly earlier officialDate only","accepted_prior_games":50,"same_day_games_excluded":0,"teams":{"1":team(4.8,4.0),"2":team(4.1,4.7)}}
 
 class V14NativeCandidateTests(unittest.TestCase):
     def test_candidate_is_native_non_publishing(self):
-        candidate=build_candidate("2026-08-25",analyzed_at="2026-08-25T18:00:00Z",api_key="secret",collector=_collector,input_builder=_builder,starter_evidence_builder=_provisional_evidence)
+        candidate=build_candidate("2026-08-25",analyzed_at="2026-08-25T18:00:00Z",api_key="secret",collector=_collector,input_builder=_builder,starter_evidence_builder=_provisional_evidence,team_history_builder=_team_history)
         self.assertEqual(candidate["role"],"CANDIDATE_NON_PUBLISHING"); self.assertEqual(candidate["coverage"]["priced_games"],1); result=candidate["results"][0]; self.assertEqual(result["phase"],"EARLY"); self.assertEqual(result["v14_prediction"]["phase"],"EARLY"); self.assertEqual(result["canonical_lines"]["TOTAL"],8.5); self.assertEqual(result["v14_prediction"]["model_generation"],MODEL_GENERATION)
         research=result["training_features"]["research_challengers"]; self.assertFalse(research["champion_impact"]); self.assertFalse(research["run_decomposition"]["home_defense"]["auto_activation"]); self.assertEqual(research["home_starter_usage"]["role"],"CHALLENGER_ONLY"); self.assertIn("venue_park",research); self.assertIn("defense_baserunning",research)
+        self.assertEqual(research["team_history"]["status"],"READY_SHADOW"); self.assertEqual(research["team_history"]["role"],"SHADOW_ONLY"); self.assertFalse(research["team_history"]["champion_impact"]); self.assertTrue(research["team_history"]["point_in_time"]); self.assertEqual(candidate["team_history_shadow_status"],"READY_SHADOW")
         self.assertEqual(result["training_features"]["capture_mode"],"PROSPECTIVE_LIVE_SNAPSHOT"); self.assertTrue(result["training_features"]["pit_source_contract"]["live_pregame_safe"])
         self.assertIn("true_talent_shadow",result["training_features"]); self.assertFalse(result["training_features"]["true_talent_shadow"]["auto_activation"]); self.assertEqual(result["true_talent_shadow"]["role"],"CHALLENGER_ONLY")
 
