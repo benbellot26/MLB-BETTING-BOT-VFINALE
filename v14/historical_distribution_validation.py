@@ -24,6 +24,7 @@ from .historical_team_challenger import baseline_runs, candidate_runs
 GRID = tuple((d, s) for d in (5.5, 7.5, 9.0, 12.0) for s in (0.00, 0.08, 0.16))
 CHAMPION = (7.5, 0.08)
 DIAGNOSTIC_TOTAL_LINE = 8.5
+SENSITIVITY_MAX_GAMES = 400
 RunPredictor = Callable[[dict[str, Any]], tuple[float, float]]
 
 
@@ -106,11 +107,15 @@ def build(split: dict[str, list[tuple[dict[str, Any], dict[str, Any]]]], run_par
     vp, validation_pass = _paired_gate(validation_candidate, validation_champion, frozen=False)
     fp, frozen_nonreg = _paired_gate(frozen_candidate, frozen_champion, frozen=True)
 
+    # This branch is explanatory only. It is bounded to keep the CI focused on
+    # the complete untouched primary holdouts above; it can never authorize a
+    # candidate, regardless of its result.
     sensitivity = {"status": "NOT_RUN"}
     if run_params:
         predictor = lambda row: candidate_runs(row, run_params)
-        sv_rows = _rows(list(split["validation"]), predictor)
-        sf_rows = _rows(list(split["frozen_test"]), predictor)
+        sv_pairs = _sample(split["validation"], SENSITIVITY_MAX_GAMES)
+        sf_pairs = _sample(split["frozen_test"], SENSITIVITY_MAX_GAMES)
+        sv_rows = _rows(sv_pairs, predictor); sf_rows = _rows(sf_pairs, predictor)
         sv_candidate = _evaluate(sv_rows, dispersion, sigma); sv_champion = _evaluate(sv_rows, *CHAMPION)
         sf_candidate = _evaluate(sf_rows, dispersion, sigma); sf_champion = _evaluate(sf_rows, *CHAMPION)
         svp, sv_pass = _paired_gate(sv_candidate, sv_champion, frozen=False)
@@ -119,6 +124,7 @@ def build(split: dict[str, list[tuple[dict[str, Any], dict[str, Any]]]], run_par
             "status": "SENSITIVITY_ONLY",
             "run_mean_source": "REJECTED_TEAM_RUN_CHALLENGER",
             "can_authorize_promotion": False,
+            "sampling": {"method": "deterministic_even_temporal", "validation_2025": len(sv_rows), "frozen_2026": len(sf_rows), "max_per_holdout": SENSITIVITY_MAX_GAMES},
             "validation_2025": {"paired": svp, "passes": sv_pass},
             "frozen_2026": {"paired": sfp, "nonregression": sf_pass},
         }
