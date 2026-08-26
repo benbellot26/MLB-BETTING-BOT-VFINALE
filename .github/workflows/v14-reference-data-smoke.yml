@@ -1,0 +1,50 @@
+name: Pulsar V14 Reference Data Smoke
+
+on:
+  pull_request:
+    paths:
+      - "v14/venue_geometry.py"
+      - "v14/weather_climatology.py"
+      - "v14/weather_live_shadow.py"
+      - "tests/test_v14_venue_geometry.py"
+      - "tests/test_v14_weather_climatology.py"
+      - ".github/workflows/v14-reference-data-smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reference-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify MLB venue azimuth and NASA POWER climatology
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from datetime import datetime, timezone
+          from v14.venue_geometry import fetch_nearest
+          from v14.weather_climatology import fetch as fetch_climatology
+
+          now=datetime.now(timezone.utc)
+          # Dodger Stadium coordinate is deliberately only the resolver input;
+          # bearing must come back from MLB, never from a hard-coded angle.
+          venue=fetch_nearest(34.0739,-118.2400,season=now.year,retrieved_at=now.isoformat())
+          print('VENUE=',venue)
+          if venue.get('status') != 'READY_SHADOW':
+              raise SystemExit('MLB venue azimuth reference is not ready')
+          bearing=float(venue['outfield_bearing_deg'])
+          if not 0 <= bearing < 360:
+              raise SystemExit('MLB venue bearing invalid')
+          climate=fetch_climatology(float(venue.get('latitude') or 34.0739),float(venue.get('longitude') or -118.2400),month=8,outfield_bearing_deg=bearing)
+          print('CLIMATOLOGY=',climate)
+          if climate.get('status') != 'READY_SHADOW':
+              raise SystemExit('NASA POWER venue climatology is not ready')
+          if climate.get('venue_baseline_density_kg_m3') is None or climate.get('venue_baseline_wind_out_mph') is None:
+              raise SystemExit('venue/month physical baselines missing')
+          PY
