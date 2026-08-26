@@ -1,0 +1,20 @@
+{
+  "schema": "pulsar-v14-model-registry-v1",
+  "champion": {
+    "version": "14.2.0",
+    "model_generation": "pulsar-v14-context-v3",
+    "status": "PRODUCTION",
+    "promotion_source": "manual-explicit",
+    "mutable_by_learning": false
+  },
+  "challenger": null,
+  "governance": {
+    "automatic_promotion": false,
+    "automatic_production_mutation": false,
+    "minimum_settled_games_before_challenger": 200,
+    "validation": "chronological_holdout",
+    "required_primary_metrics": ["brier", "log_loss", "calibration"],
+    "market_level_regression_forbidden": true,
+    "rollback_required": true
+  }
+}
