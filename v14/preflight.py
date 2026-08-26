@@ -32,6 +32,7 @@ CRITICAL_TEST_MODULES=(
     "tests.test_v14_staking",
     "tests.test_v14_starter_fallback",
     "tests.test_v14_starter_integrity",
+    "tests.test_v14_starter_recent_usage",
     "tests.test_v14_structural_parity",
     "tests.test_v14_tracking",
 )
