@@ -1,0 +1,61 @@
+name: Pulsar V14 Historical PIT Validation
+
+on:
+  pull_request:
+    paths:
+      - 'v14/historical_*.py'
+      - 'tests/test_v14_historical_validation.py'
+      - 'data/v137/team_features_*.jsonl.gz'
+      - 'data/v137/team_labels_*.jsonl.gz'
+      - 'data/v138_dataset_manifest.json'
+      - '.github/workflows/v14-historical-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  historical-validation:
+    name: Strict PIT 2021-2026 frozen validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Compile V14.5 historical laboratory
+        run: python -m py_compile v14/historical_dataset.py v14/historical_team_challenger.py v14/historical_validation.py
+
+      - name: Run historical contract tests
+        run: python -m unittest tests.test_v14_historical_validation -v
+
+      - name: Validate 14k strict PIT dataset and frozen holdouts
+        run: |
+          mkdir -p runtime/v14
+          python -m v14.historical_validation --output runtime/v14/v14_historical_validation.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('runtime/v14/v14_historical_validation.json')
+          x=json.loads(p.read_text(encoding='utf-8'))
+          print('HISTORICAL_STATUS=',x.get('status'))
+          print('SPLIT=',json.dumps(x.get('split'),sort_keys=True))
+          t=x.get('team_run_challenger') or {}
+          print('PARAMETERS=',json.dumps(((t.get('tuning') or {}).get('parameters')),sort_keys=True))
+          print('RUN_GATE=',json.dumps(t.get('run_gate'),sort_keys=True))
+          print('PROBABILITY_2025=',json.dumps(t.get('probability_translation_2025'),sort_keys=True))
+          print('PROBABILITY_2026=',json.dumps(t.get('probability_translation_frozen_2026'),sort_keys=True))
+          print('NEXT_STATE=',x.get('recommended_next_state'))
+          PY
+
+      - name: Archive validation evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: pulsar-v14-historical-validation-${{ github.run_id }}
+          path: runtime/v14/v14_historical_validation.json
+          retention-days: 90
