@@ -1,0 +1,38 @@
+name: Pulsar V14 Learning Audit
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 8 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  learning-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile V14 learning stack
+        run: python -m py_compile v14/learning.py v14/governance.py v14/learning_audit.py
+      - name: Run controlled learning audit
+        run: python -m v14.learning_audit --output runtime/v14/learning_audit.json
+      - name: Assert production cannot be changed
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('runtime/v14/learning_audit.json',encoding='utf-8'))
+          assert p['production_changed'] is False
+          assert p['promotion_contract']['automatic_promotion'] is False
+          assert p['promotion_contract']['production_mutation_allowed'] is False
+          print('Controlled learning safety gates OK')
+          PY
+      - name: Upload learning audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: pulsar-v14-learning-audit
+          path: runtime/v14/learning_audit.json
+          retention-days: 30
