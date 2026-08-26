@@ -33,6 +33,7 @@ NATIVE_MODULES=(
     "starter_integrity.py",
     "starter_usage_challenger.py",
     "structural.py",
+    "timezone_challenger.py",
     "tracking.py",
     "uncertainty.py",
 )
@@ -67,6 +68,7 @@ class V14ImportBoundaryTests(unittest.TestCase):
             "starter_usage_challenger.py",
             "environment_physics_challenger.py",
             "run_decomposition_challenger.py",
+            "timezone_challenger.py",
         ):
             text=(Path("v14")/filename).read_text(encoding="utf-8")
             self.assertIn("CHALLENGER_ONLY",text)
