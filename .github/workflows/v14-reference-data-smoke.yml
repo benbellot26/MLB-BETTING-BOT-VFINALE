@@ -6,8 +6,10 @@ on:
       - "v14/venue_geometry.py"
       - "v14/weather_climatology.py"
       - "v14/weather_live_shadow.py"
+      - "v14/native_candidate.py"
       - "tests/test_v14_venue_geometry.py"
       - "tests/test_v14_weather_climatology.py"
+      - "tests/test_v14_weather_live_shadow.py"
       - ".github/workflows/v14-reference-data-smoke.yml"
   workflow_dispatch:
 
@@ -17,7 +19,7 @@ permissions:
 jobs:
   reference-data:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -28,13 +30,15 @@ jobs:
           set -euo pipefail
           python - <<'PY'
           from datetime import datetime, timezone
-          from v14.venue_geometry import fetch_nearest
+          from v14.acquisition import http_json
+          from v14.venue_geometry import fetch, fetch_nearest
           from v14.weather_climatology import fetch as fetch_climatology
 
           now=datetime.now(timezone.utc)
-          # Dodger Stadium coordinate is deliberately only the resolver input;
+          season=now.year
+          # Single reference proof: coordinate is only the resolver input;
           # bearing must come back from MLB, never from a hard-coded angle.
-          venue=fetch_nearest(34.0739,-118.2400,season=now.year,retrieved_at=now.isoformat())
+          venue=fetch_nearest(34.0739,-118.2400,season=season,retrieved_at=now.isoformat())
           print('VENUE=',venue)
           if venue.get('status') != 'READY_SHADOW':
               raise SystemExit('MLB venue azimuth reference is not ready')
@@ -47,4 +51,27 @@ jobs:
               raise SystemExit('NASA POWER venue climatology is not ready')
           if climate.get('venue_baseline_density_kg_m3') is None or climate.get('venue_baseline_wind_out_mph') is None:
               raise SystemExit('venue/month physical baselines missing')
+
+          # Coverage proof over every venue actually assigned to a 2026 MLB
+          # regular-season game. This catches temporary/special-event parks.
+          schedule=http_json('https://statsapi.mlb.com/api/v1/schedule',{
+              'sportId':1,'gameType':'R','startDate':f'{season}-03-01','endDate':f'{season}-10-15'
+          }) or {}
+          venue_ids={}
+          for block in schedule.get('dates') or []:
+              for game in block.get('games') or []:
+                  raw=game.get('venue') or {}; vid=raw.get('id')
+                  if vid:
+                      venue_ids[str(vid)]=str(raw.get('name') or '')
+          if len(venue_ids) < 30:
+              raise SystemExit(f'unexpectedly small current-season venue set: {len(venue_ids)}')
+          rows=[];missing=[]
+          for vid,name in sorted(venue_ids.items(),key=lambda item:int(item[0])):
+              row=fetch(vid,retrieved_at=now.isoformat()); rows.append(row)
+              if row.get('status')!='READY_SHADOW':missing.append({'venue_id':vid,'schedule_name':name,'evidence':row})
+          print('SCHEDULE_VENUE_COUNT=',len(venue_ids))
+          print('SCHEDULE_VENUE_READY=',len(rows)-len(missing))
+          print('SCHEDULE_VENUE_MISSING=',missing)
+          if missing:
+              raise SystemExit(f'MLB azimuth missing for {len(missing)} scheduled 2026 venues')
           PY
