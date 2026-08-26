@@ -29,7 +29,7 @@ jobs:
           python-version: '3.12'
 
       - name: Compile V14.5 historical laboratory
-        run: python -m py_compile v14/historical_dataset.py v14/historical_team_challenger.py v14/historical_validation.py
+        run: python -m py_compile v14/historical_dataset.py v14/historical_team_challenger.py v14/historical_distribution_validation.py v14/historical_validation.py
 
       - name: Run historical contract tests
         run: python -m unittest tests.test_v14_historical_validation -v
@@ -50,6 +50,8 @@ jobs:
           print('RUN_GATE=',json.dumps(t.get('run_gate'),sort_keys=True))
           print('PROBABILITY_2025=',json.dumps(t.get('probability_translation_2025'),sort_keys=True))
           print('PROBABILITY_2026=',json.dumps(t.get('probability_translation_frozen_2026'),sort_keys=True))
+          print('DISTRIBUTION=',json.dumps(x.get('score_distribution_challenger'),sort_keys=True))
+          print('EVIDENCE_TIERS=',json.dumps(x.get('evidence_registry'),sort_keys=True))
           print('NEXT_STATE=',x.get('recommended_next_state'))
           PY
 
