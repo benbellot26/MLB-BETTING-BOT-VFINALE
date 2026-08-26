@@ -115,10 +115,11 @@ def effective_lineup_ops(lineup_row: dict[str,Any], team_ops: float) -> tuple[fl
 def _raw_starter(game: dict[str,Any], side: str, league: LeagueBaselines, season: int, *, getter: MLBGetter) -> tuple[Starter,Starter,dict[str,Any]]:
     probable=(((game.get("teams") or {}).get(side) or {}).get("probablePitcher") or {}); pid,name=probable.get("id"),probable.get("fullName")
     current=player_season_stats(pid,"pitching",season,getter=getter) if pid else {}; innings=_num(current.get("inningsPitched"),0.0); weight=max(0.0,min(1.0,innings/70.0))
+    games_started=max(0,int(_num(current.get("gamesStarted"),0.0))); games_pitched=max(0,int(_num(current.get("gamesPitched"),0.0))); innings_per_start=(innings/games_started) if games_started>0 else None
     era_raw,whip_raw=_num(current.get("era"),league.era),_num(current.get("whip"),league.whip)
     base=Starter(era=weight*era_raw+(1-weight)*league.era,whip=weight*whip_raw+(1-weight)*league.whip,k9=_num(current.get("strikeoutsPer9Inn"),8.5) if current else None,bb9=_num(current.get("walksPer9Inn"),3.2) if current else None,hr9=_num(current.get("homeRunsPer9"),1.15) if current else None,innings=innings,sample_weight=weight)
     prior=pitcher_prior(pid,season,getter=getter); enhanced=enhance_starter(current,prior,fallback=base)
-    ctx={"id":pid,"name":name,"announced":bool(pid and name),"era":enhanced.era,"whip":enhanced.whip,"k9":enhanced.k9,"bb9":enhanced.bb9,"hr9":enhanced.hr9,"inningsPitched":enhanced.innings,"sample_weight":enhanced.sample_weight,"current_stats_available":bool(current),"prior_available":bool(prior)}
+    ctx={"id":pid,"name":name,"announced":bool(pid and name),"era":enhanced.era,"whip":enhanced.whip,"k9":enhanced.k9,"bb9":enhanced.bb9,"hr9":enhanced.hr9,"inningsPitched":enhanced.innings,"gamesStarted":games_started,"gamesPitched":games_pitched,"inningsPerStart":innings_per_start,"sample_weight":enhanced.sample_weight,"current_stats_available":bool(current),"prior_available":bool(prior)}
     return base,enhanced,ctx
 
 
