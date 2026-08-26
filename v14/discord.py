@@ -49,35 +49,33 @@ def _starter_fallback_field(result:dict[str,Any])->dict[str,Any]|None:
     return {"name":"⚠️ DATA QUALITY — STARTER CONFLICT","value":f"Starter identity not safely confirmed for **{sides}**. Pulsar kept this game in the slate using a **neutral league-average starter fallback** for the affected side(s). **No betting action is authorized** while this state is degraded.","inline":False}
 
 
-def _paper_clv_label(certification:dict[str,Any])->str:
-    paper=certification.get("paper_clv") or {}; n=int(_num(paper.get("n"),0)); mean=paper.get("mean_clv"); positive=paper.get("positive_rate")
-    if n<=0:return "collecting **0/100** verified closes"
-    mean_text=f"{float(mean):+.2f} pp" if mean is not None else "—"
-    positive_text=f"{100*float(positive):.1f}%" if positive is not None else "—"
-    return f"**{n}/100** closes  •  mean **{mean_text}**  •  positive **{positive_text}**"
+def _certification_scope(certification:dict[str,Any],canonical_market:str|None)->tuple[str,dict[str,Any]]:
+    market=str(canonical_market or "").strip()
+    scoped=((certification.get("markets") or {}).get(market) or {}) if market else {}
+    return (market,scoped) if scoped else ("GLOBAL",certification)
+
+
+def _paper_clv_label(certification:dict[str,Any],canonical_market:str|None=None)->str:
+    scope,row=_certification_scope(certification,canonical_market); paper=row.get("paper_clv") or (certification.get("paper_clv") or {} if scope=="GLOBAL" else {})
+    n=int(_num(paper.get("n"),0)); mean=paper.get("mean_clv"); positive=paper.get("positive_rate")
+    prefix=f"**{scope}**  •  " if scope!="GLOBAL" else ""
+    if n<=0:return prefix+"collecting **0/100** verified closes"
+    mean_text=f"{float(mean):+.2f} pp" if mean is not None else "—"; positive_text=f"{100*float(positive):.1f}%" if positive is not None else "—"
+    return prefix+f"**{n}/100** closes  •  mean **{mean_text}**  •  positive **{positive_text}**"
 
 
 def _quality_field(result:dict[str,Any],prediction:dict[str,Any])->dict[str,Any]:
-    certification=result.get("betting_certification") or {}
-    probability_status=str(certification.get("probability_status") or "PROBABILITY_RESEARCH")
-    betting_status=str(certification.get("betting_status") or "RESEARCH_ONLY")
-    calibration=prediction.get("calibration") or {}; active=[name for name,row in (calibration.get("markets") or {}).items() if row.get("active")]
-    cal_label=", ".join(active) if active else "collecting / identity"
-    sharp=result.get("sharp_market") or {}; sharp_label="verified" if sharp.get("freshness_verified") else "unavailable/unverified"
-    best=(result.get("decision") or {}).get("best") or {}; decision=str(best.get("status") or "NO_BET")
-    reason=""
-    blockers=best.get("blockers") or []
-    if blockers: reason="\n🔒 " + ", ".join(str(x) for x in blockers[:4])
-    return {
-        "name":"🧪 PROBABILITY QUALITY",
-        "value":f"Calibration **{cal_label}**  •  Sharp benchmark **{sharp_label}**\nProbability **{probability_status}**  •  Betting **{betting_status}**  •  Decision **{decision}**\nPaper CLV {_paper_clv_label(certification)}{reason}",
-        "inline":False,
-    }
+    certification=result.get("betting_certification") or {}; best=(result.get("decision") or {}).get("best") or {}; canonical=str(best.get("canonical_market") or "") or None; scope,scoped=_certification_scope(certification,canonical)
+    probability_status=str(scoped.get("probability_status") or certification.get("probability_status") or "PROBABILITY_RESEARCH")
+    betting_status=str(scoped.get("betting_status") or certification.get("betting_status") or "RESEARCH_ONLY")
+    calibration=prediction.get("calibration") or {}; active=[name for name,row in (calibration.get("markets") or {}).items() if row.get("active")]; cal_label=", ".join(active) if active else "collecting / identity"
+    sharp=result.get("sharp_market") or {}; sharp_label="verified" if sharp.get("freshness_verified") else "unavailable/unverified"; decision=str(best.get("status") or "NO_BET")
+    blockers=best.get("blockers") or []; reason="\n🔒 "+", ".join(str(x) for x in blockers[:4]) if blockers else ""; scope_text=f"  •  Scope **{scope}**" if scope!="GLOBAL" else ""
+    return {"name":"🧪 PROBABILITY QUALITY","value":f"Calibration **{cal_label}**  •  Sharp benchmark **{sharp_label}**{scope_text}\nProbability **{probability_status}**  •  Betting **{betting_status}**  •  Decision **{decision}**\nPaper CLV {_paper_clv_label(certification,canonical)}{reason}","inline":False}
 
 
 def _interval_suffix(prediction:dict[str,Any],key:str)->str:
-    row=((prediction.get("probability_intervals") or {}).get("selections") or {}).get(key) or {}
-    lo=row.get("lower"); hi=row.get("upper")
+    row=((prediction.get("probability_intervals") or {}).get("selections") or {}).get(key) or {}; lo=row.get("lower"); hi=row.get("upper")
     if lo is None or hi is None:return ""
     return f"  `[{100*float(lo):.1f}–{100*float(hi):.1f}]`"
 
@@ -90,8 +88,7 @@ def build_game_embed(result:dict[str,Any])->dict[str,Any]:
     away,home=_team(result,"away"),_team(result,"home"); line=_num(prediction.get("total_line") or (result.get("canonical_lines") or {}).get("TOTAL")); projection=prediction.get("run_projection") or {}; ctx=result.get("ctx") or {}; phase=str(result.get("phase") or prediction.get("phase") or "—").upper(); phase_display=_phase_display(phase); gid=str(result.get("game_pk") or prediction.get("game_pk") or "0")
     try:color=_MATCH_COLORS[int(gid)%len(_MATCH_COLORS)]
     except Exception:color=_MATCH_COLORS[sum(ord(ch) for ch in gid)%len(_MATCH_COLORS)]
-    context=prediction.get("context_adjustment") or {}; context_label="ACTIVE" if context.get("eligible") else "BASE"; feature_as_of=context.get("feature_as_of") or "—"
-    fallback=result.get("starter_fallback") or ctx.get("starter_fallback") or {}; quality_label="DEGRADED" if fallback.get("degraded") else "VERIFIED"
+    context=prediction.get("context_adjustment") or {}; context_label="ACTIVE" if context.get("eligible") else "BASE"; feature_as_of=context.get("feature_as_of") or "—"; fallback=result.get("starter_fallback") or ctx.get("starter_fallback") or {}; quality_label="DEGRADED" if fallback.get("degraded") else "VERIFIED"
     fields=[
         {"name":"🏆 MONEYLINE","value":f"✈️ **{away}**  ·  {_pct(probabilities['away_ml'])}{_interval_suffix(prediction,'away_ml')}\n🏠 **{home}**  ·  {_pct(probabilities['home_ml'])}{_interval_suffix(prediction,'home_ml')}","inline":False},
         {"name":"⚾ RUN LINE ±1.5","value":f"✈️ **{away}**   `+1.5` {_pct(probabilities['away_plus_1_5'])}   │   `-1.5` {_pct(probabilities['away_minus_1_5'])}\n🏠 **{home}**   `+1.5` {_pct(probabilities['home_plus_1_5'])}   │   `-1.5` {_pct(probabilities['home_minus_1_5'])}","inline":False},
