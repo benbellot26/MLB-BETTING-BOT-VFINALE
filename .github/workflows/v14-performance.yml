@@ -15,7 +15,7 @@ concurrency:
 jobs:
   settle:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,22 +28,28 @@ jobs:
         run: |
           python -m py_compile v14/*.py
           python -m unittest tests.test_v14_tracking tests.test_v14_professional_hardening tests.test_v14_pipeline tests.test_v14_production_runtime
-      - name: Settle finished games
+      - name: Settle finished predictions and ledgers
         run: |
           python -m v14.tracking settle \
             --predictions data/v14_predictions.jsonl \
             --report data/v14_performance.json
+          python -m v14.paper_ledger settle \
+            --ledger data/v14_paper_bet_ledger.jsonl \
+            --report data/v14_paper_bet_performance.json
+          python -m v14.bet_ledger settle \
+            --ledger data/v14_bet_ledger.jsonl \
+            --report data/v14_bet_performance.json
       - name: Fit fail-closed probability calibration
         run: |
           python -m v14.probability_calibration fit \
             --predictions data/v14_predictions.jsonl \
             --output data/v14_calibration.json
-      - name: Rebuild performance and certification with current calibration
+      - name: Rebuild performance and certification with current evidence
         run: |
           python -m v14.tracking report \
             --predictions data/v14_predictions.jsonl \
             --report data/v14_performance.json
-      - name: Evaluate distribution and residual challengers
+      - name: Evaluate all shadow challengers
         run: |
           python -m v14.distribution_tuning \
             --predictions data/v14_predictions.jsonl \
@@ -51,6 +57,9 @@ jobs:
           python -m v14.residual_challenger \
             --predictions data/v14_predictions.jsonl \
             --output data/v14_residual_challenger.json
+          python -m v14.market_posterior_challenger \
+            --predictions data/v14_predictions.jsonl \
+            --output data/v14_market_posterior_candidate.json
       - name: Persist V14 settled performance and research artifacts
         run: |
           git config user.name 'Pulsar V14'
@@ -60,8 +69,13 @@ jobs:
           [ -f data/v14_calibration.json ] && git add -f data/v14_calibration.json
           [ -f data/v14_distribution_candidate.json ] && git add -f data/v14_distribution_candidate.json
           [ -f data/v14_residual_challenger.json ] && git add -f data/v14_residual_challenger.json
+          [ -f data/v14_market_posterior_candidate.json ] && git add -f data/v14_market_posterior_candidate.json
+          [ -f data/v14_paper_bet_ledger.jsonl ] && git add -f data/v14_paper_bet_ledger.jsonl
+          [ -f data/v14_paper_bet_performance.json ] && git add -f data/v14_paper_bet_performance.json
+          [ -f data/v14_bet_ledger.jsonl ] && git add -f data/v14_bet_ledger.jsonl
+          [ -f data/v14_bet_performance.json ] && git add -f data/v14_bet_performance.json
           if ! git diff --cached --quiet; then
-            git commit -m 'data: settle V14 performance and challengers [skip ci]'
+            git commit -m 'data: settle V14 performance, ledgers and challengers [skip ci]'
             git pull --rebase origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
