@@ -3,9 +3,9 @@ from __future__ import annotations
 """Sharp-market consensus separated from execution/display prices.
 
 Weights are market-specific and can be supplied by a validated research
-artifact; conservative defaults are used otherwise.  Consensus uncertainty is
-reported explicitly from cross-book disagreement.  Exchange quotes are tagged
-separately from sportsbook quotes because commission/liquidity semantics differ.
+artifact; conservative defaults are used otherwise. Consensus uncertainty and
+per-book fair contributors are persisted so future weights can be learned on
+proper-score evidence instead of remaining hand-picked forever.
 """
 
 import json
@@ -74,9 +74,10 @@ def _weight(book:str,market:str,artifact:dict[str,Any])->float|None:
 
 def _consensus(rows:list[tuple[float,float,str,str]])->dict[str,Any]|None:
     if not rows: return None
-    probs=[p for p,_w,_b,_t in rows]; med=median(probs); bounded=[(max(med-.08,min(med+.08,p)),w,b,t) for p,w,b,t in rows]; total=sum(w for _p,w,_b,_t in bounded)
-    mean=sum(p*w for p,w,_b,_t in bounded)/max(1e-12,total); variance=sum(w*(p-mean)**2 for p,w,_b,_t in bounded)/max(1e-12,total)
-    return {"fair_probability":mean,"source_count":len(rows),"books":[b for _p,_w,b,_t in rows],"source_types":[t for _p,_w,_b,t in rows],"dispersion_pp":100*math.sqrt(max(0.0,variance)),"range_pp":100*(max(probs)-min(probs)) if len(probs)>1 else 0.0,"consensus_method":"weighted winsorized cross-book fair probability"}
+    probs=[p for p,_w,_b,_t in rows]; med=median(probs); bounded=[(max(med-.08,min(med+.08,p)),w,b,t,p) for p,w,b,t in rows]; total=sum(w for _p,w,_b,_t,_raw in bounded)
+    mean=sum(p*w for p,w,_b,_t,_raw in bounded)/max(1e-12,total); variance=sum(w*(p-mean)**2 for p,w,_b,_t,_raw in bounded)/max(1e-12,total)
+    contributors=[{"bookmaker":b,"source_type":t,"fair_probability":raw,"winsorized_probability":p,"weight":w} for p,w,b,t,raw in bounded]
+    return {"fair_probability":mean,"source_count":len(rows),"books":[b for _p,_w,b,_t in rows],"source_types":[t for _p,_w,_b,t in rows],"contributors":contributors,"dispersion_pp":100*math.sqrt(max(0.0,variance)),"range_pp":100*(max(probs)-min(probs)) if len(probs)>1 else 0.0,"consensus_method":"weighted winsorized cross-book fair probability"}
 
 
 def _price_pair(outcomes:list[dict[str,Any]],name_a:str,name_b:str,*,point_a:float|None=None,point_b:float|None=None)->tuple[float,float]|None:
@@ -112,6 +113,6 @@ def sharp_consensus(event:dict[str,Any],*,total_line:float,as_of:Any,max_age_min
         if row is not None: selections[key]=row
     for left,right in (("home_ml","away_ml"),("home_minus_1_5","away_plus_1_5"),("away_minus_1_5","home_plus_1_5"),("over","under")):
         if left in selections:
-            base=selections[left]; selections[right]={**base,"fair_probability":1-float(base["fair_probability"])}
+            base=selections[left]; contributors=[{**c,"fair_probability":1-float(c["fair_probability"]),"winsorized_probability":1-float(c["winsorized_probability"])} for c in base.get("contributors") or []]; selections[right]={**base,"fair_probability":1-float(base["fair_probability"]),"contributors":contributors}
     required={"home_ml","away_ml","over","under"}; actionable=required<=set(selections) and bool(book_rows)
     return {"schema":"pulsar-v14-sharp-consensus-v2","market_probability_used_as_feature":False,"benchmark_only":True,"actionable":actionable,"freshness_verified":bool(book_rows),"total_line":float(total_line),"selections":selections,"books":book_rows,"weights_status":artifact.get("status") or ("VALIDATED" if artifact.get("validated") else "DEFAULT"),"devig_methods":["proportional","power","additive"],"devig_method_diagnostics":devig_meta,"exchange_note":"Exchange sources are proxy fair quotes unless commission/liquidity fields are available."}
