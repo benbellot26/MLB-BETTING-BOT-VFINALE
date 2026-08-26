@@ -33,6 +33,7 @@ def native_result_for_discord(result: dict[str, Any]) -> dict[str, Any]:
 
     return {
         "game_pk": game_pk,
+        "odds_event_id": result.get("odds_event_id"),
         "game_date": game_date,
         "analyzed_at": analyzed_at,
         "phase": str(result.get("phase") or prediction.get("phase") or "EARLY").upper(),
@@ -42,6 +43,7 @@ def native_result_for_discord(result: dict[str, Any]) -> dict[str, Any]:
         "canonical_lines": {"TOTAL": float(line)},
         "line_selection": deepcopy(result.get("line_selection") or {}),
         "market_snapshot": deepcopy(result.get("market_snapshot") or {}),
+        "execution_market": deepcopy(result.get("execution_market") or {}),
         "market_diagnostics": deepcopy(result.get("market_diagnostics") or {}),
         "sharp_market": deepcopy(result.get("sharp_market") or {}),
         "betting_certification": deepcopy(result.get("betting_certification") or {}),
@@ -70,7 +72,7 @@ def build_native_discord_payload(candidate: dict[str, Any]) -> dict[str, Any]:
     results = [native_result_for_discord(result) for result in candidate.get("results") or []]
     certification = deepcopy((results[0].get("betting_certification") if results else {}) or {})
     return {
-        "schema": "pulsar-v14-native-discord-payload-v3",
+        "schema": "pulsar-v14-native-discord-payload-v4",
         "version": VERSION,
         "model_generation": MODEL_GENERATION,
         "role": "PRODUCTION_PAYLOAD_UNAUTHORIZED",
