@@ -49,7 +49,7 @@ def _empty_team_history(target_date:str,reason:str)->dict[str,Any]:
 
 
 def _empty_weather(reason:str)->dict[str,Any]:
-    return {"schema":"pulsar-v14-live-weather-shadow-v1","role":"SHADOW_ONLY","status":"COLLECTING","auto_activation":False,"champion_impact":False,"point_in_time":True,"reason":reason,"market_probability_used_as_feature":False}
+    return {"schema":"pulsar-v14-live-weather-shadow-v2","role":"SHADOW_ONLY","status":"COLLECTING","auto_activation":False,"champion_impact":False,"point_in_time":True,"reason":reason,"market_probability_used_as_feature":False}
 
 
 def _phase_quality_gate(native:NativeGameInputs,phase:str)->None:
@@ -76,7 +76,7 @@ def _research_challenger_evidence(feature_row:dict[str,Any],*,game:dict[str,Any]
     team_history_evidence=team_history_matchup(team_history or {},home_id,away_id) if team_history else {"schema":"pulsar-v14-native-team-history-matchup-v1","role":"SHADOW_ONLY","champion_impact":False,"point_in_time":True,"status":"COLLECTING","reason":"team_history_artifact_unavailable"}
     home_name=str(home_team.get("name") or ""); coords=COORD.get(home_name)
     if enable_live_weather:
-        latitude,longitude=coords if coords else (None,None); weather=live_weather_shadow(latitude,longitude,game_date=str(game_date or ""),analyzed_at=str(feature_row.get("as_of") or ""))
+        latitude,longitude=coords if coords else (None,None); weather=live_weather_shadow(latitude,longitude,venue_id=venue.get("id"),game_date=str(game_date or ""),analyzed_at=str(feature_row.get("as_of") or ""))
     else:
         weather=_empty_weather("nonproduction dependencies injected; prospective weather network acquisition skipped")
     enriched_environment=merge_environment(features.get("environment") or {},weather)
