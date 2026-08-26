@@ -8,6 +8,7 @@ from v14.environment_physics_challenger import (
 from v14.run_decomposition_challenger import build as build_run_decomposition
 from v14.run_decomposition_challenger import opponent_factor
 from v14.starter_usage_challenger import estimate as expected_starter_usage
+from v14.timezone_challenger import timezone_shift_hours
 
 
 class V14ResearchExtensionTests(unittest.TestCase):
@@ -86,6 +87,24 @@ class V14ResearchExtensionTests(unittest.TestCase):
         self.assertEqual(out["status"], "COLLECTING")
         self.assertIn("bullpen_factor", out["missing"])
         self.assertFalse(out["auto_activation"])
+
+    def test_timezone_shift_is_dst_aware(self):
+        summer = timezone_shift_hours(
+            "Arizona Diamondbacks",
+            "Los Angeles Dodgers",
+            "2026-07-01T12:00:00Z",
+        )
+        winter = timezone_shift_hours(
+            "Arizona Diamondbacks",
+            "Los Angeles Dodgers",
+            "2026-01-01T12:00:00Z",
+        )
+        self.assertEqual(summer["status"], "READY_SHADOW")
+        self.assertEqual(winter["status"], "READY_SHADOW")
+        self.assertTrue(summer["dst_aware"])
+        self.assertAlmostEqual(summer["shift_hours"], 0.0, places=12)
+        self.assertAlmostEqual(winter["shift_hours"], -1.0, places=12)
+        self.assertFalse(summer["auto_activation"])
 
 
 if __name__ == "__main__":
