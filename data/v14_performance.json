@@ -1,37 +1,252 @@
 {
-  "schema": "pulsar-v14-performance-v3",
-  "model_generation": "pulsar-v14-context-v3",
-  "generated_at": null,
-  "prediction_records_settled": 0,
-  "games_settled": 0,
+  "calibration": [
+    {
+      "lower": 0.2,
+      "mean_probability": 0.283491116918689,
+      "n": 4,
+      "observed_rate": 0.5,
+      "upper": 0.3
+    },
+    {
+      "lower": 0.3,
+      "mean_probability": 0.35272626586008005,
+      "n": 22,
+      "observed_rate": 0.36363636363636365,
+      "upper": 0.4
+    },
+    {
+      "lower": 0.4,
+      "mean_probability": 0.45642947446285176,
+      "n": 11,
+      "observed_rate": 0.5454545454545454,
+      "upper": 0.5
+    },
+    {
+      "lower": 0.5,
+      "mean_probability": 0.5457163108733531,
+      "n": 16,
+      "observed_rate": 0.4375,
+      "upper": 0.6
+    },
+    {
+      "lower": 0.6,
+      "mean_probability": 0.6379848297038991,
+      "n": 7,
+      "observed_rate": 0.2857142857142857,
+      "upper": 0.7
+    }
+  ],
   "canonical_snapshot_policy": "latest strictly-pregame snapshot per game",
-  "overall": {
-    "n": 0,
-    "brier": null,
-    "log_loss": null,
-    "accuracy_50": null,
-    "mean_probability": null,
-    "observed_rate": null,
-    "interpretation": "dashboard-only; correlated markets must not drive model promotion"
-  },
-  "calibration": [],
-  "markets": {},
-  "runs": {
-    "team_run_mae": null,
-    "total_run_mae": null
-  },
-  "roi": {
-    "status": "UNAVAILABLE",
-    "reason": "No official bet/stake ledger in V14 analytics-only production."
-  },
   "clv": {
-    "status": "UNAVAILABLE",
-    "reason": "No official bet ledger plus canonical closing-price feed; market movement proxy is reported separately."
+    "reason": "No official bet ledger plus canonical closing-price feed; market movement proxy is reported separately.",
+    "status": "UNAVAILABLE"
   },
+  "games_settled": 15,
+  "generated_at": "2026-08-26T11:04:25.967396+00:00",
   "market_movement_proxy": {
-    "status": "UNAVAILABLE",
     "definition": "market-wide movement to latest persisted pregame price; not bet CLV",
-    "n": 0,
-    "mean_implied_probability_move_pp": null
+    "mean_implied_probability_move_pp": 0.2874155105111316,
+    "n": 120,
+    "status": "AVAILABLE_PROXY"
+  },
+  "markets": {
+    "ML": {
+      "accuracy_50": 0.26666666666666666,
+      "brier": 0.2730415690273931,
+      "calibration": [
+        {
+          "lower": 0.4,
+          "mean_probability": 0.46331446692232037,
+          "n": 6,
+          "observed_rate": 0.8333333333333334,
+          "upper": 0.5
+        },
+        {
+          "lower": 0.5,
+          "mean_probability": 0.540933540878371,
+          "n": 8,
+          "observed_rate": 0.375,
+          "upper": 0.6
+        },
+        {
+          "lower": 0.6,
+          "mean_probability": 0.603303486455924,
+          "n": 1,
+          "observed_rate": 0.0,
+          "upper": 0.7
+        }
+      ],
+      "log_loss": 0.739649590612255,
+      "mean_probability": 0.5140439076677876,
+      "n": 15,
+      "observed_rate": 0.5333333333333333
+    },
+    "RL_AWAY_-1.5": {
+      "accuracy_50": 0.6,
+      "brier": 0.2612682727201913,
+      "calibration": [
+        {
+          "lower": 0.2,
+          "mean_probability": 0.2782350771296604,
+          "n": 3,
+          "observed_rate": 0.6666666666666666,
+          "upper": 0.3
+        },
+        {
+          "lower": 0.3,
+          "mean_probability": 0.3517549788178222,
+          "n": 11,
+          "observed_rate": 0.36363636363636365,
+          "upper": 0.4
+        },
+        {
+          "lower": 0.4,
+          "mean_probability": 0.4248733390034437,
+          "n": 1,
+          "observed_rate": 0.0,
+          "upper": 0.5
+        }
+      ],
+      "log_loss": 0.7204234920449036,
+      "mean_probability": 0.34192555582589795,
+      "n": 15,
+      "observed_rate": 0.4
+    },
+    "RL_HOME_-1.5": {
+      "accuracy_50": 0.6666666666666666,
+      "brier": 0.22296097918402916,
+      "calibration": [
+        {
+          "lower": 0.2,
+          "mean_probability": 0.299259236285775,
+          "n": 1,
+          "observed_rate": 0.0,
+          "upper": 0.3
+        },
+        {
+          "lower": 0.3,
+          "mean_probability": 0.35369755290233795,
+          "n": 11,
+          "observed_rate": 0.36363636363636365,
+          "upper": 0.4
+        },
+        {
+          "lower": 0.4,
+          "mean_probability": 0.44908407806415607,
+          "n": 3,
+          "observed_rate": 0.3333333333333333,
+          "upper": 0.5
+        }
+      ],
+      "log_loss": 0.6371280250151575,
+      "mean_probability": 0.3691456368269307,
+      "n": 15,
+      "observed_rate": 0.3333333333333333
+    },
+    "TOTAL_OVER": {
+      "accuracy_50": 0.4666666666666667,
+      "brier": 0.2628252576574038,
+      "calibration": [
+        {
+          "lower": 0.4,
+          "mean_probability": 0.4687118443615351,
+          "n": 1,
+          "observed_rate": 0.0,
+          "upper": 0.5
+        },
+        {
+          "lower": 0.5,
+          "mean_probability": 0.5504990808683353,
+          "n": 8,
+          "observed_rate": 0.5,
+          "upper": 0.6
+        },
+        {
+          "lower": 0.6,
+          "mean_probability": 0.6437650535785616,
+          "n": 6,
+          "observed_rate": 0.3333333333333333,
+          "upper": 0.7
+        }
+      ],
+      "log_loss": 0.7202036262685751,
+      "mean_probability": 0.5823529875186392,
+      "n": 15,
+      "observed_rate": 0.4
+    }
+  },
+  "model_generation": "pulsar-v14-context-v3",
+  "overall": {
+    "accuracy_50": 0.5,
+    "brier": 0.25502401964725435,
+    "interpretation": "dashboard-only; correlated markets must not drive model promotion",
+    "log_loss": 0.7043511834852229,
+    "mean_probability": 0.4518670219598138,
+    "n": 60,
+    "observed_rate": 0.4166666666666667
+  },
+  "prediction_records_settled": 45,
+  "roi": {
+    "reason": "No official bet/stake ledger in V14 analytics-only production.",
+    "status": "UNAVAILABLE"
+  },
+  "runs": {
+    "team_run_mae": 2.534294490190834,
+    "total_run_mae": 4.248330901925608
+  },
+  "schema": "pulsar-v14-performance-v3",
+  "selection_feedback": {
+    "by_date": {
+      "2026-08-25": {
+        "flat_1u_profit_known_prices": -1.2099999999999997,
+        "flat_1u_roi_known_prices": -0.08642857142857141,
+        "hit_rate": 0.5,
+        "known_price_n": 14,
+        "losses": 8,
+        "n": 16,
+        "pushes": 0,
+        "wins": 8
+      }
+    },
+    "by_market": {
+      "ML": {
+        "flat_1u_profit_known_prices": -1.1500000000000001,
+        "flat_1u_roi_known_prices": -0.23000000000000004,
+        "hit_rate": 0.3333333333333333,
+        "known_price_n": 5,
+        "losses": 4,
+        "n": 6,
+        "pushes": 0,
+        "wins": 2
+      },
+      "TOTAL_OVER": {
+        "flat_1u_profit_known_prices": -0.06000000000000005,
+        "flat_1u_roi_known_prices": -0.006666666666666672,
+        "hit_rate": 0.6,
+        "known_price_n": 9,
+        "losses": 4,
+        "n": 10,
+        "pushes": 0,
+        "wins": 6
+      }
+    },
+    "notes": [
+      "User-reported outcomes are stored for evaluation and selection review only.",
+      "Unknown odds are excluded from flat-unit ROI but remain included in hit rate.",
+      "This ledger must not alter model coefficients without a separate validated training process."
+    ],
+    "overall": {
+      "flat_1u_profit_known_prices": -1.2099999999999997,
+      "flat_1u_roi_known_prices": -0.08642857142857141,
+      "hit_rate": 0.5,
+      "known_price_n": 14,
+      "losses": 8,
+      "n": 16,
+      "pushes": 0,
+      "wins": 8
+    },
+    "prediction_feature_usage": false,
+    "role": "evaluation_only",
+    "schema": "pulsar-v14-pick-performance-v1"
   }
 }
