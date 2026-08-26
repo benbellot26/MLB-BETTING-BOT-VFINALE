@@ -3,11 +3,17 @@ from __future__ import annotations
 """Strict historical validation of V14 score-distribution parameters.
 
 Distribution parameters are selected against the strict PIT team-history
-baseline only.  This deliberately isolates dispersion/environment variance from
+baseline only. This deliberately isolates dispersion/environment variance from
 the separately tuned team-run challenger, which may be rejected downstream.
 The complete untouched 2025 and frozen 2026 holdouts are used for the final
 gate; a bounded deterministic 2021-2024 sample is used only for grid selection.
 No result from this module can alter the champion automatically.
+
+The historical team dataset does not contain the exact market total line that
+was available for each game. Score-NLL and ML/RL diagnostics are therefore the
+primary historical evidence. Total-market non-regression is evaluated at a
+fixed synthetic 8.5 solely as a distribution diagnostic and is never described
+as line-by-line market validation.
 """
 
 from typing import Any, Callable
@@ -17,6 +23,7 @@ from .historical_team_challenger import baseline_runs, candidate_runs
 
 GRID = tuple((d, s) for d in (5.5, 7.5, 9.0, 12.0) for s in (0.00, 0.08, 0.16))
 CHAMPION = (7.5, 0.08)
+DIAGNOSTIC_TOTAL_LINE = 8.5
 RunPredictor = Callable[[dict[str, Any]], tuple[float, float]]
 
 
@@ -39,7 +46,7 @@ def _rows(pairs: list[tuple[dict[str, Any], dict[str, Any]]], predictor: RunPred
             "away": feature.get("away"),
             "home_mu": h,
             "away_mu": a,
-            "total_line": 8.5,
+            "total_line": DIAGNOSTIC_TOTAL_LINE,
             "home_score": int(label.get("home_score")),
             "away_score": int(label.get("away_score")),
         })
@@ -81,8 +88,6 @@ def _paired_gate(candidate: dict[str, Any], champion: dict[str, Any], *, frozen:
 
 
 def build(split: dict[str, list[tuple[dict[str, Any], dict[str, Any]]]], run_params: dict[str, float] | None = None) -> dict[str, Any]:
-    # Grid selection is intentionally based on the untuned reference means so a
-    # rejected run-mean challenger cannot make a distribution candidate look good.
     tuning_rows = _rows(_sample(split["tuning"], 500), baseline_runs)
     validation_rows = _rows(list(split["validation"]), baseline_runs)
     frozen_rows = _rows(list(split["frozen_test"]), baseline_runs)
@@ -101,9 +106,6 @@ def build(split: dict[str, list[tuple[dict[str, Any], dict[str, Any]]]], run_par
     vp, validation_pass = _paired_gate(validation_candidate, validation_champion, frozen=False)
     fp, frozen_nonreg = _paired_gate(frozen_candidate, frozen_champion, frozen=True)
 
-    # Sensitivity audit only: repeat the selected distribution on the rejected
-    # run-mean challenger when parameters are supplied. It can never rescue a
-    # failure on the isolated baseline gate.
     sensitivity = {"status": "NOT_RUN"}
     if run_params:
         predictor = lambda row: candidate_runs(row, run_params)
@@ -134,6 +136,14 @@ def build(split: dict[str, list[tuple[dict[str, Any], dict[str, Any]]]], run_par
             "current_v14_champion_reconstruction_claimed": False,
             "reason": "distribution effect isolated from the separately rejected team-run challenger",
         },
+        "market_line_contract": {
+            "total_line": DIAGNOSTIC_TOTAL_LINE,
+            "total_line_source": "SYNTHETIC_FIXED_DIAGNOSTIC",
+            "historical_actual_total_lines_available": False,
+            "total_market_claim": "NON_REGRESSION_AT_FIXED_8_5_ONLY",
+            "primary_distribution_evidence": "JOINT_SCORE_NLL_PLUS_ML_RL",
+            "native_live_line_by_line_confirmation_required": True,
+        },
         "sample_policy": {
             "tuning": len(tuning_rows),
             "validation_2025": len(validation_rows),
@@ -147,6 +157,6 @@ def build(split: dict[str, list[tuple[dict[str, Any], dict[str, Any]]]], run_par
         "validation_2025": {"candidate": _public(validation_candidate), "champion": _public(validation_champion), "paired": vp, "passes": validation_pass},
         "frozen_2026": {"candidate": _public(frozen_candidate), "champion": _public(frozen_champion), "paired": fp, "nonregression": frozen_nonreg},
         "rejected_run_mean_sensitivity": sensitivity,
-        "gate": "distribution selected only on 2021-2024 baseline means; full 2025 paired score-NLL CI95 >0 plus market non-regression; full frozen 2026 score-NLL point gain >=0 with CI95 >= -0.003 plus market non-regression",
+        "gate": "distribution selected only on 2021-2024 baseline means; full 2025 paired score-NLL CI95 >0 plus ML/RL/fixed-8.5 diagnostic non-regression; full frozen 2026 score-NLL point gain >=0 with CI95 >= -0.003 plus same diagnostics",
         "native_live_confirmation_required": True,
     }
