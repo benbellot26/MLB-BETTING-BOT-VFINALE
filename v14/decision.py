@@ -3,7 +3,8 @@ from __future__ import annotations
 """Fail-closed betting-decision diagnostics for Pulsar V14.
 
 This layer is not permitted to emit BET while the statistical certification is
-false. It can still rank research/watch candidates so evidence is collected.
+false. It still marks edge-qualified research candidates so prospective CLV can
+be collected without creating a circular certification dependency.
 """
 
 import math
@@ -51,11 +52,11 @@ def evaluate(*, prediction: dict[str, Any], market_snapshot: dict[str, Any], sha
         if not freshness: blockers.append("unverified_market_freshness")
         cal_market = CALIBRATION_MARKET.get(key); cal_meta = (calibration.get("markets") or {}).get(cal_market or "") or {}
         if cal_meta.get("active") is not True: blockers.append("calibration_not_active")
-        if not globally_certified: blockers.append("betting_not_certified")
         if sharp_p is None: blockers.append("sharp_consensus_missing")
-        qualifies = model_edge >= MIN_MODEL_EDGE_PP and robust_edge >= MIN_ROBUST_EDGE_PP and (sharp_edge is None or sharp_edge > 0)
-        status = "BET" if qualifies and not blockers else ("WATCH" if qualifies else "NO_BET")
-        if blockers and status != "BET": status = "RESEARCH_ONLY"
-        rows.append({"selection": key, "market": market, "price": price, "probability": p, "lower_probability": lower, "break_even_probability": breakeven, "model_edge_pp": model_edge, "robust_edge_pp": robust_edge, "sharp_edge_pp": sharp_edge, "status": status, "blockers": blockers})
+        edge_qualified = model_edge >= MIN_MODEL_EDGE_PP and robust_edge >= MIN_ROBUST_EDGE_PP and sharp_edge is not None and sharp_edge > 0
+        research_ready = edge_qualified and not any(x in blockers for x in ("starter_degraded", "unverified_market_freshness", "calibration_not_active", "sharp_consensus_missing"))
+        if not globally_certified: blockers.append("betting_not_certified")
+        status = "BET" if edge_qualified and not blockers else ("RESEARCH_ONLY" if research_ready else "NO_BET")
+        rows.append({"selection": key, "market": market, "price": price, "probability": p, "lower_probability": lower, "break_even_probability": breakeven, "model_edge_pp": model_edge, "robust_edge_pp": robust_edge, "sharp_edge_pp": sharp_edge, "edge_qualified": edge_qualified, "research_ready": research_ready, "status": status, "blockers": blockers})
     rows.sort(key=lambda r: (r.get("robust_edge_pp") or -999), reverse=True)
-    return {"schema": "pulsar-v14-decision-diagnostics-v1", "betting_certified": globally_certified, "starter_degraded": bool(starter_degraded), "market_freshness_verified": freshness, "recommendations_authorized": globally_certified, "candidates": rows, "best": rows[0] if rows else None}
+    return {"schema": "pulsar-v14-decision-diagnostics-v2", "betting_certified": globally_certified, "starter_degraded": bool(starter_degraded), "market_freshness_verified": freshness, "recommendations_authorized": globally_certified, "research_clv_collection_authorized": True, "candidates": rows, "best": rows[0] if rows else None}
