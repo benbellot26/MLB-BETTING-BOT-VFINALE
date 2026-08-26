@@ -32,6 +32,7 @@ CRITICAL_TEST_MODULES=(
     "tests.test_v14_4_professional_data_model",
     "tests.test_v14_run_stack_parity",
     "tests.test_v14_savant_run_value_builder",
+    "tests.test_v14_statcast_pit_backfill",
     "tests.test_v14_staking",
     "tests.test_v14_starter_fallback",
     "tests.test_v14_starter_integrity",
@@ -40,6 +41,7 @@ CRITICAL_TEST_MODULES=(
     "tests.test_v14_team_history_shadow",
     "tests.test_v14_tracking",
     "tests.test_v14_venue_park_builder",
+    "tests.test_v14_weather_pit_backfill",
 )
 
 def run(verbosity:int=1)->bool:
