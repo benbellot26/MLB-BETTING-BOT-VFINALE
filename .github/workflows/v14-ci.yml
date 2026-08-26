@@ -31,3 +31,39 @@ jobs:
         run: python -m v14.preflight
       - name: Run complete V14 regression suite
         run: python -m unittest discover -s tests -p 'test_v14_*.py' -v
+
+  historical-pit:
+    name: V14.5 strict historical PIT holdout
+    needs: v14
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate 2021-2026 PIT dataset and frozen holdouts
+        run: |
+          mkdir -p runtime/v14
+          python -m v14.historical_validation --output runtime/v14/v14_historical_validation.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('runtime/v14/v14_historical_validation.json').read_text(encoding='utf-8'))
+          t=x.get('team_run_challenger') or {}
+          print('HISTORICAL_STATUS=',x.get('status'))
+          print('SPLIT=',json.dumps(x.get('split'),sort_keys=True))
+          print('PARAMETERS=',json.dumps(((t.get('tuning') or {}).get('parameters')),sort_keys=True))
+          print('RUN_GATE=',json.dumps(t.get('run_gate'),sort_keys=True))
+          print('PROBABILITY_2025=',json.dumps(t.get('probability_translation_2025'),sort_keys=True))
+          print('PROBABILITY_2026=',json.dumps(t.get('probability_translation_frozen_2026'),sort_keys=True))
+          print('DISTRIBUTION=',json.dumps(x.get('score_distribution_challenger'),sort_keys=True))
+          print('EVIDENCE_TIERS=',json.dumps(x.get('evidence_registry'),sort_keys=True))
+          print('NEXT_STATE=',x.get('recommended_next_state'))
+          PY
+      - name: Archive V14.5 historical validation
+        uses: actions/upload-artifact@v4
+        with:
+          name: pulsar-v14-historical-validation-${{ github.run_id }}
+          path: runtime/v14/v14_historical_validation.json
+          retention-days: 90
