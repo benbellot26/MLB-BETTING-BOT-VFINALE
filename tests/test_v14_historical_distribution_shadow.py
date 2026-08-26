@@ -9,11 +9,8 @@ from v14.historical_distribution_shadow import evaluate, load
 
 
 class HistoricalDistributionShadowTests(unittest.TestCase):
-    def test_repository_artifact_is_disabled_until_isolated_revalidation(self):
-        # The previously validated artifact depended on run means from a
-        # subsequently rejected challenger. Repository loading must fail closed
-        # until fresh isolated full-holdout evidence is committed.
-        self.assertEqual(load(),{})
+    def test_repository_artifact_is_enabled_only_as_validated_shadow(self):
+        out=load(); self.assertEqual(out.get("status"),"HISTORICAL_VALIDATED_SHADOW"); self.assertFalse(out.get("auto_activation")); self.assertFalse(out.get("champion_impact")); self.assertTrue(out.get("native_live_confirmation_required"))
 
     def test_hash_mismatch_rejects_artifact(self):
         with tempfile.TemporaryDirectory() as td:
