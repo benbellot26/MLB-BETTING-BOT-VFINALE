@@ -28,7 +28,6 @@ from .model import RunProjection
 OUTPUT = Path("data/v14_historical_validation.json")
 RICH_REPORT = Path("data/mlb_backtest_2026_report.json")
 REPLAY_REPORT = Path("data/v13_historical_backfill_report.json")
-MAX_PROBABILITY_SAMPLE = 600
 
 
 def _num(value: Any, default: float = 0.0) -> float:
@@ -52,13 +51,6 @@ def _mean_ci(values: list[float]) -> dict[str, Any]:
     var = sum((x - mean) ** 2 for x in values) / (len(values) - 1)
     se = math.sqrt(var / len(values))
     return {"n": len(values), "mean": mean, "ci95_lower": mean - 1.96 * se, "ci95_upper": mean + 1.96 * se}
-
-
-def _sample(pairs: list[tuple[dict[str, Any], dict[str, Any]]], maximum: int = MAX_PROBABILITY_SAMPLE) -> list[tuple[dict[str, Any], dict[str, Any]]]:
-    if len(pairs) <= maximum:
-        return list(pairs)
-    step = len(pairs) / maximum
-    return [pairs[min(len(pairs) - 1, int(i * step))] for i in range(maximum)]
 
 
 def _ece(y: list[int], p: list[float], bins: int = 10) -> float | None:
@@ -94,13 +86,15 @@ def _home_ml(game_pk: str, game_date: str, analyzed_at: str, home_mu: float, awa
 
 
 def probability_translation(pairs: list[tuple[dict[str, Any], dict[str, Any]]], params: dict[str, float]) -> dict[str, Any]:
-    sampled = _sample(pairs); y: list[int] = []; pb: list[float] = []; pc: list[float] = []; bd: list[float] = []; ld: list[float] = []
+    # Final OOS probability evidence uses every untouched row. There is no
+    # outcome-dependent sampling and no cap that can hide an adverse segment.
+    sampled = list(pairs); y: list[int] = []; pb: list[float] = []; pc: list[float] = []; bd: list[float] = []; ld: list[float] = []
     for feature, label in sampled:
         gid = str(feature.get("game_pk") or ""); game_date = str(feature.get("game_date") or ""); analyzed_at = str(feature.get("as_of") or game_date)
         bh, ba = baseline_runs(feature); ch, ca = candidate_runs(feature, params); b = _home_ml(gid, game_date, analyzed_at, bh, ba); c = _home_ml(gid, game_date, analyzed_at, ch, ca); z = int(_num(label.get("home_score")) > _num(label.get("away_score")))
         y.append(z); pb.append(b); pc.append(c); bd.append((b-z)**2-(c-z)**2)
         bl=-(z*math.log(_clip(b))+(1-z)*math.log(_clip(1-b))); cl=-(z*math.log(_clip(c))+(1-z)*math.log(_clip(1-c))); ld.append(bl-cl)
-    return {"sample_policy":f"even temporal sample capped at {MAX_PROBABILITY_SAMPLE}; outcome-independent","baseline":_prob_metrics(y,pb),"candidate":_prob_metrics(y,pc),"paired_brier_gain":_mean_ci(bd),"paired_logloss_gain":_mean_ci(ld),"distribution":{"dispersion":CHAMPION_DISPERSION,"environment_sigma":CHAMPION_ENVIRONMENT_SIGMA}}
+    return {"sample_policy":"complete untouched temporal holdout; no subsampling","full_holdout":True,"baseline":_prob_metrics(y,pb),"candidate":_prob_metrics(y,pc),"paired_brier_gain":_mean_ci(bd),"paired_logloss_gain":_mean_ci(ld),"distribution":{"dispersion":CHAMPION_DISPERSION,"environment_sigma":CHAMPION_ENVIRONMENT_SIGMA}}
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -122,7 +116,7 @@ def evidence_registry() -> dict[str, Any]:
 
 def build() -> dict[str, Any]:
     pairs,dataset=load_verified(); split=split_by_season(pairs); tuning=tune(split["tuning"])
-    base={"schema":"pulsar-v14-historical-validation-v2","software_version":VERSION,"model_generation":MODEL_GENERATION,"role":"RESEARCH_EVIDENCE_ONLY","auto_activation":False,"generated_at":datetime.now(timezone.utc).isoformat(),"dataset":dataset,"split":{"tuning_2021_2024":len(split["tuning"]),"validation_2025":len(split["validation"]),"frozen_test_2026":len(split["frozen_test"]),"frozen_2026_used_for_parameter_selection":False},"evidence_registry":evidence_registry()}
+    base={"schema":"pulsar-v14-historical-validation-v3","software_version":VERSION,"model_generation":MODEL_GENERATION,"role":"RESEARCH_EVIDENCE_ONLY","auto_activation":False,"generated_at":datetime.now(timezone.utc).isoformat(),"dataset":dataset,"split":{"tuning_2021_2024":len(split["tuning"]),"validation_2025":len(split["validation"]),"frozen_test_2026":len(split["frozen_test"]),"frozen_2026_used_for_parameter_selection":False},"evidence_registry":evidence_registry()}
     if tuning.get("status")!="TUNED_RESEARCH_ONLY": return {**base,"status":"COLLECTING","team_run_challenger":{"tuning":tuning}}
     params=tuning["parameters"]; validation=evaluate_split(split["validation"],params); frozen=evaluate_split(split["frozen_test"],params); gate=historical_gate(validation,frozen); pval=probability_translation(split["validation"],params); pfrozen=probability_translation(split["frozen_test"],params)
     vb=pval["paired_brier_gain"]; vl=pval["paired_logloss_gain"]; fb=pfrozen["paired_brier_gain"]; fl=pfrozen["paired_logloss_gain"]
@@ -130,7 +124,12 @@ def build() -> dict[str, Any]:
     downstream_frozen=bool(fb.get("mean") is not None and float(fb["mean"])>=-.001 and fl.get("mean") is not None and float(fl["mean"])>=-.002)
     historical_candidate=bool(gate.get("passes") and downstream_validation and downstream_frozen); status="HISTORICAL_PROMOTION_CANDIDATE" if historical_candidate else "REJECTED_HISTORICAL"
     distribution=build_distribution_validation(split,params)
-    return {**base,"status":status,"team_run_challenger":{"status":status,"tuning":tuning,"validation_2025":validation,"frozen_2026":frozen,"run_gate":gate,"probability_translation_2025":pval,"probability_translation_frozen_2026":pfrozen,"downstream_probability_validation_pass":downstream_validation,"downstream_probability_frozen_nonregression":downstream_frozen,"promotion_policy":"historical evidence may nominate a shadow challenger only; native V14 prospective confirmation is mandatory before changing MODEL_GENERATION"},"score_distribution_challenger":distribution,"recommended_next_state":"SHADOW_ON_NATIVE_V14" if historical_candidate else "KEEP_CURRENT_CHAMPION"}
+    component_recommendations={
+        "run_means":"SHADOW_ON_NATIVE_V14" if historical_candidate else "KEEP_CURRENT_RUN_MEANS",
+        "score_distribution":"SHADOW_ON_NATIVE_V14" if distribution.get("passes") else "KEEP_CURRENT_DISTRIBUTION",
+        "advanced_features":"COLLECT_STRICT_PIT_AND_VALIDATE_OOS",
+    }
+    return {**base,"status":status,"team_run_challenger":{"status":status,"tuning":tuning,"validation_2025":validation,"frozen_2026":frozen,"run_gate":gate,"probability_translation_2025":pval,"probability_translation_frozen_2026":pfrozen,"downstream_probability_validation_pass":downstream_validation,"downstream_probability_frozen_nonregression":downstream_frozen,"promotion_policy":"historical evidence may nominate a shadow challenger only; native V14 prospective confirmation is mandatory before changing MODEL_GENERATION"},"score_distribution_challenger":distribution,"component_recommendations":component_recommendations,"recommended_next_state":"SHADOW_ON_NATIVE_V14" if historical_candidate else "KEEP_CURRENT_CHAMPION"}
 
 
 def write(output:Path|str=OUTPUT)->dict[str,Any]:
@@ -139,7 +138,7 @@ def write(output:Path|str=OUTPUT)->dict[str,Any]:
 
 def main()->None:
     parser=argparse.ArgumentParser(description="Run V14.5 strict historical PIT validation"); parser.add_argument("--output",default=str(OUTPUT)); args=parser.parse_args(); out=write(args.output)
-    print(json.dumps({"schema":out.get("schema"),"status":out.get("status"),"split":out.get("split"),"recommended_next_state":out.get("recommended_next_state"),"parameters":(((out.get("team_run_challenger") or {}).get("tuning") or {}).get("parameters")),"distribution_status":((out.get("score_distribution_challenger") or {}).get("status"))},sort_keys=True))
+    print(json.dumps({"schema":out.get("schema"),"status":out.get("status"),"split":out.get("split"),"recommended_next_state":out.get("recommended_next_state"),"component_recommendations":out.get("component_recommendations"),"parameters":(((out.get("team_run_challenger") or {}).get("tuning") or {}).get("parameters")),"distribution_status":((out.get("score_distribution_challenger") or {}).get("status"))},sort_keys=True))
 
 
 if __name__=="__main__": main()
