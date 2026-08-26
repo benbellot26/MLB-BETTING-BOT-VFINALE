@@ -1,6 +1,6 @@
 import unittest
 
-from v14.venue_geometry import fetch, fetch_nearest, parse
+from v14.venue_geometry import SECONDARY_CARDINAL_ORIENTATION, fetch, fetch_nearest, parse
 
 
 class VenueGeometryTests(unittest.TestCase):
@@ -11,10 +11,12 @@ class VenueGeometryTests(unittest.TestCase):
         self.assertEqual(out["outfield_bearing_deg"],26.0)
         self.assertEqual(out["latitude"],34.0739)
         self.assertEqual(out["longitude"],-118.24)
+        self.assertEqual(out["source_tier"],"OFFICIAL_MLB")
+        self.assertTrue(out["promotion_ready"])
         self.assertFalse(out["champion_impact"])
         self.assertTrue(out["no_imputation"])
 
-    def test_missing_azimuth_fails_soft_without_imputation(self):
+    def test_unknown_missing_azimuth_fails_soft_without_imputation(self):
         out=parse({"venues":[{"id":999,"name":"Unknown","location":{"defaultCoordinates":{"latitude":1,"longitude":2}}}]},999)
         self.assertEqual(out["status"],"COLLECTING")
         self.assertNotIn("outfield_bearing_deg",out)
@@ -23,6 +25,28 @@ class VenueGeometryTests(unittest.TestCase):
         out=parse({"venues":[{"id":999,"location":{"azimuthAngle":361}}]},999)
         self.assertEqual(out["status"],"UNAVAILABLE")
         self.assertNotIn("outfield_bearing_deg",out)
+
+    def test_all_known_2026_gaps_have_sourced_cardinal_fallback(self):
+        expected={"2735":45.0,"5340":135.0,"5355":45.0,"5445":45.0}
+        self.assertEqual(set(SECONDARY_CARDINAL_ORIENTATION),set(expected))
+        for venue_id,bearing in expected.items():
+            out=parse({"venues":[{"id":int(venue_id),"name":"Special Park","location":{"defaultCoordinates":{}}}]},venue_id)
+            self.assertEqual(out["status"],"READY_SHADOW",venue_id)
+            self.assertEqual(out["outfield_bearing_deg"],bearing,venue_id)
+            self.assertEqual(out["bearing_precision"],"CARDINAL",venue_id)
+            self.assertEqual(out["bearing_uncertainty_deg"],22.5,venue_id)
+            self.assertEqual(out["source_tier"],"SECONDARY_PUBLISHED_REFERENCE",venue_id)
+            self.assertTrue(out["source_url"],venue_id)
+            self.assertTrue(out["source_evidence"],venue_id)
+            self.assertFalse(out["promotion_ready"],venue_id)
+            self.assertFalse(out["champion_impact"],venue_id)
+            self.assertTrue(out["no_imputation"],venue_id)
+
+    def test_harp_helu_fallback_supplies_pitch_coordinates_missing_from_mlb(self):
+        out=parse({"venues":[{"id":5340,"name":"Estadio Alfredo Harp Helu","location":{}}]},5340)
+        self.assertAlmostEqual(out["latitude"],19.40333)
+        self.assertAlmostEqual(out["longitude"],-99.08510)
+        self.assertIn("828705073",out["coordinate_source_evidence"])
 
     def test_fetch_uses_mlb_venue_location_hydration(self):
         calls=[]
