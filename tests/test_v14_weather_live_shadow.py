@@ -37,6 +37,28 @@ class WeatherLiveShadowTests(unittest.TestCase):
         self.assertTrue(any("statsapi.mlb.com" in url for url,_ in calls))
         self.assertTrue(any("power.larc.nasa.gov" in url for url,_ in calls))
 
+    def test_exact_venue_id_overrides_team_coordinate_fallback(self):
+        forecast_calls=[]
+        def forecast_getter(url,params):
+            forecast_calls.append(dict(params))
+            return self.forecast_getter(url,params)
+        def reference_getter(url,params):
+            if "statsapi.mlb.com" in url:
+                self.assertTrue(url.endswith("/venues/999"))
+                return {"venues":[{"id":999,"name":"Special Event Park","location":{"azimuthAngle":72,"defaultCoordinates":{"latitude":35.5,"longitude":-100.25}}}]}
+            if "power.larc.nasa.gov" in url:
+                return {"properties":{"parameter":{
+                    "T2M":{"AUG":25.0},"RH2M":{"AUG":50.0},"PS":{"AUG":100.0},"WS10M":{"AUG":4.0},"WD10M":{"AUG":180.0}
+                }}}
+            raise AssertionError(url)
+        out=fetch(40.0,-75.0,venue_id=999,game_date="2026-08-27T20:15:00Z",analyzed_at="2026-08-27T16:00:00Z",getter=forecast_getter,reference_getter=reference_getter)
+        self.assertEqual(out["venue_geometry"]["venue_id"],"999")
+        self.assertEqual(out["latitude"],35.5)
+        self.assertEqual(out["longitude"],-100.25)
+        self.assertEqual(out["outfield_bearing_deg"],72.0)
+        self.assertEqual(forecast_calls[0]["latitude"],35.5)
+        self.assertEqual(forecast_calls[0]["longitude"],-100.25)
+
     def test_postgame_request_fails_closed_without_fetch(self):
         called=[]
         def getter(url,params):called.append(True);return {}
