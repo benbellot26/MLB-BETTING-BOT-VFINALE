@@ -52,11 +52,13 @@ jobs:
           mkdir -p runtime/v14
           python -m v14.historical_validation --output runtime/v14/v14_historical_validation.json
           python -m v14.historical_rich_inventory --output runtime/v14/v14_rich_historical_inventory.json
+          python -m v14.historical_rich_validation --output runtime/v14/v14_rich_historical_validation.json
           python - <<'PY'
           import json
           from pathlib import Path
           x=json.loads(Path('runtime/v14/v14_historical_validation.json').read_text(encoding='utf-8'))
           inv=json.loads(Path('runtime/v14/v14_rich_historical_inventory.json').read_text(encoding='utf-8'))
+          rich=json.loads(Path('runtime/v14/v14_rich_historical_validation.json').read_text(encoding='utf-8'))
           t=x.get('team_run_challenger') or {}
           print('HISTORICAL_STATUS=',x.get('status'))
           print('SPLIT=',json.dumps(x.get('split'),sort_keys=True))
@@ -68,7 +70,10 @@ jobs:
           print('EVIDENCE_TIERS=',json.dumps(x.get('evidence_registry'),sort_keys=True))
           print('RICH_ROWS=',inv.get('rows'))
           print('RICH_TOP_LEVEL_KEYS=',json.dumps(inv.get('top_level_keys'),sort_keys=True))
-          print('RICH_INTERESTING_PATHS=',json.dumps((inv.get('interesting_paths') or [])[:120],sort_keys=True))
+          print('RICH_EVIDENCE=',json.dumps(rich.get('evidence'),sort_keys=True))
+          print('RICH_COVERAGE=',json.dumps(rich.get('coverage'),sort_keys=True))
+          print('RICH_V9=',json.dumps((rich.get('historical_models') or {}).get('v9'),sort_keys=True))
+          print('RICH_V10=',json.dumps((rich.get('historical_models') or {}).get('v10'),sort_keys=True))
           print('NEXT_STATE=',x.get('recommended_next_state'))
           PY
       - name: Archive V14.5 historical evidence
@@ -78,4 +83,41 @@ jobs:
           path: |
             runtime/v14/v14_historical_validation.json
             runtime/v14/v14_rich_historical_inventory.json
+            runtime/v14/v14_rich_historical_validation.json
           retention-days: 90
+
+  savant-pit:
+    name: V14.5 live Savant PIT source smoke
+    needs: v14
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build current PIT defense/catcher/baserunning shadow artifact
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/v14
+          python -m v14.savant_run_value_builder 2026-08-26 --output runtime/v14/v14_defense_baserunning_priors.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('runtime/v14/v14_defense_baserunning_priors.json').read_text(encoding='utf-8'))
+          c=x.get('coverage') or {}
+          print('SAVANT_COVERAGE=',json.dumps(c,sort_keys=True))
+          print('SAVANT_FAILURES=',json.dumps((x.get('failures') or [])[:30]))
+          print('FIELDING_COLUMNS=',json.dumps(((x.get('fielding_source') or {}).get('raw_columns') or [])))
+          print('BASERUN_COLUMNS=',json.dumps(((x.get('baserunning_source') or {}).get('raw_columns') or [])))
+          if int(c.get('complete_teams') or 0) < 20:
+              raise SystemExit('insufficient complete Savant team coverage')
+          if x.get('cutoff_day') != '2026-08-25':
+              raise SystemExit('Savant PIT cutoff is not target-1 day')
+          PY
+      - name: Archive normalized Savant PIT shadow data
+        uses: actions/upload-artifact@v4
+        with:
+          name: pulsar-v14-savant-run-value-${{ github.run_id }}
+          path: runtime/v14/v14_defense_baserunning_priors.json
+          retention-days: 30
