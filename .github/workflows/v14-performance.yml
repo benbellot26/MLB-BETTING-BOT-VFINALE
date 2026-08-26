@@ -57,6 +57,9 @@ jobs:
           python -m v14.distribution_tuning \
             --predictions data/v14_predictions.jsonl \
             --output data/v14_distribution_candidate.json
+          python -m v14.historical_distribution_live_validation \
+            --predictions data/v14_predictions.jsonl \
+            --output data/v14_distribution_live_validation.json
           python -m v14.residual_challenger \
             --predictions data/v14_predictions.jsonl \
             --output data/v14_residual_challenger.json
@@ -82,6 +85,7 @@ jobs:
             data/v14_calibration.json \
             data/v14_uncertainty.json \
             data/v14_distribution_candidate.json \
+            data/v14_distribution_live_validation.json \
             data/v14_residual_challenger.json \
             data/v14_market_posterior_candidate.json \
             data/v14_calibration_methods_candidate.json \
