@@ -62,7 +62,9 @@ def evaluate(*,prediction:dict[str,Any],market_snapshot:dict[str,Any],sharp_mark
         if not _calibration_ok(cal_meta): blockers.append("calibration_not_accepted")
         if sharp_p is None: blockers.append("sharp_consensus_missing")
         model_threshold,robust_threshold,penalties=_thresholds(market,interval,sharp_row); edge_qualified=model_edge>=model_threshold and robust_edge>=robust_threshold and sharp_edge is not None and sharp_edge>0; research_ready=edge_qualified and not blockers; market_certified=_certified_market(certification,canonical)
-        if not market_certified: blockers.append(f"{canonical or market}_betting_not_certified")
+        if not market_certified:
+            blockers.append("betting_not_certified")
+            blockers.append(f"{canonical or market}_betting_not_certified")
         status="BET" if edge_qualified and not blockers else ("RESEARCH_ONLY" if research_ready else "NO_BET")
         rows.append({"selection":key,"canonical_market":canonical,"market":market,"execution_book":book,"execution_source":"LINE_SHOPPED" if (execution_market or {}).get("selections") else "CANONICAL_FALLBACK","price":price,"probability":p,"lower_probability":lower,"break_even_probability":breakeven,"model_edge_pp":model_edge,"robust_edge_pp":robust_edge,"sharp_edge_pp":sharp_edge,"sharp_dispersion_pp":_num(sharp_row.get("dispersion_pp")),"model_edge_threshold_pp":model_threshold,"robust_edge_threshold_pp":robust_threshold,**penalties,"edge_qualified":edge_qualified,"research_ready":research_ready,"market_betting_certified":market_certified,"status":status,"blockers":blockers})
     rows.sort(key=lambda r:r.get("robust_edge_pp") if r.get("robust_edge_pp") is not None else -999,reverse=True)
