@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 import unittest
 
 from v14 import MODEL_GENERATION
@@ -8,6 +9,9 @@ from v14.probability_calibration import build_artifact, calibrate_surface
 from v14.residual_challenger import build as build_residual_challenger
 from v14.sharp_market import DEFAULT_SHARP_BOOK_WEIGHTS, power_devig, sharp_consensus
 from v14.uncertainty import intervals
+
+NOW=datetime(2026,8,26,14,0,tzinfo=timezone.utc)
+FRESH="2026-08-26T13:00:00+00:00"
 
 
 class V14ProfessionalHardeningTests(unittest.TestCase):
@@ -49,8 +53,10 @@ class V14ProfessionalHardeningTests(unittest.TestCase):
         markets={}; calibrators={}
         for market in ("ML","RL_HOME_-1.5","RL_AWAY_-1.5","TOTAL_OVER"):
             markets[market]={"n":500,"ece":.02,"sharp_benchmark":{"paired_n":500,"brier_gain_ci95_lower":.002,"logloss_gain_ci95_lower":0.0,"brier_gain_vs_sharp":.01,"logloss_gain_vs_sharp":.01}}; calibrators[f"MARKET:{market}"]={"accepted":True,"active":False,"status":"VALIDATED_IDENTITY"}
-        performance={"schema":"pulsar-v14-performance-v5","model_generation":MODEL_GENERATION,"games_settled":700,"markets":markets}; calibration={"schema":"pulsar-v14-calibration-v2","model_generation":MODEL_GENERATION,"calibrators":calibrators}; probability_only=certification_status(performance,calibration,{}); self.assertTrue(probability_only["probability_certified"]); self.assertFalse(probability_only["certified"]); self.assertIn("paper_clv_n<100",probability_only["reasons"])
-        paper={"schema":"pulsar-v14-paper-bet-performance-v4","model_generation":MODEL_GENERATION,"by_market":{m:{"clv":{"n":120,"mean_clv":.35,"positive_rate":.56,"mean_clv_ci95_lower":.05}} for m in markets}}; betting=certification_status(performance,calibration,paper); self.assertTrue(betting["probability_certified"]); self.assertTrue(betting["certified"]); self.assertEqual(betting["betting_status"],"BETTING_CERTIFIED")
+        performance={"schema":"pulsar-v14-performance-v5","model_generation":MODEL_GENERATION,"generated_at":FRESH,"games_settled":700,"markets":markets}; calibration={"schema":"pulsar-v14-calibration-v2","model_generation":MODEL_GENERATION,"generated_at":FRESH,"calibrators":calibrators}
+        probability_only=certification_status(performance,calibration,{},now=NOW); self.assertTrue(probability_only["probability_certified"]); self.assertFalse(probability_only["certified"]); self.assertIn("paper_clv_n<100",probability_only["reasons"])
+        paper={"schema":"pulsar-v14-paper-bet-performance-v5","model_generation":MODEL_GENERATION,"generated_at":FRESH,"by_market":{m:{"clv":{"n":120,"mean_clv":.35,"positive_rate":.56,"mean_clv_ci95_lower":.05}} for m in markets}}
+        betting=certification_status(performance,calibration,paper,now=NOW); self.assertTrue(betting["probability_certified"]); self.assertTrue(betting["certified"]); self.assertEqual(betting["betting_status"],"BETTING_CERTIFIED")
 
     def test_challengers_never_auto_activate_with_small_samples(self):
         distribution=build_distribution_challenger([]); residual=build_residual_challenger([]); self.assertEqual(distribution["role"],"CHALLENGER_ONLY"); self.assertEqual(residual["role"],"CHALLENGER_ONLY"); self.assertFalse(distribution["auto_activation"]); self.assertFalse(residual["auto_activation"]); self.assertEqual(distribution["status"],"COLLECTING"); self.assertEqual(residual["status"],"COLLECTING")
