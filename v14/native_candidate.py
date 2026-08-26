@@ -26,6 +26,7 @@ from .run_decomposition_challenger import build as run_decomposition_shadow
 from .sharp_market import sharp_consensus
 from .starter_fallback import degraded_sides_from_evidence, degradation_summary, neutralize_probable_pitchers
 from .starter_integrity import starter_integrity_evidence
+from .starter_recent_usage import enrich_starter
 from .starter_usage_challenger import estimate as starter_usage_shadow
 from .statcast_shadow import build_shadow_features, load_priors as load_statcast_priors
 from .true_talent_challenger import build as true_talent_shadow
@@ -41,8 +42,7 @@ StarterEvidenceBuilder=Callable[[dict[str,Any]],dict[str,Any]]
 def _phase_quality_gate(native:NativeGameInputs,phase:str)->None:
     quality=native.feature_row.get("data_quality") or {}; starter_ok=quality.get("starter_complete") is True or quality.get("starter_degraded") is True
     if phase in {"LATE","FINAL"} and not starter_ok: raise ValueError(f"{phase} snapshot requires confirmed starters or neutral starter fallback")
-    if phase=="FINAL":
-        if int(quality.get("home_lineup_count") or 0)<9 or int(quality.get("away_lineup_count") or 0)<9: raise ValueError("FINAL snapshot requires both confirmed 9/9 lineups")
+    if phase=="FINAL" and (int(quality.get("home_lineup_count") or 0)<9 or int(quality.get("away_lineup_count") or 0)<9): raise ValueError("FINAL snapshot requires both confirmed 9/9 lineups")
 
 
 def _pitching_factor(statcast_side:dict[str,Any],component:str)->float|None:
@@ -53,17 +53,18 @@ def _pitching_factor(statcast_side:dict[str,Any],component:str)->float|None:
 
 
 def _research_challenger_evidence(feature_row:dict[str,Any],*,game:dict[str,Any],target_date:str,statcast:dict[str,Any])->dict[str,Any]:
-    ctx=feature_row.get("context") or {}; features=feature_row.get("features") or {}; operational=features.get("operational") or {}; home_usage=starter_usage_shadow(ctx.get("home_starter")); away_usage=starter_usage_shadow(ctx.get("away_starter")); teams=game.get("teams") or {}; home_id=(((teams.get("home") or {}).get("team") or {}).get("id")); away_id=(((teams.get("away") or {}).get("team") or {}).get("id"))
+    ctx=feature_row.get("context") or {}; features=feature_row.get("features") or {}; operational=features.get("operational") or {}; game_date=game.get("gameDate")
+    home_starter=enrich_starter(ctx.get("home_starter") or {},game_date); away_starter=enrich_starter(ctx.get("away_starter") or {},game_date); home_usage=starter_usage_shadow(home_starter); away_usage=starter_usage_shadow(away_starter)
+    teams=game.get("teams") or {}; home_id=(((teams.get("home") or {}).get("team") or {}).get("id")); away_id=(((teams.get("away") or {}).get("team") or {}).get("id"))
     defense=defense_baserunning_shadow(home_team_id=home_id,away_team_id=away_id,target_date=target_date); venue=game.get("venue") or {}; park=venue_park_shadow(venue_id=venue.get("id"),venue_name=venue.get("name"),target_date=target_date,legacy_team_factor=(feature_row.get("static_park_factor") or ((feature_row.get("debug") or {}).get("static_park_factor"))))
     home_def=(defense.get("home") or {}); away_def=(defense.get("away") or {})
-    home_decomp=run_decomposition_shadow(starter_usage=home_usage,starter_factor=_pitching_factor(statcast.get("home") or {},"starter"),bullpen_factor=_pitching_factor(statcast.get("home") or {},"bullpen"),defense_factor=home_def.get("defense_factor"))
-    away_decomp=run_decomposition_shadow(starter_usage=away_usage,starter_factor=_pitching_factor(statcast.get("away") or {},"starter"),bullpen_factor=_pitching_factor(statcast.get("away") or {},"bullpen"),defense_factor=away_def.get("defense_factor"))
-    return {"schema":"pulsar-v14-research-challenger-evidence-v2","champion_impact":False,"home_starter_usage":home_usage,"away_starter_usage":away_usage,"environment_physics":environment_physics_shadow(features.get("environment")),"timezone_exact":{"home":((operational.get("home") or {}).get("timezone_shift_exact_evidence") or {}),"away":((operational.get("away") or {}).get("timezone_shift_exact_evidence") or {})},"venue_park":park,"defense_baserunning":defense,"run_decomposition":{"home_defense":home_decomp,"away_defense":away_decomp},"market_probability_used_as_feature":False}
+    home_decomp=run_decomposition_shadow(starter_usage=home_usage,starter_factor=_pitching_factor(statcast.get("home") or {},"starter"),bullpen_factor=_pitching_factor(statcast.get("home") or {},"bullpen"),defense_factor=home_def.get("defense_factor")); away_decomp=run_decomposition_shadow(starter_usage=away_usage,starter_factor=_pitching_factor(statcast.get("away") or {},"starter"),bullpen_factor=_pitching_factor(statcast.get("away") or {},"bullpen"),defense_factor=away_def.get("defense_factor"))
+    recent={"home":{"status":home_starter.get("recent_starts_status"),"n":home_starter.get("recent_starts_n"),"starts":home_starter.get("recent_starts") or []},"away":{"status":away_starter.get("recent_starts_status"),"n":away_starter.get("recent_starts_n"),"starts":away_starter.get("recent_starts") or []},"point_in_time":True}
+    return {"schema":"pulsar-v14-research-challenger-evidence-v3","champion_impact":False,"home_starter_usage":home_usage,"away_starter_usage":away_usage,"starter_recent_workload":recent,"environment_physics":environment_physics_shadow(features.get("environment")),"timezone_exact":{"home":((operational.get("home") or {}).get("timezone_shift_exact_evidence") or {}),"away":((operational.get("away") or {}).get("timezone_shift_exact_evidence") or {})},"venue_park":park,"defense_baserunning":defense,"run_decomposition":{"home_defense":home_decomp,"away_defense":away_decomp},"market_probability_used_as_feature":False}
 
 
 def _compact_training_features(feature_row:dict[str,Any],prediction:dict[str,Any],statcast:dict[str,Any],research:dict[str,Any],pitch_matchup:dict[str,Any],true_talent:dict[str,Any],*,analyzed_at:str,game_date:str)->dict[str,Any]:
-    ctx=feature_row.get("context") or {}; features=feature_row.get("features") or {}; quality=feature_row.get("data_quality") or {}
-    pit=source_contract(captured_at=analyzed_at,effective_cutoff=game_date,source_type="mlb_stats_season_live",prospective=True)
+    ctx=feature_row.get("context") or {}; features=feature_row.get("features") or {}; quality=feature_row.get("data_quality") or {}; pit=source_contract(captured_at=analyzed_at,effective_cutoff=game_date,source_type="mlb_stats_season_live",prospective=True)
     return {"schema":"pulsar-v14-training-features-v5","as_of":feature_row.get("as_of"),"point_in_time":feature_row.get("point_in_time") is True,"capture_mode":"PROSPECTIVE_LIVE_SNAPSHOT","pit_source_contract":pit,"base_run_projection":prediction.get("base_run_projection") or {},"context_adjustment":prediction.get("context_adjustment") or {},"home_starter":ctx.get("home_starter") or {},"away_starter":ctx.get("away_starter") or {},"home_lineup":{k:(ctx.get("home_lineup") or {}).get(k) for k in ("count","weighted_ops","coverage","status","players")},"away_lineup":{k:(ctx.get("away_lineup") or {}).get(k) for k in ("count","weighted_ops","coverage","status","players")},"bullpen":features.get("bullpen") or {},"operational":features.get("operational") or {},"environment":features.get("environment") or {},"statcast_shadow":statcast,"pitch_matchup_shadow":pitch_matchup,"true_talent_shadow":true_talent,"research_challengers":research,"data_quality":quality}
 
 
@@ -73,7 +74,6 @@ def build_native_result(game:dict[str,Any],event:dict[str,Any],*,target_date:str
         native=input_builder(neutralize_probable_pitchers(game,degraded_sides),target_date=target_date,analyzed_at=analyzed_at); phase=infer_phase(analyzed_at=analyzed_at,game_date=native.structural.game_date,context=native.context)
     feature_row=dict(native.feature_row); feature_row["phase"]=phase; feature_row["starter_integrity"]=starter_integrity; feature_row["static_park_factor"]=native.structural.static_park_factor; quality=dict(feature_row.get("data_quality") or {}); quality["starter_degraded"]=bool(degraded_sides); quality["starter_degraded_sides"]=list(degraded_sides); quality["starter_fallback_mode"]=fallback.get("mode"); feature_row["data_quality"]=quality
     gated=NativeGameInputs(structural=native.structural,home=native.home,away=native.away,context=native.context,feature_row=feature_row,structural_debug=native.structural_debug); _phase_quality_gate(gated,phase)
-
     priors=load_statcast_priors(); statcast=build_shadow_features(feature_row,target_date=target_date,artifact=priors if priors else None); pitch_matchup=pitch_matchup_shadow(feature_row,statcast,priors) if priors else {"schema":"pulsar-v14-pitch-matchup-challenger-v1","role":"CHALLENGER_ONLY","auto_activation":False,"status":"COLLECTING","reason":"statcast artifact unavailable"}; research=_research_challenger_evidence(feature_row,game=game,target_date=target_date,statcast=statcast); true_talent=true_talent_shadow(statcast=statcast,pitch_matchup=pitch_matchup,research=research)
     prediction=predict_from_structural(native.structural,analyzed_at=analyzed_at,home=native.home,away=native.away,total_line=float(line_meta["line"]),feature_row=feature_row,phase=phase)
     market_snapshot=canonical_market_snapshot(event,total_line=float(line_meta["line"]),as_of=analyzed_at); prediction["probability_intervals"]=probability_intervals(prediction.get("probabilities") or {},prediction.get("calibration") or {},data_quality=quality,starter_degraded=bool(degraded_sides),market_fresh=market_snapshot.get("freshness_verified")); market_diagnostics=diagnostics_from_snapshot(prediction,market_snapshot); sharp=sharp_consensus(event,total_line=float(line_meta["line"]),as_of=analyzed_at); execution=best_execution(event,total_line=float(line_meta["line"]),as_of=analyzed_at); certification=load_certification_status(); decision=decision_diagnostics(prediction=prediction,market_snapshot=market_snapshot,sharp_market=sharp,certification=certification,starter_degraded=bool(degraded_sides),execution_market=execution)
