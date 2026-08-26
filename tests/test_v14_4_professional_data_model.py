@@ -5,12 +5,14 @@ from v14.certification import evaluate as certify
 from v14.environment_physics_challenger import evaluate as environment
 from v14.execution_market import best_execution
 from v14.historical_pit import reject_live_season_backfill
+from v14.inning_simulator_challenger import _advance_transitions, expected_nine_inning_runs, neutral_pa_from_runs, simulate
 from v14.model import RunProjection
 from v14.probability_calibration import build_artifact
 from v14.residual_challenger import FEATURE_NAMES, offense_vs_opponent_features
 from v14.statcast_shadow import build_shadow_features
 from v14.total_market import total_probabilities
 from v14.tracking import performance_report
+from v14.true_talent_challenger import offense_component
 
 
 def settled(game_pk, game_date, analyzed_at, phase, home_score=5, away_score=3, sharp=True):
@@ -81,6 +83,27 @@ class V144ProfessionalDataModelTests(unittest.TestCase):
         out=best_execution(event,total_line=8.5,as_of="2026-08-25T18:00:00Z")
         self.assertEqual(out["selections"]["home_ml"]["price"],1.95)
         self.assertEqual(out["selections"]["home_ml"]["bookmaker"],"pinnacle")
+
+    def test_hitter_k_minus_bb_has_correct_offensive_direction(self):
+        matchup={"status":"READY_SHADOW","matchup_xwoba":.320}
+        running={"status":"READY_SHADOW","baserunning_run_adjustment":0.0}
+        low_k={"promotion_ready":True,"xwoba":.320,"hard_hit_rate":.38,"barrel_rate":.08,"k_minus_bb_rate":.06}
+        high_k={"promotion_ready":True,"xwoba":.320,"hard_hit_rate":.38,"barrel_rate":.08,"k_minus_bb_rate":.20}
+        good=offense_component(low_k,matchup,running); bad=offense_component(high_k,matchup,running)
+        self.assertGreater(good["score"],bad["score"])
+        self.assertGreater(good["run_adjustment"],bad["run_adjustment"])
+
+    def test_pa_simulator_is_calibrated_to_structural_full_nine_mean(self):
+        pa=neutral_pa_from_runs(4.45)
+        self.assertAlmostEqual(expected_nine_inning_runs(pa),4.45,places=7)
+        # A single cannot delete a runner: batter + runner from first remain on bases.
+        for probability,bases,runs in _advance_transitions("1B",(True,False,False)):
+            self.assertGreater(probability,0)
+            self.assertEqual(sum(bool(v) for v in bases)+runs,2)
+        out=simulate(home_mu=4.5,away_mu=4.0,n=1000,seed=7,total_line=8.0)
+        self.assertAlmostEqual(out["total"]["complement_check"],1.0,places=12)
+        self.assertAlmostEqual(out["pa_calibration"]["calibrated_home_full_nine_runs"],4.5,places=7)
+        self.assertTrue(out["rules"]["walkoff_resolution"])
 
 
 if __name__=="__main__": unittest.main()
