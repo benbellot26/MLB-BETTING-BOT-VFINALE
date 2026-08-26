@@ -3,10 +3,11 @@ from __future__ import annotations
 """Strict point-in-time Statcast backfill for V14 research.
 
 This module is deliberately outside the native-production import boundary. It
-reuses the already-audited V137 Savant fetch/dedupe/aggregation primitives and
-never calls current-season summary endpoints for an old game. For a cutoff D,
-only pitch rows with game_date < D may contribute. Output is research-only and
-cannot auto-promote a champion.
+reuses the audited V137 Savant fetch/dedupe primitives, then applies the V14
+enrichment layer that adds shrinkable hitter pitch-type splits. It never calls
+current-season summary endpoints for an old game. For a cutoff D, only pitch
+rows with game_date < D may contribute. Output is research-only and cannot
+auto-promote a champion.
 """
 
 import argparse
@@ -16,7 +17,8 @@ import json
 from pathlib import Path
 from typing import Any, Callable
 
-from v11.v137_free_data import aggregate_statcast_priors, dedupe_statcast_rows, fetch_statcast_rows_adaptive
+from v11.v137_free_data import dedupe_statcast_rows, fetch_statcast_rows_adaptive
+from .statcast_enrichment import aggregate_statcast_priors
 
 ROLE="RESEARCH_ONLY"
 DEFAULT_OUTPUT=Path("runtime/v14/statcast_pit")
@@ -51,7 +53,8 @@ def build(cutoff_day:str,*,season_start:str|None=None,fetch_chunk:FetchChunk=fet
     for bucket in (priors.get("hitters") or {},priors.get("pitchers") or {}):
         max_dates.extend(str(v.get("max_game_date")) for v in bucket.values() if v.get("max_game_date"))
     if max_dates and max(max_dates)>=cutoff.isoformat():raise ValueError("aggregated Statcast prior crossed cutoff")
-    return {"schema":"pulsar-v14-statcast-pit-backfill-v1","role":ROLE,"auto_activation":False,"point_in_time":True,"stable_id_only":True,"cutoff_day":cutoff.isoformat(),"source_start":start.isoformat(),"source_end":end.isoformat(),"source":"Baseball Savant Statcast Search CSV via V137 audited bounded fetcher","raw_pitch_rows":len(rows),"raw_rows_sha256":_hash_rows(rows),"requests":requests,"priors":priors,"champion_impact":False,"native_live_confirmation_required":True}
+    diag=priors.get("diagnostics") or {}
+    return {"schema":"pulsar-v14-statcast-pit-backfill-v2","role":ROLE,"auto_activation":False,"point_in_time":True,"stable_id_only":True,"cutoff_day":cutoff.isoformat(),"source_start":start.isoformat(),"source_end":end.isoformat(),"source":"Baseball Savant Statcast Search CSV via V137 audited bounded fetcher + V14 pitch-type enrichment","raw_pitch_rows":len(rows),"raw_rows_sha256":_hash_rows(rows),"requests":requests,"priors":priors,"coverage":{"hitters":len(priors.get("hitters") or {}),"pitchers":len(priors.get("pitchers") or {}),"hitter_pitch_split_players":int(diag.get("hitter_pitch_split_players") or 0),"hitter_pitch_split_buckets":int(diag.get("hitter_pitch_split_buckets") or 0)},"champion_impact":False,"native_live_confirmation_required":True}
 
 
 def write(cutoff_day:str,output:Path|str,*,season_start:str|None=None,fetch_chunk:FetchChunk=fetch_statcast_rows_adaptive)->dict[str,Any]:
@@ -59,10 +62,10 @@ def write(cutoff_day:str,output:Path|str,*,season_start:str|None=None,fetch_chun
 
 
 def main()->None:
-    parser=argparse.ArgumentParser(description="Build strict PIT Statcast priors for a historical cutoff")
+    parser=argparse.ArgumentParser(description="Build strict enriched PIT Statcast priors for a historical cutoff")
     parser.add_argument("cutoff_day");parser.add_argument("--season-start");parser.add_argument("--output")
     args=parser.parse_args();output=args.output or str(DEFAULT_OUTPUT/f"statcast_{args.cutoff_day}.json");out=write(args.cutoff_day,output,season_start=args.season_start)
-    print(json.dumps({"schema":out["schema"],"cutoff_day":out["cutoff_day"],"raw_pitch_rows":out["raw_pitch_rows"],"hitters":len((out["priors"].get("hitters") or {})),"pitchers":len((out["priors"].get("pitchers") or {})),"raw_rows_sha256":out["raw_rows_sha256"]},sort_keys=True))
+    print(json.dumps({"schema":out["schema"],"cutoff_day":out["cutoff_day"],"raw_pitch_rows":out["raw_pitch_rows"],"coverage":out.get("coverage"),"raw_rows_sha256":out["raw_rows_sha256"]},sort_keys=True))
 
 
 if __name__=="__main__":main()
