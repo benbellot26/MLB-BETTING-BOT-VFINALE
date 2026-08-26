@@ -6,11 +6,15 @@ on:
     paths:
       - "v14/**"
       - "tests/test_v14_*.py"
+      - "data/v137/**"
+      - "data/v138_dataset_manifest.json"
       - ".github/workflows/v14-ci.yml"
   pull_request:
     paths:
       - "v14/**"
       - "tests/test_v14_*.py"
+      - "data/v137/**"
+      - "data/v138_dataset_manifest.json"
       - ".github/workflows/v14-ci.yml"
   workflow_dispatch:
 
@@ -25,7 +29,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Compile production V14
+      - name: Compile production and research V14
         run: python -m py_compile v14/*.py
       - name: Run V14 production preflight
         run: python -m v14.preflight
@@ -44,6 +48,7 @@ jobs:
           python-version: "3.12"
       - name: Validate 2021-2026 PIT dataset and frozen holdouts
         run: |
+          set -euo pipefail
           mkdir -p runtime/v14
           python -m v14.historical_validation --output runtime/v14/v14_historical_validation.json
           python -m v14.historical_rich_inventory --output runtime/v14/v14_rich_historical_inventory.json
@@ -61,11 +66,12 @@ jobs:
           print('PROBABILITY_2026=',json.dumps(t.get('probability_translation_frozen_2026'),sort_keys=True))
           print('DISTRIBUTION=',json.dumps(x.get('score_distribution_challenger'),sort_keys=True))
           print('EVIDENCE_TIERS=',json.dumps(x.get('evidence_registry'),sort_keys=True))
+          print('RICH_ROWS=',inv.get('rows'))
           print('RICH_TOP_LEVEL_KEYS=',json.dumps(inv.get('top_level_keys'),sort_keys=True))
           print('RICH_INTERESTING_PATHS=',json.dumps((inv.get('interesting_paths') or [])[:120],sort_keys=True))
           print('NEXT_STATE=',x.get('recommended_next_state'))
           PY
-      - name: Archive V14.5 historical validation
+      - name: Archive V14.5 historical evidence
         uses: actions/upload-artifact@v4
         with:
           name: pulsar-v14-historical-validation-${{ github.run_id }}
