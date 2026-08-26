@@ -12,6 +12,7 @@ from .acquisition import PregameSnapshot
 from .acquisition_strict import collect_pregame_strict
 from .certification import load_status as load_certification_status
 from .decision import evaluate as decision_diagnostics
+from .environment_physics_challenger import evaluate as environment_physics_shadow
 from .market_edge import diagnostics_from_snapshot
 from .market_lines import canonical_market_snapshot, choose_total_line
 from .mlb_inputs import NativeGameInputs, build_game_inputs
@@ -20,6 +21,7 @@ from .pipeline import predict_from_structural
 from .sharp_market import sharp_consensus
 from .starter_fallback import degraded_sides_from_evidence, degradation_summary, neutralize_probable_pitchers
 from .starter_integrity import starter_integrity_evidence
+from .starter_usage_challenger import estimate as starter_usage_shadow
 from .statcast_shadow import build_shadow_features
 from .uncertainty import intervals as probability_intervals
 
@@ -41,13 +43,37 @@ def _phase_quality_gate(native: NativeGameInputs, phase: str) -> None:
             raise ValueError("FINAL snapshot requires both confirmed 9/9 lineups")
 
 
+def _research_challenger_evidence(feature_row: dict[str, Any]) -> dict[str, Any]:
+    """Materialize shadow-only challenger inputs/diagnostics for later OOS study."""
+    ctx = feature_row.get("context") or {}
+    features = feature_row.get("features") or {}
+    operational = features.get("operational") or {}
+    return {
+        "schema": "pulsar-v14-research-challenger-evidence-v1",
+        "champion_impact": False,
+        "home_starter_usage": starter_usage_shadow(ctx.get("home_starter")),
+        "away_starter_usage": starter_usage_shadow(ctx.get("away_starter")),
+        "environment_physics": environment_physics_shadow(features.get("environment")),
+        "timezone_exact": {
+            "home": ((operational.get("home") or {}).get("timezone_shift_exact_evidence") or {}),
+            "away": ((operational.get("away") or {}).get("timezone_shift_exact_evidence") or {}),
+        },
+        "run_decomposition_status": {
+            "status": "COLLECTING",
+            "reason": "independent bullpen-quality and defense factors are not yet available as PIT features",
+            "auto_activation": False,
+        },
+        "market_probability_used_as_feature": False,
+    }
+
+
 def _compact_training_features(feature_row: dict[str, Any], prediction: dict[str, Any], statcast_shadow: dict[str, Any]) -> dict[str, Any]:
     """Persist only PIT covariates needed for future residual challengers."""
     ctx = feature_row.get("context") or {}
     features = feature_row.get("features") or {}
     quality = feature_row.get("data_quality") or {}
     return {
-        "schema": "pulsar-v14-training-features-v2",
+        "schema": "pulsar-v14-training-features-v3",
         "as_of": feature_row.get("as_of"),
         "point_in_time": feature_row.get("point_in_time") is True,
         "base_run_projection": prediction.get("base_run_projection") or {},
@@ -60,6 +86,7 @@ def _compact_training_features(feature_row: dict[str, Any], prediction: dict[str
         "operational": features.get("operational") or {},
         "environment": features.get("environment") or {},
         "statcast_shadow": statcast_shadow,
+        "research_challengers": _research_challenger_evidence(feature_row),
         "data_quality": quality,
     }
 
