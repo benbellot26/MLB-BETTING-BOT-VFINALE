@@ -1,0 +1,42 @@
+{
+  "schema": "pulsar-v14-historical-team-run-decision-v1",
+  "role": "RESEARCH_EVIDENCE_ONLY",
+  "status": "REJECTED_HISTORICAL",
+  "auto_activation": false,
+  "champion_impact": false,
+  "source_run_id": 32985097883,
+  "dataset_content_sha256": "50061745f1a5634b927b4376f7caf4a745efd87bfd76591a6905a6e8daed396c",
+  "feature_contract_sha256": "08b35bb22ea34adb3113de13d335975ca00e401b9c1d80deada2473a9b661a61",
+  "parameters": {
+    "home_advantage_runs": 0.08,
+    "offense_weight": 0.45,
+    "park_weight": 0.0,
+    "recent14_weight": 0.1,
+    "recent7_weight": 0.0,
+    "season_prior_games": 15.0
+  },
+  "run_error_gate": {
+    "historical_validated": true,
+    "frozen_2026_nonregression": true
+  },
+  "probability_validation_2025": {
+    "n": 600,
+    "baseline_brier": 0.24275818721462145,
+    "candidate_brier": 0.24302584633015661,
+    "paired_brier_gain_mean": -0.0002676591155351324,
+    "paired_brier_gain_ci95_lower": -0.0029262473914567462,
+    "baseline_logloss": 0.6785359129909537,
+    "candidate_logloss": 0.6789447703713314,
+    "paired_logloss_gain_mean": -0.0004088573803777227,
+    "paired_logloss_gain_ci95_lower": -0.006476280275006319
+  },
+  "probability_frozen_2026": {
+    "n": 600,
+    "baseline_brier": 0.25563637839797004,
+    "candidate_brier": 0.25127187894093905,
+    "paired_brier_gain_mean": 0.004364499457031018,
+    "paired_brier_gain_ci95_lower": 0.0008111288276315448
+  },
+  "decision": "KEEP_CURRENT_RUN_MEANS",
+  "reason": "Run-error improvement did not translate into out-of-sample 2025 probability improvement. A later frozen-year gain cannot override the untouched validation failure."
+}
