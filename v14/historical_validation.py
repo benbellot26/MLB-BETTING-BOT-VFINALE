@@ -21,6 +21,7 @@ from . import MODEL_GENERATION, VERSION
 from .champion_contract import CHAMPION_DISPERSION, CHAMPION_ENVIRONMENT_SIGMA, validated_extra_innings_home_probability
 from .distribution import probability_surface
 from .historical_dataset import load_verified, split_by_season
+from .historical_distribution_validation import build as build_distribution_validation
 from .historical_team_challenger import baseline_runs, candidate_runs, evaluate_split, historical_gate, tune
 from .model import RunProjection
 
@@ -56,7 +57,6 @@ def _mean_ci(values: list[float]) -> dict[str, Any]:
 def _sample(pairs: list[tuple[dict[str, Any], dict[str, Any]]], maximum: int = MAX_PROBABILITY_SAMPLE) -> list[tuple[dict[str, Any], dict[str, Any]]]:
     if len(pairs) <= maximum:
         return list(pairs)
-    # Even temporal coverage; no random state and no outcome-based selection.
     step = len(pairs) / maximum
     return [pairs[min(len(pairs) - 1, int(i * step))] for i in range(maximum)]
 
@@ -70,8 +70,7 @@ def _ece(y: list[int], p: list[float], bins: int = 10) -> float | None:
         idx = [i for i, q in enumerate(p) if lo <= q < hi or (b == bins - 1 and q == 1.0)]
         if not idx:
             continue
-        mp = sum(p[i] for i in idx) / len(idx)
-        oy = sum(y[i] for i in idx) / len(idx)
+        mp = sum(p[i] for i in idx) / len(idx); oy = sum(y[i] for i in idx) / len(idx)
         total += len(idx) / len(y) * abs(mp - oy)
     return total
 
@@ -89,180 +88,58 @@ def _prob_metrics(y: list[int], p: list[float]) -> dict[str, Any]:
 
 def _home_ml(game_pk: str, game_date: str, analyzed_at: str, home_mu: float, away_mu: float) -> float:
     extra, _ = validated_extra_innings_home_probability()
-    projection = RunProjection(
-        game_pk=game_pk,
-        game_date=game_date,
-        analyzed_at=analyzed_at,
-        home="HOME",
-        away="AWAY",
-        home_mu=home_mu,
-        away_mu=away_mu,
-        total_line=8.5,
-        dispersion=CHAMPION_DISPERSION,
-        environment_sigma=CHAMPION_ENVIRONMENT_SIGMA,
-        extra_innings_home_probability=extra,
-        source_generation="v14.5-historical-team-validation",
-    )
+    projection = RunProjection(game_pk=game_pk, game_date=game_date, analyzed_at=analyzed_at, home="HOME", away="AWAY", home_mu=home_mu, away_mu=away_mu, total_line=8.5, dispersion=CHAMPION_DISPERSION, environment_sigma=CHAMPION_ENVIRONMENT_SIGMA, extra_innings_home_probability=extra, source_generation="v14.5-historical-team-validation")
     surface, _ = probability_surface(projection)
     return float(surface.home_ml)
 
 
 def probability_translation(pairs: list[tuple[dict[str, Any], dict[str, Any]]], params: dict[str, float]) -> dict[str, Any]:
-    sampled = _sample(pairs)
-    y: list[int] = []
-    pb: list[float] = []
-    pc: list[float] = []
-    bd: list[float] = []
-    ld: list[float] = []
+    sampled = _sample(pairs); y: list[int] = []; pb: list[float] = []; pc: list[float] = []; bd: list[float] = []; ld: list[float] = []
     for feature, label in sampled:
-        gid = str(feature.get("game_pk") or "")
-        game_date = str(feature.get("game_date") or "")
-        analyzed_at = str(feature.get("as_of") or game_date)
-        bh, ba = baseline_runs(feature)
-        ch, ca = candidate_runs(feature, params)
-        b = _home_ml(gid, game_date, analyzed_at, bh, ba)
-        c = _home_ml(gid, game_date, analyzed_at, ch, ca)
-        z = int(_num(label.get("home_score")) > _num(label.get("away_score")))
-        y.append(z); pb.append(b); pc.append(c)
-        bd.append((b - z) ** 2 - (c - z) ** 2)
-        bl = -(z * math.log(_clip(b)) + (1 - z) * math.log(_clip(1 - b)))
-        cl = -(z * math.log(_clip(c)) + (1 - z) * math.log(_clip(1 - c)))
-        ld.append(bl - cl)
-    return {
-        "sample_policy": f"even temporal sample capped at {MAX_PROBABILITY_SAMPLE}; outcome-independent",
-        "baseline": _prob_metrics(y, pb),
-        "candidate": _prob_metrics(y, pc),
-        "paired_brier_gain": _mean_ci(bd),
-        "paired_logloss_gain": _mean_ci(ld),
-        "distribution": {"dispersion": CHAMPION_DISPERSION, "environment_sigma": CHAMPION_ENVIRONMENT_SIGMA},
-    }
+        gid = str(feature.get("game_pk") or ""); game_date = str(feature.get("game_date") or ""); analyzed_at = str(feature.get("as_of") or game_date)
+        bh, ba = baseline_runs(feature); ch, ca = candidate_runs(feature, params); b = _home_ml(gid, game_date, analyzed_at, bh, ba); c = _home_ml(gid, game_date, analyzed_at, ch, ca); z = int(_num(label.get("home_score")) > _num(label.get("away_score")))
+        y.append(z); pb.append(b); pc.append(c); bd.append((b-z)**2-(c-z)**2)
+        bl=-(z*math.log(_clip(b))+(1-z)*math.log(_clip(1-b))); cl=-(z*math.log(_clip(c))+(1-z)*math.log(_clip(1-c))); ld.append(bl-cl)
+    return {"sample_policy":f"even temporal sample capped at {MAX_PROBABILITY_SAMPLE}; outcome-independent","baseline":_prob_metrics(y,pb),"candidate":_prob_metrics(y,pc),"paired_brier_gain":_mean_ci(bd),"paired_logloss_gain":_mean_ci(ld),"distribution":{"dispersion":CHAMPION_DISPERSION,"environment_sigma":CHAMPION_ENVIRONMENT_SIGMA}}
 
 
 def _load_json(path: Path) -> dict[str, Any]:
-    if not path.exists():
-        return {}
-    try:
-        value = json.loads(path.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
-    return value if isinstance(value, dict) else {}
+    if not path.exists(): return {}
+    try: value=json.loads(path.read_text(encoding="utf-8"))
+    except Exception: return {}
+    return value if isinstance(value,dict) else {}
 
 
 def evidence_registry() -> dict[str, Any]:
-    rich = _load_json(RICH_REPORT)
-    replay = _load_json(REPLAY_REPORT)
-    rich_games = int(rich.get("games") or 0)
-    replay_games = int(replay.get("canonical_games") or 0)
-    methodology = rich.get("methodology") or {}
+    rich=_load_json(RICH_REPORT); replay=_load_json(REPLAY_REPORT); rich_games=int(rich.get("games") or 0); replay_games=int(replay.get("canonical_games") or 0); methodology=rich.get("methodology") or {}
     return {
-        "tier_a_team_history": {
-            "status": "VALIDATED_BY_THIS_RUN",
-            "use": "team-level run priors, recent-form shrinkage, run-distribution research",
-        },
-        "tier_b_rich_2026_reconstruction": {
-            "status": "RANKING_ONLY" if rich_games else "UNAVAILABLE",
-            "games": rich_games,
-            "walk_forward": methodology.get("walk_forward"),
-            "future_game_stats_used": methodology.get("future_game_stats_used"),
-            "statcast_used": methodology.get("statcast_used"),
-            "weather_used": methodology.get("weather_used"),
-            "final_lineup_identity_with_prior_stats": methodology.get("actual_final_lineup_used_with_prior_player_stats"),
-            "use": "starter/lineup/run-prior ranking; cannot validate missing Statcast/weather components",
-        },
-        "tier_c_exact_pregame_replays": {
-            "status": "SMALL_EXACT_REPLAY_EVIDENCE" if replay_games else "UNAVAILABLE",
-            "games": replay_games,
-            "replay_pass": replay.get("replay_pass"),
-            "replay_fail": replay.get("replay_fail"),
-            "use": "feature-semantic parity and market/probability diagnostics; insufficient for promotion floors",
-        },
-        "native_v14_prospective": {
-            "status": "FINAL_AUTHORITY",
-            "use": "mandatory confirmation before champion promotion and only source that can satisfy betting certification",
-        },
+        "tier_a_team_history":{"status":"VALIDATED_BY_THIS_RUN","use":"team-level run priors, recent-form shrinkage, run-distribution research"},
+        "tier_b_rich_2026_reconstruction":{"status":"RANKING_ONLY" if rich_games else "UNAVAILABLE","games":rich_games,"walk_forward":methodology.get("walk_forward"),"future_game_stats_used":methodology.get("future_game_stats_used"),"statcast_used":methodology.get("statcast_used"),"weather_used":methodology.get("weather_used"),"final_lineup_identity_with_prior_stats":methodology.get("actual_final_lineup_used_with_prior_player_stats"),"use":"starter/lineup/run-prior ranking; cannot validate missing Statcast/weather components"},
+        "tier_c_exact_pregame_replays":{"status":"SMALL_EXACT_REPLAY_EVIDENCE" if replay_games else "UNAVAILABLE","games":replay_games,"replay_pass":replay.get("replay_pass"),"replay_fail":replay.get("replay_fail"),"use":"feature-semantic parity and market/probability diagnostics; insufficient for promotion floors"},
+        "native_v14_prospective":{"status":"FINAL_AUTHORITY","use":"mandatory confirmation before champion promotion and only source that can satisfy betting certification"},
     }
 
 
 def build() -> dict[str, Any]:
-    pairs, dataset = load_verified()
-    split = split_by_season(pairs)
-    tuning = tune(split["tuning"])
-    base = {
-        "schema": "pulsar-v14-historical-validation-v1",
-        "software_version": VERSION,
-        "model_generation": MODEL_GENERATION,
-        "role": "RESEARCH_EVIDENCE_ONLY",
-        "auto_activation": False,
-        "generated_at": datetime.now(timezone.utc).isoformat(),
-        "dataset": dataset,
-        "split": {
-            "tuning_2021_2024": len(split["tuning"]),
-            "validation_2025": len(split["validation"]),
-            "frozen_test_2026": len(split["frozen_test"]),
-            "frozen_2026_used_for_parameter_selection": False,
-        },
-        "evidence_registry": evidence_registry(),
-    }
-    if tuning.get("status") != "TUNED_RESEARCH_ONLY":
-        return {**base, "status": "COLLECTING", "team_run_challenger": {"tuning": tuning}}
-    params = tuning["parameters"]
-    validation = evaluate_split(split["validation"], params)
-    frozen = evaluate_split(split["frozen_test"], params)
-    gate = historical_gate(validation, frozen)
-    pval = probability_translation(split["validation"], params)
-    pfrozen = probability_translation(split["frozen_test"], params)
-    vb = pval["paired_brier_gain"]; vl = pval["paired_logloss_gain"]
-    fb = pfrozen["paired_brier_gain"]; fl = pfrozen["paired_logloss_gain"]
-    downstream_validation = bool(
-        vb.get("ci95_lower") is not None and float(vb["ci95_lower"]) >= -0.0015
-        and vl.get("ci95_lower") is not None and float(vl["ci95_lower"]) >= -0.003
-    )
-    downstream_frozen = bool(
-        fb.get("mean") is not None and float(fb["mean"]) >= -0.001
-        and fl.get("mean") is not None and float(fl["mean"]) >= -0.002
-    )
-    historical_candidate = bool(gate.get("passes") and downstream_validation and downstream_frozen)
-    status = "HISTORICAL_PROMOTION_CANDIDATE" if historical_candidate else "REJECTED_HISTORICAL"
-    return {
-        **base,
-        "status": status,
-        "team_run_challenger": {
-            "status": status,
-            "tuning": tuning,
-            "validation_2025": validation,
-            "frozen_2026": frozen,
-            "run_gate": gate,
-            "probability_translation_2025": pval,
-            "probability_translation_frozen_2026": pfrozen,
-            "downstream_probability_validation_pass": downstream_validation,
-            "downstream_probability_frozen_nonregression": downstream_frozen,
-            "promotion_policy": "historical evidence may nominate a shadow challenger only; native V14 prospective confirmation is mandatory before changing MODEL_GENERATION",
-        },
-        "recommended_next_state": "SHADOW_ON_NATIVE_V14" if historical_candidate else "KEEP_CURRENT_CHAMPION",
-    }
+    pairs,dataset=load_verified(); split=split_by_season(pairs); tuning=tune(split["tuning"])
+    base={"schema":"pulsar-v14-historical-validation-v2","software_version":VERSION,"model_generation":MODEL_GENERATION,"role":"RESEARCH_EVIDENCE_ONLY","auto_activation":False,"generated_at":datetime.now(timezone.utc).isoformat(),"dataset":dataset,"split":{"tuning_2021_2024":len(split["tuning"]),"validation_2025":len(split["validation"]),"frozen_test_2026":len(split["frozen_test"]),"frozen_2026_used_for_parameter_selection":False},"evidence_registry":evidence_registry()}
+    if tuning.get("status")!="TUNED_RESEARCH_ONLY": return {**base,"status":"COLLECTING","team_run_challenger":{"tuning":tuning}}
+    params=tuning["parameters"]; validation=evaluate_split(split["validation"],params); frozen=evaluate_split(split["frozen_test"],params); gate=historical_gate(validation,frozen); pval=probability_translation(split["validation"],params); pfrozen=probability_translation(split["frozen_test"],params)
+    vb=pval["paired_brier_gain"]; vl=pval["paired_logloss_gain"]; fb=pfrozen["paired_brier_gain"]; fl=pfrozen["paired_logloss_gain"]
+    downstream_validation=bool(vb.get("ci95_lower") is not None and float(vb["ci95_lower"])>=-.0015 and vl.get("ci95_lower") is not None and float(vl["ci95_lower"])>=-.003)
+    downstream_frozen=bool(fb.get("mean") is not None and float(fb["mean"])>=-.001 and fl.get("mean") is not None and float(fl["mean"])>=-.002)
+    historical_candidate=bool(gate.get("passes") and downstream_validation and downstream_frozen); status="HISTORICAL_PROMOTION_CANDIDATE" if historical_candidate else "REJECTED_HISTORICAL"
+    distribution=build_distribution_validation(split,params)
+    return {**base,"status":status,"team_run_challenger":{"status":status,"tuning":tuning,"validation_2025":validation,"frozen_2026":frozen,"run_gate":gate,"probability_translation_2025":pval,"probability_translation_frozen_2026":pfrozen,"downstream_probability_validation_pass":downstream_validation,"downstream_probability_frozen_nonregression":downstream_frozen,"promotion_policy":"historical evidence may nominate a shadow challenger only; native V14 prospective confirmation is mandatory before changing MODEL_GENERATION"},"score_distribution_challenger":distribution,"recommended_next_state":"SHADOW_ON_NATIVE_V14" if historical_candidate else "KEEP_CURRENT_CHAMPION"}
 
 
-def write(output: Path | str = OUTPUT) -> dict[str, Any]:
-    artifact = build()
-    target = Path(output)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(json.dumps(artifact, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    return artifact
+def write(output:Path|str=OUTPUT)->dict[str,Any]:
+    artifact=build(); target=Path(output); target.parent.mkdir(parents=True,exist_ok=True); target.write_text(json.dumps(artifact,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8"); return artifact
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Run V14.5 strict historical PIT validation")
-    parser.add_argument("--output", default=str(OUTPUT))
-    args = parser.parse_args()
-    out = write(args.output)
-    print(json.dumps({
-        "schema": out.get("schema"),
-        "status": out.get("status"),
-        "split": out.get("split"),
-        "recommended_next_state": out.get("recommended_next_state"),
-        "parameters": (((out.get("team_run_challenger") or {}).get("tuning") or {}).get("parameters")),
-    }, sort_keys=True))
+def main()->None:
+    parser=argparse.ArgumentParser(description="Run V14.5 strict historical PIT validation"); parser.add_argument("--output",default=str(OUTPUT)); args=parser.parse_args(); out=write(args.output)
+    print(json.dumps({"schema":out.get("schema"),"status":out.get("status"),"split":out.get("split"),"recommended_next_state":out.get("recommended_next_state"),"parameters":(((out.get("team_run_challenger") or {}).get("tuning") or {}).get("parameters")),"distribution_status":((out.get("score_distribution_challenger") or {}).get("status"))},sort_keys=True))
 
 
-if __name__ == "__main__":
-    main()
+if __name__=="__main__": main()
