@@ -2,11 +2,10 @@ from __future__ import annotations
 
 """Prospective, fail-soft weather enrichment for native V14 shadow research.
 
-The source is queried only at analysis time and never backfilled from observed
-postgame weather.  It supplies the physical variables missing from the MLB feed
-(humidity, surface pressure and numeric wind direction).  No outfield bearing is
-invented, so wind-to-outfield effects remain diagnostic until a separately
-authenticated venue-orientation artifact exists.
+Open-Meteo supplies the match forecast. MLB venue reference data supplies the
+actual field azimuth, and NASA POWER supplies the venue/month climatological
+baseline. No value is imputed: any unavailable external reference remains
+explicitly diagnostic and can never alter the champion automatically.
 """
 
 from datetime import datetime, timezone
@@ -14,6 +13,8 @@ import math
 from typing import Any, Callable
 
 from .acquisition import http_json, parse_time
+from .venue_geometry import fetch_nearest as fetch_nearest_venue
+from .weather_climatology import fetch as fetch_climatology
 
 URL="https://api.open-meteo.com/v1/forecast"
 ROLE="SHADOW_ONLY"
@@ -27,12 +28,16 @@ def _num(value:Any)->float|None:
 
 
 def _base(status:str,reason:str|None=None)->dict[str,Any]:
-    out={"schema":"pulsar-v14-live-weather-shadow-v1","role":ROLE,"status":status,"auto_activation":False,"champion_impact":False,"market_probability_used_as_feature":False,"point_in_time":True}
+    out={"schema":"pulsar-v14-live-weather-shadow-v2","role":ROLE,"status":status,"auto_activation":False,"champion_impact":False,"market_probability_used_as_feature":False,"point_in_time":True}
     if reason:out["reason"]=reason
     return out
 
 
-def fetch(latitude:float|None,longitude:float|None,*,game_date:str,analyzed_at:str,getter:Getter=http_json)->dict[str,Any]:
+def _reference_disabled(reason:str)->dict[str,Any]:
+    return {"status":"COLLECTING","role":ROLE,"champion_impact":False,"reason":reason}
+
+
+def fetch(latitude:float|None,longitude:float|None,*,game_date:str,analyzed_at:str,getter:Getter=http_json,reference_getter:Getter|None=None)->dict[str,Any]:
     if latitude is None or longitude is None:return _base("COLLECTING","venue coordinates unavailable")
     try:game=parse_time(game_date);analysis=parse_time(analyzed_at)
     except Exception:return _base("COLLECTING","invalid game/analysis timestamp")
@@ -56,13 +61,31 @@ def fetch(latitude:float|None,longitude:float|None,*,game_date:str,analyzed_at:s
     values={"temperature_f":at("temperature_2m"),"humidity_pct":at("relative_humidity_2m"),"pressure_hpa":at("surface_pressure"),"wind_mph":at("wind_speed_10m"),"wind_direction_deg":at("wind_direction_10m")}
     missing=[k for k,v in values.items() if v is None]
     if missing:return {**_base("COLLECTING","physical forecast variables incomplete"),"missing":missing,"forecast_valid_time":valid.isoformat()}
-    return {**_base("READY_SHADOW"),**values,"latitude":float(latitude),"longitude":float(longitude),"forecast_valid_time":valid.isoformat(),"analyzed_at":analysis.isoformat(),"forecast_lead_hours":(game-analysis).total_seconds()/3600,"source":"Open-Meteo generic forecast API","source_contract":"forecast retrieved prospectively at analysis; not observed postgame weather","outfield_bearing_deg":None}
+
+    # Injected forecast getters are normally unit-test/offline dependencies. Do
+    # not surprise them with unrelated external calls unless an explicit
+    # reference_getter is supplied. Native production uses http_json for both.
+    ref_getter=reference_getter
+    if ref_getter is None and getter is http_json:ref_getter=http_json
+    geometry=_reference_disabled("venue reference acquisition disabled for injected forecast getter")
+    climatology=_reference_disabled("venue climatology unavailable until geometry is resolved")
+    bearing=None;baseline_density=None;baseline_wind=None
+    if ref_getter is not None:
+        geometry=fetch_nearest_venue(float(latitude),float(longitude),season=int(game.year),getter=ref_getter,retrieved_at=analysis.isoformat())
+        if geometry.get("status")=="READY_SHADOW" and geometry.get("outfield_bearing_deg") is not None:
+            bearing=float(geometry["outfield_bearing_deg"])
+            climatology=fetch_climatology(float(latitude),float(longitude),month=int(game.month),outfield_bearing_deg=bearing,getter=ref_getter)
+            if climatology.get("status")=="READY_SHADOW":
+                baseline_density=_num(climatology.get("venue_baseline_density_kg_m3"));baseline_wind=_num(climatology.get("venue_baseline_wind_out_mph"))
+
+    return {**_base("READY_SHADOW"),**values,"latitude":float(latitude),"longitude":float(longitude),"forecast_valid_time":valid.isoformat(),"analyzed_at":analysis.isoformat(),"forecast_lead_hours":(game-analysis).total_seconds()/3600,"source":"Open-Meteo generic forecast API","source_contract":"forecast retrieved prospectively at analysis; not observed postgame weather","outfield_bearing_deg":bearing,"venue_baseline_density_kg_m3":baseline_density,"venue_baseline_wind_out_mph":baseline_wind,"venue_geometry":geometry,"weather_climatology":climatology}
 
 
 def merge_environment(mlb_environment:dict[str,Any]|None,weather:dict[str,Any]|None)->dict[str,Any]:
     out=dict(mlb_environment or {});w=weather if isinstance(weather,dict) else {}
     if w.get("status")=="READY_SHADOW":
-        for key in ("temperature_f","humidity_pct","pressure_hpa","wind_mph","wind_direction_deg"):
+        for key in ("temperature_f","humidity_pct","pressure_hpa","wind_mph","wind_direction_deg","outfield_bearing_deg","venue_baseline_density_kg_m3","venue_baseline_wind_out_mph"):
             if w.get(key) is not None:out[key]=w[key]
         out["weather_shadow_source"]=w.get("source");out["weather_shadow_valid_time"]=w.get("forecast_valid_time");out["weather_shadow_point_in_time"]=True
+        out["venue_geometry_shadow"]=w.get("venue_geometry") or {};out["weather_climatology_shadow"]=w.get("weather_climatology") or {}
     return out
