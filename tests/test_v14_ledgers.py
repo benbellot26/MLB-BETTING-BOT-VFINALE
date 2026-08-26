@@ -20,11 +20,16 @@ def _event(event_id="odds-123"):
 
 
 def _paper_payload(analyzed_at=ANALYZED_AT):
-    return {"model_generation":MODEL_GENERATION,"target_date":"2026-08-25","analyzed_at":analyzed_at,"results":[{"game_pk":"123","odds_event_id":"odds-123","game_date":GAME_DATE,"analyzed_at":analyzed_at,"home":"Home","away":"Away","canonical_lines":{"TOTAL":8.5},"starter_fallback":{"degraded":False},"sharp_market":{"selections":{"home_ml":{"fair_probability":.54}}},"v14_prediction":{"probabilities":{"home_ml":.60},"raw_probabilities":{"home_ml":.61}},"decision":{"candidates":[{"selection":"home_ml","canonical_market":"ML","market":"ML","price":2.00,"execution_book":"pinnacle","execution_source":"LINE_SHOPPED","probability":.60,"lower_probability":.56,"model_edge_pp":10.0,"robust_edge_pp":6.0,"sharp_edge_pp":6.0,"robust_sharp_edge_pp":2.0,"edge_qualified":True,"research_ready":True,"status":"RESEARCH_ONLY"}]}}]}
+    return {"model_generation":MODEL_GENERATION,"target_date":"2026-08-25","analyzed_at":analyzed_at,"results":[{"game_pk":"123","model_generation":MODEL_GENERATION,"odds_event_id":"odds-123","game_date":GAME_DATE,"analyzed_at":analyzed_at,"home":"Home","away":"Away","canonical_lines":{"TOTAL":8.5},"starter_fallback":{"degraded":False},"sharp_market":{"selections":{"home_ml":{"fair_probability":.54}}},"v14_prediction":{"model_generation":MODEL_GENERATION,"probabilities":{"home_ml":.60},"raw_probabilities":{"home_ml":.61}},"decision":{"candidates":[{"selection":"home_ml","canonical_market":"ML","market":"ML","price":2.00,"execution_book":"pinnacle","execution_source":"LINE_SHOPPED","probability":.60,"lower_probability":.56,"model_edge_pp":10.0,"robust_edge_pp":6.0,"sharp_edge_pp":6.0,"robust_sharp_edge_pp":2.0,"edge_qualified":True,"research_ready":True,"market_betting_certified":False,"status":"RESEARCH_ONLY"}]}}]}
 
 
 def _official_payload(certified:bool,analyzed_at=ANALYZED_AT):
-    payload=_paper_payload(analyzed_at); payload["betting_certification"]={"certified":certified,"betting_status":"BETTING_CERTIFIED" if certified else "RESEARCH_ONLY"}; candidate=payload["results"][0]["decision"]["candidates"][0]; candidate["status"]="BET"; candidate["lower_probability"]=.60; candidate["execution_book"]="pinnacle"; payload["results"][0]["market_snapshot"]={"markets":{"ML":{"bookmaker":"winamax_fr"}}}; return payload
+    payload=_paper_payload(analyzed_at)
+    payload["betting_certification"]={"model_generation":MODEL_GENERATION,"certified":certified,"betting_status":"BETTING_CERTIFIED" if certified else "RESEARCH_ONLY","markets":{"ML":{"betting_certified":certified}}}
+    candidate=payload["results"][0]["decision"]["candidates"][0]
+    candidate["status"]="BET"; candidate["lower_probability"]=.60; candidate["execution_book"]="pinnacle"; candidate["market_betting_certified"]=certified
+    payload["results"][0]["market_snapshot"]={"markets":{"ML":{"bookmaker":"winamax_fr"}}}
+    return payload
 
 
 class V14LedgerTests(unittest.TestCase):
@@ -43,6 +48,10 @@ class V14LedgerTests(unittest.TestCase):
     def test_official_ledger_refuses_uncertified_payload(self):
         with tempfile.TemporaryDirectory() as tmp:
             ledger=Path(tmp)/"official.jsonl"; self.assertEqual(record_official(_official_payload(False),ledger),0); self.assertEqual(read_official(ledger),[])
+
+    def test_official_ledger_refuses_market_not_certified_even_when_global_flag_is_true(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger=Path(tmp)/"official.jsonl"; payload=_official_payload(True); payload["betting_certification"]["markets"]["ML"]["betting_certified"]=False; payload["results"][0]["decision"]["candidates"][0]["market_betting_certified"]=False; self.assertEqual(record_official(payload,ledger),0); self.assertEqual(read_official(ledger),[])
 
     def test_official_ledger_uses_line_shopped_book_and_dedupes_later_snapshot(self):
         with tempfile.TemporaryDirectory() as tmp:
