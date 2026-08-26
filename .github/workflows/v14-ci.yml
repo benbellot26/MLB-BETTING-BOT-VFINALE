@@ -29,3 +29,5 @@ jobs:
         run: python -m py_compile v14/*.py
       - name: Run V14 production preflight
         run: python -m v14.preflight
+      - name: Run complete V14 regression suite
+        run: python -m unittest discover -s tests -p 'test_v14_*.py' -v
