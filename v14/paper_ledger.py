@@ -11,13 +11,14 @@ from pathlib import Path
 from typing import Any, Callable
 
 from .acquisition import canonical_team_name, mlb_schedule, odds_snapshot, parse_time
+from .market_lines import DEFAULT_MAX_MARKET_AGE_MINUTES, _book_freshness
 from .sharp_market import sharp_consensus
 
 LEDGER=Path("data/v14_paper_bet_ledger.jsonl")
 REPORT=Path("data/v14_paper_bet_performance.json")
 CLOSE_WINDOW_MINUTES=120.0
 CERTIFIED_CLOSE_MAX_MINUTES=15.0
-EVENT_TOLERANCE_MINUTES=90.0
+EVENT_TOLERANCE_MINUTES=60.0
 
 
 def _num(v:Any)->float|None:
@@ -34,7 +35,7 @@ def _read(path:Path|str=LEDGER)->list[dict[str,Any]]:
         if not line.strip(): continue
         try: row=json.loads(line)
         except Exception: continue
-        if isinstance(row,dict) and row.get("schema") in {"pulsar-v14-paper-bet-v1","pulsar-v14-paper-bet-v2"}: rows.append(row)
+        if isinstance(row,dict) and row.get("schema") in {"pulsar-v14-paper-bet-v1","pulsar-v14-paper-bet-v2","pulsar-v14-paper-bet-v3"}: rows.append(row)
     return rows
 
 
@@ -51,11 +52,16 @@ def record_payload(payload:dict[str,Any],path:Path|str=LEDGER)->int:
             if candidate.get("research_ready") is not True or candidate.get("edge_qualified") is not True: continue
             selection=str(candidate.get("selection") or ""); analyzed_at=str(result.get("analyzed_at") or payload.get("analyzed_at") or ""); key=(str(result.get("game_pk") or ""),selection,analyzed_at)
             if key in index: continue
-            index[key]={"schema":"pulsar-v14-paper-bet-v2","model_generation":payload.get("model_generation"),"game_pk":key[0],"target_date":str(payload.get("target_date") or ""),"game_date":result.get("game_date"),"analyzed_at":analyzed_at,"home":result.get("home"),"away":result.get("away"),"market":candidate.get("market"),"canonical_market":candidate.get("canonical_market") or ("TOTAL_OVER" if candidate.get("market")=="TOTAL" else candidate.get("market")),"selection":selection,"total_line":total_line,"execution_odds":candidate.get("price"),"execution_book":candidate.get("execution_book"),"probability":candidate.get("probability"),"raw_probability":_num(raw.get(selection)),"lower_probability":candidate.get("lower_probability"),"entry_sharp_probability":_num((sharp.get(selection) or {}).get("fair_probability")),"model_edge_pp":candidate.get("model_edge_pp"),"robust_edge_pp":candidate.get("robust_edge_pp"),"sharp_edge_pp":candidate.get("sharp_edge_pp"),"close_history":[],"close_captured_at":None,"close_minutes_to_game":None,"close_quality":None,"closing_sharp_probability":None,"sharp_fair_close_odds":None,"sharp_clv_pp":None,"execution_close_odds":None,"execution_price_clv_pp":None,"result":None,"flat_1u_profit":None,"home_score":None,"away_score":None,"settled_at":None}
+            index[key]={"schema":"pulsar-v14-paper-bet-v3","model_generation":payload.get("model_generation"),"game_pk":key[0],"odds_event_id":result.get("odds_event_id"),"target_date":str(payload.get("target_date") or ""),"game_date":result.get("game_date"),"analyzed_at":analyzed_at,"home":result.get("home"),"away":result.get("away"),"market":candidate.get("market"),"canonical_market":candidate.get("canonical_market") or ("TOTAL_OVER" if candidate.get("market")=="TOTAL" else candidate.get("market")),"selection":selection,"total_line":total_line,"execution_odds":candidate.get("price"),"execution_book":candidate.get("execution_book"),"probability":candidate.get("probability"),"raw_probability":_num(raw.get(selection)),"lower_probability":candidate.get("lower_probability"),"entry_sharp_probability":_num((sharp.get(selection) or {}).get("fair_probability")),"model_edge_pp":candidate.get("model_edge_pp"),"robust_edge_pp":candidate.get("robust_edge_pp"),"sharp_edge_pp":candidate.get("sharp_edge_pp"),"close_history":[],"close_captured_at":None,"close_minutes_to_game":None,"close_quality":None,"closing_sharp_probability":None,"sharp_fair_close_odds":None,"sharp_clv_pp":None,"execution_close_odds":None,"execution_price_clv_pp":None,"result":None,"flat_1u_profit":None,"home_score":None,"away_score":None,"settled_at":None}
     ordered=sorted(index.values(),key=lambda r:(str(r.get("game_date") or ""),str(r.get("game_pk") or ""),str(r.get("selection") or ""),str(r.get("analyzed_at") or ""))); _write(ordered,path); return len(index)-before
 
 
 def _event_for_row(row:dict[str,Any],events:list[dict[str,Any]])->dict[str,Any]|None:
+    event_id=str(row.get("odds_event_id") or "")
+    if event_id:
+        exact=[event for event in events if str(event.get("id") or "")==event_id]
+        if len(exact)==1: return exact[0]
+        if len(exact)>1: return None
     home=canonical_team_name(row.get("home")); away=canonical_team_name(row.get("away")); game_time=parse_time(row.get("game_date")); candidates=[]
     for event in events:
         if canonical_team_name(event.get("home_team"))!=home or canonical_team_name(event.get("away_team"))!=away: continue
@@ -67,11 +73,11 @@ def _event_for_row(row:dict[str,Any],events:list[dict[str,Any]])->dict[str,Any]|
     return candidates[0][1]
 
 
-def _execution_close(event:dict[str,Any],row:dict[str,Any])->float|None:
+def _execution_close(event:dict[str,Any],row:dict[str,Any],*,as_of:str)->float|None:
     book_key=str(row.get("execution_book") or ""); selection=str(row.get("selection") or ""); home=str(event.get("home_team") or ""); away=str(event.get("away_team") or ""); line=_num(row.get("total_line"))
     if not book_key: return None
     book=next((b for b in event.get("bookmakers") or [] if str(b.get("key") or "")==book_key),None)
-    if not book: return None
+    if not book or _book_freshness(book,as_of,DEFAULT_MAX_MARKET_AGE_MINUTES)!="VERIFIED_FRESH": return None
     market_key="h2h" if selection.endswith("_ml") else "totals" if selection in {"over","under"} else "spreads"
     outcomes=[]
     for market in book.get("markets") or []:
@@ -85,7 +91,7 @@ def _execution_close(event:dict[str,Any],row:dict[str,Any])->float|None:
         if str(outcome.get("name") or "")!=name: continue
         op=_num(outcome.get("point"))
         if point is not None and op!=point: continue
-        price=_num(outcome.get("price"));
+        price=_num(outcome.get("price"))
         if price and price>1: return price
     return None
 
@@ -105,7 +111,7 @@ def capture_close(path:Path|str=LEDGER,*,api_key:str|None=None,events_loader:Cal
         if event is None or line is None: continue
         sharp=sharp_consensus(event,total_line=line,as_of=captured); close=_num((((sharp.get("selections") or {}).get(str(row.get("selection") or "")) or {}).get("fair_probability")))
         if close is None or sharp.get("freshness_verified") is not True: continue
-        execution_close=_execution_close(event,row); quality="CERTIFIED_CLOSE" if mins<=CERTIFIED_CLOSE_MAX_MINUTES else "PROVISIONAL_CLOSE"; entry=_num(row.get("entry_sharp_probability")); entry_odds=_num(row.get("execution_odds"))
+        execution_close=_execution_close(event,row,as_of=captured); quality="CERTIFIED_CLOSE" if mins<=CERTIFIED_CLOSE_MAX_MINUTES else "PROVISIONAL_CLOSE"; entry=_num(row.get("entry_sharp_probability")); entry_odds=_num(row.get("execution_odds"))
         history=row.get("close_history") if isinstance(row.get("close_history"),list) else []; history.append({"captured_at":captured,"minutes_to_game":mins,"quality":quality,"sharp_fair_probability":close,"sharp_dispersion_pp":_num((((sharp.get("selections") or {}).get(str(row.get("selection") or "")) or {}).get("dispersion_pp"))),"execution_close_odds":execution_close}); row["close_history"]=history
         row["close_captured_at"]=captured; row["close_minutes_to_game"]=mins; row["close_quality"]=quality; row["closing_sharp_probability"]=close; row["sharp_fair_close_odds"]=1/close; row["sharp_clv_pp"]=(close-entry)*100 if entry is not None else None; row["execution_close_odds"]=execution_close; row["execution_price_clv_pp"]=(1/float(execution_close)-1/float(entry_odds))*100 if execution_close and entry_odds else None; changed+=1
     if changed: _write(rows,path)
@@ -153,15 +159,35 @@ def _ci(values:list[float])->dict[str,Any]:
     var=sum((v-mean)**2 for v in values)/(len(values)-1); se=math.sqrt(var/len(values)); return {"n":len(values),"mean_clv":mean,"positive_rate":rate,"mean_clv_ci95_lower":mean-1.96*se,"mean_clv_ci95_upper":mean+1.96*se}
 
 
+def _canonical_rows(rows:list[dict[str,Any]])->list[dict[str,Any]]:
+    """One independent paper decision per game × canonical market.
+
+    Multiple EARLY/LATE/FINAL snapshots from the same game cannot inflate the
+    certification sample size. The latest edge-qualified pregame observation is
+    the canonical simulated decision for that game/market.
+    """
+    latest: dict[tuple[str,str],dict[str,Any]]={}
+    for row in rows:
+        game=str(row.get("game_pk") or ""); market=str(row.get("canonical_market") or row.get("market") or row.get("selection") or "")
+        if not game or not market: continue
+        key=(game,market); current=latest.get(key)
+        if current is None:
+            latest[key]=row; continue
+        try: newer=parse_time(row.get("analyzed_at"))>parse_time(current.get("analyzed_at"))
+        except Exception: newer=str(row.get("analyzed_at") or "")>str(current.get("analyzed_at") or "")
+        if newer: latest[key]=row
+    return sorted(latest.values(),key=lambda r:(str(r.get("game_date") or ""),str(r.get("game_pk") or ""),str(r.get("canonical_market") or "")))
+
+
 def _slice(rows:list[dict[str,Any]])->dict[str,Any]:
-    settled=[r for r in rows if r.get("result") in {"WIN","LOSS","PUSH"}]; decisions=[r for r in settled if r.get("result")!="PUSH"]; profit=sum(float(r.get("flat_1u_profit") or 0) for r in settled); certified_clv=[_num(r.get("sharp_clv_pp")) for r in rows if r.get("close_quality")=="CERTIFIED_CLOSE"]; certified_clv=[v for v in certified_clv if v is not None]; execution=[_num(r.get("execution_price_clv_pp")) for r in rows if r.get("close_quality")=="CERTIFIED_CLOSE"]; execution=[v for v in execution if v is not None]
-    return {"observations":len(rows),"settled":len(settled),"wins":sum(r.get("result")=="WIN" for r in settled),"losses":sum(r.get("result")=="LOSS" for r in settled),"pushes":sum(r.get("result")=="PUSH" for r in settled),"flat_1u_profit":profit,"flat_1u_roi":profit/len(decisions) if decisions else None,"clv":{**_ci(certified_clv),"status":"AVAILABLE" if certified_clv else "UNAVAILABLE","definition":"entry sharp fair probability to latest verified <=15m sharp fair close"},"execution_clv":{**_ci(execution),"status":"AVAILABLE" if execution else "UNAVAILABLE","definition":"entry execution implied probability to same-book <=15m close"}}
+    canonical=_canonical_rows(rows); settled=[r for r in canonical if r.get("result") in {"WIN","LOSS","PUSH"}]; decisions=[r for r in settled if r.get("result")!="PUSH"]; profit=sum(float(r.get("flat_1u_profit") or 0) for r in settled); certified_clv=[_num(r.get("sharp_clv_pp")) for r in canonical if r.get("close_quality")=="CERTIFIED_CLOSE"]; certified_clv=[v for v in certified_clv if v is not None]; execution=[_num(r.get("execution_price_clv_pp")) for r in canonical if r.get("close_quality")=="CERTIFIED_CLOSE"]; execution=[v for v in execution if v is not None]
+    return {"raw_observations":len(rows),"observations":len(canonical),"independent_games":len({str(r.get("game_pk") or "") for r in canonical}),"canonical_policy":"latest edge-qualified pregame row per game x canonical market","settled":len(settled),"wins":sum(r.get("result")=="WIN" for r in settled),"losses":sum(r.get("result")=="LOSS" for r in settled),"pushes":sum(r.get("result")=="PUSH" for r in settled),"flat_1u_profit":profit,"flat_1u_roi":profit/len(decisions) if decisions else None,"clv":{**_ci(certified_clv),"status":"AVAILABLE" if certified_clv else "UNAVAILABLE","definition":"one independent game-market entry sharp fair probability to latest verified <=15m sharp fair close"},"execution_clv":{**_ci(execution),"status":"AVAILABLE" if execution else "UNAVAILABLE","definition":"one independent game-market entry execution implied probability to same-book fresh <=15m close"}}
 
 
 def report(rows:list[dict[str,Any]])->dict[str,Any]:
     overall=_slice(rows); by_market={}
     for market in sorted({str(r.get("canonical_market") or "") for r in rows if r.get("canonical_market")}): by_market[market]=_slice([r for r in rows if str(r.get("canonical_market"))==market])
-    return {"schema":"pulsar-v14-paper-bet-performance-v2","role":"CERTIFICATION_EVIDENCE_ONLY",**overall,"by_market":by_market,"close_policy":{"certified_max_minutes_to_game":CERTIFIED_CLOSE_MAX_MINUTES,"capture_window_minutes":CLOSE_WINDOW_MINUTES}}
+    return {"schema":"pulsar-v14-paper-bet-performance-v3","role":"CERTIFICATION_EVIDENCE_ONLY",**overall,"by_market":by_market,"close_policy":{"certified_max_minutes_to_game":CERTIFIED_CLOSE_MAX_MINUTES,"capture_window_minutes":CLOSE_WINDOW_MINUTES,"event_match":"exact odds event id when persisted; fail-closed time/team fallback for legacy rows","execution_close_requires_fresh_book":True}}
 
 
 def write_report(path:Path|str=LEDGER,output:Path|str=REPORT)->dict[str,Any]:
