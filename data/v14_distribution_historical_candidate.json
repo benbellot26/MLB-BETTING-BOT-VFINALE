@@ -1,15 +1,12 @@
 {
   "schema": "pulsar-v14-historical-distribution-candidate-v1",
   "role": "SHADOW_ONLY",
-  "status": "REVALIDATION_REQUIRED",
+  "status": "HISTORICAL_VALIDATED_SHADOW",
   "auto_activation": false,
   "champion_impact": false,
   "native_live_confirmation_required": true,
-  "source_run_id": 32985097883,
-  "frozen_at": "2026-08-26T15:31:43+00:00",
-  "reason": "Previous historical distribution validation used the subsequently rejected team-run challenger as its run-mean layer. The artifact is intentionally disabled until distribution parameters are revalidated in isolation on reference run means and full untouched holdouts.",
-  "superseded_evidence_only": true,
-  "prospective_evidence_policy": "Disabled while status is REVALIDATION_REQUIRED. No prospective row may use this artifact for promotion evidence.",
+  "source_run_id": 32990513482,
+  "frozen_at": "2026-08-26T16:51:01.156314+00:00",
   "dataset": {
     "games": 14122,
     "dataset_content_sha256": "50061745f1a5634b927b4376f7caf4a745efd87bfd76591a6905a6e8daed396c",
@@ -21,23 +18,61 @@
       "frozen_2026_used_for_parameter_selection": false
     }
   },
-  "champion_parameters": {"dispersion": 7.5, "environment_sigma": 0.08},
-  "previous_candidate_parameters": {"dispersion": 5.5, "environment_sigma": 0.16},
-  "previous_validation_2025": {
-    "sample_n": 400,
-    "score_nll_gain_mean": 0.06184200805978433,
-    "score_nll_gain_ci95_lower": 0.03883623716116995,
-    "score_nll_gain_ci95_upper": 0.0848477789583987,
-    "market_nonregression": true
+  "candidate_parameters": {
+    "dispersion": 5.5,
+    "environment_sigma": 0.16
   },
-  "previous_frozen_2026": {
-    "sample_n": 400,
-    "score_nll_gain_mean": 0.057034476869864174,
-    "score_nll_gain_ci95_lower": 0.03748374317575212,
-    "score_nll_gain_ci95_upper": 0.07658521056397623,
+  "champion_parameters": {
+    "dispersion": 7.5,
+    "environment_sigma": 0.08
+  },
+  "run_mean_contract": {
+    "selection_and_primary_validation": "STRICT_TEAM_HISTORY_BASELINE",
+    "current_v14_champion_reconstruction_claimed": false,
+    "reason": "distribution effect isolated from the team-run challenger"
+  },
+  "market_line_contract": {
+    "total_line": 8.5,
+    "total_line_source": "SYNTHETIC_FIXED_DIAGNOSTIC",
+    "historical_actual_total_lines_available": false,
+    "total_market_claim": "NON_REGRESSION_AT_FIXED_8_5_ONLY",
+    "primary_distribution_evidence": "JOINT_SCORE_NLL_PLUS_ML_RL",
+    "native_live_line_by_line_confirmation_required": true
+  },
+  "sample_policy": {
+    "tuning": 500,
+    "validation_2025": 2430,
+    "frozen_2026": 1974,
+    "tuning_outcome_independent_even_temporal_sampling": true,
+    "validation_2025_full_holdout": true,
+    "frozen_2026_full_holdout": true
+  },
+  "validation_2025": {
+    "score_nll": {
+      "candidate": 4.847622593739287,
+      "champion": 4.901323909786129,
+      "gain_mean": 0.05370131604684133,
+      "gain_ci95_lower": 0.0452535926715396,
+      "gain_ci95_upper": 0.06214903942214306,
+      "n": 2430
+    },
     "market_nonregression": true,
-    "total_over_brier_gain_mean": 0.0018834864750797739,
-    "total_over_brier_gain_ci95_lower": 0.000009603525220303185
+    "passes": true
   },
-  "promotion_policy": "Historical evidence can only nominate a shadow candidate after isolated full-holdout revalidation. Champion promotion still requires current-generation native-live paired score-NLL improvement and market non-regression."
+  "frozen_2026": {
+    "score_nll": {
+      "candidate": 4.866484268279918,
+      "champion": 4.9193033415773675,
+      "gain_mean": 0.052819073297449046,
+      "gain_ci95_lower": 0.04376056475449546,
+      "gain_ci95_upper": 0.06187758184040263,
+      "n": 1974
+    },
+    "market_nonregression": true,
+    "total_over_brier_gain_mean": 0.002608852535061206,
+    "total_over_brier_gain_ci95_lower": 0.001746353648432616,
+    "passes": true
+  },
+  "gate": "selected only on 2021-2024 baseline means; full 2025 paired score-NLL CI95 > 0 plus ML/RL/fixed-8.5 diagnostic non-regression; full frozen 2026 non-regression",
+  "promotion_policy": "Historical evidence nominates this distribution for prospective native-live shadow only; actual market lines and current-generation paired evidence are mandatory before promotion."
 }
