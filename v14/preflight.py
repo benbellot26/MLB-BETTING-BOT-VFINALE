@@ -28,6 +28,7 @@ CRITICAL_TEST_MODULES=(
     "tests.test_v14_research_extensions",
     "tests.test_v14_4_professional_data_model",
     "tests.test_v14_run_stack_parity",
+    "tests.test_v14_staking",
     "tests.test_v14_starter_fallback",
     "tests.test_v14_starter_integrity",
     "tests.test_v14_structural_parity",
