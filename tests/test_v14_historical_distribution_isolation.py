@@ -37,6 +37,11 @@ class HistoricalDistributionIsolationTests(unittest.TestCase):
         self.assertTrue(policy.get("frozen_2026_full_holdout"))
         self.assertEqual(policy.get("validation_2025"),4)
         self.assertEqual(policy.get("frozen_2026"),4)
+        lines=out.get("market_line_contract") or {}
+        self.assertEqual(lines.get("total_line"),8.5)
+        self.assertEqual(lines.get("total_line_source"),"SYNTHETIC_FIXED_DIAGNOSTIC")
+        self.assertFalse(lines.get("historical_actual_total_lines_available"))
+        self.assertTrue(lines.get("native_live_line_by_line_confirmation_required"))
 
     def test_rejected_run_challenger_is_sensitivity_only_when_explicitly_supplied(self):
         split={
