@@ -6,11 +6,11 @@ import unittest
 
 NATIVE_MODULES=(
     "acquisition.py","certification.py","context_overlay.py","decision.py","defense_baserunning_challenger.py","discord.py","distribution.py","distribution_tuning.py",
-    "environment_physics_challenger.py","execution_market.py","historical_pit.py","heteroskedastic_distribution_challenger.py","inning_simulator_challenger.py",
+    "environment_physics_challenger.py","execution_market.py","historical_distribution_shadow.py","historical_pit.py","historical_team_shadow.py","heteroskedastic_distribution_challenger.py","inning_simulator_challenger.py",
     "market_edge.py","market_lines.py","mlb_inputs.py","model.py","native_candidate.py","native_payload.py","parity_gate.py","park.py","phase.py","pipeline.py",
     "pitch_matchup_challenger.py","probability_calibration.py","production_runtime.py","residual_challenger.py","run_decomposition_challenger.py","run_stack.py",
     "sharp_market.py","sharp_weight_challenger.py","starter_fallback.py","starter_integrity.py","starter_recent_usage.py","starter_usage_challenger.py","statcast_shadow.py",
-    "structural.py","timezone_challenger.py","total_market.py","tracking.py","true_talent_challenger.py","uncertainty.py","uncertainty_fit.py","venue_park_challenger.py",
+    "structural.py","timezone_challenger.py","total_market.py","tracking.py","true_talent_challenger.py","uncertainty.py","uncertainty_fit.py","venue_park_challenger.py","weather_live_shadow.py",
     "calibration_methods_challenger.py",
 )
 
@@ -48,6 +48,13 @@ class V14ImportBoundaryTests(unittest.TestCase):
             text=(Path("v14")/filename).read_text(encoding="utf-8")
             self.assertIn("CHALLENGER_ONLY",text)
             self.assertIn("auto_activation",text)
+
+    def test_validated_native_shadows_remain_non_activating(self):
+        for filename in ("historical_team_shadow.py","historical_distribution_shadow.py","weather_live_shadow.py"):
+            text=(Path("v14")/filename).read_text(encoding="utf-8")
+            self.assertIn("SHADOW_ONLY",text)
+            self.assertIn("auto_activation",text)
+            self.assertIn("champion_impact",text)
 
     def test_historical_pit_contract_rejects_live_season_backfill(self):
         text=Path("v14/historical_pit.py").read_text(encoding="utf-8")
