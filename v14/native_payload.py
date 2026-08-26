@@ -43,6 +43,10 @@ def native_result_for_discord(result: dict[str, Any]) -> dict[str, Any]:
         "line_selection": deepcopy(result.get("line_selection") or {}),
         "market_snapshot": deepcopy(result.get("market_snapshot") or {}),
         "market_diagnostics": deepcopy(result.get("market_diagnostics") or {}),
+        "sharp_market": deepcopy(result.get("sharp_market") or {}),
+        "betting_certification": deepcopy(result.get("betting_certification") or {}),
+        "decision": deepcopy(result.get("decision") or {}),
+        "training_features": deepcopy(result.get("training_features") or {}),
         "starter_fallback": deepcopy(result.get("starter_fallback") or {}),
         "v14_prediction": prediction,
         "model_generation": MODEL_GENERATION,
@@ -64,8 +68,9 @@ def build_native_discord_payload(candidate: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("candidate market probability feature leak")
 
     results = [native_result_for_discord(result) for result in candidate.get("results") or []]
+    certification = deepcopy((results[0].get("betting_certification") if results else {}) or {})
     return {
-        "schema": "pulsar-v14-native-discord-payload-v2",
+        "schema": "pulsar-v14-native-discord-payload-v3",
         "version": VERSION,
         "model_generation": MODEL_GENERATION,
         "role": "PRODUCTION_PAYLOAD_UNAUTHORIZED",
@@ -74,6 +79,7 @@ def build_native_discord_payload(candidate: dict[str, Any]) -> dict[str, Any]:
         "legacy_acquisition_adapter": False,
         "legacy_probability_used_for_publication": False,
         "market_probability_used_as_feature": False,
+        "betting_certification": certification,
         "target_date": candidate.get("target_date"),
         "analyzed_at": candidate.get("analyzed_at"),
         "results": results,
@@ -84,7 +90,7 @@ def build_native_discord_payload(candidate: dict[str, Any]) -> dict[str, Any]:
 
 
 def authorize_payload(payload: dict[str, Any], *, production_authorized: bool) -> dict[str, Any]:
-    """Explicit production switch; migration/parity is no longer a runtime dependency."""
+    """Explicit software-production switch; never a betting certification."""
     if not production_authorized:
         raise ValueError("native production publication is not authorized")
     if payload.get("role") != "PRODUCTION_PAYLOAD_UNAUTHORIZED":
@@ -94,5 +100,10 @@ def authorize_payload(payload: dict[str, Any], *, production_authorized: bool) -
     out = deepcopy(payload)
     out["role"] = "PRODUCTION"
     out["publication_authorized"] = True
-    out["authorization_basis"] = "native-v14-production-contract"
+    out["authorization_basis"] = {
+        "type": "software-production-contract",
+        "model_generation": MODEL_GENERATION,
+        "betting_certified": bool((out.get("betting_certification") or {}).get("certified")),
+        "note": "Software publication authorization is distinct from statistical betting certification.",
+    }
     return out

@@ -11,6 +11,7 @@ from typing import Any, Callable
 from .acquisition import http_json
 from .run_stack import StructuralRunInput
 from .structural import LeagueBaselines, Starter, StructuralInputs, TeamInputs, enhance_starter, historical_pitcher_prior, project
+from .timezone_challenger import timezone_shift_hours
 
 MLB_API = "https://statsapi.mlb.com/api/"
 MLBGetter = Callable[[str, dict[str, Any]], Any]
@@ -115,10 +116,11 @@ def effective_lineup_ops(lineup_row: dict[str,Any], team_ops: float) -> tuple[fl
 def _raw_starter(game: dict[str,Any], side: str, league: LeagueBaselines, season: int, *, getter: MLBGetter) -> tuple[Starter,Starter,dict[str,Any]]:
     probable=(((game.get("teams") or {}).get(side) or {}).get("probablePitcher") or {}); pid,name=probable.get("id"),probable.get("fullName")
     current=player_season_stats(pid,"pitching",season,getter=getter) if pid else {}; innings=_num(current.get("inningsPitched"),0.0); weight=max(0.0,min(1.0,innings/70.0))
+    games_started=max(0,int(_num(current.get("gamesStarted"),0.0))); games_pitched=max(0,int(_num(current.get("gamesPitched"),0.0))); innings_per_start=(innings/games_started) if games_started>0 else None
     era_raw,whip_raw=_num(current.get("era"),league.era),_num(current.get("whip"),league.whip)
     base=Starter(era=weight*era_raw+(1-weight)*league.era,whip=weight*whip_raw+(1-weight)*league.whip,k9=_num(current.get("strikeoutsPer9Inn"),8.5) if current else None,bb9=_num(current.get("walksPer9Inn"),3.2) if current else None,hr9=_num(current.get("homeRunsPer9"),1.15) if current else None,innings=innings,sample_weight=weight)
     prior=pitcher_prior(pid,season,getter=getter); enhanced=enhance_starter(current,prior,fallback=base)
-    ctx={"id":pid,"name":name,"announced":bool(pid and name),"era":enhanced.era,"whip":enhanced.whip,"k9":enhanced.k9,"bb9":enhanced.bb9,"hr9":enhanced.hr9,"inningsPitched":enhanced.innings,"sample_weight":enhanced.sample_weight,"current_stats_available":bool(current),"prior_available":bool(prior)}
+    ctx={"id":pid,"name":name,"announced":bool(pid and name),"era":enhanced.era,"whip":enhanced.whip,"k9":enhanced.k9,"bb9":enhanced.bb9,"hr9":enhanced.hr9,"inningsPitched":enhanced.innings,"gamesStarted":games_started,"gamesPitched":games_pitched,"inningsPerStart":innings_per_start,"sample_weight":enhanced.sample_weight,"current_stats_available":bool(current),"prior_available":bool(prior)}
     return base,enhanced,ctx
 
 
@@ -195,8 +197,8 @@ def game_environment(game_pk: Any,*,getter: MLBGetter) -> dict[str,Any]:
 def operational(game: dict[str,Any],*,target_date: str,home: str,home_id: Any,away_id: Any,getter: MLBGetter=http_json) -> dict[str,Any]:
     current=COORD.get(home); game_pk=game.get("gamePk"); game_date=game.get("gameDate"); out={"current_doubleheader":str(game.get("doubleHeader") or "N")!="N"}
     for side,team_id in (("home",home_id),("away",away_id)):
-        recent=_recent_completed_games(team_id,target_date,current_game_pk=game_pk,current_game_date=game_date,getter=getter); previous=recent[0] if recent else None; teams=(previous or {}).get("teams") or {}; previous_home=((teams.get("home") or {}).get("team") or {}).get("name") if previous else None; previous_coord=COORD.get(previous_home); distance=_distance_km(previous_coord,current); previous_dt=_parse_dt((previous or {}).get("gameDate")); current_dt=_parse_dt(game_date); days_back=max(0,(current_dt.date()-previous_dt.date()).days) if previous_dt and current_dt else None; innings=int(_num(((previous or {}).get("linescore") or {}).get("currentInning"),9)) if previous else 9
-        out[side]={"rest_days":max(0,days_back-1) if days_back is not None else None,"travel_km":round(distance,1) if distance is not None else None,"timezone_shift_hours_approx":round((current[1]-previous_coord[1])/15,2) if current and previous_coord else None,"previous_extra_innings":bool(previous and innings>9),"previous_doubleheader":bool(previous and str(previous.get("doubleHeader") or "N")!="N"),"bullpen_previous_game":_bullpen_usage(team_id,(previous or {}).get("gamePk"),getter=getter),"bullpen_three_day":bullpen_three_day_snapshot(team_id,recent,getter=getter)}
+        recent=_recent_completed_games(team_id,target_date,current_game_pk=game_pk,current_game_date=game_date,getter=getter); previous=recent[0] if recent else None; teams=(previous or {}).get("teams") or {}; previous_home=((teams.get("home") or {}).get("team") or {}).get("name") if previous else None; previous_coord=COORD.get(previous_home); distance=_distance_km(previous_coord,current); previous_dt=_parse_dt((previous or {}).get("gameDate")); current_dt=_parse_dt(game_date); days_back=max(0,(current_dt.date()-previous_dt.date()).days) if previous_dt and current_dt else None; innings=int(_num(((previous or {}).get("linescore") or {}).get("currentInning"),9)) if previous else 9; timezone_exact=timezone_shift_hours(previous_home,home,current_dt or game_date) if previous_home else {"status":"COLLECTING","shift_hours":None,"auto_activation":False,"role":"CHALLENGER_ONLY"}
+        out[side]={"rest_days":max(0,days_back-1) if days_back is not None else None,"travel_km":round(distance,1) if distance is not None else None,"timezone_shift_hours_approx":round((current[1]-previous_coord[1])/15,2) if current and previous_coord else None,"timezone_shift_hours_exact":timezone_exact.get("shift_hours"),"timezone_shift_exact_evidence":timezone_exact,"previous_extra_innings":bool(previous and innings>9),"previous_doubleheader":bool(previous and str(previous.get("doubleHeader") or "N")!="N"),"bullpen_previous_game":_bullpen_usage(team_id,(previous or {}).get("gamePk"),getter=getter),"bullpen_three_day":bullpen_three_day_snapshot(team_id,recent,getter=getter)}
     return out
 
 
