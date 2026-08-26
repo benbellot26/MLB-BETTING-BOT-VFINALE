@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 import unittest
 
 from v14 import MODEL_GENERATION
@@ -13,6 +14,9 @@ from v14.statcast_shadow import build_shadow_features
 from v14.total_market import total_probabilities
 from v14.tracking import performance_report
 from v14.true_talent_challenger import offense_component
+
+NOW=datetime(2026,8,26,14,0,tzinfo=timezone.utc)
+FRESH="2026-08-26T13:00:00+00:00"
 
 
 def settled(game_pk,game_date,analyzed_at,phase,home_score=5,away_score=3,sharp=True,total_line=8.5):
@@ -35,7 +39,7 @@ class V144ProfessionalDataModelTests(unittest.TestCase):
         markets={}; calibrators={}
         for market in ("ML","RL_HOME_-1.5","RL_AWAY_-1.5","TOTAL_OVER"):
             good=market=="ML"; markets[market]={"n":500 if good else 20,"ece":.02 if good else .20,"sharp_benchmark":{"paired_n":500 if good else 20,"brier_gain_ci95_lower":.002 if good else -.02,"logloss_gain_ci95_lower":0.0 if good else -.02,"brier_gain_vs_sharp":.01,"logloss_gain_vs_sharp":.01}}; calibrators[f"MARKET:{market}"]={"accepted":good,"active":False,"status":"VALIDATED_IDENTITY" if good else "COLLECTING"}
-        perf={"schema":"pulsar-v14-performance-v5","model_generation":MODEL_GENERATION,"games_settled":700,"markets":markets}; cal={"schema":"pulsar-v14-calibration-v2","model_generation":MODEL_GENERATION,"calibrators":calibrators}; paper={"schema":"pulsar-v14-paper-bet-performance-v4","model_generation":MODEL_GENERATION,"by_market":{"ML":{"clv":{"n":120,"mean_clv":.7,"positive_rate":.56,"mean_clv_ci95_lower":.1}}}}; out=certify(perf,cal,paper); self.assertTrue(out["certified"]); self.assertTrue(out["markets"]["ML"]["betting_certified"]); self.assertFalse(out["markets"]["TOTAL_OVER"]["betting_certified"])
+        perf={"schema":"pulsar-v14-performance-v5","model_generation":MODEL_GENERATION,"generated_at":FRESH,"games_settled":700,"markets":markets}; cal={"schema":"pulsar-v14-calibration-v2","model_generation":MODEL_GENERATION,"generated_at":FRESH,"calibrators":calibrators}; paper={"schema":"pulsar-v14-paper-bet-performance-v5","model_generation":MODEL_GENERATION,"generated_at":FRESH,"by_market":{"ML":{"clv":{"n":120,"mean_clv":.7,"positive_rate":.56,"mean_clv_ci95_lower":.1}}}}; out=certify(perf,cal,paper,now=NOW); self.assertTrue(out["certified"]); self.assertTrue(out["markets"]["ML"]["betting_certified"]); self.assertFalse(out["markets"]["TOTAL_OVER"]["betting_certified"])
 
     def test_residual_home_offense_uses_away_pitching(self):
         row={"training_features":{"point_in_time":True,"home_lineup":{"weighted_ops":.800,"coverage":1},"away_lineup":{"weighted_ops":.700,"coverage":1},"home_starter":{"era":1.0,"whip":1,"k9":10,"bb9":2,"hr9":.8},"away_starter":{"era":7.0,"whip":2,"k9":5,"bb9":5,"hr9":2},"bullpen":{"home":{"relievers":[]},"away":{"relievers":[]}},"operational":{"home":{},"away":{}},"environment":{},"statcast_shadow":{},"research_challengers":{}}}; x=offense_vs_opponent_features(row,"home"); self.assertAlmostEqual(x[FEATURE_NAMES.index("opp_starter_era")],7.0); self.assertAlmostEqual(x[FEATURE_NAMES.index("off_lineup_ops")],.800)
