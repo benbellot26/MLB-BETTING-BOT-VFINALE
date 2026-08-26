@@ -14,30 +14,33 @@ from .sharp_market import sharp_consensus
 CLOSE_WINDOW_MINUTES=120.0
 CERTIFIED_CLOSE_MAX_MINUTES=15.0
 EVENT_TOLERANCE_MINUTES=60.0
+EVENT_AMBIGUITY_MARGIN_MINUTES=20.0
 
 
 def _event_for_row(row:dict[str,Any],events:list[dict[str,Any]])->dict[str,Any]|None:
     event_id=str(row.get("odds_event_id") or "")
     if event_id:
         exact=[event for event in events if str(event.get("id") or "")==event_id]
-        if len(exact)==1: return exact[0]
-        if len(exact)>1: return None
-    home=canonical_team_name(row.get("home")); away=canonical_team_name(row.get("away")); game_time=parse_time(row.get("game_date")); candidates=[]
+        return exact[0] if len(exact)==1 else None
+    home=canonical_team_name(row.get("home")); away=canonical_team_name(row.get("away"))
+    try: game_time=parse_time(row.get("game_date"))
+    except Exception: return None
+    candidates=[]
     for event in events:
         if canonical_team_name(event.get("home_team"))!=home or canonical_team_name(event.get("away_team"))!=away: continue
         try: delta=abs((parse_time(event.get("commence_time"))-game_time).total_seconds())/60
         except Exception: continue
         if delta<=EVENT_TOLERANCE_MINUTES: candidates.append((delta,event))
     candidates.sort(key=lambda x:x[0])
-    if not candidates or (len(candidates)>1 and abs(candidates[1][0]-candidates[0][0])<30): return None
+    if not candidates: return None
+    if len(candidates)>1 and candidates[1][0]-candidates[0][0]<EVENT_AMBIGUITY_MARGIN_MINUTES: return None
     return candidates[0][1]
 
 
 def _same_book_close(event:dict[str,Any],row:dict[str,Any],*,as_of:str)->float|None:
     book=next((b for b in event.get("bookmakers") or [] if str(b.get("key") or "")==str(row.get("bookmaker") or "")),None)
     if not book or _book_freshness(book,as_of,DEFAULT_MAX_MARKET_AGE_MINUTES)!="VERIFIED_FRESH": return None
-    selection=str(row.get("selection") or ""); home=str(event.get("home_team") or ""); away=str(event.get("away_team") or ""); line=row.get("line")
-    market_key="h2h" if selection.endswith("_ml") else "totals" if selection in {"over","under"} else "spreads"; outcomes=[]
+    selection=str(row.get("selection") or ""); home=str(event.get("home_team") or ""); away=str(event.get("away_team") or ""); line=row.get("line"); market_key="h2h" if selection.endswith("_ml") else "totals" if selection in {"over","under"} else "spreads"; outcomes=[]
     for market in book.get("markets") or []:
         if str(market.get("key") or "")==market_key: outcomes=market.get("outcomes") or []; break
     name=home if selection.startswith("home") else away if selection.startswith("away") else "Over" if selection=="over" else "Under"; point=None
@@ -80,15 +83,13 @@ def capture(*,path:str|Any=LEDGER,api_key:str|None=None,events_loader:Callable[[
         if not 0<sharp_p<1 or sharp.get("freshness_verified") is not True: continue
         entry_odds=float(row.get("odds") or 0)
         if entry_odds<=1: continue
-        tradable=_same_book_close(event,row,as_of=captured); quality="CERTIFIED_CLOSE" if mins<=CERTIFIED_CLOSE_MAX_MINUTES else "PROVISIONAL_CLOSE"; history=row.get("close_history") if isinstance(row.get("close_history"),list) else []; history.append({"captured_at":captured,"minutes_to_game":mins,"quality":quality,"sharp_fair_probability":sharp_p,"same_book_close_odds":tradable,"same_book_fresh":tradable is not None}); row["close_history"]=history
-        row["closing_odds"]=1/sharp_p; row["closing_source"]=f"verified sharp fair probability <={CLOSE_WINDOW_MINUTES:.0f}m pregame ({quality})"; row["clv_implied_probability_pp"]=(sharp_p-1/entry_odds)*100
-        row["sharp_fair_close_probability"]=sharp_p; row["sharp_fair_close_odds"]=1/sharp_p; row["sharp_information_clv_pp"]=(sharp_p-1/entry_odds)*100; row["execution_close_odds"]=tradable; row["execution_price_clv_pp"]=(1/tradable-1/entry_odds)*100 if tradable else None; row["close_quality"]=quality; row["close_minutes_to_game"]=mins; row["close_captured_at"]=captured; changed+=1
+        tradable=_same_book_close(event,row,as_of=captured); quality="CERTIFIED_CLOSE" if mins<=CERTIFIED_CLOSE_MAX_MINUTES else "PROVISIONAL_CLOSE"; history=row.get("close_history") if isinstance(row.get("close_history"),list) else []; history.append({"captured_at":captured,"minutes_to_game":mins,"quality":quality,"sharp_fair_probability":sharp_p,"same_book_close_odds":tradable,"same_book_fresh":tradable is not None,"odds_event_id":event.get("id")}); row["close_history"]=history
+        row["closing_odds"]=1/sharp_p; row["closing_source"]=f"verified sharp fair probability <={CLOSE_WINDOW_MINUTES:.0f}m pregame ({quality})"; row["clv_implied_probability_pp"]=(sharp_p-1/entry_odds)*100; row["sharp_fair_close_probability"]=sharp_p; row["sharp_fair_close_odds"]=1/sharp_p; row["sharp_information_clv_pp"]=(sharp_p-1/entry_odds)*100; row["execution_close_odds"]=tradable; row["execution_price_clv_pp"]=(1/tradable-1/entry_odds)*100 if tradable else None; row["close_quality"]=quality; row["close_minutes_to_game"]=mins; row["close_captured_at"]=captured; changed+=1
     if changed: _write(rows,path)
     return changed
 
 
 def main()->None:
     parser=argparse.ArgumentParser(description="Capture prospective verified closes for official V14 bets"); parser.add_argument("--ledger",default=str(LEDGER)); args=parser.parse_args(); print(f"PULSAR_V14_OFFICIAL_CLOSE captured={capture(path=args.ledger)}")
-
 
 if __name__=="__main__": main()
