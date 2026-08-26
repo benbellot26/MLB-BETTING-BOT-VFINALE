@@ -1,13 +1,15 @@
 {
   "schema": "pulsar-v14-historical-distribution-candidate-v1",
   "role": "SHADOW_ONLY",
-  "status": "HISTORICAL_VALIDATED_SHADOW",
+  "status": "REVALIDATION_REQUIRED",
   "auto_activation": false,
   "champion_impact": false,
   "native_live_confirmation_required": true,
   "source_run_id": 32985097883,
   "frozen_at": "2026-08-26T15:31:43+00:00",
-  "prospective_evidence_policy": "Only native-live predictions analyzed strictly after frozen_at may contribute to champion-promotion evidence.",
+  "reason": "Previous historical distribution validation used the subsequently rejected team-run challenger as its run-mean layer. The artifact is intentionally disabled until distribution parameters are revalidated in isolation on reference run means and full untouched holdouts.",
+  "superseded_evidence_only": true,
+  "prospective_evidence_policy": "Disabled while status is REVALIDATION_REQUIRED. No prospective row may use this artifact for promotion evidence.",
   "dataset": {
     "games": 14122,
     "dataset_content_sha256": "50061745f1a5634b927b4376f7caf4a745efd87bfd76591a6905a6e8daed396c",
@@ -20,15 +22,15 @@
     }
   },
   "champion_parameters": {"dispersion": 7.5, "environment_sigma": 0.08},
-  "candidate_parameters": {"dispersion": 5.5, "environment_sigma": 0.16},
-  "validation_2025": {
+  "previous_candidate_parameters": {"dispersion": 5.5, "environment_sigma": 0.16},
+  "previous_validation_2025": {
     "sample_n": 400,
     "score_nll_gain_mean": 0.06184200805978433,
     "score_nll_gain_ci95_lower": 0.03883623716116995,
     "score_nll_gain_ci95_upper": 0.0848477789583987,
     "market_nonregression": true
   },
-  "frozen_2026": {
+  "previous_frozen_2026": {
     "sample_n": 400,
     "score_nll_gain_mean": 0.057034476869864174,
     "score_nll_gain_ci95_lower": 0.03748374317575212,
@@ -37,5 +39,5 @@
     "total_over_brier_gain_mean": 0.0018834864750797739,
     "total_over_brier_gain_ci95_lower": 0.000009603525220303185
   },
-  "promotion_policy": "Historical evidence authorizes prospective shadow collection only. Champion promotion requires current-generation native-live paired score-NLL improvement and market non-regression after frozen_at."
+  "promotion_policy": "Historical evidence can only nominate a shadow candidate after isolated full-holdout revalidation. Champion promotion still requires current-generation native-live paired score-NLL improvement and market non-regression."
 }
