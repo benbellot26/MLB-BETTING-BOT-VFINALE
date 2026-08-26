@@ -1,0 +1,79 @@
+name: Pulsar V14 Enriched Statcast
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'v14/statcast_daily.py'
+      - 'v14/statcast_pit_backfill.py'
+      - 'v14/statcast_enrichment.py'
+      - 'v14/statcast_shadow.py'
+      - 'tests/test_v14_statcast_*.py'
+      - '.github/workflows/v14-statcast-refresh.yml'
+  schedule:
+    - cron: '41 10 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mlb-betting-bot-state
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile and test V14 Statcast contract
+        run: |
+          python -m py_compile v14/statcast_enrichment.py v14/statcast_pit_backfill.py v14/statcast_daily.py v14/statcast_shadow.py v14/pitch_matchup_challenger.py
+          python -m unittest tests.test_v14_statcast_pit_backfill tests.test_v14_statcast_enrichment tests.test_v14_statcast_daily -v
+      - name: Refresh enriched rolling priors
+        run: |
+          CUTOFF=$(date -u +%F)
+          python -m v14.statcast_daily --cutoff "$CUTOFF" --lookback-days 45
+          python - <<'PY'
+          import gzip,json
+          from pathlib import Path
+          p=Path('data/v14_statcast_priors_latest.json.gz')
+          with gzip.open(p,'rt',encoding='utf-8') as fh:x=json.load(fh)
+          d=x.get('diagnostics') or {}
+          print('V14_STATCAST_SCHEMA=',x.get('schema'))
+          print('V14_STATCAST_CUTOFF=',x.get('cutoff_day'))
+          print('V14_STATCAST_HITTERS=',len(x.get('hitters') or {}))
+          print('V14_STATCAST_PITCHERS=',len(x.get('pitchers') or {}))
+          print('V14_STATCAST_SPLIT_PLAYERS=',d.get('hitter_pitch_split_players'))
+          print('V14_STATCAST_SPLIT_BUCKETS=',d.get('hitter_pitch_split_buckets'))
+          if x.get('schema')!='pulsar-v14-statcast-id-priors-v2':raise SystemExit('unexpected enriched Statcast schema')
+          if x.get('point_in_time') is not True or x.get('stable_id_only') is not True:raise SystemExit('Statcast artifact lost PIT/stable-ID contract')
+          if int(d.get('hitter_pitch_split_players') or 0)<=0 or int(d.get('hitter_pitch_split_buckets') or 0)<=0:raise SystemExit('pitch-type hitter splits absent')
+          PY
+      - name: Persist enriched shadow artifact
+        run: |
+          git config user.name 'Pulsar V14 Statcast'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add -f data/v14_statcast_priors_latest.json.gz data/v14_statcast_priors_report.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'data: refresh V14 enriched Statcast priors [skip ci]'
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
+      - name: Archive refresh evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pulsar-v14-enriched-statcast-${{ github.run_id }}
+          path: |
+            data/v14_statcast_priors_latest.json.gz
+            data/v14_statcast_priors_report.json
+          if-no-files-found: ignore
+          retention-days: 30

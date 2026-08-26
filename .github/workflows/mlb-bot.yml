@@ -52,6 +52,39 @@ jobs:
             --source data/v137_park_factors.json \
             --output data/v14_venue_park_factors.json
 
+      - name: Build PIT defense catcher baserunning shadow fail-soft
+        run: |
+          set +e
+          TARGET_DATE="${{ steps.slate.outputs.target_date }}"
+          mkdir -p runtime/v14
+          rm -f data/v14_defense_baserunning_priors.json
+          python -m v14.savant_run_value_builder "$TARGET_DATE" --output runtime/v14/v14_defense_baserunning_priors.json
+          BUILD_RC=$?
+          if [ "$BUILD_RC" -eq 0 ]; then
+            python - <<'PY'
+          import json, shutil, sys
+          from pathlib import Path
+          src=Path('runtime/v14/v14_defense_baserunning_priors.json')
+          if not src.exists():
+              raise SystemExit(2)
+          x=json.loads(src.read_text(encoding='utf-8'))
+          complete=int(((x.get('coverage') or {}).get('complete_teams')) or 0)
+          if complete < 20:
+              print('PULSAR_V14_SAVANT_SHADOW_DISABLED complete_teams=',complete)
+              raise SystemExit(3)
+          shutil.copyfile(src,'data/v14_defense_baserunning_priors.json')
+          print('PULSAR_V14_SAVANT_SHADOW_READY complete_teams=',complete)
+          PY
+            VALID_RC=$?
+          else
+            VALID_RC=$BUILD_RC
+          fi
+          if [ "$VALID_RC" -ne 0 ]; then
+            rm -f data/v14_defense_baserunning_priors.json
+            echo "PULSAR_V14_SAVANT_SHADOW_FAIL_SOFT rc=$VALID_RC; champion unaffected"
+          fi
+          exit 0
+
       - name: Build native Pulsar V14 production payload
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
@@ -112,6 +145,8 @@ jobs:
           path: |
             runtime/v14/discord_payload.json
             runtime/v14/native_candidate.json
+            runtime/v14/v14_defense_baserunning_priors.json
             data/v14_venue_park_factors.json
+            data/v14_defense_baserunning_priors.json
           if-no-files-found: ignore
           retention-days: 90

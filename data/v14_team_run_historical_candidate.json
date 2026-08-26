@@ -1,0 +1,180 @@
+{
+  "auto_activation": false,
+  "champion_impact": false,
+  "dataset": {
+    "dataset_content_sha256": "50061745f1a5634b927b4376f7caf4a745efd87bfd76591a6905a6e8daed396c",
+    "feature_contract_sha256": "08b35bb22ea34adb3113de13d335975ca00e401b9c1d80deada2473a9b661a61",
+    "games": 14122,
+    "split": {
+      "frozen_2026_used_for_parameter_selection": false,
+      "frozen_test_2026": 1974,
+      "tuning_2021_2024": 9718,
+      "validation_2025": 2430
+    }
+  },
+  "frozen_2026": {
+    "probabilities": {
+      "baseline": {
+        "brier": 0.2516416084425349,
+        "ece": 0.025110539402371092,
+        "logloss": 0.6976548316125584,
+        "n": 1974
+      },
+      "candidate": {
+        "brier": 0.24815478580221492,
+        "ece": 0.02287754039018451,
+        "logloss": 0.6894328299959046,
+        "n": 1974
+      },
+      "distribution": {
+        "dispersion": 7.5,
+        "environment_sigma": 0.08
+      },
+      "full_holdout": true,
+      "paired_brier_gain": {
+        "ci95_lower": 0.001534581020061047,
+        "ci95_upper": 0.0054390642605790475,
+        "mean": 0.003486822640320047,
+        "n": 1974
+      },
+      "paired_logloss_gain": {
+        "ci95_lower": 0.0031973333174055837,
+        "ci95_upper": 0.013246669915902062,
+        "mean": 0.008222001616653823,
+        "n": 1974
+      },
+      "sample_policy": "complete untouched temporal holdout; no subsampling"
+    },
+    "run_errors": {
+      "baseline": {
+        "away_bias": 0.018333599425712006,
+        "home_bias": 0.07790944359967558,
+        "n": 1974,
+        "team_mae": 2.549777299561654,
+        "team_rmse": 3.2438188819607348,
+        "total_mae": 3.650629691656252,
+        "total_rmse": 4.5535474635097515
+      },
+      "candidate": {
+        "away_bias": 0.024005769792456617,
+        "home_bias": 0.04118493371706492,
+        "n": 1974,
+        "team_mae": 2.525592718164414,
+        "team_rmse": 3.211011773718811,
+        "total_mae": 3.610239822415913,
+        "total_rmse": 4.50351426571385
+      },
+      "paired": {
+        "team_mse_gain": {
+          "ci95_lower": 0.12750909549578193,
+          "ci95_upper": 0.2960195605125518,
+          "mean": 0.21176432800416686,
+          "n": 1974
+        },
+        "total_mae_gain": {
+          "ci95_lower": 0.018917675116043666,
+          "ci95_upper": 0.06186206336463447,
+          "mean": 0.04038986924033907,
+          "n": 1974
+        }
+      }
+    }
+  },
+  "frozen_at": "2026-08-26T16:51:01.156314+00:00",
+  "historical_reference_contract": {
+    "current_v14_champion_reconstruction_claimed": false,
+    "note": "Historical validation nominates this run-mean challenger for prospective native-live comparison; it does not prove superiority to native V14 champion run means.",
+    "reference": "STRICT_TEAM_HISTORY_BASELINE"
+  },
+  "native_live_confirmation_required": true,
+  "parameters": {
+    "home_advantage_runs": 0.08,
+    "offense_weight": 0.45,
+    "park_weight": 0.0,
+    "recent14_weight": 0.1,
+    "recent7_weight": 0.0,
+    "season_prior_games": 15.0
+  },
+  "promotion_policy": "Collect exact post-freeze native V14 paired shadow predictions; no generation or champion change without prospective OOS confirmation.",
+  "role": "SHADOW_ONLY",
+  "schema": "pulsar-v14-historical-team-run-candidate-v1",
+  "source_run_id": 32990513482,
+  "status": "HISTORICAL_VALIDATED_SHADOW",
+  "validation_2025": {
+    "probabilities": {
+      "baseline": {
+        "brier": 0.2479572588378583,
+        "ece": 0.03373779180039636,
+        "logloss": 0.6910313412164328,
+        "n": 2430
+      },
+      "candidate": {
+        "brier": 0.2458292888583811,
+        "ece": 0.037943603553967226,
+        "logloss": 0.6846564057720635,
+        "n": 2430
+      },
+      "distribution": {
+        "dispersion": 7.5,
+        "environment_sigma": 0.08
+      },
+      "full_holdout": true,
+      "paired_brier_gain": {
+        "ci95_lower": 0.0004348798028784731,
+        "ci95_upper": 0.003821060156075911,
+        "mean": 0.002127969979477192,
+        "n": 2430
+      },
+      "paired_logloss_gain": {
+        "ci95_lower": 0.0013928723041367998,
+        "ci95_upper": 0.011356998584601947,
+        "mean": 0.006374935444369373,
+        "n": 2430
+      },
+      "sample_policy": "complete untouched temporal holdout; no subsampling"
+    },
+    "run_errors": {
+      "baseline": {
+        "away_bias": -0.030885764275326442,
+        "home_bias": 0.001943781787385463,
+        "n": 2430,
+        "team_mae": 2.5135282686526166,
+        "team_rmse": 3.2347147426247096,
+        "total_mae": 3.6272423196253394,
+        "total_rmse": 4.589607356360741
+      },
+      "candidate": {
+        "away_bias": -0.00036424376468874276,
+        "home_bias": -0.011356778282926826,
+        "n": 2430,
+        "team_mae": 2.5089006184168907,
+        "team_rmse": 3.218904734055405,
+        "total_mae": 3.6143319315611846,
+        "total_rmse": 4.569067982138672
+      },
+      "paired": {
+        "team_mse_gain": {
+          "ci95_lower": 0.02733630572266739,
+          "ci95_upper": 0.17672725273602186,
+          "mean": 0.10203177922934463,
+          "n": 2430
+        },
+        "total_mae_gain": {
+          "ci95_lower": -0.003256201156463908,
+          "ci95_upper": 0.029076977284773032,
+          "mean": 0.012910388064154562,
+          "n": 2430
+        }
+      }
+    },
+    "run_gate": {
+      "auto_activation": false,
+      "frozen_2026_nonregression": true,
+      "gate": "2025 paired team-MSE gain CI95 lower > 0; total-MAE CI95 >= -0.05; frozen 2026 point team-MSE gain >=0 with CI95 >= -0.03 and total-MAE point gain >= -0.05",
+      "native_live_confirmation_required": true,
+      "passes": true,
+      "status": "HISTORICAL_VALIDATED",
+      "validation_pass": true
+    }
+  }
+}
