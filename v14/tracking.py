@@ -12,6 +12,7 @@ from typing import Any, Callable
 
 from . import MODEL_GENERATION
 from .acquisition import mlb_schedule, parse_time
+from .pick_tracking import load_pick_performance
 
 PREDICTIONS = Path("data/v14_predictions.jsonl")
 PERFORMANCE = Path("data/v14_performance.json")
@@ -219,7 +220,9 @@ def performance_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def write_performance(path: Path | str=PREDICTIONS, report_path: Path | str=PERFORMANCE) -> dict[str,Any]:
-    report=performance_report(_read_jsonl(path)); target=Path(report_path); target.parent.mkdir(parents=True,exist_ok=True); target.write_text(json.dumps(report,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8"); return report
+    report=performance_report(_read_jsonl(path))
+    report["selection_feedback"] = load_pick_performance()
+    target=Path(report_path); target.parent.mkdir(parents=True,exist_ok=True); target.write_text(json.dumps(report,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8"); return report
 
 
 def main() -> None:
