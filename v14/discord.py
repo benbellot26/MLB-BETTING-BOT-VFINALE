@@ -49,9 +49,18 @@ def _starter_fallback_field(result:dict[str,Any])->dict[str,Any]|None:
     return {"name":"⚠️ DATA QUALITY — STARTER CONFLICT","value":f"Starter identity not safely confirmed for **{sides}**. Pulsar kept this game in the slate using a **neutral league-average starter fallback** for the affected side(s). **No betting action is authorized** while this state is degraded.","inline":False}
 
 
+def _paper_clv_label(certification:dict[str,Any])->str:
+    paper=certification.get("paper_clv") or {}; n=int(_num(paper.get("n"),0)); mean=paper.get("mean_clv"); positive=paper.get("positive_rate")
+    if n<=0:return "collecting **0/100** verified closes"
+    mean_text=f"{float(mean):+.2f} pp" if mean is not None else "—"
+    positive_text=f"{100*float(positive):.1f}%" if positive is not None else "—"
+    return f"**{n}/100** closes  •  mean **{mean_text}**  •  positive **{positive_text}**"
+
+
 def _quality_field(result:dict[str,Any],prediction:dict[str,Any])->dict[str,Any]:
     certification=result.get("betting_certification") or {}
-    status=str(certification.get("betting_status") or "RESEARCH_ONLY")
+    probability_status=str(certification.get("probability_status") or "PROBABILITY_RESEARCH")
+    betting_status=str(certification.get("betting_status") or "RESEARCH_ONLY")
     calibration=prediction.get("calibration") or {}; active=[name for name,row in (calibration.get("markets") or {}).items() if row.get("active")]
     cal_label=", ".join(active) if active else "collecting / identity"
     sharp=result.get("sharp_market") or {}; sharp_label="verified" if sharp.get("freshness_verified") else "unavailable/unverified"
@@ -59,7 +68,11 @@ def _quality_field(result:dict[str,Any],prediction:dict[str,Any])->dict[str,Any]
     reason=""
     blockers=best.get("blockers") or []
     if blockers: reason="\n🔒 " + ", ".join(str(x) for x in blockers[:4])
-    return {"name":"🧪 PROBABILITY QUALITY","value":f"Calibration **{cal_label}**  •  Sharp benchmark **{sharp_label}**\nBetting status **{status}**  •  Decision **{decision}**{reason}","inline":False}
+    return {
+        "name":"🧪 PROBABILITY QUALITY",
+        "value":f"Calibration **{cal_label}**  •  Sharp benchmark **{sharp_label}**\nProbability **{probability_status}**  •  Betting **{betting_status}**  •  Decision **{decision}**\nPaper CLV {_paper_clv_label(certification)}{reason}",
+        "inline":False,
+    }
 
 
 def _interval_suffix(prediction:dict[str,Any],key:str)->str:
