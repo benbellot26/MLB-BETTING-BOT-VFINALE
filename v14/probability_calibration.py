@@ -2,11 +2,15 @@ from __future__ import annotations
 
 """Leakage-safe probability calibration for Pulsar V14.
 
-Calibration is deliberately fail-closed. A calibrator only becomes active when
-there is enough strictly-pregame, settled current-generation evidence AND an
-untouched chronological holdout improves Brier score without worsening LogLoss.
-Until that happens the identity transform is returned, so adding this module can
-never silently rewrite production probabilities from a tiny sample.
+Two different canonicalization policies are intentionally used:
+- MARKET calibrators use the latest strictly-pregame snapshot per game;
+- PHASE calibrators use the latest strictly-pregame snapshot per (game, phase).
+
+Calibration is fail-closed.  A transform is only applied when it improves an
+untouched chronological holdout.  A raw probability surface can nevertheless
+be *accepted* as a VALIDATED_IDENTITY when the holdout is already well
+calibrated; this prevents a naturally calibrated model from being impossible to
+certify merely because Platt scaling cannot improve it.
 """
 
 from collections import defaultdict
@@ -27,6 +31,9 @@ MIN_HOLDOUT = 80
 HOLDOUT_FRACTION = 0.20
 L2 = 2.0
 EPS = 1e-9
+IDENTITY_MAX_ECE = 0.05
+IDENTITY_SLOPE_RANGE = (0.80, 1.20)
+IDENTITY_MAX_INTERCEPT = 0.25
 
 CANONICAL_MARKETS = {
     "ML": "home_ml",
@@ -79,6 +86,15 @@ def _parse_time(value: Any) -> datetime | None:
         return None
 
 
+def _time_key(row: dict[str, Any]) -> tuple[datetime, datetime, str]:
+    minimum = datetime.min.replace(tzinfo=timezone.utc)
+    return (
+        _parse_time(row.get("game_date")) or minimum,
+        _parse_time(row.get("analyzed_at")) or minimum,
+        str(row.get("game_pk") or ""),
+    )
+
+
 def _read_jsonl(path: Path | str) -> list[dict[str, Any]]:
     target = Path(path)
     if not target.exists():
@@ -102,41 +118,69 @@ def _strictly_pregame(row: dict[str, Any]) -> bool:
     return bool(at and game and at < game)
 
 
+def _eligible_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        row for row in rows
+        if row.get("model_generation") == MODEL_GENERATION
+        and row.get("settled")
+        and _strictly_pregame(row)
+        and str(row.get("game_pk") or "")
+    ]
+
+
 def _latest_settled_by_game(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     latest: dict[str, dict[str, Any]] = {}
-    for row in rows:
-        if row.get("model_generation") != MODEL_GENERATION or not row.get("settled") or not _strictly_pregame(row):
-            continue
-        key = str(row.get("game_pk") or "")
-        if not key:
-            continue
+    for row in _eligible_rows(rows):
+        key = str(row.get("game_pk"))
         cur = latest.get(key)
-        if cur is None or (_parse_time(row.get("analyzed_at")) or datetime.min.replace(tzinfo=timezone.utc)) > (_parse_time(cur.get("analyzed_at")) or datetime.min.replace(tzinfo=timezone.utc)):
+        if cur is None or _time_key(row)[1] > _time_key(cur)[1]:
             latest[key] = row
-    return sorted(latest.values(), key=lambda r: (str(r.get("target_date") or ""), str(r.get("game_pk") or "")))
+    return sorted(latest.values(), key=_time_key)
+
+
+def _latest_settled_by_game_phase(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    latest: dict[tuple[str, str], dict[str, Any]] = {}
+    for row in _eligible_rows(rows):
+        phase = str(row.get("phase") or "EARLY").upper()
+        if phase not in {"EARLY", "LATE", "FINAL"}:
+            continue
+        key = (str(row.get("game_pk")), phase)
+        cur = latest.get(key)
+        if cur is None or _time_key(row)[1] > _time_key(cur)[1]:
+            latest[key] = row
+    return sorted(latest.values(), key=_time_key)
 
 
 def _outcome(row: dict[str, Any], market: str) -> int | None:
     hs = _num(row.get("home_score")); aws = _num(row.get("away_score"))
     if hs is None or aws is None:
         return None
-    if market == "ML":
-        return int(hs > aws)
-    if market == "RL_HOME_-1.5":
-        return int(hs - aws >= 2)
-    if market == "RL_AWAY_-1.5":
-        return int(aws - hs >= 2)
+    if market == "ML": return int(hs > aws)
+    if market == "RL_HOME_-1.5": return int(hs - aws >= 2)
+    if market == "RL_AWAY_-1.5": return int(aws - hs >= 2)
     if market == "TOTAL_OVER":
         line = _num(row.get("total_line"))
         return int(hs + aws > line) if line is not None else None
     return None
 
 
+def _items(rows: list[dict[str, Any]], market: str) -> list[tuple[float, int]]:
+    key = CANONICAL_MARKETS[market]
+    out: list[tuple[float, int]] = []
+    for row in rows:
+        probs = row.get("raw_probabilities") or row.get("probabilities") or {}
+        p = _num(probs.get(key)); y = _outcome(row, market)
+        if p is not None and y is not None and 0 < p < 1:
+            out.append((float(p), int(y)))
+    return out
+
+
 def observations(rows: list[dict[str, Any]]) -> dict[str, list[tuple[float, int, str]]]:
+    """Backward-compatible market observations: latest snapshot per game."""
     out: dict[str, list[tuple[float, int, str]]] = defaultdict(list)
     for row in _latest_settled_by_game(rows):
-        probs = row.get("raw_probabilities") or row.get("probabilities") or {}
         phase = str(row.get("phase") or "EARLY").upper()
+        probs = row.get("raw_probabilities") or row.get("probabilities") or {}
         for market, key in CANONICAL_MARKETS.items():
             p = _num(probs.get(key)); y = _outcome(row, market)
             if p is not None and y is not None and 0 < p < 1:
@@ -144,99 +188,214 @@ def observations(rows: list[dict[str, Any]]) -> dict[str, list[tuple[float, int,
     return dict(out)
 
 
+def _calibration_bins(items: list[tuple[float, int]], bins: int = 10) -> list[dict[str, Any]]:
+    grouped: list[list[tuple[float, int]]] = [[] for _ in range(bins)]
+    for p, y in items:
+        grouped[min(bins - 1, max(0, int(p * bins)))].append((p, y))
+    return [
+        {"lower": i / bins, "upper": (i + 1) / bins, "n": len(v),
+         "mean_probability": sum(p for p, _ in v) / len(v),
+         "observed_rate": sum(y for _, y in v) / len(v)}
+        for i, v in enumerate(grouped) if v
+    ]
+
+
 def _scores(items: list[tuple[float, int]]) -> dict[str, float | int | None]:
     if not items:
-        return {"n": 0, "brier": None, "log_loss": None, "mean_probability": None, "observed_rate": None, "ece": None}
+        return {"n": 0, "brier": None, "log_loss": None, "mean_probability": None,
+                "observed_rate": None, "ece": None}
     eps = 1e-12
+    bins = _calibration_bins(items)
     brier = sum((p - y) ** 2 for p, y in items) / len(items)
-    ll = -sum(y * math.log(max(eps, min(1 - eps, p))) + (1 - y) * math.log(max(eps, min(1 - eps, 1 - p))) for p, y in items) / len(items)
-    bins: list[list[tuple[float, int]]] = [[] for _ in range(10)]
-    for p, y in items:
-        bins[min(9, max(0, int(p * 10)))].append((p, y))
-    ece = sum(len(v) / len(items) * abs(sum(p for p, _ in v) / len(v) - sum(y for _, y in v) / len(v)) for v in bins if v)
-    return {"n": len(items), "brier": brier, "log_loss": ll, "mean_probability": sum(p for p, _ in items) / len(items), "observed_rate": sum(y for _, y in items) / len(items), "ece": ece}
+    ll = -sum(y * math.log(max(eps, min(1 - eps, p))) +
+              (1 - y) * math.log(max(eps, min(1 - eps, 1 - p))) for p, y in items) / len(items)
+    ece = sum(row["n"] / len(items) * abs(row["mean_probability"] - row["observed_rate"]) for row in bins)
+    return {"n": len(items), "brier": brier, "log_loss": ll,
+            "mean_probability": sum(p for p, _ in items) / len(items),
+            "observed_rate": sum(y for _, y in items) / len(items), "ece": ece}
 
 
-def _fit_platt(items: list[tuple[float, int]]) -> tuple[float, float]:
+def _fit_platt(items: list[tuple[float, int]], *, l2: float = L2) -> tuple[float, float]:
     a, b = 1.0, 0.0
     for _ in range(60):
         gaa = gab = gbb = ga = gb = 0.0
         for p, y in items:
             x = _logit(p); q = _sigmoid(a * x + b); w = max(1e-8, q * (1 - q)); err = q - y
             ga += err * x; gb += err; gaa += w * x * x; gab += w * x; gbb += w
-        ga += L2 * (a - 1.0); gb += L2 * b; gaa += L2; gbb += L2
+        ga += l2 * (a - 1.0); gb += l2 * b; gaa += l2; gbb += l2
         det = gaa * gbb - gab * gab
-        if abs(det) < 1e-12:
-            break
+        if abs(det) < 1e-12: break
         da = (gbb * ga - gab * gb) / det; db = (-gab * ga + gaa * gb) / det
         scale = max(1.0, abs(da) / .25, abs(db) / .25)
         a -= da / scale; b -= db / scale
-        if max(abs(da / scale), abs(db / scale)) < 1e-7:
-            break
+        if max(abs(da / scale), abs(db / scale)) < 1e-7: break
     return float(a), float(b)
 
 
+def _identity_diagnostics(holdout: list[tuple[float, int]]) -> dict[str, Any]:
+    raw = _scores(holdout)
+    # Fit slope/intercept on the untouched holdout only as a calibration
+    # diagnostic, never as the transform that is applied to that same holdout.
+    slope, intercept = _fit_platt(holdout, l2=0.25)
+    accepted = bool(
+        raw.get("ece") is not None and float(raw["ece"]) <= IDENTITY_MAX_ECE
+        and IDENTITY_SLOPE_RANGE[0] <= slope <= IDENTITY_SLOPE_RANGE[1]
+        and abs(intercept) <= IDENTITY_MAX_INTERCEPT
+    )
+    return {"accepted": accepted, "slope": slope, "intercept": intercept,
+            "ece": raw.get("ece"), "metrics": raw}
+
+
 def _fit_one(items: list[tuple[float, int]], *, minimum_n: int) -> dict[str, Any]:
-    n = len(items); base = {"active": False, "method": "identity", "n": n, "minimum_n": minimum_n, "slope": 1.0, "intercept": 0.0}
+    n = len(items)
+    base = {"active": False, "accepted": False, "method": "identity", "n": n,
+            "minimum_n": minimum_n, "slope": 1.0, "intercept": 0.0}
     holdout_n = max(MIN_HOLDOUT, int(round(n * HOLDOUT_FRACTION))); train_n = n - holdout_n
     if n < minimum_n or train_n < 200 or holdout_n < MIN_HOLDOUT:
         return {**base, "status": "COLLECTING", "reason": "insufficient_chronological_evidence"}
+
     train, holdout = items[:train_n], items[train_n:]
-    a, b = _fit_platt(train); raw = _scores(holdout); cal = _scores([(_sigmoid(a * _logit(p) + b), y) for p, y in holdout])
-    brier_gain = float(raw["brier"] or 0) - float(cal["brier"] or 0); logloss_gain = float(raw["log_loss"] or 0) - float(cal["log_loss"] or 0)
-    stable = 0.45 <= a <= 1.75 and abs(b) <= 1.25; active = bool(stable and brier_gain > 0.0 and logloss_gain >= -0.00025)
-    return {**base, "active": active, "method": "platt-logit" if active else "identity", "status": "ACTIVE" if active else "REJECTED_OOS", "slope": a if active else 1.0, "intercept": b if active else 0.0, "candidate_slope": a, "candidate_intercept": b, "train_n": train_n, "holdout_n": holdout_n, "raw_holdout": raw, "calibrated_holdout": cal, "brier_gain": brier_gain, "logloss_gain": logloss_gain, "stable_parameters": stable, "reason": "strict_oos_gain" if active else "candidate_failed_strict_oos_gate"}
+    a, b = _fit_platt(train)
+    raw = _scores(holdout)
+    transformed = [(_sigmoid(a * _logit(p) + b), y) for p, y in holdout]
+    cal = _scores(transformed)
+    brier_gain = float(raw["brier"]) - float(cal["brier"])
+    logloss_gain = float(raw["log_loss"]) - float(cal["log_loss"])
+    stable = 0.45 <= a <= 1.75 and abs(b) <= 1.25
+    active = bool(stable and brier_gain > 0.0 and logloss_gain >= -0.00025)
+    identity = _identity_diagnostics(holdout)
+
+    if active:
+        return {**base, "active": True, "accepted": True, "method": "platt-logit",
+                "status": "ACTIVE_TRANSFORM", "slope": a, "intercept": b,
+                "candidate_slope": a, "candidate_intercept": b, "train_n": train_n,
+                "holdout_n": holdout_n, "raw_holdout": raw, "calibrated_holdout": cal,
+                "identity_diagnostics": identity, "brier_gain": brier_gain,
+                "logloss_gain": logloss_gain, "stable_parameters": stable,
+                "reason": "strict_oos_transform_gain"}
+    if identity["accepted"]:
+        return {**base, "accepted": True, "status": "VALIDATED_IDENTITY",
+                "train_n": train_n, "holdout_n": holdout_n, "raw_holdout": raw,
+                "calibrated_holdout": raw, "candidate_slope": a, "candidate_intercept": b,
+                "identity_diagnostics": identity, "brier_gain": 0.0, "logloss_gain": 0.0,
+                "stable_parameters": stable, "reason": "raw_probabilities_already_calibrated_oos"}
+    return {**base, "status": "REJECTED_OOS", "train_n": train_n, "holdout_n": holdout_n,
+            "raw_holdout": raw, "calibrated_holdout": cal, "candidate_slope": a,
+            "candidate_intercept": b, "identity_diagnostics": identity,
+            "brier_gain": brier_gain, "logloss_gain": logloss_gain,
+            "stable_parameters": stable, "reason": "neither_transform_nor_identity_passed_oos_gate"}
 
 
 def build_artifact(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    obs = observations(rows); calibrators: dict[str, Any] = {}
+    market_rows = _latest_settled_by_game(rows)
+    phase_rows = _latest_settled_by_game_phase(rows)
+    calibrators: dict[str, Any] = {}
     for market in CANONICAL_MARKETS:
-        market_obs = [(p, y) for p, y, _phase in obs.get(market, [])]; calibrators[f"MARKET:{market}"] = _fit_one(market_obs, minimum_n=MIN_MARKET_OBSERVATIONS)
-        by_phase: dict[str, list[tuple[float, int]]] = defaultdict(list)
-        for p, y, phase in obs.get(market, []): by_phase[phase].append((p, y))
-        for phase in ("EARLY", "LATE", "FINAL"): calibrators[f"PHASE:{phase}:{market}"] = _fit_one(by_phase.get(phase, []), minimum_n=MIN_PHASE_OBSERVATIONS)
-    return {"schema": "pulsar-v14-calibration-v1", "model_generation": MODEL_GENERATION, "generated_at": datetime.now(timezone.utc).isoformat(), "strictly_pregame": True, "chronological_holdout": True, "market_probability_used_as_feature": False, "calibrators": calibrators, "policy": {"market_min_n": MIN_MARKET_OBSERVATIONS, "phase_min_n": MIN_PHASE_OBSERVATIONS, "activation": "positive holdout Brier gain + non-worse LogLoss + stable Platt parameters"}}
+        calibrators[f"MARKET:{market}"] = _fit_one(_items(market_rows, market), minimum_n=MIN_MARKET_OBSERVATIONS)
+        for phase in ("EARLY", "LATE", "FINAL"):
+            scoped = [r for r in phase_rows if str(r.get("phase") or "EARLY").upper() == phase]
+            calibrators[f"PHASE:{phase}:{market}"] = _fit_one(_items(scoped, market), minimum_n=MIN_PHASE_OBSERVATIONS)
+    return {
+        "schema": "pulsar-v14-calibration-v2",
+        "model_generation": MODEL_GENERATION,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "strictly_pregame": True,
+        "chronological_holdout": True,
+        "chronological_order": "game_date_utc_then_analyzed_at",
+        "market_snapshot_policy": "latest strictly-pregame snapshot per game",
+        "phase_snapshot_policy": "latest strictly-pregame snapshot per (game, phase)",
+        "market_probability_used_as_feature": False,
+        "calibrators": calibrators,
+        "policy": {
+            "market_min_n": MIN_MARKET_OBSERVATIONS,
+            "phase_min_n": MIN_PHASE_OBSERVATIONS,
+            "transform_activation": "positive OOS Brier gain + non-worse LogLoss + stable parameters",
+            "identity_acceptance": "holdout ECE<=0.05, slope 0.80..1.20, |intercept|<=0.25",
+        },
+    }
+
+
+def _empty_artifact() -> dict[str, Any]:
+    return {"schema": "pulsar-v14-calibration-v2", "model_generation": MODEL_GENERATION, "calibrators": {}}
 
 
 def load_artifact(path: Path | str = ARTIFACT) -> dict[str, Any]:
     target = Path(path)
-    if not target.exists(): return {"schema": "pulsar-v14-calibration-v1", "model_generation": MODEL_GENERATION, "calibrators": {}}
+    if not target.exists(): return _empty_artifact()
     try: payload = json.loads(target.read_text(encoding="utf-8"))
-    except Exception: return {"schema": "pulsar-v14-calibration-v1", "model_generation": MODEL_GENERATION, "calibrators": {}}
-    if payload.get("schema") != "pulsar-v14-calibration-v1" or payload.get("model_generation") != MODEL_GENERATION: return {"schema": "pulsar-v14-calibration-v1", "model_generation": MODEL_GENERATION, "calibrators": {}}
+    except Exception: return _empty_artifact()
+    if payload.get("schema") not in {"pulsar-v14-calibration-v1", "pulsar-v14-calibration-v2"} or payload.get("model_generation") != MODEL_GENERATION:
+        return _empty_artifact()
     return payload
 
 
+def _accepted(cal: dict[str, Any]) -> bool:
+    # Backwards compatibility: an old active v1 transform was necessarily
+    # accepted by the old strict OOS policy.
+    return cal.get("accepted") is True or cal.get("active") is True
+
+
 def _select_calibrator(artifact: dict[str, Any], market: str, phase: str) -> tuple[str, dict[str, Any]]:
-    calibrators = artifact.get("calibrators") or {}; phase_key = f"PHASE:{str(phase).upper()}:{market}"; market_key = f"MARKET:{market}"
+    calibrators = artifact.get("calibrators") or {}
+    phase_key = f"PHASE:{str(phase).upper()}:{market}"; market_key = f"MARKET:{market}"
     phase_cal = calibrators.get(phase_key) or {}
-    if phase_cal.get("active") is True: return phase_key, phase_cal
+    if _accepted(phase_cal): return phase_key, phase_cal
     market_cal = calibrators.get(market_key) or {}
-    if market_cal.get("active") is True: return market_key, market_cal
-    return market_key, market_cal or {"active": False, "method": "identity", "n": 0, "minimum_n": MIN_MARKET_OBSERVATIONS}
+    if _accepted(market_cal): return market_key, market_cal
+    return market_key, market_cal or {"active": False, "accepted": False, "method": "identity", "n": 0, "minimum_n": MIN_MARKET_OBSERVATIONS}
 
 
 def calibrate_probability(p: float, market: str, phase: str, artifact: dict[str, Any] | None = None) -> tuple[float, dict[str, Any]]:
-    data = load_artifact() if artifact is None else artifact; key, cal = _select_calibrator(data, market, phase); raw = _clip(p)
-    if cal.get("active") is not True: return float(p), {"active": False, "key": key, "method": "identity", "n": int(cal.get("n") or 0), "status": str(cal.get("status") or "COLLECTING")}
+    data = load_artifact() if artifact is None else artifact
+    key, cal = _select_calibrator(data, market, phase)
+    if cal.get("active") is not True:
+        return float(p), {"active": False, "accepted": _accepted(cal), "key": key,
+                          "method": "identity", "n": int(cal.get("n") or 0),
+                          "status": str(cal.get("status") or "COLLECTING"),
+                          "holdout": cal.get("raw_holdout") or {}}
     a = _num(cal.get("slope")); b = _num(cal.get("intercept"))
-    if a is None or b is None: return float(p), {"active": False, "key": key, "method": "identity", "n": int(cal.get("n") or 0), "status": "INVALID_ARTIFACT"}
-    return _sigmoid(a * _logit(raw) + b), {"active": True, "key": key, "method": "platt-logit", "n": int(cal.get("n") or 0), "slope": a, "intercept": b, "holdout": cal.get("calibrated_holdout") or {}}
+    if a is None or b is None:
+        return float(p), {"active": False, "accepted": False, "key": key,
+                          "method": "identity", "n": int(cal.get("n") or 0),
+                          "status": "INVALID_ARTIFACT"}
+    return _sigmoid(a * _logit(_clip(p)) + b), {
+        "active": True, "accepted": True, "key": key, "method": "platt-logit",
+        "n": int(cal.get("n") or 0), "slope": a, "intercept": b,
+        "status": str(cal.get("status") or "ACTIVE_TRANSFORM"),
+        "holdout": cal.get("calibrated_holdout") or {},
+    }
 
 
 def calibrate_surface(probabilities: dict[str, Any], *, phase: str, artifact: dict[str, Any] | None = None) -> tuple[dict[str, float], dict[str, Any]]:
-    surface = {k: float(v) for k, v in probabilities.items() if _num(v) is not None}; details: dict[str, Any] = {}
+    surface = {k: float(v) for k, v in probabilities.items() if _num(v) is not None}
+    details: dict[str, Any] = {}
     for canonical_key, (left, right, market) in PAIR_MAP.items():
         if canonical_key not in surface or right not in surface: continue
-        q, meta = calibrate_probability(surface[canonical_key], market, phase, artifact); q = min(1.0, max(0.0, q)); surface[left] = q; surface[right] = 1.0 - q; details[market] = meta
-    return surface, {"schema": "pulsar-v14-calibration-application-v1", "phase": str(phase).upper(), "markets": details, "any_active": any(v.get("active") for v in details.values())}
+        q, meta = calibrate_probability(surface[canonical_key], market, phase, artifact)
+        q = min(1.0, max(0.0, q)); surface[left] = q; surface[right] = 1.0 - q; details[market] = meta
+    return surface, {
+        "schema": "pulsar-v14-calibration-application-v2",
+        "phase": str(phase).upper(), "markets": details,
+        "any_active": any(v.get("active") for v in details.values()),
+        "all_accepted": bool(details) and all(v.get("accepted") for v in details.values()),
+    }
 
 
 def write_artifact(predictions: Path | str = PREDICTIONS, destination: Path | str = ARTIFACT) -> dict[str, Any]:
-    artifact = build_artifact(_read_jsonl(predictions)); target = Path(destination); target.parent.mkdir(parents=True, exist_ok=True); target.write_text(json.dumps(artifact, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8"); return artifact
+    artifact = build_artifact(_read_jsonl(predictions)); target = Path(destination)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(artifact, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return artifact
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Fit leakage-safe Pulsar V14 probability calibrators"); parser.add_argument("command", choices=["fit"]); parser.add_argument("--predictions", default=str(PREDICTIONS)); parser.add_argument("--output", default=str(ARTIFACT)); args = parser.parse_args(); artifact = write_artifact(args.predictions, args.output); active = sum(bool(v.get("active")) for v in (artifact.get("calibrators") or {}).values()); print(f"PULSAR_V14_CALIBRATION active={active} output={args.output}")
+    parser = argparse.ArgumentParser(description="Fit leakage-safe Pulsar V14 probability calibrators")
+    parser.add_argument("command", choices=["fit"]); parser.add_argument("--predictions", default=str(PREDICTIONS)); parser.add_argument("--output", default=str(ARTIFACT))
+    args = parser.parse_args(); artifact = write_artifact(args.predictions, args.output)
+    active = sum(bool(v.get("active")) for v in artifact.get("calibrators", {}).values())
+    accepted = sum(bool(v.get("accepted")) for v in artifact.get("calibrators", {}).values())
+    print(f"PULSAR_V14_CALIBRATION active={active} accepted={accepted} output={args.output}")
 
-if __name__ == "__main__": main()
+
+if __name__ == "__main__":
+    main()
