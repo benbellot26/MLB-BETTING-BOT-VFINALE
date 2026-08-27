@@ -1,0 +1,37 @@
+name: Pulsar V14 Production Workflow Guard
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/mlb-bot.yml"
+      - ".github/workflows/v14-close-capture.yml"
+      - ".github/workflows/v14-performance.yml"
+      - ".github/workflows/v14-reference-data-smoke.yml"
+      - ".github/workflows/v14-production-workflow-guard.yml"
+  pull_request:
+    paths:
+      - ".github/workflows/mlb-bot.yml"
+      - ".github/workflows/v14-close-capture.yml"
+      - ".github/workflows/v14-performance.yml"
+      - ".github/workflows/v14-reference-data-smoke.yml"
+      - ".github/workflows/v14-production-workflow-guard.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  v14-production-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile V14 production modules
+        run: python -m py_compile v14/*.py
+      - name: Run V14 production and governance preflight
+        run: python -m v14.preflight
+      - name: Run complete V14 regression suite
+        run: python -m unittest discover -s tests -p 'test_v14_*.py' -v
