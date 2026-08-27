@@ -2,11 +2,12 @@ from __future__ import annotations
 
 """Strict statistical betting certification, separate from software PRODUCTION.
 
-Only current-generation, fresh, strict-schema evidence can authorize betting.
-Legacy or stale reports remain diagnostic only. Certification is market-specific
-and requires accepted calibration, paired superiority to sharp, drift control,
-recent underlying observations, and immutable prospective paper CLV measured
-from executable entry prices to verified sharp and same-book closes.
+Only current-generation, current-probability-policy, fresh, strict-schema
+evidence can authorize betting. Legacy or stale reports remain diagnostic only.
+Certification is market-specific and requires accepted calibration, paired
+superiority to sharp, drift control, recent underlying observations, and
+immutable prospective paper CLV measured from executable entry prices to
+verified sharp and same-book closes.
 """
 
 from datetime import datetime, timezone
@@ -14,7 +15,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from . import MODEL_GENERATION
+from . import MODEL_GENERATION, PROBABILITY_POLICY_ID
 
 PERFORMANCE=Path("data/v14_performance.json")
 CALIBRATION=Path("data/v14_calibration.json")
@@ -34,7 +35,7 @@ MAX_PAPER_CLOSE_AGE_HOURS=72.0
 MAX_FUTURE_SKEW_MINUTES=10.0
 MARKETS=("ML","RL_HOME_-1.5","RL_AWAY_-1.5","TOTAL_OVER")
 STRICT_PERFORMANCE_SCHEMA="pulsar-v14-performance-v5"
-STRICT_CALIBRATION_SCHEMA="pulsar-v14-calibration-v2"
+STRICT_CALIBRATION_SCHEMA="pulsar-v14-calibration-v3"
 STRICT_PAPER_SCHEMA_PREFIX="pulsar-v14-paper-bet-performance-v"
 
 
@@ -139,11 +140,14 @@ def evaluate(performance:dict[str,Any]|None=None,calibration:dict[str,Any]|None=
     if perf.get("model_generation")!=MODEL_GENERATION:global_probability_reasons.append("generation_mismatch")
     if cal.get("schema")!=STRICT_CALIBRATION_SCHEMA:global_probability_reasons.append("strict_calibration_schema_required")
     if cal.get("model_generation")!=MODEL_GENERATION:global_probability_reasons.append("calibration_generation_mismatch")
+    if cal.get("probability_policy_id")!=PROBABILITY_POLICY_ID:global_probability_reasons.append("probability_policy_mismatch")
     for payload,label in ((perf,"performance"),(cal,"calibration")):
         failure=_freshness_failure(payload,label,current)
         if failure:global_probability_reasons.append(failure)
     observation_at=_latest_performance_observation(perf); observation_failure=_timestamp_freshness_failure(observation_at,"latest_performance_observation",current,MAX_OBSERVATION_AGE_HOURS)
     if observation_failure:global_probability_reasons.append(observation_failure)
+    calibration_observation=cal.get("latest_observation_at"); calibration_observation_failure=_timestamp_freshness_failure(calibration_observation,"latest_calibration_observation",current,MAX_OBSERVATION_AGE_HOURS)
+    if calibration_observation_failure:global_probability_reasons.append(calibration_observation_failure)
     if games<MIN_GAMES:global_probability_reasons.append(f"games_settled<{MIN_GAMES}")
     strict_paper=bool(str(paper.get("schema") or "").startswith(STRICT_PAPER_SCHEMA_PREFIX) and paper.get("by_market") is not None and paper.get("model_generation")==MODEL_GENERATION)
     paper_freshness=_freshness_failure(paper,"paper",current) if strict_paper else None
@@ -171,7 +175,7 @@ def evaluate(performance:dict[str,Any]|None=None,calibration:dict[str,Any]|None=
 
     probability_reasons=sorted({reason for row in market_status.values() for reason in row["failures"]}) if not any_probability else []
     betting_reasons=sorted({reason for row in market_status.values() for reason in row["betting_failures"]}) if not any_betting else []
-    return {"schema":"pulsar-v14-betting-certification-v8","model_generation":MODEL_GENERATION,"software_role":"PRODUCTION","generated_at":current.isoformat(),"probability_status":"PROBABILITY_CERTIFIED" if any_probability else "PROBABILITY_RESEARCH","probability_certified":any_probability,"betting_status":"BETTING_CERTIFIED" if any_betting else "RESEARCH_ONLY","certified":any_betting,"markets":market_status,"probability_reasons":probability_reasons,"reasons":betting_reasons,"paired_inference_required":True,"paper_ci_required":True,"legacy_evidence_can_certify":False,"paper_clv":paper.get("certification_clv") or {},"paper_execution_clv":paper.get("execution_clv") or {},"evidence_age_hours":{"performance_report":_evidence_age_hours(perf,current),"performance_observation":_age_hours(observation_at,current),"calibration_report":_evidence_age_hours(cal,current),"paper_report":_evidence_age_hours(paper,current)},"policy":{"strict_performance_schema":STRICT_PERFORMANCE_SCHEMA,"strict_calibration_schema":STRICT_CALIBRATION_SCHEMA,"exact_model_generation_required":True,"max_evidence_age_hours":MAX_EVIDENCE_AGE_HOURS,"max_observation_age_hours":MAX_OBSERVATION_AGE_HOURS,"max_paper_close_age_hours":MAX_PAPER_CLOSE_AGE_HOURS,"min_games":MIN_GAMES,"min_market_n":MIN_MARKET_N,"max_ece":MAX_ECE,"min_paired_sharp_n":MIN_PAIRED_SHARP_N,"min_paper_certification_clv_n":MIN_PAPER_CLV_N,"min_paper_execution_clv_n":MIN_EXECUTION_CLV_N,"min_positive_clv_rate":MIN_POSITIVE_CLV_RATE,"market_specific_authorization":True,"rolling_drift_window_days":60,"paper_market_specific":True,"paper_independent_observations_required":True,"primary_clv_definition":"entry executable implied probability to verified no-vig sharp fair close","secondary_clv_definition":"entry executable implied probability to fresh same-book close"}}
+    return {"schema":"pulsar-v14-betting-certification-v8","model_generation":MODEL_GENERATION,"probability_policy_id":PROBABILITY_POLICY_ID,"software_role":"PRODUCTION","generated_at":current.isoformat(),"probability_status":"PROBABILITY_CERTIFIED" if any_probability else "PROBABILITY_RESEARCH","probability_certified":any_probability,"betting_status":"BETTING_CERTIFIED" if any_betting else "RESEARCH_ONLY","certified":any_betting,"markets":market_status,"probability_reasons":probability_reasons,"reasons":betting_reasons,"paired_inference_required":True,"paper_ci_required":True,"legacy_evidence_can_certify":False,"paper_clv":paper.get("certification_clv") or {},"paper_execution_clv":paper.get("execution_clv") or {},"evidence_age_hours":{"performance_report":_evidence_age_hours(perf,current),"performance_observation":_age_hours(observation_at,current),"calibration_report":_evidence_age_hours(cal,current),"calibration_observation":_age_hours(calibration_observation,current),"paper_report":_evidence_age_hours(paper,current)},"policy":{"strict_performance_schema":STRICT_PERFORMANCE_SCHEMA,"strict_calibration_schema":STRICT_CALIBRATION_SCHEMA,"exact_model_generation_required":True,"exact_probability_policy_required":True,"max_evidence_age_hours":MAX_EVIDENCE_AGE_HOURS,"max_observation_age_hours":MAX_OBSERVATION_AGE_HOURS,"max_paper_close_age_hours":MAX_PAPER_CLOSE_AGE_HOURS,"min_games":MIN_GAMES,"min_market_n":MIN_MARKET_N,"max_ece":MAX_ECE,"min_paired_sharp_n":MIN_PAIRED_SHARP_N,"min_paper_certification_clv_n":MIN_PAPER_CLV_N,"min_paper_execution_clv_n":MIN_EXECUTION_CLV_N,"min_positive_clv_rate":MIN_POSITIVE_CLV_RATE,"market_specific_authorization":True,"rolling_drift_window_days":60,"paper_market_specific":True,"paper_independent_observations_required":True,"primary_clv_definition":"entry executable implied probability to verified no-vig sharp fair close","secondary_clv_definition":"entry executable implied probability to fresh same-book close"}}
 
 
 def load_status(performance_path:Path|str=PERFORMANCE,calibration_path:Path|str=CALIBRATION,paper_path:Path|str=PAPER_PERFORMANCE)->dict[str,Any]:return evaluate(_load(performance_path),_load(calibration_path),_load(paper_path))
