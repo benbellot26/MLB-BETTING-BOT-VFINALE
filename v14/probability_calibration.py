@@ -6,7 +6,8 @@ MARKET calibrators use the latest strictly-pregame snapshot per game; PHASE
 calibrators use the latest per (game, phase). A transform is applied only after
 statistically significant paired improvement on untouched chronological holdout.
 A naturally calibrated raw surface may instead earn VALIDATED_IDENTITY. Integer
-Total pushes are excluded from binary calibration.
+Total pushes are excluded from binary calibration. Evidence is fail-closed to
+the exact current model generation and probability policy.
 """
 
 from collections import defaultdict
@@ -54,10 +55,8 @@ def _parse_time(value:Any)->datetime|None:
         if dt.tzinfo is None: dt=dt.replace(tzinfo=timezone.utc)
         return dt.astimezone(timezone.utc)
     except Exception: return None
-
 def _time_key(row:dict[str,Any])->tuple[datetime,datetime,str]:
     minimum=datetime.min.replace(tzinfo=timezone.utc); return (_parse_time(row.get("game_date")) or minimum,_parse_time(row.get("analyzed_at")) or minimum,str(row.get("game_pk") or ""))
-
 def _read_jsonl(path:Path|str)->list[dict[str,Any]]:
     target=Path(path)
     if not target.exists(): return []
@@ -68,20 +67,16 @@ def _read_jsonl(path:Path|str)->list[dict[str,Any]]:
         except Exception: continue
         if isinstance(row,dict): rows.append(row)
     return rows
-
 def _strictly_pregame(row:dict[str,Any])->bool:
     at=_parse_time(row.get("analyzed_at")); game=_parse_time(row.get("game_date")); return bool(at and game and at<game)
-
 def _eligible_rows(rows:list[dict[str,Any]])->list[dict[str,Any]]:
-    return [r for r in rows if r.get("model_generation")==MODEL_GENERATION and r.get("settled") and _strictly_pregame(r) and str(r.get("game_pk") or "")]
-
+    return [r for r in rows if r.get("model_generation")==MODEL_GENERATION and r.get("probability_policy_id")==PROBABILITY_POLICY_ID and r.get("settled") and _strictly_pregame(r) and str(r.get("game_pk") or "")]
 def _latest_settled_by_game(rows:list[dict[str,Any]])->list[dict[str,Any]]:
     latest={}
     for row in _eligible_rows(rows):
         key=str(row.get("game_pk")); cur=latest.get(key)
         if cur is None or _time_key(row)[1]>_time_key(cur)[1]: latest[key]=row
     return sorted(latest.values(),key=_time_key)
-
 def _latest_settled_by_game_phase(rows:list[dict[str,Any]])->list[dict[str,Any]]:
     latest={}
     for row in _eligible_rows(rows):
@@ -105,14 +100,12 @@ def _outcome(row:dict[str,Any],market:str)->int|None:
         if abs(total-line)<1e-9: return None
         return int(total>line)
     return None
-
 def _items(rows:list[dict[str,Any]],market:str)->list[tuple[float,int]]:
     key=CANONICAL_MARKETS[market]; out=[]
     for row in rows:
         probs=row.get("raw_probabilities") or row.get("probabilities") or {}; p=_num(probs.get(key)); y=_outcome(row,market)
         if p is not None and y is not None and 0<p<1: out.append((float(p),int(y)))
     return out
-
 def observations(rows:list[dict[str,Any]])->dict[str,list[tuple[float,int,str]]]:
     out=defaultdict(list)
     for row in _latest_settled_by_game(rows):
@@ -170,13 +163,14 @@ def _fit_one(items:list[tuple[float,int]],*,minimum_n:int)->dict[str,Any]:
 
 
 def build_artifact(rows:list[dict[str,Any]])->dict[str,Any]:
-    market_rows=_latest_settled_by_game(rows); phase_rows=_latest_settled_by_game_phase(rows); calibrators={}
+    eligible=_eligible_rows(rows); excluded_policy=sum(1 for r in rows if r.get("settled") and r.get("model_generation")==MODEL_GENERATION and r.get("probability_policy_id")!=PROBABILITY_POLICY_ID)
+    market_rows=_latest_settled_by_game(eligible); phase_rows=_latest_settled_by_game_phase(eligible); calibrators={}
     for market in CANONICAL_MARKETS:
         calibrators[f"MARKET:{market}"]=_fit_one(_items(market_rows,market),minimum_n=MIN_MARKET_OBSERVATIONS)
         for phase in ("EARLY","LATE","FINAL"):
             scoped=[r for r in phase_rows if str(r.get("phase") or "EARLY").upper()==phase]; calibrators[f"PHASE:{phase}:{market}"]=_fit_one(_items(scoped,market),minimum_n=MIN_PHASE_OBSERVATIONS)
     latest=_time_key(market_rows[-1])[0].isoformat() if market_rows else None
-    return {"schema":"pulsar-v14-calibration-v3","model_generation":MODEL_GENERATION,"probability_policy_id":PROBABILITY_POLICY_ID,"generated_at":datetime.now(timezone.utc).isoformat(),"latest_observation_at":latest,"strictly_pregame":True,"chronological_holdout":True,"chronological_order":"game_date_utc_then_analyzed_at","market_snapshot_policy":"latest strictly-pregame snapshot per game","phase_snapshot_policy":"latest strictly-pregame snapshot per (game, phase)","total_push_policy":"exclude pushes from binary calibration","market_probability_used_as_feature":False,"calibrators":calibrators,"policy":{"market_min_n":MIN_MARKET_OBSERVATIONS,"phase_min_n":MIN_PHASE_OBSERVATIONS,"transform_activation":"paired holdout Brier gain CI95 lower >0 + LogLoss lower >= -0.001 + stable parameters","identity_acceptance":"holdout ECE<=0.05, slope 0.80..1.20, |intercept|<=0.25"}}
+    return {"schema":"pulsar-v14-calibration-v3","model_generation":MODEL_GENERATION,"probability_policy_id":PROBABILITY_POLICY_ID,"generated_at":datetime.now(timezone.utc).isoformat(),"latest_observation_at":latest,"eligible_current_policy_rows":len(eligible),"excluded_other_policy_rows":excluded_policy,"strictly_pregame":True,"chronological_holdout":True,"chronological_order":"game_date_utc_then_analyzed_at","market_snapshot_policy":"latest strictly-pregame snapshot per game","phase_snapshot_policy":"latest strictly-pregame snapshot per (game, phase)","total_push_policy":"exclude pushes from binary calibration","market_probability_used_as_feature":False,"calibrators":calibrators,"policy":{"market_min_n":MIN_MARKET_OBSERVATIONS,"phase_min_n":MIN_PHASE_OBSERVATIONS,"exact_probability_policy_required":True,"transform_activation":"paired holdout Brier gain CI95 lower >0 + LogLoss lower >= -0.001 + stable parameters","identity_acceptance":"holdout ECE<=0.05, slope 0.80..1.20, |intercept|<=0.25"}}
 
 
 def _empty_artifact()->dict[str,Any]: return {"schema":"pulsar-v14-calibration-v3","model_generation":MODEL_GENERATION,"probability_policy_id":PROBABILITY_POLICY_ID,"calibrators":{}}
