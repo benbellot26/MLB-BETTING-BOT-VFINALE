@@ -2,6 +2,7 @@
 
 VERSION = "14.5.2"
 MODEL_GENERATION = "pulsar-v14-context-v3"
+PROBABILITY_POLICY_ID = "pulsar-v14-probability-policy-v1"
 SCHEMA = "pulsar-v14-probability-v2"
 
-__all__ = ["VERSION", "MODEL_GENERATION", "SCHEMA"]
+__all__ = ["VERSION", "MODEL_GENERATION", "PROBABILITY_POLICY_ID", "SCHEMA"]
