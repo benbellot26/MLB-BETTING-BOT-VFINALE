@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Prospective verified close capture for certified official bets."""
+"""Prospective verified close capture for certified system-authorized bets."""
 
 import argparse
 from datetime import datetime, timezone
@@ -8,7 +8,7 @@ from typing import Any, Callable
 
 from .acquisition import canonical_team_name, odds_snapshot, parse_time
 from .bet_ledger import LEDGER, _read, _write
-from .market_lines import DEFAULT_MAX_MARKET_AGE_MINUTES, _book_freshness, choose_total_line
+from .market_lines import DEFAULT_MAX_MARKET_AGE_MINUTES, _book_freshness
 from .sharp_market import sharp_consensus
 
 CLOSE_WINDOW_MINUTES=120.0
@@ -72,12 +72,9 @@ def capture(*,path:str|Any=LEDGER,api_key:str|None=None,events_loader:Callable[[
     for row,mins in pending:
         event=_event_for_row(row,events)
         if event is None: continue
-        if str(row.get("market"))=="TOTAL": total_line=row.get("line")
-        else:
-            try: total_line=choose_total_line(event,as_of=captured)["line"]
-            except Exception: continue
-        if total_line is None: continue
-        sharp=sharp_consensus(event,total_line=float(total_line),as_of=captured); sharp_p=(((sharp.get("selections") or {}).get(str(row.get("selection") or "")) or {}).get("fair_probability"))
+        selection=str(row.get("selection") or ""); total_line=row.get("line") if selection in {"over","under"} else None
+        if selection in {"over","under"} and total_line is None: continue
+        sharp=sharp_consensus(event,total_line=float(total_line) if total_line is not None else None,as_of=captured); sharp_p=(((sharp.get("selections") or {}).get(selection) or {}).get("fair_probability"))
         try: sharp_p=float(sharp_p)
         except Exception: continue
         if not 0<sharp_p<1 or sharp.get("freshness_verified") is not True: continue
@@ -90,6 +87,6 @@ def capture(*,path:str|Any=LEDGER,api_key:str|None=None,events_loader:Callable[[
 
 
 def main()->None:
-    parser=argparse.ArgumentParser(description="Capture prospective verified closes for official V14 bets"); parser.add_argument("--ledger",default=str(LEDGER)); args=parser.parse_args(); print(f"PULSAR_V14_OFFICIAL_CLOSE captured={capture(path=args.ledger)}")
+    parser=argparse.ArgumentParser(description="Capture prospective verified closes for V14 system-authorized bets"); parser.add_argument("--ledger",default=str(LEDGER)); args=parser.parse_args(); print(f"PULSAR_V14_OFFICIAL_CLOSE captured={capture(path=args.ledger)}")
 
 if __name__=="__main__": main()
