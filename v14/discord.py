@@ -12,126 +12,330 @@ from urllib.request import Request, urlopen
 
 from . import MODEL_GENERATION, VERSION
 
-_MATCH_COLORS=(0x5865F2,0x9B59B6,0x2ECC71,0xE67E22,0xE74C3C,0xF1C40F,0x1ABC9C,0xE91E63)
-_DISCORD_MAX_ATTEMPTS=6
-_DISCORD_MIN_GAP_SECONDS=.35
+_MATCH_COLORS = (0x5865F2, 0x9B59B6, 0x2ECC71, 0xE67E22, 0xE74C3C, 0xF1C40F, 0x1ABC9C, 0xE91E63)
+_DISCORD_MAX_ATTEMPTS = 6
+_DISCORD_MIN_GAP_SECONDS = .35
 
 
-def _num(value:Any,default:float=0.0)->float:
-    try:return float(value)
-    except Exception:return default
+def _num(value: Any, default: float = 0.0) -> float:
+    try:
+        return float(value)
+    except Exception:
+        return default
 
-def _pct(value:Any)->str:return f"**{100*_num(value):.1f}%**"
-def _team(result:dict[str,Any],side:str)->str:
-    ctx=result.get("ctx") or {}; return str(ctx.get(side) or result.get(side) or "—")
-def _lineup_status(lineup:Any)->str:
-    if not isinstance(lineup,dict):return "⚪ NON PUBLIÉE"
-    count=int(_num(lineup.get("count"),len(lineup.get("players") or []))); confirmed=lineup.get("confirmed") is True
-    if count>=9 or (confirmed and len(lineup.get("players") or [])>=9):return "✅ CONFIRMÉE 9/9"
-    if count>0:return f"🟡 PARTIELLE {count}/9"
+
+def _pct(value: Any) -> str:
+    return f"**{100 * _num(value):.1f}%**"
+
+
+def _team(result: dict[str, Any], side: str) -> str:
+    ctx = result.get("ctx") or {}
+    return str(ctx.get(side) or result.get(side) or "—")
+
+
+def _lineup_status(lineup: Any) -> str:
+    if not isinstance(lineup, dict):
+        return "⚪ NON PUBLIÉE"
+    count = int(_num(lineup.get("count"), len(lineup.get("players") or [])))
+    confirmed = lineup.get("confirmed") is True
+    if count >= 9 or (confirmed and len(lineup.get("players") or []) >= 9):
+        return "✅ CONFIRMÉE 9/9"
+    if count > 0:
+        return f"🟡 PARTIELLE {count}/9"
     return "⚪ NON PUBLIÉE"
-def _starter_name(ctx:dict[str,Any],side:str)->str|None:
-    for key in (f"{side}_sp",f"{side}_starter"):
-        value=ctx.get(key)
-        if isinstance(value,dict):
-            name=value.get("name") or value.get("fullName")
-            if name:return str(name)
-        elif value:return str(value)
+
+
+def _starter_name(ctx: dict[str, Any], side: str) -> str | None:
+    for key in (f"{side}_sp", f"{side}_starter"):
+        value = ctx.get(key)
+        if isinstance(value, dict):
+            name = value.get("name") or value.get("fullName")
+            if name:
+                return str(name)
+        elif value:
+            return str(value)
     return None
-def _starter_status(name:str|None)->str:return f"🟡 PROBABLE/ANNONCÉ — {name}" if name else "⚪ NON ANNONCÉ"
-def _phase_display(phase:str)->str:return "FINAL UPDATE" if str(phase).upper()=="FINAL" else str(phase).upper()
 
 
-def _starter_fallback_field(result:dict[str,Any])->dict[str,Any]|None:
-    fallback=result.get("starter_fallback") or (result.get("ctx") or {}).get("starter_fallback") or {}
-    if not fallback.get("degraded"):return None
-    sides=", ".join(str(s).upper() for s in fallback.get("sides") or []) or "UNKNOWN"
-    return {"name":"⚠️ DATA QUALITY — STARTER CONFLICT","value":f"Starter identity not safely confirmed for **{sides}**. Pulsar kept this game in the slate using a **neutral league-average starter fallback** for the affected side(s). **No betting action is authorized** while this state is degraded.","inline":False}
+def _starter_status(name: str | None) -> str:
+    return f"🟡 PROBABLE/ANNONCÉ — {name}" if name else "⚪ NON ANNONCÉ"
 
 
-def _certification_scope(certification:dict[str,Any],canonical_market:str|None)->tuple[str,dict[str,Any]]:
-    market=str(canonical_market or "").strip()
-    scoped=((certification.get("markets") or {}).get(market) or {}) if market else {}
-    return (market,scoped) if scoped else ("GLOBAL",certification)
+def _phase_display(phase: str) -> str:
+    return "FINAL UPDATE" if str(phase).upper() == "FINAL" else str(phase).upper()
 
 
-def _paper_clv_label(certification:dict[str,Any],canonical_market:str|None=None)->str:
-    scope,row=_certification_scope(certification,canonical_market); paper=row.get("paper_clv") or (certification.get("paper_clv") or {} if scope=="GLOBAL" else {})
-    n=int(_num(paper.get("n"),0)); mean=paper.get("mean_clv"); positive=paper.get("positive_rate")
-    prefix=f"**{scope}**  •  " if scope!="GLOBAL" else ""
-    if n<=0:return prefix+"collecting **0/100** verified closes"
-    mean_text=f"{float(mean):+.2f} pp" if mean is not None else "—"; positive_text=f"{100*float(positive):.1f}%" if positive is not None else "—"
-    return prefix+f"**{n}/100** closes  •  mean **{mean_text}**  •  positive **{positive_text}**"
+def _starter_fallback_field(result: dict[str, Any]) -> dict[str, Any] | None:
+    fallback = result.get("starter_fallback") or (result.get("ctx") or {}).get("starter_fallback") or {}
+    if not fallback.get("degraded"):
+        return None
+    sides = ", ".join(str(s).upper() for s in fallback.get("sides") or []) or "UNKNOWN"
+    return {
+        "name": "⚠️ DATA QUALITY — STARTER CONFLICT",
+        "value": (
+            f"Starter identity not safely confirmed for **{sides}**. Pulsar kept this game in the slate using a "
+            "**neutral league-average starter fallback** for the affected side(s). **No betting action is authorized** "
+            "while this state is degraded."
+        ),
+        "inline": False,
+    }
 
 
-def _quality_field(result:dict[str,Any],prediction:dict[str,Any])->dict[str,Any]:
-    certification=result.get("betting_certification") or {}; best=(result.get("decision") or {}).get("best") or {}; canonical=str(best.get("canonical_market") or "") or None; scope,scoped=_certification_scope(certification,canonical)
-    probability_status=str(scoped.get("probability_status") or certification.get("probability_status") or "PROBABILITY_RESEARCH")
-    betting_status=str(scoped.get("betting_status") or certification.get("betting_status") or "RESEARCH_ONLY")
-    calibration=prediction.get("calibration") or {}; active=[name for name,row in (calibration.get("markets") or {}).items() if row.get("active")]; cal_label=", ".join(active) if active else "collecting / identity"
-    sharp=result.get("sharp_market") or {}; sharp_label="verified" if sharp.get("freshness_verified") else "unavailable/unverified"; decision=str(best.get("status") or "NO_BET")
-    blockers=best.get("blockers") or []; reason="\n🔒 "+", ".join(str(x) for x in blockers[:4]) if blockers else ""; scope_text=f"  •  Scope **{scope}**" if scope!="GLOBAL" else ""
-    return {"name":"🧪 PROBABILITY QUALITY","value":f"Calibration **{cal_label}**  •  Sharp benchmark **{sharp_label}**{scope_text}\nProbability **{probability_status}**  •  Betting **{betting_status}**  •  Decision **{decision}**\nPaper CLV {_paper_clv_label(certification,canonical)}{reason}","inline":False}
+def _certification_scope(certification: dict[str, Any], canonical_market: str | None) -> tuple[str, dict[str, Any]]:
+    market = str(canonical_market or "").strip()
+    scoped = ((certification.get("markets") or {}).get(market) or {}) if market else {}
+    return (market, scoped) if scoped else ("GLOBAL", certification)
 
 
-def _interval_suffix(prediction:dict[str,Any],key:str)->str:
-    row=((prediction.get("probability_intervals") or {}).get("selections") or {}).get(key) or {}; lo=row.get("lower"); hi=row.get("upper")
-    if lo is None or hi is None:return ""
-    return f"  `[{100*float(lo):.1f}–{100*float(hi):.1f}]`"
+def _paper_clv_label(certification: dict[str, Any], canonical_market: str | None = None) -> str:
+    scope, row = _certification_scope(certification, canonical_market)
+    paper = row.get("paper_clv") or (certification.get("paper_clv") or {} if scope == "GLOBAL" else {})
+    n = int(_num(paper.get("n"), 0))
+    mean = paper.get("mean_clv")
+    positive = paper.get("positive_rate")
+    prefix = f"**{scope}**  •  " if scope != "GLOBAL" else ""
+    if n <= 0:
+        return prefix + "collecting **0/100** verified closes"
+    mean_text = f"{float(mean):+.2f} pp" if mean is not None else "—"
+    positive_text = f"{100 * float(positive):.1f}%" if positive is not None else "—"
+    return prefix + f"**{n}/100** closes  •  mean **{mean_text}**  •  positive **{positive_text}**"
 
 
-def build_game_embed(result:dict[str,Any])->dict[str,Any]:
-    prediction=result.get("v14_prediction") or {}
-    if prediction.get("model_generation")!=MODEL_GENERATION or prediction.get("role")!="PRODUCTION":raise ValueError("result missing Pulsar V14 production prediction")
-    probabilities=prediction.get("probabilities") or {}; required=("away_ml","home_ml","away_plus_1_5","away_minus_1_5","home_plus_1_5","home_minus_1_5","over","under"); missing=[k for k in required if probabilities.get(k) is None]
-    if missing:raise ValueError(f"incomplete V14 probability surface: {missing}")
-    away,home=_team(result,"away"),_team(result,"home"); line=_num(prediction.get("total_line") or (result.get("canonical_lines") or {}).get("TOTAL")); projection=prediction.get("run_projection") or {}; ctx=result.get("ctx") or {}; phase=str(result.get("phase") or prediction.get("phase") or "—").upper(); phase_display=_phase_display(phase); gid=str(result.get("game_pk") or prediction.get("game_pk") or "0")
-    try:color=_MATCH_COLORS[int(gid)%len(_MATCH_COLORS)]
-    except Exception:color=_MATCH_COLORS[sum(ord(ch) for ch in gid)%len(_MATCH_COLORS)]
-    context=prediction.get("context_adjustment") or {}; context_label="ACTIVE" if context.get("eligible") else "BASE"; feature_as_of=context.get("feature_as_of") or "—"; fallback=result.get("starter_fallback") or ctx.get("starter_fallback") or {}; quality_label="DEGRADED" if fallback.get("degraded") else "VERIFIED"
-    fields=[
-        {"name":"🏆 MONEYLINE","value":f"✈️ **{away}**  ·  {_pct(probabilities['away_ml'])}{_interval_suffix(prediction,'away_ml')}\n🏠 **{home}**  ·  {_pct(probabilities['home_ml'])}{_interval_suffix(prediction,'home_ml')}","inline":False},
-        {"name":"⚾ RUN LINE ±1.5","value":f"✈️ **{away}**   `+1.5` {_pct(probabilities['away_plus_1_5'])}   │   `-1.5` {_pct(probabilities['away_minus_1_5'])}\n🏠 **{home}**   `+1.5` {_pct(probabilities['home_plus_1_5'])}   │   `-1.5` {_pct(probabilities['home_minus_1_5'])}","inline":False},
-        {"name":f"📊 TOTAL {line:g}","value":f"📈 **OVER**  {_pct(probabilities['over'])}{_interval_suffix(prediction,'over')}    │    📉 **UNDER**  {_pct(probabilities['under'])}{_interval_suffix(prediction,'under')}","inline":False},
-        {"name":"🧭 GAME SNAPSHOT","value":f"🎯 Projection  {away} **{_num(projection.get('away_mu')):.1f}**  —  **{_num(projection.get('home_mu')):.1f}** {home}\n🧠 Phase **{phase_display}**  •  Context **{context_label}**  •  Data **{quality_label}**  •  Model **{VERSION}**\n🕒 PIT context **{feature_as_of}**","inline":False},
-        _quality_field(result,prediction),
-        {"name":"👥 Lineups & starters","value":f"✈️ {_lineup_status(ctx.get('away_lineup'))}  •  SP {_starter_status(_starter_name(ctx,'away'))}\n🏠 {_lineup_status(ctx.get('home_lineup'))}  •  SP {_starter_status(_starter_name(ctx,'home'))}","inline":False},
+def _uncertainty_source_label(source: Any) -> str:
+    value = str(source or "").strip().lower()
+    if value == "empirical_95":
+        return "empirical 95%"
+    if value == "accepted_calibration_holdout_95":
+        return "accepted holdout 95%"
+    if value == "fallback":
+        return "conservative fallback"
+    return "unavailable"
+
+
+def _combined_source_label(*sources: Any) -> str:
+    normalized = {str(source or "").strip() for source in sources if source}
+    if not normalized:
+        return "unavailable"
+    if len(normalized) == 1:
+        return _uncertainty_source_label(next(iter(normalized)))
+    return "mixed evidence"
+
+
+def _uncertainty_summary(prediction: dict[str, Any]) -> str:
+    bands = prediction.get("probability_intervals") or {}
+    selections = bands.get("selections") or {}
+    if not selections:
+        return ""
+
+    source_map = bands.get("source_by_market") or {}
+    ml_source = source_map.get("ML") or (selections.get("home_ml") or {}).get("uncertainty_source")
+    rl_home_source = source_map.get("RL_HOME_-1.5") or (selections.get("home_minus_1_5") or {}).get("uncertainty_source")
+    rl_away_source = source_map.get("RL_AWAY_-1.5") or (selections.get("away_minus_1_5") or {}).get("uncertainty_source")
+    total_source = source_map.get("TOTAL_OVER") or (selections.get("over") or {}).get("uncertainty_source")
+
+    penalty = _num(bands.get("quality_penalty_pp"), 0.0)
+    reason_count = len(bands.get("quality_penalty_reasons") or [])
+    fallback_used = bands.get("uses_fallback") is True or any(
+        str(source or "").strip().lower() == "fallback"
+        for source in (ml_source, rl_home_source, rl_away_source, total_source)
+    )
+    caveat = "Fallback ≠ empirical 95% CI." if fallback_used else "Evidence-backed safety bands; not Bayesian credible intervals."
+    reason_text = f"  •  quality flags **{reason_count}**" if reason_count else ""
+    return (
+        f"Decision bands  ML **{_uncertainty_source_label(ml_source)}**  •  "
+        f"RL **{_combined_source_label(rl_home_source, rl_away_source)}**  •  "
+        f"Total **{_uncertainty_source_label(total_source)}**\n"
+        f"Quality penalty **+{penalty:.1f} pp**{reason_text}  •  {caveat}"
+    )
+
+
+def _quality_field(result: dict[str, Any], prediction: dict[str, Any]) -> dict[str, Any]:
+    certification = result.get("betting_certification") or {}
+    best = (result.get("decision") or {}).get("best") or {}
+    canonical = str(best.get("canonical_market") or "") or None
+    scope, scoped = _certification_scope(certification, canonical)
+    probability_status = str(scoped.get("probability_status") or certification.get("probability_status") or "PROBABILITY_RESEARCH")
+    betting_status = str(scoped.get("betting_status") or certification.get("betting_status") or "RESEARCH_ONLY")
+    calibration = prediction.get("calibration") or {}
+    active = [name for name, row in (calibration.get("markets") or {}).items() if row.get("active")]
+    cal_label = ", ".join(active) if active else "collecting / identity"
+    sharp = result.get("sharp_market") or {}
+    sharp_label = "verified" if sharp.get("freshness_verified") else "unavailable/unverified"
+    decision = str(best.get("status") or "NO_BET")
+    blockers = best.get("blockers") or []
+    reason = "\n🔒 " + ", ".join(str(x) for x in blockers[:4]) if blockers else ""
+    scope_text = f"  •  Scope **{scope}**" if scope != "GLOBAL" else ""
+    uncertainty = _uncertainty_summary(prediction)
+    uncertainty_text = f"\n{uncertainty}" if uncertainty else ""
+    return {
+        "name": "🧪 PROBABILITY QUALITY",
+        "value": (
+            f"Calibration **{cal_label}**  •  Sharp benchmark **{sharp_label}**{scope_text}\n"
+            f"Probability **{probability_status}**  •  Betting **{betting_status}**  •  Decision **{decision}**\n"
+            f"Paper CLV {_paper_clv_label(certification, canonical)}{uncertainty_text}{reason}"
+        ),
+        "inline": False,
+    }
+
+
+def _interval_suffix(prediction: dict[str, Any], key: str) -> str:
+    row = ((prediction.get("probability_intervals") or {}).get("selections") or {}).get(key) or {}
+    lo = row.get("lower")
+    hi = row.get("upper")
+    if lo is None or hi is None:
+        return ""
+    return f"  `[{100 * float(lo):.1f}–{100 * float(hi):.1f}]`"
+
+
+def build_game_embed(result: dict[str, Any]) -> dict[str, Any]:
+    prediction = result.get("v14_prediction") or {}
+    if prediction.get("model_generation") != MODEL_GENERATION or prediction.get("role") != "PRODUCTION":
+        raise ValueError("result missing Pulsar V14 production prediction")
+
+    probabilities = prediction.get("probabilities") or {}
+    required = (
+        "away_ml",
+        "home_ml",
+        "away_plus_1_5",
+        "away_minus_1_5",
+        "home_plus_1_5",
+        "home_minus_1_5",
+        "over",
+        "under",
+    )
+    missing = [key for key in required if probabilities.get(key) is None]
+    if missing:
+        raise ValueError(f"incomplete V14 probability surface: {missing}")
+
+    away, home = _team(result, "away"), _team(result, "home")
+    line = _num(prediction.get("total_line") or (result.get("canonical_lines") or {}).get("TOTAL"))
+    projection = prediction.get("run_projection") or {}
+    ctx = result.get("ctx") or {}
+    phase = str(result.get("phase") or prediction.get("phase") or "—").upper()
+    phase_display = _phase_display(phase)
+    gid = str(result.get("game_pk") or prediction.get("game_pk") or "0")
+    try:
+        color = _MATCH_COLORS[int(gid) % len(_MATCH_COLORS)]
+    except Exception:
+        color = _MATCH_COLORS[sum(ord(ch) for ch in gid) % len(_MATCH_COLORS)]
+
+    context = prediction.get("context_adjustment") or {}
+    context_label = "ACTIVE" if context.get("eligible") else "BASE"
+    feature_as_of = context.get("feature_as_of") or "—"
+    fallback = result.get("starter_fallback") or ctx.get("starter_fallback") or {}
+    quality_label = "DEGRADED" if fallback.get("degraded") else "VERIFIED"
+
+    fields = [
+        {
+            "name": "🏆 MONEYLINE",
+            "value": (
+                f"✈️ **{away}**  ·  {_pct(probabilities['away_ml'])}{_interval_suffix(prediction, 'away_ml')}\n"
+                f"🏠 **{home}**  ·  {_pct(probabilities['home_ml'])}{_interval_suffix(prediction, 'home_ml')}"
+            ),
+            "inline": False,
+        },
+        {
+            "name": "⚾ RUN LINE ±1.5",
+            "value": (
+                f"✈️ **{away}**   `+1.5` {_pct(probabilities['away_plus_1_5'])}{_interval_suffix(prediction, 'away_plus_1_5')}"
+                f"   │   `-1.5` {_pct(probabilities['away_minus_1_5'])}{_interval_suffix(prediction, 'away_minus_1_5')}\n"
+                f"🏠 **{home}**   `+1.5` {_pct(probabilities['home_plus_1_5'])}{_interval_suffix(prediction, 'home_plus_1_5')}"
+                f"   │   `-1.5` {_pct(probabilities['home_minus_1_5'])}{_interval_suffix(prediction, 'home_minus_1_5')}"
+            ),
+            "inline": False,
+        },
+        {
+            "name": f"📊 TOTAL {line:g}",
+            "value": (
+                f"📈 **OVER**  {_pct(probabilities['over'])}{_interval_suffix(prediction, 'over')}"
+                f"    │    📉 **UNDER**  {_pct(probabilities['under'])}{_interval_suffix(prediction, 'under')}"
+            ),
+            "inline": False,
+        },
+        {
+            "name": "🧭 GAME SNAPSHOT",
+            "value": (
+                f"🎯 Projection  {away} **{_num(projection.get('away_mu')):.1f}**  —  **{_num(projection.get('home_mu')):.1f}** {home}\n"
+                f"🧠 Phase **{phase_display}**  •  Context **{context_label}**  •  Data **{quality_label}**  •  Model **{VERSION}**\n"
+                f"🕒 PIT context **{feature_as_of}**"
+            ),
+            "inline": False,
+        },
+        _quality_field(result, prediction),
+        {
+            "name": "👥 Lineups & starters",
+            "value": (
+                f"✈️ {_lineup_status(ctx.get('away_lineup'))}  •  SP {_starter_status(_starter_name(ctx, 'away'))}\n"
+                f"🏠 {_lineup_status(ctx.get('home_lineup'))}  •  SP {_starter_status(_starter_name(ctx, 'home'))}"
+            ),
+            "inline": False,
+        },
     ]
-    warning=_starter_fallback_field(result)
-    if warning:fields.insert(0,warning)
-    return {"title":f"⚾ {away} @ {home}  •  {phase_display}","color":color,"fields":fields,"footer":{"text":f"Pulsar V14 • {MODEL_GENERATION} • software production ≠ betting certification"}}
+    warning = _starter_fallback_field(result)
+    if warning:
+        fields.insert(0, warning)
+    return {
+        "title": f"⚾ {away} @ {home}  •  {phase_display}",
+        "color": color,
+        "fields": fields,
+        "footer": {"text": f"Pulsar V14 • {MODEL_GENERATION} • software production ≠ betting certification"},
+    }
 
 
-def _retry_after_seconds(exc:HTTPError,attempt:int)->float:
-    header=exc.headers.get("Retry-After") if exc.headers else None
+def _retry_after_seconds(exc: HTTPError, attempt: int) -> float:
+    header = exc.headers.get("Retry-After") if exc.headers else None
     if header:
         try:
-            value=float(header); return max(.25,value/1000 if value>100 else value)
-        except Exception:pass
+            value = float(header)
+            return max(.25, value / 1000 if value > 100 else value)
+        except Exception:
+            pass
     try:
-        raw=exc.read().decode("utf-8",errors="replace"); payload=json.loads(raw); value=float(payload.get("retry_after")); return max(.25,value/1000 if value>100 else value)
-    except Exception:return min(8.0,1.0*(2**attempt))
+        raw = exc.read().decode("utf-8", errors="replace")
+        payload = json.loads(raw)
+        value = float(payload.get("retry_after"))
+        return max(.25, value / 1000 if value > 100 else value)
+    except Exception:
+        return min(8.0, 1.0 * (2 ** attempt))
 
 
-def _post_webhook(payload:dict[str,Any],webhook_url:str|None=None)->bool:
-    url=webhook_url or os.getenv("DISCORD_WEBHOOK_URL")
-    if not url:raise RuntimeError("DISCORD_WEBHOOK_URL absent")
-    body=json.dumps(payload,ensure_ascii=False).encode("utf-8")
+def _post_webhook(payload: dict[str, Any], webhook_url: str | None = None) -> bool:
+    url = webhook_url or os.getenv("DISCORD_WEBHOOK_URL")
+    if not url:
+        raise RuntimeError("DISCORD_WEBHOOK_URL absent")
+    body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     for attempt in range(_DISCORD_MAX_ATTEMPTS):
-        request=Request(url,data=body,headers={"Content-Type":"application/json","User-Agent":"Pulsar-V14"},method="POST")
+        request = Request(
+            url,
+            data=body,
+            headers={"Content-Type": "application/json", "User-Agent": "Pulsar-V14"},
+            method="POST",
+        )
         try:
-            with urlopen(request,timeout=20) as response:
-                if 200<=int(response.status)<300:return True
+            with urlopen(request, timeout=20) as response:
+                if 200 <= int(response.status) < 300:
+                    return True
                 raise RuntimeError(f"Discord webhook unexpected HTTP {response.status}")
         except HTTPError as exc:
-            if exc.code==429 and attempt+1<_DISCORD_MAX_ATTEMPTS:
-                delay=_retry_after_seconds(exc,attempt)+random.uniform(.05,.20); print(f"PULSAR_V14_DISCORD rate_limited attempt={attempt+1}/{_DISCORD_MAX_ATTEMPTS} retry_in={delay:.2f}s"); time.sleep(delay); continue
+            if exc.code == 429 and attempt + 1 < _DISCORD_MAX_ATTEMPTS:
+                delay = _retry_after_seconds(exc, attempt) + random.uniform(.05, .20)
+                print(f"PULSAR_V14_DISCORD rate_limited attempt={attempt + 1}/{_DISCORD_MAX_ATTEMPTS} retry_in={delay:.2f}s")
+                time.sleep(delay)
+                continue
             raise RuntimeError(f"Discord webhook failed: HTTP Error {exc.code}: {exc.reason}") from exc
-        except (URLError,TimeoutError) as exc:
-            if attempt+1<_DISCORD_MAX_ATTEMPTS:
-                delay=min(8.0,.75*(2**attempt))+random.uniform(.05,.20); print(f"PULSAR_V14_DISCORD transient_error attempt={attempt+1}/{_DISCORD_MAX_ATTEMPTS} retry_in={delay:.2f}s error={exc}"); time.sleep(delay); continue
+        except (URLError, TimeoutError) as exc:
+            if attempt + 1 < _DISCORD_MAX_ATTEMPTS:
+                delay = min(8.0, .75 * (2 ** attempt)) + random.uniform(.05, .20)
+                print(f"PULSAR_V14_DISCORD transient_error attempt={attempt + 1}/{_DISCORD_MAX_ATTEMPTS} retry_in={delay:.2f}s error={exc}")
+                time.sleep(delay)
+                continue
             raise RuntimeError(f"Discord webhook failed after retries: {exc}") from exc
     return False
 
-def send_game(result:dict[str,Any],webhook_url:str|None=None)->bool:return _post_webhook({"username":"Pulsar V14","embeds":[build_game_embed(result)]},webhook_url=webhook_url)
-def publication_gap_seconds()->float:return _DISCORD_MIN_GAP_SECONDS
+
+def send_game(result: dict[str, Any], webhook_url: str | None = None) -> bool:
+    return _post_webhook({"username": "Pulsar V14", "embeds": [build_game_embed(result)]}, webhook_url=webhook_url)
+
+
+def publication_gap_seconds() -> float:
+    return _DISCORD_MIN_GAP_SECONDS
