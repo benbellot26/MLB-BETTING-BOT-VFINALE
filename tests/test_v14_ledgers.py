@@ -3,7 +3,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from v14 import MODEL_GENERATION
+from v14 import MODEL_GENERATION, PROBABILITY_POLICY_ID
 from v14.bet_ledger import _read as read_authorized
 from v14.bet_ledger import record_payload as record_authorized
 from v14.executed_bet_ledger import _read as read_executed
@@ -17,14 +17,14 @@ from v14.paper_ledger import report as report_paper
 GAME_DATE="2026-08-25T23:00:00Z"; ANALYZED_AT="2026-08-25T20:00:00Z"; CLOSE_AT=datetime(2026,8,25,22,0,tzinfo=timezone.utc)
 
 
-def _event(event_id="odds-123",include_total=True):
+def _event(event_id="odds-123",include_total=True,commence_time=GAME_DATE):
     pinnacle_markets=[{"key":"h2h","outcomes":[{"name":"Home","price":1.80},{"name":"Away","price":2.10}]}]
     if include_total: pinnacle_markets.append({"key":"totals","outcomes":[{"name":"Over","point":8.5,"price":1.91},{"name":"Under","point":8.5,"price":1.91}]})
-    return {"id":event_id,"home_team":"Home","away_team":"Away","commence_time":GAME_DATE,"bookmakers":[{"key":"pinnacle","last_update":"2026-08-25T21:59:00Z","markets":pinnacle_markets},{"key":"winamax_fr","last_update":"2026-08-25T20:00:00Z","markets":[{"key":"h2h","outcomes":[{"name":"Home","price":1.95},{"name":"Away","price":1.95}]}]}]}
+    return {"id":event_id,"home_team":"Home","away_team":"Away","commence_time":commence_time,"bookmakers":[{"key":"pinnacle","last_update":"2026-08-25T21:59:00Z","markets":pinnacle_markets},{"key":"winamax_fr","last_update":"2026-08-25T20:00:00Z","markets":[{"key":"h2h","outcomes":[{"name":"Home","price":1.95},{"name":"Away","price":1.95}]}]}]}
 
 
-def _paper_payload(analyzed_at=ANALYZED_AT):
-    return {"model_generation":MODEL_GENERATION,"target_date":"2026-08-25","analyzed_at":analyzed_at,"results":[{"game_pk":"123","model_generation":MODEL_GENERATION,"odds_event_id":"odds-123","game_date":GAME_DATE,"analyzed_at":analyzed_at,"home":"Home","away":"Away","canonical_lines":{"TOTAL":8.5},"starter_fallback":{"degraded":False},"market_snapshot":{"freshness_verified":True,"markets":{"ML":{"bookmaker":"pinnacle"}}},"execution_market":{"freshness_verified":True,"selections":{"home_ml":{"price":2.00,"bookmaker":"pinnacle"}}},"sharp_market":{"freshness_verified":True,"selections":{"home_ml":{"fair_probability":.54,"source_count":1,"sportsbook_source_count":1,"exchange_proxy_source_count":0}}},"v14_prediction":{"model_generation":MODEL_GENERATION,"probabilities":{"home_ml":.60},"raw_probabilities":{"home_ml":.61}},"decision":{"candidates":[{"selection":"home_ml","canonical_market":"ML","market":"ML","price":2.00,"execution_book":"pinnacle","execution_source":"LINE_SHOPPED","probability":.60,"lower_probability":.56,"model_edge_pp":10.0,"robust_edge_pp":6.0,"sharp_edge_pp":6.0,"robust_sharp_edge_pp":2.0,"sharp_source_count":1,"sharp_sportsbook_source_count":1,"sharp_exchange_proxy_source_count":0,"edge_qualified":True,"research_ready":True,"market_betting_certified":False,"status":"RESEARCH_ONLY"}]}}]}
+def _paper_payload(analyzed_at=ANALYZED_AT,event_time=GAME_DATE):
+    return {"model_generation":MODEL_GENERATION,"target_date":"2026-08-25","analyzed_at":analyzed_at,"results":[{"game_pk":"123","model_generation":MODEL_GENERATION,"odds_event_id":"odds-123","game_date":GAME_DATE,"analyzed_at":analyzed_at,"home":"Home","away":"Away","canonical_lines":{"TOTAL":8.5},"starter_fallback":{"degraded":False},"market_snapshot":{"freshness_verified":True,"commence_time":event_time,"markets":{"ML":{"bookmaker":"pinnacle"}}},"execution_market":{"freshness_verified":True,"selections":{"home_ml":{"price":2.00,"bookmaker":"pinnacle"}}},"sharp_market":{"freshness_verified":True,"selections":{"home_ml":{"fair_probability":.54,"source_count":1,"sportsbook_source_count":1,"exchange_proxy_source_count":0}}},"v14_prediction":{"model_generation":MODEL_GENERATION,"probability_policy_id":PROBABILITY_POLICY_ID,"calibration":{"probability_policy_id":PROBABILITY_POLICY_ID},"probabilities":{"home_ml":.60},"raw_probabilities":{"home_ml":.61}},"decision":{"candidates":[{"selection":"home_ml","canonical_market":"ML","market":"ML","price":2.00,"execution_book":"pinnacle","execution_source":"LINE_SHOPPED","probability":.60,"lower_probability":.56,"model_edge_pp":10.0,"robust_edge_pp":6.0,"sharp_edge_pp":6.0,"robust_sharp_edge_pp":2.0,"sharp_source_count":1,"sharp_sportsbook_source_count":1,"sharp_exchange_proxy_source_count":0,"edge_qualified":True,"research_ready":True,"market_betting_certified":False,"status":"RESEARCH_ONLY"}]}}]}
 
 
 def _authorized_payload(certified:bool,analyzed_at=ANALYZED_AT):
@@ -38,7 +38,7 @@ def _authorized_payload(certified:bool,analyzed_at=ANALYZED_AT):
 class V14LedgerTests(unittest.TestCase):
     def test_paper_candidate_is_recorded_and_gets_executable_to_sharp_close(self):
         with tempfile.TemporaryDirectory() as tmp:
-            ledger=Path(tmp)/"paper.jsonl"; self.assertEqual(record_paper(_paper_payload(),ledger),1); rows=read_paper(ledger); self.assertEqual(len(rows),1); self.assertEqual(rows[0]["schema"],"pulsar-v14-paper-bet-v6"); self.assertEqual(rows[0]["selection"],"home_ml"); self.assertEqual(rows[0]["odds_event_id"],"odds-123"); self.assertTrue(rows[0]["entry_market_freshness_verified"]); self.assertIsNone(rows[0]["closing_sharp_probability"]); self.assertEqual(capture_paper_close(ledger,events_loader=lambda:[_event()],now=CLOSE_AT),1); closed=read_paper(ledger)[0]; self.assertIsNotNone(closed["closing_sharp_probability"]); self.assertIsNotNone(closed["sharp_clv_pp"]); self.assertIsNotNone(closed["certification_clv_pp"]); self.assertEqual(closed["close_captured_at"],CLOSE_AT.isoformat())
+            ledger=Path(tmp)/"paper.jsonl"; self.assertEqual(record_paper(_paper_payload(),ledger),1); rows=read_paper(ledger); self.assertEqual(len(rows),1); self.assertEqual(rows[0]["schema"],"pulsar-v14-paper-bet-v7"); self.assertEqual(rows[0]["probability_policy_id"],PROBABILITY_POLICY_ID); self.assertTrue(rows[0]["odds_event_time_verified"]); self.assertEqual(rows[0]["selection"],"home_ml"); self.assertEqual(rows[0]["odds_event_id"],"odds-123"); self.assertTrue(rows[0]["entry_market_freshness_verified"]); self.assertIsNone(rows[0]["closing_sharp_probability"]); self.assertEqual(capture_paper_close(ledger,events_loader=lambda:[_event()],now=CLOSE_AT),1); closed=read_paper(ledger)[0]; self.assertIsNotNone(closed["closing_sharp_probability"]); self.assertIsNotNone(closed["sharp_clv_pp"]); self.assertIsNotNone(closed["certification_clv_pp"]); self.assertEqual(closed["close_captured_at"],CLOSE_AT.isoformat())
 
     def test_ml_close_does_not_require_total_market(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -48,7 +48,7 @@ class V14LedgerTests(unittest.TestCase):
 
     def test_paper_entry_is_immutable_per_game_market(self):
         with tempfile.TemporaryDirectory() as tmp:
-            ledger=Path(tmp)/"paper.jsonl"; self.assertEqual(record_paper(_paper_payload("2026-08-25T19:00:00Z"),ledger),1); self.assertEqual(record_paper(_paper_payload("2026-08-25T20:00:00Z"),ledger),0); out=report_paper(read_paper(ledger)); self.assertEqual(out["schema"],"pulsar-v14-paper-bet-performance-v6"); self.assertEqual(out["raw_observations"],1); self.assertEqual(out["observations"],1); self.assertEqual(out["by_market"]["ML"]["independent_games"],1); self.assertIn("first",out["entry_policy"])
+            ledger=Path(tmp)/"paper.jsonl"; self.assertEqual(record_paper(_paper_payload("2026-08-25T19:00:00Z"),ledger),1); self.assertEqual(record_paper(_paper_payload("2026-08-25T20:00:00Z"),ledger),0); out=report_paper(read_paper(ledger)); self.assertEqual(out["schema"],"pulsar-v14-paper-bet-performance-v7"); self.assertEqual(out["probability_policy_id"],PROBABILITY_POLICY_ID); self.assertEqual(out["raw_observations"],1); self.assertEqual(out["observations"],1); self.assertEqual(out["by_market"]["ML"]["independent_games"],1); self.assertIn("first",out["entry_policy"])
 
     def test_persisted_event_id_never_falls_back_to_similar_event(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -61,6 +61,18 @@ class V14LedgerTests(unittest.TestCase):
     def test_paper_rejects_unverified_entry_market_state(self):
         with tempfile.TemporaryDirectory() as tmp:
             ledger=Path(tmp)/"paper.jsonl"; payload=_paper_payload(); payload["results"][0]["sharp_market"]["freshness_verified"]=False; self.assertEqual(record_paper(payload,ledger),0); self.assertEqual(read_paper(ledger),[])
+
+    def test_paper_rejects_missing_or_wrong_probability_policy(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger=Path(tmp)/"paper.jsonl"; payload=_paper_payload(); payload["results"][0]["v14_prediction"]["probability_policy_id"]="old-policy"; payload["results"][0]["v14_prediction"]["calibration"]["probability_policy_id"]="old-policy"; self.assertEqual(record_paper(payload,ledger),0); self.assertEqual(read_paper(ledger),[])
+
+    def test_paper_requires_timestamp_verified_odds_event(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger=Path(tmp)/"paper.jsonl"; self.assertEqual(record_paper(_paper_payload(event_time=None),ledger),0); self.assertEqual(record_paper(_paper_payload(event_time="2026-08-26T01:00:00Z"),ledger),0); self.assertEqual(read_paper(ledger),[])
+
+    def test_paper_close_rejects_same_event_id_with_wrong_start_time(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            ledger=Path(tmp)/"paper.jsonl"; self.assertEqual(record_paper(_paper_payload(),ledger),1); self.assertEqual(capture_paper_close(ledger,events_loader=lambda:[_event(commence_time="2026-08-26T01:00:00Z")],now=CLOSE_AT),0); self.assertIsNone(read_paper(ledger)[0]["closing_sharp_probability"])
 
     def test_authorized_ledger_refuses_uncertified_payload(self):
         with tempfile.TemporaryDirectory() as tmp:
