@@ -3,7 +3,7 @@ from __future__ import annotations
 """Conservative empirical decision bands for Pulsar V14.
 
 When enough settled observations exist, market×phase×probability-bucket bands
-are loaded from the current model generation. Otherwise wide conservative
+are loaded from the exact current model generation. Otherwise wide conservative
 fallbacks remain. These are decision-safety bands, not Bayesian credible
 intervals.
 """
@@ -33,7 +33,7 @@ def _load(path:Path|str=ARTIFACT)->dict[str,Any]:
     try: row=json.loads(target.read_text(encoding="utf-8"))
     except Exception: return {}
     if not isinstance(row,dict) or row.get("schema") not in {"pulsar-v14-uncertainty-fit-v1","pulsar-v14-uncertainty-fit-v2"}: return {}
-    if row.get("model_generation") not in {None,MODEL_GENERATION}: return {}
+    if row.get("model_generation")!=MODEL_GENERATION: return {}
     return row
 
 
@@ -67,9 +67,10 @@ def _accepted_fallback_half(p:float,meta:dict[str,Any])->tuple[float,int]:
     n=max(25,n); ece=abs(_num(holdout.get("ece")) or 0.0); sampling=Z95*math.sqrt(max(1e-8,p*(1-p))/n)
     return max(.025,sampling+.5*ece),n
 
+
 def intervals(probabilities:dict[str,Any],calibration:dict[str,Any]|None,*,data_quality:dict[str,Any]|None=None,starter_degraded:bool=False,market_fresh:bool|None=None,artifact:dict[str,Any]|None=None)->dict[str,Any]:
     cal=calibration or {}; cal_markets=cal.get("markets") or {}; phase=str(cal.get("phase") or "ALL").upper(); empirical=_load() if artifact is None else artifact
-    if empirical and empirical.get("model_generation") not in {None,MODEL_GENERATION}: empirical={}
+    if empirical and empirical.get("model_generation")!=MODEL_GENERATION: empirical={}
     penalty=_quality_penalty(data_quality,starter_degraded=starter_degraded,market_fresh=market_fresh); selections={}
     for market,(left,right) in PAIR_MAP.items():
         p=_num(probabilities.get(left))
@@ -83,4 +84,4 @@ def intervals(probabilities:dict[str,Any],calibration:dict[str,Any]|None,*,data_
         half=min(.18,half+penalty); lo,hi=max(0.0,p-half),min(1.0,p+half)
         selections[left]={"probability":p,"lower":lo,"upper":hi,"half_width_pp":100*half,"calibration_active":active,"calibration_accepted":accepted,"evidence_n":max(n,evidence_n),"uncertainty_source":evidence["source"],"uncertainty_cell":evidence["cell"]}
         rp=1-p; selections[right]={**selections[left],"probability":rp,"lower":1-hi,"upper":1-lo}
-    return {"schema":"pulsar-v14-probability-uncertainty-v3","method":"generation-safe empirical 95% calibration-aware decision band with conservative fallback","phase":phase,"starter_degraded":bool(starter_degraded),"market_freshness_verified":market_fresh,"quality_penalty_pp":100*penalty,"selections":selections,"note":"Decision-safety intervals; not exact Bayesian credible intervals."}
+    return {"schema":"pulsar-v14-probability-uncertainty-v4","method":"exact-generation empirical 95% calibration-aware decision band with conservative fallback","phase":phase,"starter_degraded":bool(starter_degraded),"market_freshness_verified":market_fresh,"quality_penalty_pp":100*penalty,"selections":selections,"note":"Decision-safety intervals; not exact Bayesian credible intervals. Empirical artifacts require exact MODEL_GENERATION."}
