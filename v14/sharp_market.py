@@ -90,7 +90,7 @@ def _price_pair(outcomes:list[dict[str,Any]],name_a:str,name_b:str,*,point_a:flo
     return (float(a),float(b)) if a is not None and b is not None and a>1 and b>1 else None
 
 
-def sharp_consensus(event:dict[str,Any],*,total_line:float,as_of:Any,max_age_minutes:float=DEFAULT_MAX_MARKET_AGE_MINUTES,weights_artifact:dict[str,Any]|None=None)->dict[str,Any]:
+def sharp_consensus(event:dict[str,Any],*,total_line:float|None,as_of:Any,max_age_minutes:float=DEFAULT_MAX_MARKET_AGE_MINUTES,weights_artifact:dict[str,Any]|None=None)->dict[str,Any]:
     home,away=str(event.get("home_team") or ""),str(event.get("away_team") or ""); artifact=_load_weights() if weights_artifact is None else weights_artifact
     accum={"home_ml":[],"home_minus_1_5":[],"away_minus_1_5":[],"over":[]}; book_rows=[]; devig_meta=[]
     for book in event.get("bookmakers") or []:
@@ -104,9 +104,10 @@ def sharp_consensus(event:dict[str,Any],*,total_line:float,as_of:Any,max_age_min
             pair=_price_pair(_market_outcomes(book,market_key),a_name,b_name,point_a=pa,point_b=pb)
             if pair:
                 p,_q,meta=_fair_pair(*pair); accum[out_key].append((p,weight,key,source_type)); used.append(market); devig_meta.append({"bookmaker":key,"market":market,"method_spread_pp":meta["method_spread_pp"]})
-        weight=_weight(key,"TOTAL_OVER",artifact); totals=[r for r in _market_outcomes(book,"totals") if _num(r.get("point"))==float(total_line)]; pair=_price_pair(totals,"Over","Under")
-        if pair and weight is not None:
-            p,_q,meta=_fair_pair(*pair); accum["over"].append((p,weight,key,source_type)); used.append("TOTAL_OVER"); devig_meta.append({"bookmaker":key,"market":"TOTAL_OVER","method_spread_pp":meta["method_spread_pp"]})
+        if total_line is not None:
+            weight=_weight(key,"TOTAL_OVER",artifact); totals=[r for r in _market_outcomes(book,"totals") if _num(r.get("point"))==float(total_line)]; pair=_price_pair(totals,"Over","Under")
+            if pair and weight is not None:
+                p,_q,meta=_fair_pair(*pair); accum["over"].append((p,weight,key,source_type)); used.append("TOTAL_OVER"); devig_meta.append({"bookmaker":key,"market":"TOTAL_OVER","method_spread_pp":meta["method_spread_pp"]})
         if used: book_rows.append({"bookmaker":key,"source_type":source_type,"freshness":freshness,"markets":used,"exchange_commission_adjusted":False if source_type=="EXCHANGE_PROXY" else None,"default_proxy_weight":DEFAULT_SHARP_BOOK_WEIGHTS.get(key) if source_type=="EXCHANGE_PROXY" else None})
     selections={}
     for key,rows in accum.items():
@@ -115,5 +116,5 @@ def sharp_consensus(event:dict[str,Any],*,total_line:float,as_of:Any,max_age_min
     for left,right in (("home_ml","away_ml"),("home_minus_1_5","away_plus_1_5"),("away_minus_1_5","home_plus_1_5"),("over","under")):
         if left in selections:
             base=selections[left]; contributors=[{**c,"fair_probability":1-float(c["fair_probability"]),"winsorized_probability":1-float(c["winsorized_probability"])} for c in base.get("contributors") or []]; selections[right]={**base,"fair_probability":1-float(base["fair_probability"]),"contributors":contributors}
-    required={"home_ml","away_ml","over","under"}; actionable=required<=set(selections) and bool(book_rows)
-    return {"schema":"pulsar-v14-sharp-consensus-v3","market_probability_used_as_feature":False,"benchmark_only":True,"actionable":actionable,"freshness_verified":bool(book_rows),"total_line":float(total_line),"selections":selections,"books":book_rows,"weights_status":artifact.get("status") or ("VALIDATED" if artifact.get("validated") else "DEFAULT"),"devig_methods":["proportional","power","additive"],"devig_method_diagnostics":devig_meta,"exchange_note":"Exchange sources are downweighted proxies unless commission/liquidity/lay fields become available and are validated OOS."}
+    required={"home_ml","away_ml"} if total_line is None else {"home_ml","away_ml","over","under"}; actionable=required<=set(selections) and bool(book_rows)
+    return {"schema":"pulsar-v14-sharp-consensus-v4","market_probability_used_as_feature":False,"benchmark_only":True,"actionable":actionable,"freshness_verified":bool(book_rows),"total_line":float(total_line) if total_line is not None else None,"selections":selections,"books":book_rows,"weights_status":artifact.get("status") or ("VALIDATED" if artifact.get("validated") else "DEFAULT"),"devig_methods":["proportional","power","additive"],"devig_method_diagnostics":devig_meta,"exchange_note":"Exchange sources are downweighted proxies unless commission/liquidity/lay fields become available and are validated OOS."}
