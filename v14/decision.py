@@ -2,6 +2,7 @@ from __future__ import annotations
 
 """Fail-closed, market-specific betting decision diagnostics for Pulsar V14."""
 
+from datetime import datetime, timezone
 import math
 from typing import Any
 
@@ -20,6 +21,17 @@ def _num(value:Any)->float|None:
     return out if math.isfinite(out) else None
 
 
+def _verified_event_timestamp(snapshot:dict[str,Any])->bool:
+    value=snapshot.get("commence_time")
+    if not value:return False
+    try:
+        dt=datetime.fromisoformat(str(value).replace("Z","+00:00"))
+        if dt.tzinfo is None:dt=dt.replace(tzinfo=timezone.utc)
+        dt.astimezone(timezone.utc)
+        return True
+    except Exception:return False
+
+
 def _execution_rows(snapshot:dict[str,Any],execution_market:dict[str,Any]|None=None)->list[tuple[str,str,float,str|None]]:
     best=(execution_market or {}).get("selections") or {}
     if best:
@@ -27,22 +39,22 @@ def _execution_rows(snapshot:dict[str,Any],execution_market:dict[str,Any]|None=N
         for key,raw in best.items():
             price=_num((raw or {}).get("price")); market=market_for.get(key)
             if price and price>1 and market: rows.append((key,market,price,str((raw or {}).get("bookmaker") or "") or None))
-        if rows: return rows
+        if rows:return rows
     rows=[]; markets=snapshot.get("markets") or {}
     for market,mapping in SELECTIONS.items():
         block=markets.get(market) or {}; selections=block.get("selections") or {}; book=block.get("bookmaker")
         for label,key in mapping.items():
             price=_num((selections.get(label) or {}).get("price"))
-            if price and price>1: rows.append((key,market,price,str(book) if book else None))
+            if price and price>1:rows.append((key,market,price,str(book) if book else None))
     return rows
 
 
-def _calibration_ok(meta:dict[str,Any])->bool: return meta.get("accepted") is True or meta.get("active") is True
+def _calibration_ok(meta:dict[str,Any])->bool:return meta.get("accepted") is True or meta.get("active") is True
 
 
 def _certified_market(certification:dict[str,Any],canonical_market:str)->bool:
     markets=certification.get("markets") or {}
-    if markets: return ((markets.get(canonical_market) or {}).get("betting_certified") is True)
+    if markets:return ((markets.get(canonical_market) or {}).get("betting_certified") is True)
     return certification.get("certified") is True
 
 
@@ -54,30 +66,31 @@ def _thresholds(market:str,interval:dict[str,Any],sharp_row:dict[str,Any])->tupl
 
 def evaluate(*,prediction:dict[str,Any],market_snapshot:dict[str,Any],sharp_market:dict[str,Any],certification:dict[str,Any],starter_degraded:bool=False,execution_market:dict[str,Any]|None=None)->dict[str,Any]:
     probs=prediction.get("probabilities") or {}; intervals=(prediction.get("probability_intervals") or {}).get("selections") or {}; calibration=prediction.get("calibration") or {}; sharp=sharp_market.get("selections") or {}
-    freshness=market_snapshot.get("freshness_verified") is True and sharp_market.get("freshness_verified") is True and ((execution_market or {}).get("freshness_verified") is not False); rows=[]
+    freshness=market_snapshot.get("freshness_verified") is True and sharp_market.get("freshness_verified") is True and ((execution_market or {}).get("freshness_verified") is not False); event_timestamp_verified=_verified_event_timestamp(market_snapshot); rows=[]
     for key,market,price,book in _execution_rows(market_snapshot,execution_market):
         p=_num(probs.get(key))
-        if p is None: continue
+        if p is None:continue
         interval=intervals.get(key) or {}; lower=_num(interval.get("lower")); lower=lower if lower is not None else max(0.0,p-.10); breakeven=1/price; sharp_row=sharp.get(key) or {}; sharp_p=_num(sharp_row.get("fair_probability")); model_edge=100*(p-breakeven); robust_edge=100*(lower-breakeven); sharp_edge=100*(p-sharp_p) if sharp_p is not None else None; robust_sharp_edge=100*(lower-sharp_p) if sharp_p is not None else None
         canonical=CALIBRATION_MARKET.get(key) or ""; cal_meta=(calibration.get("markets") or {}).get(canonical) or {}; blockers=[]
-        if starter_degraded: blockers.append("starter_degraded")
-        if not freshness: blockers.append("unverified_market_freshness")
-        if not _calibration_ok(cal_meta): blockers.append("calibration_not_accepted")
-        if sharp_p is None: blockers.append("sharp_consensus_missing")
+        if starter_degraded:blockers.append("starter_degraded")
+        if not freshness:blockers.append("unverified_market_freshness")
+        if not _calibration_ok(cal_meta):blockers.append("calibration_not_accepted")
+        if sharp_p is None:blockers.append("sharp_consensus_missing")
         source_count=int(sharp_row.get("source_count") or 0); sportsbook_source_count=int(sharp_row.get("sportsbook_source_count") or 0); exchange_proxy_source_count=int(sharp_row.get("exchange_proxy_source_count") or 0)
-        if sharp_edge is not None and abs(sharp_edge)>MAX_ABSOLUTE_SHARP_DIVERGENCE_PP: blockers.append("extreme_model_sharp_divergence")
-        elif sharp_edge is not None and source_count<2 and abs(sharp_edge)>MAX_SINGLE_SOURCE_SHARP_DIVERGENCE_PP: blockers.append("extreme_single_source_sharp_divergence")
-        model_threshold,robust_threshold,penalties=_thresholds(market,interval,sharp_row)
-        robust_sharp_threshold=MIN_ROBUST_SHARP_EDGE_PP[market]
+        if sharp_edge is not None and abs(sharp_edge)>MAX_ABSOLUTE_SHARP_DIVERGENCE_PP:blockers.append("extreme_model_sharp_divergence")
+        elif sharp_edge is not None and source_count<2 and abs(sharp_edge)>MAX_SINGLE_SOURCE_SHARP_DIVERGENCE_PP:blockers.append("extreme_single_source_sharp_divergence")
+        model_threshold,robust_threshold,penalties=_thresholds(market,interval,sharp_row); robust_sharp_threshold=MIN_ROBUST_SHARP_EDGE_PP[market]
         edge_qualified=(model_edge>=model_threshold and robust_edge>=robust_threshold and sharp_edge is not None and sharp_edge>0 and robust_sharp_edge is not None and robust_sharp_edge>=robust_sharp_threshold)
         research_ready=edge_qualified and not blockers
-        # Exchange proxies remain useful research evidence, but a real BET must be
-        # anchored by at least one validated sharp sportsbook contributor.
-        if sportsbook_source_count<1: blockers.append("sharp_sportsbook_source_missing_for_bet")
+        # Betting-only gates are intentionally added after research_ready so a
+        # high-quality research row can still earn prospective evidence without
+        # ever being represented as executable authorization.
+        if not event_timestamp_verified:blockers.append("odds_event_timestamp_missing_for_bet")
+        if sportsbook_source_count<1:blockers.append("sharp_sportsbook_source_missing_for_bet")
         market_certified=_certified_market(certification,canonical)
         if not market_certified:
             blockers.append("betting_not_certified"); blockers.append(f"{canonical or market}_betting_not_certified")
         status="BET" if edge_qualified and not blockers else ("RESEARCH_ONLY" if research_ready else "NO_BET")
-        rows.append({"selection":key,"canonical_market":canonical,"market":market,"execution_book":book,"execution_source":"LINE_SHOPPED" if (execution_market or {}).get("selections") else "CANONICAL_FALLBACK","price":price,"probability":p,"lower_probability":lower,"break_even_probability":breakeven,"model_edge_pp":model_edge,"robust_edge_pp":robust_edge,"sharp_edge_pp":sharp_edge,"robust_sharp_edge_pp":robust_sharp_edge,"sharp_source_count":source_count,"sharp_sportsbook_source_count":sportsbook_source_count,"sharp_exchange_proxy_source_count":exchange_proxy_source_count,"sharp_dispersion_pp":_num(sharp_row.get("dispersion_pp")),"model_edge_threshold_pp":model_threshold,"robust_edge_threshold_pp":robust_threshold,"robust_sharp_edge_threshold_pp":robust_sharp_threshold,**penalties,"edge_qualified":edge_qualified,"research_ready":research_ready,"market_betting_certified":market_certified,"status":status,"blockers":blockers})
+        rows.append({"selection":key,"canonical_market":canonical,"market":market,"execution_book":book,"execution_source":"LINE_SHOPPED" if (execution_market or {}).get("selections") else "CANONICAL_FALLBACK","price":price,"probability":p,"lower_probability":lower,"break_even_probability":breakeven,"model_edge_pp":model_edge,"robust_edge_pp":robust_edge,"sharp_edge_pp":sharp_edge,"robust_sharp_edge_pp":robust_sharp_edge,"sharp_source_count":source_count,"sharp_sportsbook_source_count":sportsbook_source_count,"sharp_exchange_proxy_source_count":exchange_proxy_source_count,"sharp_dispersion_pp":_num(sharp_row.get("dispersion_pp")),"odds_event_timestamp_verified":event_timestamp_verified,"model_edge_threshold_pp":model_threshold,"robust_edge_threshold_pp":robust_threshold,"robust_sharp_edge_threshold_pp":robust_sharp_threshold,**penalties,"edge_qualified":edge_qualified,"research_ready":research_ready,"market_betting_certified":market_certified,"status":status,"blockers":blockers})
     rows.sort(key=lambda r:r.get("robust_edge_pp") if r.get("robust_edge_pp") is not None else -999,reverse=True)
-    return {"schema":"pulsar-v14-decision-diagnostics-v6","betting_certified":any(r.get("market_betting_certified") for r in rows),"starter_degraded":bool(starter_degraded),"market_freshness_verified":freshness,"recommendations_authorized":any(r.get("status")=="BET" for r in rows),"research_clv_collection_authorized":True,"threshold_policy":"market base + model uncertainty + sharp disagreement + lower-bound edge versus sharp; BET additionally requires >=1 sharp sportsbook contributor","line_shopping_used":bool((execution_market or {}).get("selections")),"candidates":rows,"best":rows[0] if rows else None}
+    return {"schema":"pulsar-v14-decision-diagnostics-v7","betting_certified":any(r.get("market_betting_certified") for r in rows),"starter_degraded":bool(starter_degraded),"market_freshness_verified":freshness,"odds_event_timestamp_verified":event_timestamp_verified,"recommendations_authorized":any(r.get("status")=="BET" for r in rows),"research_clv_collection_authorized":True,"threshold_policy":"market base + model uncertainty + sharp disagreement + lower-bound edge versus sharp; BET additionally requires a timestamped Odds event and >=1 sharp sportsbook contributor","line_shopping_used":bool((execution_market or {}).get("selections")),"candidates":rows,"best":rows[0] if rows else None}
