@@ -1,7 +1,7 @@
 import unittest
 
 from v14 import MODEL_GENERATION
-from v14.production_runtime import MIN_PRICED_MATCHED_COVERAGE, validate_candidate_coverage, validate_production_payload
+from v14.production_runtime import MIN_MATCHED_SCHEDULED_COVERAGE, MIN_PRICED_MATCHED_COVERAGE, validate_candidate_coverage, validate_production_payload
 
 
 def _prediction():
@@ -28,10 +28,15 @@ class V14ProductionRuntimeTests(unittest.TestCase):
     def test_execution_market_state_is_required(self):
         payload=_payload(); del payload["results"][0]["execution_market"]
         with self.assertRaisesRegex(ValueError,"execution state"): validate_production_payload(payload)
-    def test_candidate_coverage_gate(self):
-        validate_candidate_coverage({"coverage":{"matched_odds_games":10,"priced_games":8}})
-        self.assertEqual(MIN_PRICED_MATCHED_COVERAGE,.80)
-        with self.assertRaisesRegex(RuntimeError,"coverage too low"): validate_candidate_coverage({"coverage":{"matched_odds_games":10,"priced_games":7}})
-        with self.assertRaisesRegex(RuntimeError,"no priced games"): validate_candidate_coverage({"coverage":{"matched_odds_games":10,"priced_games":0}})
+    def test_candidate_coverage_gates_both_schedule_matching_and_pricing(self):
+        validate_candidate_coverage({"coverage":{"scheduled_future_games":10,"matched_odds_games":8,"priced_games":8}})
+        self.assertEqual(MIN_PRICED_MATCHED_COVERAGE,.80); self.assertEqual(MIN_MATCHED_SCHEDULED_COVERAGE,.80)
+        with self.assertRaisesRegex(RuntimeError,"odds/schedule coverage too low"): validate_candidate_coverage({"coverage":{"scheduled_future_games":10,"matched_odds_games":7,"priced_games":7}})
+        with self.assertRaisesRegex(RuntimeError,"priced/matched coverage too low"): validate_candidate_coverage({"coverage":{"scheduled_future_games":10,"matched_odds_games":10,"priced_games":7}})
+        with self.assertRaisesRegex(RuntimeError,"no priced games"): validate_candidate_coverage({"coverage":{"scheduled_future_games":10,"matched_odds_games":10,"priced_games":0}})
+    def test_bet_requires_validated_sharp_sportsbook_source(self):
+        payload=_payload(); cert={"model_generation":MODEL_GENERATION,"certified":True,"markets":{"ML":{"betting_certified":True}}}; payload["betting_certification"]=cert; result=payload["results"][0]; result["betting_certification"]=cert; result["decision"]={"candidates":[{"status":"BET","canonical_market":"ML","edge_qualified":True,"research_ready":True,"execution_book":"pinnacle","price":1.9,"sharp_sportsbook_source_count":0}]}
+        with self.assertRaisesRegex(ValueError,"sharp sportsbook"): validate_production_payload(payload)
+        result["decision"]["candidates"][0]["sharp_sportsbook_source_count"]=1; validate_production_payload(payload)
 
 if __name__=="__main__": unittest.main()
