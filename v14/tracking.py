@@ -5,7 +5,8 @@ from __future__ import annotations
 Professional scoring rules are game-paired. Pulsar-vs-sharp gains are computed
 on identical games. Raw-vs-calibrated metrics, phase slices and rolling windows
 are retained for drift monitoring. Integer-total pushes are excluded from binary
-proper scores instead of being mislabeled as losses.
+proper scores instead of being mislabeled as losses. Certification-facing
+performance is restricted to the exact current probability policy.
 """
 
 import argparse
@@ -16,7 +17,7 @@ import math
 from pathlib import Path
 from typing import Any, Callable
 
-from . import MODEL_GENERATION
+from . import MODEL_GENERATION, PROBABILITY_POLICY_ID
 from .acquisition import mlb_schedule, parse_time
 from .pick_tracking import load_pick_performance
 
@@ -60,16 +61,25 @@ def _chronological_key(row:dict[str,Any])->tuple[datetime,datetime,str]:
     return game,analyzed,str(row.get("game_pk") or "")
 
 
+def _row_policy(row:dict[str,Any])->str|None:
+    direct=row.get("probability_policy_id")
+    if direct: return str(direct)
+    nested=(row.get("calibration") or {}).get("probability_policy_id")
+    return str(nested) if nested else None
+
+
 def snapshot_rows(payload:dict[str,Any])->list[dict[str,Any]]:
     if payload.get("model_generation")!=MODEL_GENERATION: raise ValueError("tracking only accepts current V14 generation")
     target_date=str(payload.get("target_date") or ""); rows=[]
     for result in payload.get("results") or []:
         prediction=result.get("v14_prediction") or {}
         if prediction.get("model_generation")!=MODEL_GENERATION: raise ValueError(f"game {result.get('game_pk')} is not current V14")
+        calibration=prediction.get("calibration") or {}; policy=calibration.get("probability_policy_id")
+        if policy not in {None,PROBABILITY_POLICY_ID}: raise ValueError(f"game {result.get('game_pk')} probability policy mismatch")
         analyzed_at=result.get("analyzed_at") or payload.get("analyzed_at"); game_date=result.get("game_date")
         if not _is_strictly_pregame({"analyzed_at":analyzed_at,"game_date":game_date}): raise ValueError(f"game {result.get('game_pk')} tracking snapshot is not strictly pregame")
         probabilities=prediction.get("probabilities") or {}; raw=prediction.get("raw_probabilities") or probabilities; projection=prediction.get("run_projection") or {}; total_line=_num(projection.get("total_line")); total_line=total_line if total_line is not None else _num((result.get("canonical_lines") or {}).get("TOTAL")); keys=("home_ml","away_ml","home_minus_1_5","away_plus_1_5","away_minus_1_5","home_plus_1_5","over","under")
-        rows.append({"schema":"pulsar-v14-prediction-record-v5","model_generation":MODEL_GENERATION,"game_pk":str(result.get("game_pk") or ""),"target_date":target_date or str(game_date or "")[:10],"game_date":game_date,"analyzed_at":analyzed_at,"phase":result.get("phase") or prediction.get("phase"),"home":result.get("home"),"away":result.get("away"),"home_mu":_num(projection.get("home_mu")),"away_mu":_num(projection.get("away_mu")),"total_line":total_line,"probabilities":{k:_num(probabilities.get(k)) for k in keys},"raw_probabilities":{k:_num(raw.get(k)) for k in keys},"calibration":prediction.get("calibration") or {},"probability_intervals":prediction.get("probability_intervals") or {},"market_snapshot":result.get("market_snapshot") or {},"market_diagnostics":result.get("market_diagnostics") or {},"sharp_market":result.get("sharp_market") or {},"decision":result.get("decision") or {},"training_features":result.get("training_features") or {},"starter_fallback":result.get("starter_fallback") or {},"settled":False,"home_score":None,"away_score":None,"settled_at":None})
+        rows.append({"schema":"pulsar-v14-prediction-record-v6","model_generation":MODEL_GENERATION,"probability_policy_id":PROBABILITY_POLICY_ID,"game_pk":str(result.get("game_pk") or ""),"target_date":target_date or str(game_date or "")[:10],"game_date":game_date,"analyzed_at":analyzed_at,"phase":result.get("phase") or prediction.get("phase"),"home":result.get("home"),"away":result.get("away"),"home_mu":_num(projection.get("home_mu")),"away_mu":_num(projection.get("away_mu")),"total_line":total_line,"probabilities":{k:_num(probabilities.get(k)) for k in keys},"raw_probabilities":{k:_num(raw.get(k)) for k in keys},"calibration":calibration,"probability_intervals":prediction.get("probability_intervals") or {},"market_snapshot":result.get("market_snapshot") or {},"market_diagnostics":result.get("market_diagnostics") or {},"sharp_market":result.get("sharp_market") or {},"decision":result.get("decision") or {},"training_features":result.get("training_features") or {},"starter_fallback":result.get("starter_fallback") or {},"settled":False,"home_score":None,"away_score":None,"settled_at":None})
     return rows
 
 
@@ -133,7 +143,7 @@ def _paired_benchmark(items:list[tuple[float,float,int]])->dict[str,Any]:
 
 
 def _canonical_settled(rows:list[dict[str,Any]])->tuple[list[dict[str,Any]],int]:
-    records=[r for r in rows if r.get("settled") and r.get("model_generation")==MODEL_GENERATION and _is_strictly_pregame(r)]; latest={}
+    records=[r for r in rows if r.get("settled") and r.get("model_generation")==MODEL_GENERATION and _row_policy(r)==PROBABILITY_POLICY_ID and _is_strictly_pregame(r)]; latest={}
     for row in records:
         key=str(row.get("game_pk") or ""); cur=latest.get(key)
         if cur is None or _chronological_key(row)[1]>_chronological_key(cur)[1]: latest[key]=row
@@ -151,7 +161,7 @@ def _sharp_probability(row:dict[str,Any],selection:str)->float|None:
 def _market_movement_proxy(rows:list[dict[str,Any]])->dict[str,Any]:
     by_game=defaultdict(list)
     for row in rows:
-        if row.get("model_generation")==MODEL_GENERATION and _is_strictly_pregame(row): by_game[str(row.get("game_pk") or "")].append(row)
+        if row.get("model_generation")==MODEL_GENERATION and _row_policy(row)==PROBABILITY_POLICY_ID and _is_strictly_pregame(row): by_game[str(row.get("game_pk") or "")].append(row)
     diffs=[]
     for game_rows in by_game.values():
         ordered=sorted(game_rows,key=lambda r:_chronological_key(r)[1])
@@ -209,7 +219,9 @@ def performance_report(rows:list[dict[str,Any]])->dict[str,Any]:
         hs=int(row["home_score"]); aws=int(row["away_score"]); hmu=_num(row.get("home_mu")); amu=_num(row.get("away_mu"))
         if hmu is not None and amu is not None: run_errors.extend((abs(hmu-hs),abs(amu-aws))); total_errors.append(abs(hmu+amu-hs-aws))
     overall=_binary_metrics(all_items); overall["interpretation"]="dashboard-only; correlated markets must not drive model promotion"
-    return {"schema":"pulsar-v14-performance-v5","model_generation":MODEL_GENERATION,"generated_at":datetime.now(timezone.utc).isoformat(),"prediction_records_settled":record_count,"games_settled":len(settled),"canonical_snapshot_policy":"latest strictly-pregame snapshot per game, exact game_date ordering","total_push_policy":"excluded from binary Brier/LogLoss/calibration/benchmark","overall":overall,"calibration":_calibration(all_items),"markets":markets,"segments":{"phase":_phase_segments(settled),"data_quality":_quality_segments(settled),"rolling":_rolling_segments(settled)},"runs":{"team_run_mae":sum(run_errors)/len(run_errors) if run_errors else None,"total_run_mae":sum(total_errors)/len(total_errors) if total_errors else None},"roi":{"status":"UNAVAILABLE","reason":"No certified official bet/stake sample yet."},"clv":{"status":"UNAVAILABLE","n":0,"mean_clv":None,"reason":"Use official/paper ledgers and verified close feed; market movement proxy is separate."},"market_movement_proxy":_market_movement_proxy(rows)}
+    latest_observation=max((_chronological_key(r)[0] for r in settled),default=None)
+    excluded_policy=sum(1 for r in rows if r.get("settled") and r.get("model_generation")==MODEL_GENERATION and _row_policy(r)!=PROBABILITY_POLICY_ID)
+    return {"schema":"pulsar-v14-performance-v5","model_generation":MODEL_GENERATION,"probability_policy_id":PROBABILITY_POLICY_ID,"generated_at":datetime.now(timezone.utc).isoformat(),"latest_observation_at":latest_observation.isoformat() if latest_observation else None,"prediction_records_settled":record_count,"prediction_records_excluded_other_policy":excluded_policy,"games_settled":len(settled),"canonical_snapshot_policy":"latest strictly-pregame snapshot per game, exact game_date ordering, exact probability policy","total_push_policy":"excluded from binary Brier/LogLoss/calibration/benchmark","overall":overall,"calibration":_calibration(all_items),"markets":markets,"segments":{"phase":_phase_segments(settled),"data_quality":_quality_segments(settled),"rolling":_rolling_segments(settled)},"runs":{"team_run_mae":sum(run_errors)/len(run_errors) if run_errors else None,"total_run_mae":sum(total_errors)/len(total_errors) if total_errors else None},"roi":{"status":"UNAVAILABLE","reason":"No certified real-execution sample yet."},"clv":{"status":"UNAVAILABLE","n":0,"mean_clv":None,"reason":"Use authorized/paper ledgers and verified close feed; market movement proxy is separate."},"market_movement_proxy":_market_movement_proxy(rows)}
 
 
 def write_performance(path:Path|str=PREDICTIONS,report_path:Path|str=PERFORMANCE)->dict[str,Any]:
