@@ -41,7 +41,7 @@ def dedupe_statcast_rows(rows:list[dict[str,Any]])->list[dict[str,Any]]:
 
 
 def _empty_stat()->dict[str,Any]:
-    return {"pitches":0,"pa":0,"strikeouts":0,"walks":0,"xwoba_sum":0.0,"xwoba_n":0,"ev_sum":0.0,"ev_n":0,"hard_hit":0,"barrels":0,"velocity_sum":0.0,"velocity_n":0,"pitch_types":Counter(),"max_game_date":None}
+    return {"pitches":0,"pa":0,"strikeouts":0,"walks":0,"xwoba_sum":0.0,"xwoba_n":0,"ev_sum":0.0,"ev_n":0,"hard_hit":0,"barrels":0,"velocity_sum":0.0,"velocity_n":0,"pitch_types":Counter(),"pitch_hands":Counter(),"max_game_date":None}
 
 
 def _consume_common(stat:dict[str,Any],row:dict[str,Any])->None:
@@ -65,7 +65,7 @@ def _finalize_stat(stat:dict[str,Any],include_pitching:bool=False)->dict[str,Any
     pa=int(stat["pa"]);ev_n=int(stat["ev_n"])
     out={"pitches":int(stat["pitches"]),"pa":pa,"k_rate":stat["strikeouts"]/pa if pa else None,"bb_rate":stat["walks"]/pa if pa else None,"k_minus_bb_rate":(stat["strikeouts"]-stat["walks"])/pa if pa else None,"xwoba":stat["xwoba_sum"]/stat["xwoba_n"] if stat["xwoba_n"] else None,"xwoba_batted_balls":int(stat["xwoba_n"]),"avg_exit_velocity":stat["ev_sum"]/ev_n if ev_n else None,"hard_hit_rate":stat["hard_hit"]/ev_n if ev_n else None,"barrel_rate":stat["barrels"]/ev_n if ev_n else None,"batted_balls":ev_n,"max_game_date":stat["max_game_date"]}
     if include_pitching:
-        mix=stat["pitch_types"];total=sum(mix.values());out["avg_release_speed"]=stat["velocity_sum"]/stat["velocity_n"] if stat["velocity_n"] else None;out["velocity_pitches"]=int(stat["velocity_n"]);out["pitch_mix"]={k:v/total for k,v in sorted(mix.items())} if total else {}
+        mix=stat["pitch_types"];total=sum(mix.values());hands=stat["pitch_hands"];out["avg_release_speed"]=stat["velocity_sum"]/stat["velocity_n"] if stat["velocity_n"] else None;out["velocity_pitches"]=int(stat["velocity_n"]);out["pitch_mix"]={k:v/total for k,v in sorted(mix.items())} if total else {};out["pitch_hand"]=hands.most_common(1)[0][0] if hands else None;out["pitch_hand_counts"]={k:int(v) for k,v in sorted(hands.items())}
     return out
 
 
@@ -82,5 +82,7 @@ def aggregate_statcast_priors(rows:list[dict[str,Any]],cutoff_day:str)->dict[str
             if velo is not None and 40.0<=velo<=110.0:p["velocity_sum"]+=velo;p["velocity_n"]+=1
             ptype=str(row.get("pitch_type") or "").strip().upper()
             if ptype:p["pitch_types"][ptype]+=1
+            hand=str(row.get("p_throws") or "").strip().upper()
+            if hand in {"L","R"}:p["pitch_hands"][hand]+=1
         accepted+=1
     return {"schema":SCHEMA,"cohort":"PULSAR_V14_RESEARCH_PIT","cutoff_day":cutoff.isoformat(),"point_in_time":True,"stable_id_only":True,"source":"Baseball Savant Statcast Search CSV","hitters":{pid:_finalize_stat(s) for pid,s in sorted(hitters.items())},"pitchers":{pid:_finalize_stat(s,include_pitching=True) for pid,s in sorted(pitchers.items())},"diagnostics":{"accepted_pitch_rows":accepted,"rejected_at_or_after_cutoff":rejected_future,"rejected_bad_game_date":rejected_bad_date}}
