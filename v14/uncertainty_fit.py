@@ -10,7 +10,7 @@ import math
 from pathlib import Path
 from typing import Any
 
-from . import MODEL_GENERATION
+from . import MODEL_GENERATION, PROBABILITY_POLICY_ID
 from .tracking import _canonical_settled, _read_jsonl
 
 PREDICTIONS=Path("data/v14_predictions.jsonl")
@@ -66,7 +66,20 @@ def build(rows:list[dict[str,Any]])->dict[str,Any]:
             if p is None or y is None: continue
             grouped[(market,phase,_bucket(p))].append((p,y)); grouped[(market,"ALL",_bucket(p))].append((p,y))
     cells={f"{m}:{phase}:{bucket}":_fit(items) for (m,phase,bucket),items in grouped.items()}
-    return {"schema":"pulsar-v14-uncertainty-fit-v2","model_generation":MODEL_GENERATION,"generated_at":datetime.now(timezone.utc).isoformat(),"games":len(settled),"minimum_bucket_n":MIN_BUCKET_N,"bucket_width":BUCKET_WIDTH,"confidence_level":.95,"total_push_policy":"excluded from binary cells","cells":cells,"role":"DECISION_SAFETY_ONLY","note":"Empirical calibration decision bands, not Bayesian credible intervals."}
+    return {
+        "schema":"pulsar-v14-uncertainty-fit-v3",
+        "model_generation":MODEL_GENERATION,
+        "probability_policy_id":PROBABILITY_POLICY_ID,
+        "generated_at":datetime.now(timezone.utc).isoformat(),
+        "games":len(settled),
+        "minimum_bucket_n":MIN_BUCKET_N,
+        "bucket_width":BUCKET_WIDTH,
+        "confidence_level":.95,
+        "total_push_policy":"excluded from binary cells",
+        "cells":cells,
+        "role":"DECISION_SAFETY_ONLY",
+        "note":"Empirical calibration decision bands bound to exact model generation and probability policy; not Bayesian credible intervals.",
+    }
 
 
 def write(predictions:Path|str=PREDICTIONS,output:Path|str=ARTIFACT)->dict[str,Any]:
