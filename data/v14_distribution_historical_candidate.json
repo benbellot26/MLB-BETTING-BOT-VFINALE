@@ -1,78 +1,95 @@
 {
-  "schema": "pulsar-v14-historical-distribution-candidate-v1",
-  "role": "SHADOW_ONLY",
-  "status": "HISTORICAL_VALIDATED_SHADOW",
   "auto_activation": false,
-  "champion_impact": false,
-  "native_live_confirmation_required": true,
-  "source_run_id": 32990513482,
-  "frozen_at": "2026-08-26T16:51:01.156314+00:00",
-  "dataset": {
-    "games": 14122,
-    "dataset_content_sha256": "50061745f1a5634b927b4376f7caf4a745efd87bfd76591a6905a6e8daed396c",
-    "feature_contract_sha256": "08b35bb22ea34adb3113de13d335975ca00e401b9c1d80deada2473a9b661a61",
-    "split": {
-      "tuning_2021_2024": 9718,
-      "validation_2025": 2430,
-      "frozen_test_2026": 1974,
-      "frozen_2026_used_for_parameter_selection": false
-    }
-  },
+  "candidate_fingerprint": "bd3c867cfaa7cba16484e0a673cbba6cf39f710284cd99c2cc78c7ca50d5df11",
+  "candidate_id": "distribution-r33165632253-v1",
   "candidate_parameters": {
     "dispersion": 5.5,
     "environment_sigma": 0.16
   },
+  "champion_impact": false,
   "champion_parameters": {
     "dispersion": 7.5,
     "environment_sigma": 0.08
   },
-  "run_mean_contract": {
-    "selection_and_primary_validation": "STRICT_TEAM_HISTORY_BASELINE",
-    "current_v14_champion_reconstruction_claimed": false,
-    "reason": "distribution effect isolated from the team-run challenger"
+  "feature_contract_sha256": "08b35bb22ea34adb3113de13d335975ca00e401b9c1d80deada2473a9b661a61",
+  "frozen_2026": {
+    "market_brier_gain": {
+      "ML": {
+        "ci95_lower": 0.00020485726888370143,
+        "ci95_upper": 0.0006272797746218091,
+        "mean": 0.0004160685217527553
+      },
+      "RL_AWAY_-1.5": {
+        "ci95_lower": 0.00015461785399493452,
+        "ci95_upper": 0.0006883149472661663,
+        "mean": 0.0004214664006305504
+      },
+      "RL_HOME_-1.5": {
+        "ci95_lower": 0.00011903251887789023,
+        "ci95_upper": 0.0005911576406798477,
+        "mean": 0.000355095079778869
+      },
+      "TOTAL_OVER": {
+        "ci95_lower": 0.0017739157285452092,
+        "ci95_upper": 0.0034836084576588345,
+        "mean": 0.002628762093102022
+      }
+    },
+    "n": 2011,
+    "passes": true,
+    "score_nll": {
+      "candidate": 4.869377496564763,
+      "champion": 4.9230163327463545,
+      "gain_ci95_lower": 0.04466256241902392,
+      "gain_ci95_upper": 0.06261510994416067,
+      "gain_mean": 0.0536388361815923
+    }
+  },
+  "frozen_at": "2026-08-28T11:08:03.931066+00:00",
+  "historical_evidence": {
+    "evidence_policy": "immutable successful CI validation artifact; daily source-dataset refreshes do not mutate this candidate",
+    "games": 14159,
+    "split": {
+      "frozen_2026_used_for_parameter_selection": false,
+      "frozen_test_2026": 2011,
+      "tuning_2021_2024": 9718,
+      "validation_2025": 2430
+    },
+    "validation_artifact_sha256": "1d8723739e1e67da0fbce287380edca4c05186621e93abf614c232ad667bbf48"
   },
   "market_line_contract": {
+    "historical_actual_total_lines_available": false,
+    "native_live_line_by_line_confirmation_required": true,
+    "primary_distribution_evidence": "JOINT_SCORE_NLL_PLUS_ML_RL",
     "total_line": 8.5,
     "total_line_source": "SYNTHETIC_FIXED_DIAGNOSTIC",
-    "historical_actual_total_lines_available": false,
-    "total_market_claim": "NON_REGRESSION_AT_FIXED_8_5_ONLY",
-    "primary_distribution_evidence": "JOINT_SCORE_NLL_PLUS_ML_RL",
-    "native_live_line_by_line_confirmation_required": true
+    "total_market_claim": "NON_REGRESSION_AT_FIXED_8_5_ONLY"
   },
-  "sample_policy": {
-    "tuning": 500,
-    "validation_2025": 2430,
-    "frozen_2026": 1974,
-    "tuning_outcome_independent_even_temporal_sampling": true,
-    "validation_2025_full_holdout": true,
-    "frozen_2026_full_holdout": true
+  "native_live_confirmation_required": true,
+  "promotion_policy": "Historical evidence nominates this fixed distribution for prospective native-live shadow only; actual market lines and current-generation paired evidence are mandatory before promotion.",
+  "role": "SHADOW_ONLY",
+  "run_mean_contract": {
+    "current_v14_champion_reconstruction_claimed": false,
+    "reason": "distribution effect isolated from the separately rejected team-run challenger",
+    "selection_and_primary_validation": "STRICT_TEAM_HISTORY_BASELINE"
   },
+  "schema": "pulsar-v14-historical-distribution-candidate-v2",
+  "source_commit_sha": "7baab7ee5eed5394389d16d36e4bca9d65a9e1c4",
+  "source_run_id": 33165632253,
+  "source_validation_artifact": {
+    "id": 9683583182,
+    "sha256": "1d8723739e1e67da0fbce287380edca4c05186621e93abf614c232ad667bbf48"
+  },
+  "status": "HISTORICAL_VALIDATED_SHADOW",
   "validation_2025": {
+    "n": 2430,
+    "passes": true,
     "score_nll": {
       "candidate": 4.847622593739287,
       "champion": 4.901323909786129,
-      "gain_mean": 0.05370131604684133,
       "gain_ci95_lower": 0.0452535926715396,
       "gain_ci95_upper": 0.06214903942214306,
-      "n": 2430
-    },
-    "market_nonregression": true,
-    "passes": true
-  },
-  "frozen_2026": {
-    "score_nll": {
-      "candidate": 4.866484268279918,
-      "champion": 4.9193033415773675,
-      "gain_mean": 0.052819073297449046,
-      "gain_ci95_lower": 0.04376056475449546,
-      "gain_ci95_upper": 0.06187758184040263,
-      "n": 1974
-    },
-    "market_nonregression": true,
-    "total_over_brier_gain_mean": 0.002608852535061206,
-    "total_over_brier_gain_ci95_lower": 0.001746353648432616,
-    "passes": true
-  },
-  "gate": "selected only on 2021-2024 baseline means; full 2025 paired score-NLL CI95 > 0 plus ML/RL/fixed-8.5 diagnostic non-regression; full frozen 2026 non-regression",
-  "promotion_policy": "Historical evidence nominates this distribution for prospective native-live shadow only; actual market lines and current-generation paired evidence are mandatory before promotion."
+      "gain_mean": 0.05370131604684133
+    }
+  }
 }
