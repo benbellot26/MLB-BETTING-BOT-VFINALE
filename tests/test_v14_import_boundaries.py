@@ -8,8 +8,9 @@ NATIVE_MODULES=(
     "acquisition.py","certification.py","context_overlay.py","decision.py","defense_baserunning_challenger.py","discord.py","distribution.py","distribution_tuning.py",
     "environment_physics_challenger.py","execution_market.py","historical_distribution_shadow.py","historical_pit.py","historical_team_shadow.py","heteroskedastic_distribution_challenger.py","inning_simulator_challenger.py",
     "market_edge.py","market_lines.py","mlb_inputs.py","model.py","native_candidate.py","native_payload.py","parity_gate.py","park.py","phase.py","pipeline.py",
-    "pitch_matchup_challenger.py","probability_calibration.py","production_runtime.py","residual_challenger.py","run_decomposition_challenger.py","run_stack.py",
-    "sharp_market.py","sharp_weight_challenger.py","starter_fallback.py","starter_integrity.py","starter_recent_usage.py","starter_usage_challenger.py","statcast_shadow.py",
+    "pitch_matchup_challenger.py","probability_calibration.py","production_runtime.py","provider_http.py","residual_challenger.py","run_decomposition_challenger.py","run_stack.py",
+    "sharp_market.py","sharp_weight_challenger.py","starter_fallback.py","starter_integrity.py","starter_recent_usage.py","starter_usage_challenger.py",
+    "statcast_base.py","statcast_daily.py","statcast_enrichment.py","statcast_pit_backfill.py","statcast_shadow.py",
     "structural.py","timezone_challenger.py","total_market.py","tracking.py","true_talent_challenger.py","uncertainty.py","uncertainty_fit.py","venue_park_challenger.py","weather_live_shadow.py",
     "calibration_methods_challenger.py",
 )

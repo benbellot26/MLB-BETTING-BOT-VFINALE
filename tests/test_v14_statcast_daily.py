@@ -9,12 +9,12 @@ import unittest
 from v14.statcast_daily import refresh
 
 
-def artifact(*,split_players:int=2,split_buckets:int=5,source_end:str="2026-08-25",schema:str="pulsar-v14-statcast-id-priors-v2"):
+def artifact(*,split_players:int=2,split_buckets:int=5,hand_hitters:int=2,hand_pitchers:int=2,source_end:str="2026-08-25",schema:str="pulsar-v14-statcast-id-priors-v2"):
     return {
-        "schema":"pulsar-v14-statcast-pit-backfill-v2","point_in_time":True,"stable_id_only":True,"champion_impact":False,
+        "schema":"pulsar-v14-statcast-pit-backfill-v3","point_in_time":True,"stable_id_only":True,"champion_impact":False,
         "source_start":"2026-07-12","source_end":source_end,"raw_pitch_rows":123,"raw_rows_sha256":"abc","requests":[{}],
-        "coverage":{"hitters":10,"pitchers":8,"hitter_pitch_split_players":split_players,"hitter_pitch_split_buckets":split_buckets},
-        "priors":{"schema":schema,"point_in_time":True,"stable_id_only":True,"cutoff_day":"2026-08-26","hitters":{"1":{"pitch_type_splits":{"FF":{"pa":20}}}},"pitchers":{"2":{"pitch_mix":{"FF":1.0}}},"diagnostics":{"hitter_pitch_split_players":split_players,"hitter_pitch_split_buckets":split_buckets}},
+        "coverage":{"hitters":10,"pitchers":8,"hitter_pitch_split_players":split_players,"hitter_pitch_split_buckets":split_buckets,"hitter_pitcher_hand_split_players":hand_hitters,"pitcher_batter_side_split_players":hand_pitchers},
+        "priors":{"schema":schema,"point_in_time":True,"stable_id_only":True,"cutoff_day":"2026-08-26","hitters":{"1":{"pitch_type_splits":{"FF":{"pa":20}},"pitcher_hand_splits":{"R":{"pa":20,"xwoba":.330}}}},"pitchers":{"2":{"pitch_mix":{"FF":1.0},"pitch_hand":"R","batter_side_splits":{"L":{"pa":20,"xwoba":.315}}}},"diagnostics":{"hitter_pitch_split_players":split_players,"hitter_pitch_split_buckets":split_buckets,"hitter_pitcher_hand_split_players":hand_hitters,"pitcher_batter_side_split_players":hand_pitchers}},
     }
 
 
@@ -29,11 +29,17 @@ class StatcastDailyTests(unittest.TestCase):
             self.assertFalse(data["champion_impact"]); self.assertFalse(data["auto_activation"])
             self.assertEqual(data["rolling_window_days"],45)
             self.assertEqual(out["role"],"SHADOW_DATA_ONLY"); self.assertFalse(out["champion_impact"]); self.assertFalse(out["auto_activation"])
+            self.assertTrue(out["handedness_enrichment"]); self.assertTrue(out["v14_native_provider"])
 
     def test_refresh_refuses_missing_pitch_split_coverage(self):
         with tempfile.TemporaryDirectory() as td:
             with self.assertRaises(ValueError):
                 refresh("2026-08-26",priors_path=Path(td)/"p.gz",report_path=Path(td)/"r.json",builder=lambda cutoff,season_start=None:artifact(split_players=0,split_buckets=0))
+
+    def test_refresh_refuses_missing_handedness_coverage(self):
+        with tempfile.TemporaryDirectory() as td:
+            with self.assertRaises(ValueError):
+                refresh("2026-08-26",priors_path=Path(td)/"p.gz",report_path=Path(td)/"r.json",builder=lambda cutoff,season_start=None:artifact(hand_hitters=0,hand_pitchers=0))
 
     def test_refresh_refuses_cutoff_crossing_or_wrong_schema(self):
         with tempfile.TemporaryDirectory() as td:

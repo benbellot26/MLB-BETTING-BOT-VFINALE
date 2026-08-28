@@ -5,4 +5,11 @@ __pycache__/
 .env
 .DS_Store
 runtime/
+
+# Retired high-volume legacy journals. They remain recoverable from Git history
+# and archive/pre-v14-5-4-max-audit-20260827, but must not return to active main.
 data/v11_market_snapshots.jsonl
+data/v11_3_live.jsonl
+data/v11_3_live_report.json
+data/v13_market_tracking.jsonl
+data/v13_market_tracking_report.json

@@ -1,45 +1,101 @@
-# Professionalization audit implementation map
+# Pulsar V14 professionalization contract
 
-This branch implements the audit as a system redesign rather than 35 isolated constants.
+This document describes the current V14 production/research boundary. Earlier V12/V13 implementation notes remain available in Git history and the pre-cleanup archive branch; they are no longer the operational contract for `main`.
 
-1. **Learnable model layer** — `pro_model.py` fits residual run corrections and calibration instead of pretending `train.py` trains the structural engine.
-2. **Point-in-time methodology** — backtest accepts only stored pregame rows and raw run snapshots are now archived for future true replay.
-3. **Proper scoring rules** — Brier/LogLoss remain first-class; model, structural and sharp are compared separately.
-4. **Reduced structural double counting** — structural formula is kept interpretable while learned residuals must prove holdout value.
-5. **Richer context** — starter history, K/BB/HR profile, three-day bullpen availability and weather are captured.
-6. **Starter priors** — year-by-year prior replaces immediate league-average collapse for small current-season samples.
-7. **Trainable dispersion** — Negative Binomial dispersion is estimated into the candidate artifact once enough data exist.
-8. **Extra-innings heuristic containment** — the previous run-share pseudo-model is removed from the V12 production probability and a neutral documented prior is used until inning-level point-in-time evidence exists.
-9. **Calibration** — arbitrary phase shrinkage is removed from V12 execution probability; validated market-specific calibration is supported.
-10. **Uncertainty** — confidence is no longer reused as an execution input; explicit model uncertainty drives a conservative haircut.
-11. **Data quality** — independent completeness score and hard FINAL/starters/sharp/execution blockers.
-12. **Sharp foundation retained** — book-level de-vig and disagreement robustness remain.
-13. **Unknown timestamps fixed** — missing timestamps are excluded, not treated as age zero.
-14. **Book weights** — configurable source reliability and effective sample size.
-15. **Exchange commission** — Betfair/Matchbook decimal prices are commission-adjusted before de-vig.
-16. **All Winamax lines** — V12 prices all available execution lines, not only a modal line.
-17. **Push-aware EV retained** — p_win/p_push remain explicit.
-18. **Safety margin fixed** — flat +0.01 odds padding replaced by probability uncertainty haircut.
-19. **Bankroll staking** — fractional Kelly now uses bankroll with bet/day caps.
-20. **Combo exposure** — combo cannot reuse a single-selected game and retains push-aware expectation math.
-21. **Idempotency** — event-sourced ledger blocks repeat positions across runs.
-22. **Drawdown order** — production ledger computes drawdown/losing streak in settlement-time order.
-23. **CLV** — official-plan/latest/closing price observations and CLV metrics are recorded.
-24. **Schema isolation** — new rows carry `v12-professional-v1`; legacy data remains readable but is not relabeled.
-25. **Git bloat control** — raw/market snapshots are ignored from Git and uploaded as Actions artifacts; compact evidence remains versioned.
-26. **RAW archive** — exact MLB/Odds payloads consumed by each run are persisted to a run snapshot.
-27. **As-of discipline** — backtest rejects post-start analysis rows and the new archive is timestamped per run.
-28. **Structural vs market separation** — p_structural, p_market, p_model and calibrated p_effective stay distinct.
-29. **Hybrid architecture** — structural baseline + learned residual + calibration + market + value + portfolio.
-30. **Variance learning** — candidate estimates run dispersion rather than requiring a forever-fixed constant.
-31. **Tests expanded** — stale/missing timestamps, DQ, uncertainty, Kelly, idempotency and push/correlation constraints are covered.
-32. **CI split** — automatic push/PR CI is separate from manual production execution.
-33. **HEAD validation** — the new CI validates every branch push/PR instead of relying on an older manually dispatched run.
-34. **API/data failures visible** — DQ and health reporting expose missing coverage; fallbacks no longer masquerade as complete data for betting eligibility.
-35. **Health check** — Discord/report coverage shows scheduled, matched, analyzed, lineup/starter, sharp and Winamax coverage.
+## 1. Champion probability isolation
 
-## Important evidence boundary
+The production champion is `pulsar-v14-context-v3`. Governance, tracking, certification, market and data-pipeline hardening must not silently mutate champion probability code. `v14/champion_manifest.py` fingerprints the champion source set and the preflight fails on unauthorized mutation.
 
-Several improvements require data that did not exist historically: raw closing prices, exact historical API payloads, inning-level extra-inning state, Statcast point-in-time features and long-lived raw snapshots. This branch implements the collection, storage contracts, validation gates and model hooks now. It does **not** fabricate those missing historical observations to claim an artificial backtest advantage.
+## 2. Exact evidence identity
 
-The event ledger records the bot's official recommendations and observed prices; it is not an automated wager-execution interface to Winamax.
+Certification-facing evidence is accepted only when it matches both:
+
+- `MODEL_GENERATION = pulsar-v14-context-v3`
+- `PROBABILITY_POLICY_ID = pulsar-v14-probability-policy-v1`
+
+Calibration, performance and paper-CLV evidence are all bound to this identity. Missing/old policy rows are excluded rather than relabeled.
+
+## 3. Strict point-in-time discipline
+
+Every prediction used for evaluation is strictly pregame. Historical reconstructed data declares its reconstruction mode and cannot masquerade as native-live evidence. Provider timestamps, cutoffs and dataset hashes are retained where applicable.
+
+For market execution, a real `BET` requires a verifiable Odds event start time; unverified timestamp states remain research-only.
+
+## 4. Probability quality before ROI
+
+Model quality is judged with proper scoring rules first:
+
+- Brier Score;
+- Log Loss;
+- calibration/ECE;
+- paired model-vs-sharp score differences;
+- run MAE diagnostics;
+- rolling drift slices.
+
+Short-term win/loss streaks are diagnostic context, not model-selection evidence.
+
+## 5. Calibration and uncertainty
+
+Calibration uses chronological train/holdout separation. A transform can activate only after paired OOS improvement; raw identity can be accepted when the untouched holdout is already calibrated.
+
+Probability intervals are empirical decision-safety bands, not fabricated Bayesian credible intervals. Their provenance and any fallback penalty are explicit.
+
+## 6. Market separation
+
+Bookmaker/market probabilities never enter the baseball champion as predictive features. Market data is used after prediction for:
+
+- canonical line selection;
+- line shopping;
+- no-vig sharp consensus;
+- model/sharp divergence diagnostics;
+- executable breakeven probability;
+- CLV capture;
+- decision thresholds.
+
+Sharp consensus and execution prices are separate concepts.
+
+## 7. Certification is market-specific
+
+Software can be production-ready while betting remains `RESEARCH_ONLY`. Betting certification requires current-policy probability evidence, calibration acceptance, paired sharp evidence, drift control, fresh prospective paper CLV and same-book close evidence.
+
+No historical artifact alone can authorize a real betting market.
+
+## 8. Ledger boundaries
+
+Three ledgers/roles are intentionally separate:
+
+1. **Prediction tracking** — evaluates the probability engine.
+2. **Paper/system-authorized evidence** — records prospective immutable research/authorization decisions and closes.
+3. **Real execution** — requires explicit execution facts and is never inferred from a model recommendation.
+
+This prevents theoretical system ROI from being reported as realized user ROI.
+
+## 9. Data-enrichment policy
+
+V14 aggressively collects candidate data while keeping it shadow-only until validated. Current research layers include:
+
+- stable-ID Statcast priors;
+- hitter pitch-type splits;
+- hitter splits by opposing pitcher hand;
+- pitcher splits by batter side;
+- pitch mix and velocity;
+- starter recent workload;
+- bullpen availability/fatigue;
+- defense/baserunning;
+- venue/park physics;
+- point-in-time weather;
+- historical team-run and distribution challengers.
+
+No batter-vs-pitcher head-to-head feature is promoted simply because it is available; noisy dimensions must demonstrate OOS value.
+
+## 10. Statcast V14-native boundary
+
+The current Statcast research path uses V14-native provider, deduplication and aggregation primitives. Raw pitch rows are stable-ID keyed, deduplicated and constrained to `game_date < cutoff`. Enriched artifacts remain `champion_impact = false` and `auto_activation = false`.
+
+## 11. Repository governance
+
+V14 has its own regression/PIT/provider CI. Frozen V11/V13 regression work is path-scoped and should run only when the legacy data foundation is touched. Obsolete workflows and docs should be removed from the active tree rather than kept as misleading operational guidance; Git history and the archive branch preserve reproducibility.
+
+## 12. Promotion rule
+
+A challenger may be considered for a future probability generation only after strict paired OOS evidence on identical games, with untouched chronological validation and no target leakage. A candidate must improve probability quality without unacceptable market-specific regression. Promotion is explicit and never automatic.

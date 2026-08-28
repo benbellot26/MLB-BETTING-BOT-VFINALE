@@ -75,7 +75,7 @@ def snapshot_rows(payload:dict[str,Any])->list[dict[str,Any]]:
         prediction=result.get("v14_prediction") or {}
         if prediction.get("model_generation")!=MODEL_GENERATION: raise ValueError(f"game {result.get('game_pk')} is not current V14")
         calibration=prediction.get("calibration") or {}; policy=calibration.get("probability_policy_id")
-        if policy not in {None,PROBABILITY_POLICY_ID}: raise ValueError(f"game {result.get('game_pk')} probability policy mismatch")
+        if policy!=PROBABILITY_POLICY_ID: raise ValueError(f"game {result.get('game_pk')} probability policy missing or mismatch")
         analyzed_at=result.get("analyzed_at") or payload.get("analyzed_at"); game_date=result.get("game_date")
         if not _is_strictly_pregame({"analyzed_at":analyzed_at,"game_date":game_date}): raise ValueError(f"game {result.get('game_pk')} tracking snapshot is not strictly pregame")
         probabilities=prediction.get("probabilities") or {}; raw=prediction.get("raw_probabilities") or probabilities; projection=prediction.get("run_projection") or {}; total_line=_num(projection.get("total_line")); total_line=total_line if total_line is not None else _num((result.get("canonical_lines") or {}).get("TOTAL")); keys=("home_ml","away_ml","home_minus_1_5","away_plus_1_5","away_minus_1_5","home_plus_1_5","over","under")

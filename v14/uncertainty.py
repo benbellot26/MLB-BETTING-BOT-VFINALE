@@ -3,9 +3,9 @@ from __future__ import annotations
 """Conservative decision-safety bands for Pulsar V14.
 
 When enough settled observations exist, market×phase×probability-bucket bands
-are loaded from the exact current model generation. Accepted calibration
-holdout evidence can also provide a 95% safety band. Otherwise fixed,
-conservative market-specific fallbacks remain.
+are loaded only from the exact current model generation and probability policy.
+Accepted calibration holdout evidence can also provide a 95% safety band.
+Otherwise fixed, conservative market-specific fallbacks remain.
 
 These bands protect betting decisions. A fallback band is deliberately *not*
 presented as an empirical confidence or Bayesian credible interval.
@@ -16,7 +16,7 @@ import math
 from pathlib import Path
 from typing import Any
 
-from . import MODEL_GENERATION
+from . import MODEL_GENERATION, PROBABILITY_POLICY_ID
 
 ARTIFACT = Path("data/v14_uncertainty.json")
 BASE_HALF_WIDTH = {
@@ -43,6 +43,13 @@ def _num(value: Any) -> float | None:
     return out if math.isfinite(out) else None
 
 
+def _artifact_matches_current_probability_policy(row: dict[str, Any]) -> bool:
+    return (
+        row.get("model_generation") == MODEL_GENERATION
+        and row.get("probability_policy_id") == PROBABILITY_POLICY_ID
+    )
+
+
 def _load(path: Path | str = ARTIFACT) -> dict[str, Any]:
     target = Path(path)
     if not target.exists():
@@ -52,11 +59,11 @@ def _load(path: Path | str = ARTIFACT) -> dict[str, Any]:
     except Exception:
         return {}
     if not isinstance(row, dict) or row.get("schema") not in {
-        "pulsar-v14-uncertainty-fit-v1",
         "pulsar-v14-uncertainty-fit-v2",
+        "pulsar-v14-uncertainty-fit-v3",
     }:
         return {}
-    if row.get("model_generation") != MODEL_GENERATION:
+    if not _artifact_matches_current_probability_policy(row):
         return {}
     return row
 
@@ -169,7 +176,7 @@ def intervals(
     cal_markets = cal.get("markets") or {}
     phase = str(cal.get("phase") or "ALL").upper()
     empirical = _load() if artifact is None else artifact
-    if empirical and empirical.get("model_generation") != MODEL_GENERATION:
+    if empirical and not _artifact_matches_current_probability_policy(empirical):
         empirical = {}
 
     penalty, raw_penalty, penalty_reasons = _quality_penalty_details(
@@ -237,7 +244,7 @@ def intervals(
     sources = set(source_by_market.values())
     return {
         "schema": "pulsar-v14-probability-uncertainty-v4",
-        "method": "decision-safety bands: exact-generation empirical/accepted-holdout evidence when ready; otherwise fixed conservative market fallback",
+        "method": "decision-safety bands: exact-generation + exact-policy empirical/accepted-holdout evidence when ready; otherwise fixed conservative market fallback",
         "phase": phase,
         "starter_degraded": bool(starter_degraded),
         "market_freshness_verified": market_fresh,
@@ -249,5 +256,5 @@ def intervals(
         "uses_fallback": "fallback" in sources,
         "all_empirical_95": bool(sources) and sources == {"empirical_95"},
         "selections": selections,
-        "note": "Decision-safety intervals, not Bayesian credible intervals. A conservative fallback is not an empirical 95% interval. Empirical artifacts require exact MODEL_GENERATION.",
+        "note": "Decision-safety intervals, not Bayesian credible intervals. A conservative fallback is not an empirical 95% interval. Empirical artifacts require exact MODEL_GENERATION and PROBABILITY_POLICY_ID.",
     }

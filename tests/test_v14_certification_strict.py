@@ -15,7 +15,7 @@ def probability_ready():
     for market in MARKETS:
         markets[market]={"n":500,"ece":.02,"sharp_benchmark":{"paired_n":500,"brier_gain_ci95_lower":.002,"logloss_gain_ci95_lower":0.0,"brier_gain_vs_sharp":.01,"logloss_gain_vs_sharp":.01}}
         calibrators[f"MARKET:{market}"]={"accepted":True,"active":False,"status":"VALIDATED_IDENTITY"}
-    performance={"schema":"pulsar-v14-performance-v5","model_generation":MODEL_GENERATION,"generated_at":FRESH,"games_settled":700,"markets":markets,"segments":{"rolling":{"60d":{"through":OBSERVED,"markets":{}}}}}
+    performance={"schema":"pulsar-v14-performance-v5","model_generation":MODEL_GENERATION,"probability_policy_id":PROBABILITY_POLICY_ID,"generated_at":FRESH,"games_settled":700,"markets":markets,"segments":{"rolling":{"60d":{"through":OBSERVED,"markets":{}}}}}
     calibration={"schema":"pulsar-v14-calibration-v3","model_generation":MODEL_GENERATION,"probability_policy_id":PROBABILITY_POLICY_ID,"generated_at":FRESH,"latest_observation_at":OBSERVED,"calibrators":calibrators}
     return performance,calibration
 
@@ -29,7 +29,7 @@ def paper(primary=None,execution=None,close_at=FRESH):
     if primary is not None: scoped["certification_clv"]=primary
     if execution is not None: scoped["execution_clv"]=execution
     if primary is not None or execution is not None: scoped["latest_certified_close_at"]=close_at
-    return {"schema":"pulsar-v14-paper-bet-performance-v6","model_generation":MODEL_GENERATION,"generated_at":FRESH,"by_market":({"ML":scoped} if scoped else {})}
+    return {"schema":"pulsar-v14-paper-bet-performance-v7","model_generation":MODEL_GENERATION,"probability_policy_id":PROBABILITY_POLICY_ID,"generated_at":FRESH,"by_market":({"ML":scoped} if scoped else {})}
 
 
 class V14StrictCertificationTests(unittest.TestCase):
@@ -57,13 +57,21 @@ class V14StrictCertificationTests(unittest.TestCase):
         performance,calibration=probability_ready(); calibration.pop("schema"); out=evaluate(performance,calibration,{},now=NOW)
         self.assertFalse(out["markets"]["ML"]["probability_certified"]); self.assertIn("strict_calibration_schema_required",out["markets"]["ML"]["failures"])
 
-    def test_probability_policy_is_part_of_certification_contract(self):
+    def test_probability_policy_is_part_of_calibration_contract(self):
         performance,calibration=probability_ready(); calibration["probability_policy_id"]="old-policy"; out=evaluate(performance,calibration,paper(clv(),clv(n=80)),now=NOW)
-        self.assertFalse(out["markets"]["ML"]["probability_certified"]); self.assertIn("probability_policy_mismatch",out["markets"]["ML"]["failures"])
+        self.assertFalse(out["markets"]["ML"]["probability_certified"]); self.assertIn("calibration_probability_policy_mismatch",out["markets"]["ML"]["failures"])
+
+    def test_performance_probability_policy_is_required(self):
+        performance,calibration=probability_ready(); performance["probability_policy_id"]="old-policy"; out=evaluate(performance,calibration,paper(clv(),clv(n=80)),now=NOW)
+        self.assertFalse(out["markets"]["ML"]["probability_certified"]); self.assertIn("performance_probability_policy_mismatch",out["markets"]["ML"]["failures"])
+
+    def test_paper_probability_policy_is_required(self):
+        performance,calibration=probability_ready(); p=paper(clv(),clv(n=80)); p["probability_policy_id"]="old-policy"; out=evaluate(performance,calibration,p,now=NOW)
+        self.assertTrue(out["markets"]["ML"]["probability_certified"]); self.assertFalse(out["markets"]["ML"]["betting_certified"]); self.assertIn("strict_current_generation_policy_market_specific_paper_schema_required",out["markets"]["ML"]["betting_failures"])
 
     def test_wrong_generation_paper_evidence_cannot_certify(self):
         performance,calibration=probability_ready(); p=paper(clv(n=200),clv(n=80)); p["model_generation"]="old-generation"; out=evaluate(performance,calibration,p,now=NOW)
-        self.assertFalse(out["markets"]["ML"]["betting_certified"]); self.assertIn("strict_current_generation_market_specific_paper_schema_required",out["markets"]["ML"]["betting_failures"])
+        self.assertFalse(out["markets"]["ML"]["betting_certified"]); self.assertIn("strict_current_generation_policy_market_specific_paper_schema_required",out["markets"]["ML"]["betting_failures"])
 
     def test_stale_probability_report_expires_fail_closed(self):
         performance,calibration=probability_ready(); performance["generated_at"]="2026-08-23T00:00:00+00:00"; out=evaluate(performance,calibration,paper(clv(),clv(n=80)),now=NOW)

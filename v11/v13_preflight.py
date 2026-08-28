@@ -1,43 +1,25 @@
 from __future__ import annotations
 
+"""Frozen legacy/reference-data preflight still used by V14 data foundations.
+
+The old V13 production/recommendation architecture is no longer an active
+contract. This preflight intentionally keeps only provider, PIT, reconstructed
+historical-data and evidence-integrity tests that remain relevant to artifacts
+consumed by V14.
+"""
+
 import argparse
 import importlib
 import unittest
 
 CRITICAL_TEST_MODULES = (
-    "tests.test_v13_probability_contract",
-    "tests.test_v13_historical_migration",
-    "tests.test_v13_probability_invariants",
-    "tests.test_v13_historical_backfill_regression",
-    "tests.test_v13_daily_postmortem",
-    "tests.test_v13_posterior_policy",
-    "tests.test_v13_research_gate",
-    "tests.test_v13_analytics_only",
-    "tests.test_v13_discord_visual",
-    "tests.test_v135_professional_audit",
-    "tests.test_v1351_audit_fixes",
-    "tests.test_v1352_final_hardening",
-    "tests.test_v1352_runtime_hook",
-    "tests.test_v1352_audit_hardening",
-    "tests.test_v13_rich_native_train",
-    "tests.test_v136_evidence_hardening",
     "tests.test_v137_free_data",
     "tests.test_v138_audit_closure",
-    "tests.test_v138_production_change_gate",
     "tests.test_v138_inning_history",
     "tests.test_v138_native_evidence",
     "tests.test_v139_provider_hardening",
-    "tests.test_v139_explicit_engine",
-    "tests.test_v139_engineering_closure",
-    "tests.test_v1310_deep_audit_hardening",
-    "tests.test_v1310_deep_audit_registry",
     "tests.test_v1310_pit_weather_hotfix",
     "tests.test_v1310_max_audit_hardening",
-    "tests.test_v1310_champion_only",
-    "tests.test_v1310_champion_dashboard",
-    "tests.test_v1310_prefreeze_hardening",
-    "tests.test_v1310_manual_run_capture",
-    "tests.test_v1311_historical_transfer",
 )
 
 
@@ -52,12 +34,12 @@ def run(modules: tuple[str, ...] = CRITICAL_TEST_MODULES, verbosity: int = 1) ->
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run the shared V13.10 critical preflight suite")
+    parser = argparse.ArgumentParser(description="Run frozen V13/V137 reference-data safety tests still consumed by V14")
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args()
     if not run(verbosity=2 if args.verbose else 1):
         raise SystemExit(1)
-    print("V13.10 shared critical preflight OK")
+    print("V14 legacy/reference-data preflight OK")
 
 
 if __name__ == "__main__":

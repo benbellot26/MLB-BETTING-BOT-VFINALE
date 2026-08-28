@@ -1,73 +1,115 @@
-# Pulsar V14 — MLB Probability Engine
+# Pulsar V14 — MLB Probability & Decision Engine
 
-Pulsar **V14.2.0** (`pulsar-v14-context-v3`) is the production MLB probability engine in this repository. V13.10 is frozen historical rollback/regression code only and is not used by the live production workflow.
+Pulsar **V14.5.4** is the current production software line. The champion probability generation remains **`pulsar-v14-context-v3`** with probability policy **`pulsar-v14-probability-policy-v1`**. V14.5.4 hardens data provenance, evidence isolation and research enrichment; it does **not** change champion probability coefficients or promote a challenger.
 
-## Production path
+## Production architecture
 
-`MLB/Odds acquisition -> native structural inputs -> residual context -> regulation score model + extra-inning settlement -> ML/RL/Total surface -> post-model market diagnostics -> strict PIT tracking -> Discord analytics`
+`MLB/Odds acquisition -> native structural run model -> bounded context overlay -> score distribution -> ML/RL/Total probabilities -> empirical calibration/uncertainty -> sharp/execution diagnostics -> certification gate -> Discord + immutable evidence ledgers`
 
-The live workflow is `.github/workflows/mlb-bot.yml` (`Pulsar V14 Production`). Bookmaker prices may select the line to price and may be used after prediction for no-vig/edge/EV diagnostics, but bookmaker probability is never a predictive feature.
+The live workflow is `.github/workflows/mlb-bot.yml` (`Pulsar V14 Production`). Market prices are post-model data: they can choose executable lines, benchmark probabilities, calculate edge/CLV and drive decision thresholds, but they are never baseball predictive features.
 
-## Core rules
+## Probability contract
 
-- Native V14 acquisition matches games by team identity and start time; doubleheader Odds events are unique and cannot be reused.
-- Team offense, team pitching, starter ERA/WHIP shrinkage, lineup OPS, previous-game bullpen, travel/rest and park belong to the structural layer.
-- Partial lineups are shrunk toward team OPS; only 9/9 is `CONFIRMED`.
-- Starter K/BB/HR, advanced lineup/Statcast/platoon, three-day bullpen availability and bounded weather are residual context only.
-- H2H and recent form remain disabled until live out-of-sample evidence proves value.
-- LATE/FINAL production requires both announced starting pitchers; FINAL also requires both 9/9 lineups.
-- Regulation ties are explicitly resolved through an extra-innings scoring kernel for ML, ±1.5 run lines and totals. Final-score probabilities never leave impossible ties unresolved.
-- Market freshness is timestamp-verified when possible. Missing bookmaker timestamps are fallback-only; stale or materially future timestamps are rejected.
-- Production fails if fewer than 80% of matched Odds games can be priced.
-- Every tracking record must satisfy `analyzed_at < game_date`; the canonical scored record is the latest strictly-pregame snapshot per game.
+- Champion generation: `pulsar-v14-context-v3`.
+- Probability policy: `pulsar-v14-probability-policy-v1`.
+- Probability schema: `pulsar-v14-probability-v2`.
+- Calibration is strictly chronological and can activate only after paired out-of-sample evidence; validated identity is allowed when raw probabilities are already calibrated.
+- Certification evidence must match the exact model generation **and** probability policy.
+- Integer-total pushes are excluded from binary Brier/LogLoss/calibration evidence.
+- No recent winning streak is sufficient reason to retune the champion.
 
-## Market audit and tracking
+## Data and point-in-time rules
 
-`market_snapshot` and `market_diagnostics` are preserved end-to-end from the native candidate through the production payload into `data/v14_predictions.jsonl`. They contain bookmaker/line/price/time state and no-vig/edge/EV diagnostics, but never feed the baseball probability model.
+- MLB and Odds events are matched by canonical team identity and start time; doubleheaders must be unambiguous.
+- A real `BET` path requires a verifiable Odds event timestamp. Unverified events may remain research-only.
+- Every scored prediction satisfies `analyzed_at < game_date`.
+- Historical reconstruction is explicitly separated from native-live evidence and cannot satisfy native-live promotion thresholds.
+- V14 Statcast enrichment is stable-ID-only and strict `game_date < cutoff`.
+- Statcast research stores xwOBA/contact/K-BB data, exact pitch mix, hitter performance by pitch type, hitter performance by opposing pitcher hand, and pitcher performance by batter side. These enrichments remain shadow/challenger-only.
+- Weather reconstruction uses point-in-time forecast provenance; post-event observed weather is not substituted for a pregame forecast.
 
-`data/v14_performance.json` reports Brier Score, Log Loss, calibration, ML/RL/Total performance and run MAE. The cross-market aggregate is dashboard-only because markets within a game are correlated.
+## Decision and market separation
 
-**ROI remains unavailable** until an official bet/stake ledger exists. **True CLV remains unavailable** until there is an official selection ledger plus canonical closing-price feed. A separate `market_movement_proxy` may compare persisted market snapshots; it must not be called bet CLV.
+`v14/decision.py` evaluates executable prices only after the baseball probability surface exists. A candidate must clear:
 
-## Native evidence
+1. model edge versus executable breakeven;
+2. lower-bound/robust edge versus executable breakeven;
+3. positive model and lower-bound edge versus verified sharp fair probability;
+4. market freshness and calibration gates;
+5. at least one real sportsbook contributor for a real `BET`;
+6. market-specific betting certification.
 
-- `data/v14_extra_innings_prior.json` — V14-native authenticated historical extra-inning home-win prior.
-- `data/v14_park_factors_manifest.json` — V14-native manifest over the frozen leakage-safe historical park dataset.
+Until those certification requirements are earned, qualifying candidates remain `RESEARCH_ONLY`.
 
-The old raw historical files may remain in the repository for reproducibility, but production code reaches them through V14 contracts rather than treating legacy schema names as the production API.
+## Evidence ledgers
 
-## Main modules
+Pulsar intentionally separates three concepts:
 
-- `v14/acquisition.py` — MLB/Odds acquisition, retry/cache, aliases and time-aware matching.
-- `v14/mlb_inputs.py` — native team/starter/lineup/bullpen/weather inputs.
-- `v14/structural.py` — structural run means.
-- `v14/run_stack.py` / `v14/park.py` — prior-season park correction.
-- `v14/context_overlay.py` — bounded residual context.
-- `v14/distribution.py` — correlated NB regulation scoring plus explicit extra-inning resolution.
-- `v14/market_lines.py` / `v14/market_edge.py` — line/price snapshots and post-model diagnostics.
-- `v14/pipeline.py` — model orchestration.
-- `v14/production_runtime.py` — coverage gate, payload validation and publication.
-- `v14/tracking.py` — immutable strictly-pregame snapshots, settlement and performance.
-- `v14/preflight.py` — critical production test gate.
+- **Prediction performance** — Brier, LogLoss, calibration, sharp benchmark and run-error diagnostics in `data/v14_performance.json`.
+- **System-authorized/paper evidence** — prospective immutable game×market entries, verified sharp closes and same-book closes.
+- **Real execution** — explicit user/external execution facts in `v14/executed_bet_ledger.py`; production prediction code does not fabricate or auto-populate real wagers.
 
-## Commands
+Primary betting-certification CLV is executable entry implied probability to a verified <=15-minute no-vig sharp close. Same-book executable close is retained as a secondary execution-quality measure.
+
+## Betting certification
+
+Software production readiness and betting certification are separate.
+
+Current strict gates include, per the certification contract:
+
+- at least 600 settled current-policy games globally;
+- at least 400 observations per market;
+- ECE <= 0.05;
+- at least 400 paired sharp observations with positive paired Brier evidence;
+- at least 100 paper certification-CLV observations;
+- at least 50 same-book execution-CLV observations;
+- positive CLV confidence bounds and freshness/drift checks.
+
+Historical or stale evidence cannot silently certify the current policy.
+
+## Main V14 modules
+
+- `v14/acquisition.py` — MLB/Odds acquisition, aliases and time-aware event matching.
+- `v14/mlb_inputs.py` — native team/starter/lineup/bullpen/environment inputs.
+- `v14/structural.py`, `v14/run_stack.py`, `v14/context_overlay.py` — champion run construction.
+- `v14/distribution.py` — regulation scoring plus explicit extra-inning settlement.
+- `v14/probability_calibration.py` — strict chronological calibration.
+- `v14/uncertainty.py`, `v14/uncertainty_fit.py` — empirical decision-safety bands.
+- `v14/market_lines.py`, `v14/sharp_market.py`, `v14/execution_market.py` — post-model market state.
+- `v14/decision.py` — fail-closed candidate decision diagnostics.
+- `v14/tracking.py` — exact-policy prediction tracking, settlement and performance.
+- `v14/paper_ledger.py`, `v14/bet_ledger.py`, `v14/executed_bet_ledger.py` — research, authorization and real-execution boundaries.
+- `v14/certification.py` — market-specific statistical certification.
+- `v14/statcast_base.py`, `v14/statcast_enrichment.py`, `v14/statcast_pit_backfill.py` — V14-native Statcast research pipeline.
+- `v14/champion_manifest.py` — source fingerprint guard for champion probability files.
+- `v14/preflight.py` — production-critical regression gate.
+
+## Workflows
+
+Active V14 workflows:
+
+- `mlb-bot.yml` — production analysis/publication.
+- `v14-performance.yml` — settlement, performance, calibration and evidence refresh.
+- `v14-close-capture.yml` — prospective verified close capture.
+- `v14-statcast-refresh.yml` — enriched PIT Statcast shadow data refresh.
+- `v14-reference-data-smoke.yml` — reference-data provider checks.
+- `v14-ci.yml` — complete V14 regression + historical/PIT/provider smoke suite.
+- `v14-production-workflow-guard.yml` — guard for production workflow changes.
+
+Legacy V11/V13 code remains only where it is still needed for frozen reference-data construction or rollback reproducibility. Its regression CI is path-scoped so ordinary V14 work does not rerun the entire historical stack.
+
+## Common commands
 
 ```bash
 python -m py_compile v14/*.py
 python -m v14.preflight
+python -m unittest discover -s tests -p 'test_v14_*.py' -v
 python -m v14.production_runtime --target-date YYYY-MM-DD
 python -m v14.tracking snapshot --payload runtime/v14/discord_payload.json
 python -m v14.tracking settle
+python -m v14.paper_ledger settle
 ```
-
-## Workflows
-
-- `Pulsar V14 Production` — live native analysis and Discord publication.
-- `Pulsar V14 Performance` — daily settlement/performance refresh.
-- `Pulsar V14 CI` — critical V14 production tests, including phase, market end-to-end persistence and extra-inning settlement.
-- `Pulsar Regression CI` — historical rollback/regression guard.
-- `Pulsar V14 Native Parity` — historical diagnostic only; it cannot authorize or publish production.
 
 ## Change policy
 
-Predictive changes must be point-in-time safe and judged on stored pregame evidence using proper scoring metrics. No coefficient should be tuned to a handful of recent wins/losses. V14.2 starts a distinct generation so its live performance is not mixed with V14.1.
+A predictive change must be point-in-time safe, evaluated on untouched chronological evidence and compared on identical games. Shadow/challenger features can be collected aggressively, but champion probability changes require a new explicit generation/policy decision after out-of-sample evidence. Governance/data-hardening patches must not be presented as predictive improvements unless the scoring evidence actually demonstrates one.
