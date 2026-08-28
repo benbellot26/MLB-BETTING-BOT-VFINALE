@@ -1,200 +1,2572 @@
 {
+  "betting_certification": {
+    "betting_status": "RESEARCH_ONLY",
+    "certified": false,
+    "evidence_age_hours": {
+      "calibration_observation": 3.4876225902777778,
+      "calibration_report": 8.181555555555557e-05,
+      "paper_report": 0.00013605722222222223,
+      "performance_observation": 3.4876225902777778,
+      "performance_report": 3.6025e-06
+    },
+    "generated_at": "2026-08-28T21:49:15.441325+00:00",
+    "legacy_evidence_can_certify": false,
+    "markets": {
+      "ML": {
+        "betting_certified": false,
+        "betting_failures": [
+          "games_settled<600",
+          "n<400",
+          "ece>0.05_or_missing",
+          "calibration_not_oos_accepted",
+          "sharp_paired_n<400",
+          "ML_latest_certified_close_missing_or_invalid",
+          "paper_certification_clv_n<100",
+          "paper_certification_clv_mean_not_positive",
+          "paper_certification_clv_positive_rate<0.52",
+          "paper_certification_clv_ci95_missing",
+          "paper_execution_clv_n<50",
+          "paper_execution_clv_mean_not_positive",
+          "paper_execution_clv_ci95_missing"
+        ],
+        "betting_status": "RESEARCH_ONLY",
+        "calibration_status": "COLLECTING",
+        "ece": 0.2397559952703993,
+        "failures": [
+          "games_settled<600",
+          "n<400",
+          "ece>0.05_or_missing",
+          "calibration_not_oos_accepted",
+          "sharp_paired_n<400"
+        ],
+        "n": 8,
+        "paper_certification_clv": {},
+        "paper_execution_clv": {},
+        "paper_latest_certified_close_at": null,
+        "probability_certified": false,
+        "probability_status": "PROBABILITY_RESEARCH"
+      },
+      "RL_AWAY_-1.5": {
+        "betting_certified": false,
+        "betting_failures": [
+          "games_settled<600",
+          "n<400",
+          "ece>0.05_or_missing",
+          "calibration_not_oos_accepted",
+          "sharp_paired_n<400",
+          "RL_AWAY_-1.5_latest_certified_close_missing_or_invalid",
+          "paper_certification_clv_n<100",
+          "paper_certification_clv_mean_not_positive",
+          "paper_certification_clv_positive_rate<0.52",
+          "paper_certification_clv_ci95_missing",
+          "paper_execution_clv_n<50",
+          "paper_execution_clv_mean_not_positive",
+          "paper_execution_clv_ci95_missing"
+        ],
+        "betting_status": "RESEARCH_ONLY",
+        "calibration_status": "COLLECTING",
+        "ece": 0.1765537436724161,
+        "failures": [
+          "games_settled<600",
+          "n<400",
+          "ece>0.05_or_missing",
+          "calibration_not_oos_accepted",
+          "sharp_paired_n<400"
+        ],
+        "n": 8,
+        "paper_certification_clv": {},
+        "paper_execution_clv": {},
+        "paper_latest_certified_close_at": null,
+        "probability_certified": false,
+        "probability_status": "PROBABILITY_RESEARCH"
+      },
+      "RL_HOME_-1.5": {
+        "betting_certified": false,
+        "betting_failures": [
+          "games_settled<600",
+          "n<400",
+          "ece>0.05_or_missing",
+          "calibration_not_oos_accepted",
+          "sharp_paired_n<400",
+          "RL_HOME_-1.5_latest_certified_close_missing_or_invalid",
+          "paper_certification_clv_n<100",
+          "paper_certification_clv_mean_not_positive",
+          "paper_certification_clv_positive_rate<0.52",
+          "paper_certification_clv_ci95_missing",
+          "paper_execution_clv_n<50",
+          "paper_execution_clv_mean_not_positive",
+          "paper_execution_clv_ci95_missing"
+        ],
+        "betting_status": "RESEARCH_ONLY",
+        "calibration_status": "COLLECTING",
+        "ece": 0.06638029224637074,
+        "failures": [
+          "games_settled<600",
+          "n<400",
+          "ece>0.05_or_missing",
+          "calibration_not_oos_accepted",
+          "sharp_paired_n<400"
+        ],
+        "n": 8,
+        "paper_certification_clv": {},
+        "paper_execution_clv": {},
+        "paper_latest_certified_close_at": null,
+        "probability_certified": false,
+        "probability_status": "PROBABILITY_RESEARCH"
+      },
+      "TOTAL_OVER": {
+        "betting_certified": false,
+        "betting_failures": [
+          "games_settled<600",
+          "n<400",
+          "ece>0.05_or_missing",
+          "calibration_not_oos_accepted",
+          "sharp_paired_n<400",
+          "TOTAL_OVER_latest_certified_close_missing_or_invalid",
+          "paper_certification_clv_n<100",
+          "paper_certification_clv_mean_not_positive",
+          "paper_certification_clv_positive_rate<0.52",
+          "paper_certification_clv_ci95_missing",
+          "paper_execution_clv_n<50",
+          "paper_execution_clv_mean_not_positive",
+          "paper_execution_clv_ci95_missing"
+        ],
+        "betting_status": "RESEARCH_ONLY",
+        "calibration_status": "COLLECTING",
+        "ece": 0.42998183645410615,
+        "failures": [
+          "games_settled<600",
+          "n<400",
+          "ece>0.05_or_missing",
+          "calibration_not_oos_accepted",
+          "sharp_paired_n<400"
+        ],
+        "n": 8,
+        "paper_certification_clv": {},
+        "paper_execution_clv": {},
+        "paper_latest_certified_close_at": null,
+        "probability_certified": false,
+        "probability_status": "PROBABILITY_RESEARCH"
+      }
+    },
+    "model_generation": "pulsar-v14-context-v3",
+    "paired_inference_required": true,
+    "paper_ci_required": true,
+    "paper_clv": {
+      "definition": "entry executable implied probability to verified <=15m no-vig sharp fair close",
+      "mean_clv": null,
+      "mean_clv_ci95_lower": null,
+      "mean_clv_ci95_upper": null,
+      "n": 0,
+      "positive_rate": null,
+      "role": "PRIMARY_BETTING_CERTIFICATION",
+      "status": "UNAVAILABLE"
+    },
+    "paper_execution_clv": {
+      "definition": "entry executable implied probability to same-book fresh <=15m close",
+      "mean_clv": null,
+      "mean_clv_ci95_lower": null,
+      "mean_clv_ci95_upper": null,
+      "n": 0,
+      "positive_rate": null,
+      "role": "SECONDARY_EXECUTION_CERTIFICATION",
+      "status": "UNAVAILABLE"
+    },
+    "policy": {
+      "exact_model_generation_required": true,
+      "exact_probability_policy_required_for_performance_calibration_and_paper": true,
+      "market_specific_authorization": true,
+      "max_ece": 0.05,
+      "max_evidence_age_hours": 48.0,
+      "max_observation_age_hours": 72.0,
+      "max_paper_close_age_hours": 72.0,
+      "min_games": 600,
+      "min_market_n": 400,
+      "min_paired_sharp_n": 400,
+      "min_paper_certification_clv_n": 100,
+      "min_paper_execution_clv_n": 50,
+      "min_positive_clv_rate": 0.52,
+      "paper_independent_observations_required": true,
+      "paper_market_specific": true,
+      "primary_clv_definition": "entry executable implied probability to verified no-vig sharp fair close",
+      "rolling_drift_window_days": 60,
+      "secondary_clv_definition": "entry executable implied probability to fresh same-book close",
+      "strict_calibration_schema": "pulsar-v14-calibration-v3",
+      "strict_performance_schema": "pulsar-v14-performance-v5"
+    },
+    "probability_certified": false,
+    "probability_policy_id": "pulsar-v14-probability-policy-v1",
+    "probability_reasons": [
+      "calibration_not_oos_accepted",
+      "ece>0.05_or_missing",
+      "games_settled<600",
+      "n<400",
+      "sharp_paired_n<400"
+    ],
+    "probability_status": "PROBABILITY_RESEARCH",
+    "reasons": [
+      "ML_latest_certified_close_missing_or_invalid",
+      "RL_AWAY_-1.5_latest_certified_close_missing_or_invalid",
+      "RL_HOME_-1.5_latest_certified_close_missing_or_invalid",
+      "TOTAL_OVER_latest_certified_close_missing_or_invalid",
+      "calibration_not_oos_accepted",
+      "ece>0.05_or_missing",
+      "games_settled<600",
+      "n<400",
+      "paper_certification_clv_ci95_missing",
+      "paper_certification_clv_mean_not_positive",
+      "paper_certification_clv_n<100",
+      "paper_certification_clv_positive_rate<0.52",
+      "paper_execution_clv_ci95_missing",
+      "paper_execution_clv_mean_not_positive",
+      "paper_execution_clv_n<50",
+      "sharp_paired_n<400"
+    ],
+    "schema": "pulsar-v14-betting-certification-v9",
+    "software_role": "PRODUCTION"
+  },
   "calibration": [
     {
       "lower": 0.2,
-      "mean_probability": 0.283491116918689,
-      "n": 4,
+      "mean_probability": 0.23353855485388164,
+      "n": 2,
       "observed_rate": 0.5,
       "upper": 0.3
     },
     {
       "lower": 0.3,
-      "mean_probability": 0.35272626586008005,
-      "n": 22,
+      "mean_probability": 0.3519786162708661,
+      "n": 11,
       "observed_rate": 0.36363636363636365,
       "upper": 0.4
     },
     {
       "lower": 0.4,
-      "mean_probability": 0.45642947446285176,
-      "n": 11,
-      "observed_rate": 0.5454545454545454,
+      "mean_probability": 0.4576338235800868,
+      "n": 7,
+      "observed_rate": 0.42857142857142855,
       "upper": 0.5
     },
     {
       "lower": 0.5,
-      "mean_probability": 0.5457163108733531,
-      "n": 16,
-      "observed_rate": 0.4375,
+      "mean_probability": 0.5315028438132986,
+      "n": 7,
+      "observed_rate": 0.8571428571428571,
       "upper": 0.6
     },
     {
       "lower": 0.6,
-      "mean_probability": 0.6379848297038991,
-      "n": 7,
-      "observed_rate": 0.2857142857142857,
+      "mean_probability": 0.6446614273232022,
+      "n": 5,
+      "observed_rate": 0.2,
       "upper": 0.7
     }
   ],
-  "canonical_snapshot_policy": "latest strictly-pregame snapshot per game",
+  "canonical_snapshot_policy": "latest strictly-pregame snapshot per game, exact game_date ordering, exact probability policy",
   "clv": {
-    "reason": "No official bet ledger plus canonical closing-price feed; market movement proxy is reported separately.",
+    "mean_clv": null,
+    "n": 0,
+    "reason": "Use authorized/paper ledgers and verified close feed; market movement proxy is separate.",
     "status": "UNAVAILABLE"
   },
-  "games_settled": 15,
-  "generated_at": "2026-08-26T11:04:25.967396+00:00",
+  "games_settled": 8,
+  "generated_at": "2026-08-28T21:49:15.428356+00:00",
+  "latest_observation_at": "2026-08-28T18:20:00+00:00",
   "market_movement_proxy": {
     "definition": "market-wide movement to latest persisted pregame price; not bet CLV",
-    "mean_implied_probability_move_pp": 0.2874155105111316,
-    "n": 120,
+    "mean_implied_probability_move_pp": -1.0900182306160797,
+    "n": 88,
     "status": "AVAILABLE_PROXY"
   },
   "markets": {
     "ML": {
-      "accuracy_50": 0.26666666666666666,
-      "brier": 0.2730415690273931,
+      "accuracy_50": 0.625,
+      "brier": 0.25966349636116354,
       "calibration": [
         {
           "lower": 0.4,
-          "mean_probability": 0.46331446692232037,
-          "n": 6,
-          "observed_rate": 0.8333333333333334,
+          "mean_probability": 0.45848457868517595,
+          "n": 3,
+          "observed_rate": 0.3333333333333333,
           "upper": 0.5
         },
         {
           "lower": 0.5,
-          "mean_probability": 0.540933540878371,
-          "n": 8,
-          "observed_rate": 0.375,
+          "mean_probability": 0.5271343302406092,
+          "n": 4,
+          "observed_rate": 0.75,
           "upper": 0.6
         },
         {
           "lower": 0.6,
-          "mean_probability": 0.603303486455924,
+          "mean_probability": 0.6511315470701035,
           "n": 1,
           "observed_rate": 0.0,
           "upper": 0.7
         }
       ],
-      "log_loss": 0.739649590612255,
-      "mean_probability": 0.5140439076677876,
-      "n": 15,
-      "observed_rate": 0.5333333333333333
+      "ece": 0.2397559952703993,
+      "log_loss": 0.7137126136927897,
+      "mean_probability": 0.5168903255110086,
+      "n": 8,
+      "observed_rate": 0.5,
+      "pushes_excluded": 0,
+      "raw_metrics": {
+        "accuracy_50": 0.625,
+        "brier": 0.25966349636116354,
+        "ece": 0.2397559952703993,
+        "log_loss": 0.7137126136927897,
+        "mean_probability": 0.5168903255110086,
+        "n": 8,
+        "observed_rate": 0.5
+      },
+      "sharp_benchmark": {
+        "accuracy_50": 0.5,
+        "brier": 0.26123858809383466,
+        "brier_gain_ci95_lower": -0.039024921216593025,
+        "brier_gain_ci95_upper": 0.04217510468193529,
+        "brier_gain_vs_sharp": 0.0015750917326711293,
+        "ece": 0.23249916407029128,
+        "log_loss": 0.7163821360085547,
+        "logloss_gain_ci95_lower": -0.08224642316065556,
+        "logloss_gain_ci95_upper": 0.0875854677921856,
+        "logloss_gain_vs_sharp": 0.002669522315765019,
+        "mean_probability": 0.5179347175621448,
+        "model_paired": {
+          "accuracy_50": 0.625,
+          "brier": 0.25966349636116354,
+          "ece": 0.2397559952703993,
+          "log_loss": 0.7137126136927897,
+          "mean_probability": 0.5168903255110086,
+          "n": 8,
+          "observed_rate": 0.5
+        },
+        "n": 8,
+        "observed_rate": 0.5,
+        "paired_inference": "paired per-game score differences; normal 95% CI",
+        "paired_n": 8
+      }
     },
     "RL_AWAY_-1.5": {
-      "accuracy_50": 0.6,
-      "brier": 0.2612682727201913,
+      "accuracy_50": 0.5,
+      "brier": 0.28639502164879493,
       "calibration": [
         {
           "lower": 0.2,
-          "mean_probability": 0.2782350771296604,
-          "n": 3,
-          "observed_rate": 0.6666666666666666,
+          "mean_probability": 0.2144660552091463,
+          "n": 1,
+          "observed_rate": 1.0,
           "upper": 0.3
         },
         {
           "lower": 0.3,
-          "mean_probability": 0.3517549788178222,
-          "n": 11,
-          "observed_rate": 0.36363636363636365,
+          "mean_probability": 0.34378445068565294,
+          "n": 6,
+          "observed_rate": 0.3333333333333333,
           "upper": 0.4
         },
         {
           "lower": 0.4,
-          "mean_probability": 0.4248733390034437,
+          "mean_probability": 0.4358106995254426,
           "n": 1,
-          "observed_rate": 0.0,
+          "observed_rate": 1.0,
           "upper": 0.5
         }
       ],
-      "log_loss": 0.7204234920449036,
-      "mean_probability": 0.34192555582589795,
-      "n": 15,
-      "observed_rate": 0.4
+      "ece": 0.1765537436724161,
+      "log_loss": 0.7801621785163605,
+      "mean_probability": 0.33912293235606333,
+      "n": 8,
+      "observed_rate": 0.5,
+      "pushes_excluded": 0,
+      "raw_metrics": {
+        "accuracy_50": 0.5,
+        "brier": 0.28639502164879493,
+        "ece": 0.1765537436724161,
+        "log_loss": 0.7801621785163605,
+        "mean_probability": 0.33912293235606333,
+        "n": 8,
+        "observed_rate": 0.5
+      },
+      "sharp_benchmark": {
+        "accuracy_50": 0.5,
+        "brier": 0.23802136962424125,
+        "brier_gain_ci95_lower": -0.0448168693817929,
+        "brier_gain_ci95_upper": 0.03545550874599243,
+        "brier_gain_vs_sharp": -0.00468068031790023,
+        "ece": 0.08616123879646648,
+        "log_loss": 0.6689417582114676,
+        "logloss_gain_ci95_lower": -0.09135611765369324,
+        "logloss_gain_ci95_upper": 0.07481530572462007,
+        "logloss_gain_vs_sharp": -0.008270405964536584,
+        "mean_probability": 0.4138387612035335,
+        "model_paired": {
+          "accuracy_50": 0.5,
+          "brier": 0.2427020499421415,
+          "ece": 0.15972121860111718,
+          "log_loss": 0.6772121641760042,
+          "mean_probability": 0.37762656836383846,
+          "n": 4,
+          "observed_rate": 0.5
+        },
+        "n": 4,
+        "observed_rate": 0.5,
+        "paired_inference": "paired per-game score differences; normal 95% CI",
+        "paired_n": 4
+      }
     },
     "RL_HOME_-1.5": {
-      "accuracy_50": 0.6666666666666666,
-      "brier": 0.22296097918402916,
+      "accuracy_50": 0.625,
+      "brier": 0.23621994078370154,
       "calibration": [
         {
           "lower": 0.2,
-          "mean_probability": 0.299259236285775,
+          "mean_probability": 0.252611054498617,
           "n": 1,
           "observed_rate": 0.0,
           "upper": 0.3
         },
         {
           "lower": 0.3,
-          "mean_probability": 0.35369755290233795,
-          "n": 11,
-          "observed_rate": 0.36363636363636365,
+          "mean_probability": 0.36181161497312186,
+          "n": 5,
+          "observed_rate": 0.4,
           "upper": 0.4
         },
         {
           "lower": 0.4,
-          "mean_probability": 0.44908407806415607,
-          "n": 3,
-          "observed_rate": 0.3333333333333333,
+          "mean_probability": 0.45625532083102094,
+          "n": 2,
+          "observed_rate": 0.5,
           "upper": 0.5
         }
       ],
-      "log_loss": 0.6371280250151575,
-      "mean_probability": 0.3691456368269307,
-      "n": 15,
-      "observed_rate": 0.3333333333333333
+      "ece": 0.06638029224637074,
+      "log_loss": 0.6626261148290652,
+      "mean_probability": 0.3717724713782835,
+      "n": 8,
+      "observed_rate": 0.375,
+      "pushes_excluded": 0,
+      "raw_metrics": {
+        "accuracy_50": 0.625,
+        "brier": 0.23621994078370154,
+        "ece": 0.06638029224637074,
+        "log_loss": 0.6626261148290652,
+        "mean_probability": 0.3717724713782835,
+        "n": 8,
+        "observed_rate": 0.375
+      },
+      "sharp_benchmark": {
+        "accuracy_50": 0.75,
+        "brier": 0.21915012343359674,
+        "brier_gain_ci95_lower": -0.05835780318963707,
+        "brier_gain_ci95_upper": 0.05915015780655626,
+        "brier_gain_vs_sharp": 0.00039617730845959917,
+        "ece": 0.28720199002585933,
+        "log_loss": 0.6299116829748159,
+        "logloss_gain_ci95_lower": -0.1182374945033493,
+        "logloss_gain_ci95_upper": 0.12056465628897975,
+        "logloss_gain_vs_sharp": 0.001163580892815222,
+        "mean_probability": 0.4025132278049224,
+        "model_paired": {
+          "accuracy_50": 0.75,
+          "brier": 0.21875394612513713,
+          "ece": 0.20925277461790603,
+          "log_loss": 0.6287481020820007,
+          "mean_probability": 0.415508095448927,
+          "n": 4,
+          "observed_rate": 0.25
+        },
+        "n": 4,
+        "observed_rate": 0.25,
+        "paired_inference": "paired per-game score differences; normal 95% CI",
+        "paired_n": 4
+      }
     },
     "TOTAL_OVER": {
-      "accuracy_50": 0.4666666666666667,
-      "brier": 0.2628252576574038,
+      "accuracy_50": 0.625,
+      "brier": 0.28059860863337066,
       "calibration": [
         {
           "lower": 0.4,
-          "mean_probability": 0.4687118443615351,
+          "mean_probability": 0.47966168781759544,
           "n": 1,
           "observed_rate": 0.0,
           "upper": 0.5
         },
         {
           "lower": 0.5,
-          "mean_probability": 0.5504990808683353,
-          "n": 8,
-          "observed_rate": 0.5,
+          "mean_probability": 0.5373275285768846,
+          "n": 3,
+          "observed_rate": 1.0,
           "upper": 0.6
         },
         {
           "lower": 0.6,
-          "mean_probability": 0.6437650535785616,
-          "n": 6,
-          "observed_rate": 0.3333333333333333,
+          "mean_probability": 0.6430438973864769,
+          "n": 4,
+          "observed_rate": 0.25,
           "upper": 0.7
         }
       ],
-      "log_loss": 0.7202036262685751,
-      "mean_probability": 0.5823529875186392,
-      "n": 15,
-      "observed_rate": 0.4
+      "ece": 0.42998183645410615,
+      "log_loss": 0.7574385499625377,
+      "mean_probability": 0.5829774828867696,
+      "n": 8,
+      "observed_rate": 0.5,
+      "pushes_excluded": 0,
+      "raw_metrics": {
+        "accuracy_50": 0.625,
+        "brier": 0.28059860863337066,
+        "ece": 0.42998183645410615,
+        "log_loss": 0.7574385499625377,
+        "mean_probability": 0.5829774828867696,
+        "n": 8,
+        "observed_rate": 0.5
+      },
+      "sharp_benchmark": {
+        "accuracy_50": 0.42857142857142855,
+        "brier": 0.2596315506753065,
+        "brier_gain_ci95_lower": -0.12316257042804388,
+        "brier_gain_ci95_upper": 0.03776188043731512,
+        "brier_gain_vs_sharp": -0.04270034499536438,
+        "ece": 0.1000896167583015,
+        "log_loss": 0.712503332234712,
+        "logloss_gain_ci95_lower": -0.2550771543653034,
+        "logloss_gain_ci95_upper": 0.0756022542013678,
+        "logloss_gain_vs_sharp": -0.0897374500819678,
+        "mean_probability": 0.4965407937853193,
+        "model_paired": {
+          "accuracy_50": 0.5714285714285714,
+          "brier": 0.302331895670671,
+          "ece": 0.542610810326552,
+          "log_loss": 0.8022407823166798,
+          "mean_probability": 0.5746058348210246,
+          "n": 7,
+          "observed_rate": 0.42857142857142855
+        },
+        "n": 7,
+        "observed_rate": 0.42857142857142855,
+        "paired_inference": "paired per-game score differences; normal 95% CI",
+        "paired_n": 7
+      }
     }
   },
   "model_generation": "pulsar-v14-context-v3",
   "overall": {
-    "accuracy_50": 0.5,
-    "brier": 0.25502401964725435,
+    "accuracy_50": 0.59375,
+    "brier": 0.2657192668567577,
+    "ece": 0.16773069082175746,
     "interpretation": "dashboard-only; correlated markets must not drive model promotion",
-    "log_loss": 0.7043511834852229,
-    "mean_probability": 0.4518670219598138,
-    "n": 60,
-    "observed_rate": 0.4166666666666667
+    "log_loss": 0.7284848642501882,
+    "mean_probability": 0.4526908030330312,
+    "n": 32,
+    "observed_rate": 0.46875
   },
-  "prediction_records_settled": 45,
+  "prediction_records_excluded_other_policy": 54,
+  "prediction_records_settled": 16,
+  "probability_policy_id": "pulsar-v14-probability-policy-v1",
   "roi": {
-    "reason": "No official bet/stake ledger in V14 analytics-only production.",
+    "reason": "No certified real-execution sample yet.",
     "status": "UNAVAILABLE"
   },
   "runs": {
-    "team_run_mae": 2.534294490190834,
-    "total_run_mae": 4.248330901925608
+    "team_run_mae": 3.1759440348539787,
+    "total_run_mae": 4.330867504949566
   },
-  "schema": "pulsar-v14-performance-v3",
+  "schema": "pulsar-v14-performance-v5",
+  "segments": {
+    "data_quality": {
+      "STARTER_CLEAN": {
+        "games": 8,
+        "markets": {
+          "ML": {
+            "accuracy_50": 0.625,
+            "brier": 0.25966349636116354,
+            "calibration": [
+              {
+                "lower": 0.4,
+                "mean_probability": 0.45848457868517595,
+                "n": 3,
+                "observed_rate": 0.3333333333333333,
+                "upper": 0.5
+              },
+              {
+                "lower": 0.5,
+                "mean_probability": 0.5271343302406092,
+                "n": 4,
+                "observed_rate": 0.75,
+                "upper": 0.6
+              },
+              {
+                "lower": 0.6,
+                "mean_probability": 0.6511315470701035,
+                "n": 1,
+                "observed_rate": 0.0,
+                "upper": 0.7
+              }
+            ],
+            "ece": 0.2397559952703993,
+            "log_loss": 0.7137126136927897,
+            "mean_probability": 0.5168903255110086,
+            "n": 8,
+            "observed_rate": 0.5,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": 0.625,
+              "brier": 0.25966349636116354,
+              "ece": 0.2397559952703993,
+              "log_loss": 0.7137126136927897,
+              "mean_probability": 0.5168903255110086,
+              "n": 8,
+              "observed_rate": 0.5
+            },
+            "sharp_benchmark": {
+              "accuracy_50": 0.5,
+              "brier": 0.26123858809383466,
+              "brier_gain_ci95_lower": -0.039024921216593025,
+              "brier_gain_ci95_upper": 0.04217510468193529,
+              "brier_gain_vs_sharp": 0.0015750917326711293,
+              "ece": 0.23249916407029128,
+              "log_loss": 0.7163821360085547,
+              "logloss_gain_ci95_lower": -0.08224642316065556,
+              "logloss_gain_ci95_upper": 0.0875854677921856,
+              "logloss_gain_vs_sharp": 0.002669522315765019,
+              "mean_probability": 0.5179347175621448,
+              "model_paired": {
+                "accuracy_50": 0.625,
+                "brier": 0.25966349636116354,
+                "ece": 0.2397559952703993,
+                "log_loss": 0.7137126136927897,
+                "mean_probability": 0.5168903255110086,
+                "n": 8,
+                "observed_rate": 0.5
+              },
+              "n": 8,
+              "observed_rate": 0.5,
+              "paired_inference": "paired per-game score differences; normal 95% CI",
+              "paired_n": 8
+            }
+          },
+          "RL_AWAY_-1.5": {
+            "accuracy_50": 0.5,
+            "brier": 0.28639502164879493,
+            "calibration": [
+              {
+                "lower": 0.2,
+                "mean_probability": 0.2144660552091463,
+                "n": 1,
+                "observed_rate": 1.0,
+                "upper": 0.3
+              },
+              {
+                "lower": 0.3,
+                "mean_probability": 0.34378445068565294,
+                "n": 6,
+                "observed_rate": 0.3333333333333333,
+                "upper": 0.4
+              },
+              {
+                "lower": 0.4,
+                "mean_probability": 0.4358106995254426,
+                "n": 1,
+                "observed_rate": 1.0,
+                "upper": 0.5
+              }
+            ],
+            "ece": 0.1765537436724161,
+            "log_loss": 0.7801621785163605,
+            "mean_probability": 0.33912293235606333,
+            "n": 8,
+            "observed_rate": 0.5,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": 0.5,
+              "brier": 0.28639502164879493,
+              "ece": 0.1765537436724161,
+              "log_loss": 0.7801621785163605,
+              "mean_probability": 0.33912293235606333,
+              "n": 8,
+              "observed_rate": 0.5
+            },
+            "sharp_benchmark": {
+              "accuracy_50": 0.5,
+              "brier": 0.23802136962424125,
+              "brier_gain_ci95_lower": -0.0448168693817929,
+              "brier_gain_ci95_upper": 0.03545550874599243,
+              "brier_gain_vs_sharp": -0.00468068031790023,
+              "ece": 0.08616123879646648,
+              "log_loss": 0.6689417582114676,
+              "logloss_gain_ci95_lower": -0.09135611765369324,
+              "logloss_gain_ci95_upper": 0.07481530572462007,
+              "logloss_gain_vs_sharp": -0.008270405964536584,
+              "mean_probability": 0.4138387612035335,
+              "model_paired": {
+                "accuracy_50": 0.5,
+                "brier": 0.2427020499421415,
+                "ece": 0.15972121860111718,
+                "log_loss": 0.6772121641760042,
+                "mean_probability": 0.37762656836383846,
+                "n": 4,
+                "observed_rate": 0.5
+              },
+              "n": 4,
+              "observed_rate": 0.5,
+              "paired_inference": "paired per-game score differences; normal 95% CI",
+              "paired_n": 4
+            }
+          },
+          "RL_HOME_-1.5": {
+            "accuracy_50": 0.625,
+            "brier": 0.23621994078370154,
+            "calibration": [
+              {
+                "lower": 0.2,
+                "mean_probability": 0.252611054498617,
+                "n": 1,
+                "observed_rate": 0.0,
+                "upper": 0.3
+              },
+              {
+                "lower": 0.3,
+                "mean_probability": 0.36181161497312186,
+                "n": 5,
+                "observed_rate": 0.4,
+                "upper": 0.4
+              },
+              {
+                "lower": 0.4,
+                "mean_probability": 0.45625532083102094,
+                "n": 2,
+                "observed_rate": 0.5,
+                "upper": 0.5
+              }
+            ],
+            "ece": 0.06638029224637074,
+            "log_loss": 0.6626261148290652,
+            "mean_probability": 0.3717724713782835,
+            "n": 8,
+            "observed_rate": 0.375,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": 0.625,
+              "brier": 0.23621994078370154,
+              "ece": 0.06638029224637074,
+              "log_loss": 0.6626261148290652,
+              "mean_probability": 0.3717724713782835,
+              "n": 8,
+              "observed_rate": 0.375
+            },
+            "sharp_benchmark": {
+              "accuracy_50": 0.75,
+              "brier": 0.21915012343359674,
+              "brier_gain_ci95_lower": -0.05835780318963707,
+              "brier_gain_ci95_upper": 0.05915015780655626,
+              "brier_gain_vs_sharp": 0.00039617730845959917,
+              "ece": 0.28720199002585933,
+              "log_loss": 0.6299116829748159,
+              "logloss_gain_ci95_lower": -0.1182374945033493,
+              "logloss_gain_ci95_upper": 0.12056465628897975,
+              "logloss_gain_vs_sharp": 0.001163580892815222,
+              "mean_probability": 0.4025132278049224,
+              "model_paired": {
+                "accuracy_50": 0.75,
+                "brier": 0.21875394612513713,
+                "ece": 0.20925277461790603,
+                "log_loss": 0.6287481020820007,
+                "mean_probability": 0.415508095448927,
+                "n": 4,
+                "observed_rate": 0.25
+              },
+              "n": 4,
+              "observed_rate": 0.25,
+              "paired_inference": "paired per-game score differences; normal 95% CI",
+              "paired_n": 4
+            }
+          },
+          "TOTAL_OVER": {
+            "accuracy_50": 0.625,
+            "brier": 0.28059860863337066,
+            "calibration": [
+              {
+                "lower": 0.4,
+                "mean_probability": 0.47966168781759544,
+                "n": 1,
+                "observed_rate": 0.0,
+                "upper": 0.5
+              },
+              {
+                "lower": 0.5,
+                "mean_probability": 0.5373275285768846,
+                "n": 3,
+                "observed_rate": 1.0,
+                "upper": 0.6
+              },
+              {
+                "lower": 0.6,
+                "mean_probability": 0.6430438973864769,
+                "n": 4,
+                "observed_rate": 0.25,
+                "upper": 0.7
+              }
+            ],
+            "ece": 0.42998183645410615,
+            "log_loss": 0.7574385499625377,
+            "mean_probability": 0.5829774828867696,
+            "n": 8,
+            "observed_rate": 0.5,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": 0.625,
+              "brier": 0.28059860863337066,
+              "ece": 0.42998183645410615,
+              "log_loss": 0.7574385499625377,
+              "mean_probability": 0.5829774828867696,
+              "n": 8,
+              "observed_rate": 0.5
+            },
+            "sharp_benchmark": {
+              "accuracy_50": 0.42857142857142855,
+              "brier": 0.2596315506753065,
+              "brier_gain_ci95_lower": -0.12316257042804388,
+              "brier_gain_ci95_upper": 0.03776188043731512,
+              "brier_gain_vs_sharp": -0.04270034499536438,
+              "ece": 0.1000896167583015,
+              "log_loss": 0.712503332234712,
+              "logloss_gain_ci95_lower": -0.2550771543653034,
+              "logloss_gain_ci95_upper": 0.0756022542013678,
+              "logloss_gain_vs_sharp": -0.0897374500819678,
+              "mean_probability": 0.4965407937853193,
+              "model_paired": {
+                "accuracy_50": 0.5714285714285714,
+                "brier": 0.302331895670671,
+                "ece": 0.542610810326552,
+                "log_loss": 0.8022407823166798,
+                "mean_probability": 0.5746058348210246,
+                "n": 7,
+                "observed_rate": 0.42857142857142855
+              },
+              "n": 7,
+              "observed_rate": 0.42857142857142855,
+              "paired_inference": "paired per-game score differences; normal 95% CI",
+              "paired_n": 7
+            }
+          }
+        }
+      },
+      "STARTER_DEGRADED": {
+        "games": 0,
+        "markets": {
+          "ML": {
+            "accuracy_50": null,
+            "brier": null,
+            "calibration": [],
+            "ece": null,
+            "log_loss": null,
+            "mean_probability": null,
+            "n": 0,
+            "observed_rate": null,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": null,
+              "brier": null,
+              "ece": null,
+              "log_loss": null,
+              "mean_probability": null,
+              "n": 0,
+              "observed_rate": null
+            },
+            "sharp_benchmark": {
+              "brier": null,
+              "brier_gain_ci95_lower": null,
+              "brier_gain_vs_sharp": null,
+              "log_loss": null,
+              "logloss_gain_ci95_lower": null,
+              "logloss_gain_vs_sharp": null,
+              "model_paired": {
+                "accuracy_50": null,
+                "brier": null,
+                "ece": null,
+                "log_loss": null,
+                "mean_probability": null,
+                "n": 0,
+                "observed_rate": null
+              },
+              "n": 0,
+              "paired_n": 0
+            }
+          },
+          "RL_AWAY_-1.5": {
+            "accuracy_50": null,
+            "brier": null,
+            "calibration": [],
+            "ece": null,
+            "log_loss": null,
+            "mean_probability": null,
+            "n": 0,
+            "observed_rate": null,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": null,
+              "brier": null,
+              "ece": null,
+              "log_loss": null,
+              "mean_probability": null,
+              "n": 0,
+              "observed_rate": null
+            },
+            "sharp_benchmark": {
+              "brier": null,
+              "brier_gain_ci95_lower": null,
+              "brier_gain_vs_sharp": null,
+              "log_loss": null,
+              "logloss_gain_ci95_lower": null,
+              "logloss_gain_vs_sharp": null,
+              "model_paired": {
+                "accuracy_50": null,
+                "brier": null,
+                "ece": null,
+                "log_loss": null,
+                "mean_probability": null,
+                "n": 0,
+                "observed_rate": null
+              },
+              "n": 0,
+              "paired_n": 0
+            }
+          },
+          "RL_HOME_-1.5": {
+            "accuracy_50": null,
+            "brier": null,
+            "calibration": [],
+            "ece": null,
+            "log_loss": null,
+            "mean_probability": null,
+            "n": 0,
+            "observed_rate": null,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": null,
+              "brier": null,
+              "ece": null,
+              "log_loss": null,
+              "mean_probability": null,
+              "n": 0,
+              "observed_rate": null
+            },
+            "sharp_benchmark": {
+              "brier": null,
+              "brier_gain_ci95_lower": null,
+              "brier_gain_vs_sharp": null,
+              "log_loss": null,
+              "logloss_gain_ci95_lower": null,
+              "logloss_gain_vs_sharp": null,
+              "model_paired": {
+                "accuracy_50": null,
+                "brier": null,
+                "ece": null,
+                "log_loss": null,
+                "mean_probability": null,
+                "n": 0,
+                "observed_rate": null
+              },
+              "n": 0,
+              "paired_n": 0
+            }
+          },
+          "TOTAL_OVER": {
+            "accuracy_50": null,
+            "brier": null,
+            "calibration": [],
+            "ece": null,
+            "log_loss": null,
+            "mean_probability": null,
+            "n": 0,
+            "observed_rate": null,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": null,
+              "brier": null,
+              "ece": null,
+              "log_loss": null,
+              "mean_probability": null,
+              "n": 0,
+              "observed_rate": null
+            },
+            "sharp_benchmark": {
+              "brier": null,
+              "brier_gain_ci95_lower": null,
+              "brier_gain_vs_sharp": null,
+              "log_loss": null,
+              "logloss_gain_ci95_lower": null,
+              "logloss_gain_vs_sharp": null,
+              "model_paired": {
+                "accuracy_50": null,
+                "brier": null,
+                "ece": null,
+                "log_loss": null,
+                "mean_probability": null,
+                "n": 0,
+                "observed_rate": null
+              },
+              "n": 0,
+              "paired_n": 0
+            }
+          }
+        }
+      }
+    },
+    "phase": {
+      "EARLY": {
+        "games": 5,
+        "markets": {
+          "ML": {
+            "accuracy_50": 0.8,
+            "brier": 0.2592134856701998,
+            "calibration": [
+              {
+                "lower": 0.4,
+                "mean_probability": 0.44558747720034286,
+                "n": 2,
+                "observed_rate": 0.0,
+                "upper": 0.5
+              },
+              {
+                "lower": 0.5,
+                "mean_probability": 0.5146714017248466,
+                "n": 2,
+                "observed_rate": 1.0,
+                "upper": 0.6
+              },
+              {
+                "lower": 0.6,
+                "mean_probability": 0.6511315470701035,
+                "n": 1,
+                "observed_rate": 0.0,
+                "upper": 0.7
+              }
+            ],
+            "ece": 0.5025927396042192,
+            "log_loss": 0.71351833050013,
+            "mean_probability": 0.5143298609840965,
+            "n": 5,
+            "observed_rate": 0.4,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": 0.8,
+              "brier": 0.2592134856701998,
+              "ece": 0.5025927396042192,
+              "log_loss": 0.71351833050013,
+              "mean_probability": 0.5143298609840965,
+              "n": 5,
+              "observed_rate": 0.4
+            },
+            "sharp_benchmark": {
+              "accuracy_50": 0.6,
+              "brier": 0.23783918170225005,
+              "brier_gain_ci95_lower": -0.05304886142117088,
+              "brier_gain_ci95_upper": 0.010300253485271384,
+              "brier_gain_vs_sharp": -0.02137430396794975,
+              "ece": 0.09886928085158794,
+              "log_loss": 0.667940535012631,
+              "logloss_gain_ci95_lower": -0.11229757166407771,
+              "logloss_gain_ci95_upper": 0.0211419806890797,
+              "logloss_gain_vs_sharp": -0.045577795487499004,
+              "mean_probability": 0.4942356196745816,
+              "model_paired": {
+                "accuracy_50": 0.8,
+                "brier": 0.2592134856701998,
+                "ece": 0.5025927396042192,
+                "log_loss": 0.71351833050013,
+                "mean_probability": 0.5143298609840965,
+                "n": 5,
+                "observed_rate": 0.4
+              },
+              "n": 5,
+              "observed_rate": 0.4,
+              "paired_inference": "paired per-game score differences; normal 95% CI",
+              "paired_n": 5
+            }
+          },
+          "RL_AWAY_-1.5": {
+            "accuracy_50": 0.4,
+            "brier": 0.31161030313359844,
+            "calibration": [
+              {
+                "lower": 0.2,
+                "mean_probability": 0.2144660552091463,
+                "n": 1,
+                "observed_rate": 1.0,
+                "upper": 0.3
+              },
+              {
+                "lower": 0.3,
+                "mean_probability": 0.3440145760897939,
+                "n": 3,
+                "observed_rate": 0.3333333333333333,
+                "upper": 0.4
+              },
+              {
+                "lower": 0.4,
+                "mean_probability": 0.4358106995254426,
+                "n": 1,
+                "observed_rate": 1.0,
+                "upper": 0.5
+              }
+            ],
+            "ece": 0.2763533947069586,
+            "log_loss": 0.8365706666499738,
+            "mean_probability": 0.3364640966007941,
+            "n": 5,
+            "observed_rate": 0.6,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": 0.4,
+              "brier": 0.31161030313359844,
+              "ece": 0.2763533947069586,
+              "log_loss": 0.8365706666499738,
+              "mean_probability": 0.3364640966007941,
+              "n": 5,
+              "observed_rate": 0.6
+            },
+            "sharp_benchmark": {
+              "accuracy_50": 0.3333333333333333,
+              "brier": 0.2613444778706353,
+              "brier_gain_ci95_lower": -0.06294507018929181,
+              "brier_gain_ci95_upper": 0.03014152469205673,
+              "brier_gain_vs_sharp": -0.01640177274861754,
+              "ece": 0.25152882305563207,
+              "log_loss": 0.7160778048987568,
+              "logloss_gain_ci95_lower": -0.1290245545722101,
+              "logloss_gain_ci95_upper": 0.0642615299433926,
+              "logloss_gain_vs_sharp": -0.03238151231440876,
+              "mean_probability": 0.4151378436110346,
+              "model_paired": {
+                "accuracy_50": 0.3333333333333333,
+                "brier": 0.27774625061925284,
+                "ece": 0.28679909420732463,
+                "log_loss": 0.7484593172131656,
+                "mean_probability": 0.37986757245934205,
+                "n": 3,
+                "observed_rate": 0.6666666666666666
+              },
+              "n": 3,
+              "observed_rate": 0.6666666666666666,
+              "paired_inference": "paired per-game score differences; normal 95% CI",
+              "paired_n": 3
+            }
+          },
+          "RL_HOME_-1.5": {
+            "accuracy_50": 0.8,
+            "brier": 0.19078935635064645,
+            "calibration": [
+              {
+                "lower": 0.2,
+                "mean_probability": 0.252611054498617,
+                "n": 1,
+                "observed_rate": 0.0,
+                "upper": 0.3
+              },
+              {
+                "lower": 0.3,
+                "mean_probability": 0.3564416694913863,
+                "n": 3,
+                "observed_rate": 0.3333333333333333,
+                "upper": 0.4
+              },
+              {
+                "lower": 0.4,
+                "mean_probability": 0.4990321032320656,
+                "n": 1,
+                "observed_rate": 0.0,
+                "upper": 0.5
+              }
+            ],
+            "ece": 0.1641936332409683,
+            "log_loss": 0.5672898778334707,
+            "mean_probability": 0.3641936332409682,
+            "n": 5,
+            "observed_rate": 0.2,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": 0.8,
+              "brier": 0.19078935635064645,
+              "ece": 0.1641936332409683,
+              "log_loss": 0.5672898778334707,
+              "mean_probability": 0.3641936332409682,
+              "n": 5,
+              "observed_rate": 0.2
+            },
+            "sharp_benchmark": {
+              "accuracy_50": 1.0,
+              "brier": 0.1428599695893326,
+              "brier_gain_ci95_lower": -0.11396864770801343,
+              "brier_gain_ci95_upper": 0.027116618705641464,
+              "brier_gain_vs_sharp": -0.04342601450118599,
+              "ece": 0.3762924704297622,
+              "log_loss": 0.47370093137720737,
+              "logloss_gain_ci95_lower": -0.22958053087429187,
+              "logloss_gain_ci95_upper": 0.05270508184106343,
+              "logloss_gain_vs_sharp": -0.08843772451661422,
+              "mean_probability": 0.3762924704297622,
+              "model_paired": {
+                "accuracy_50": 1.0,
+                "brier": 0.1862859840905186,
+                "ece": 0.42525657634270064,
+                "log_loss": 0.5621386558938216,
+                "mean_probability": 0.42525657634270064,
+                "n": 2,
+                "observed_rate": 0.0
+              },
+              "n": 2,
+              "observed_rate": 0.0,
+              "paired_inference": "paired per-game score differences; normal 95% CI",
+              "paired_n": 2
+            }
+          },
+          "TOTAL_OVER": {
+            "accuracy_50": 0.6,
+            "brier": 0.29376071714043617,
+            "calibration": [
+              {
+                "lower": 0.4,
+                "mean_probability": 0.47966168781759544,
+                "n": 1,
+                "observed_rate": 0.0,
+                "upper": 0.5
+              },
+              {
+                "lower": 0.5,
+                "mean_probability": 0.5391181692262884,
+                "n": 2,
+                "observed_rate": 1.0,
+                "upper": 0.6
+              },
+              {
+                "lower": 0.6,
+                "mean_probability": 0.6373778976327622,
+                "n": 2,
+                "observed_rate": 0.0,
+                "upper": 0.7
+              }
+            ],
+            "ece": 0.5352362289261087,
+            "log_loss": 0.7842399731521323,
+            "mean_probability": 0.5665307643071393,
+            "n": 5,
+            "observed_rate": 0.4,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": 0.6,
+              "brier": 0.29376071714043617,
+              "ece": 0.5352362289261087,
+              "log_loss": 0.7842399731521323,
+              "mean_probability": 0.5665307643071393,
+              "n": 5,
+              "observed_rate": 0.4
+            },
+            "sharp_benchmark": {
+              "accuracy_50": 0.4,
+              "brier": 0.26853197119402994,
+              "brier_gain_ci95_lower": -0.12492223967949288,
+              "brier_gain_ci95_upper": 0.07446474778668051,
+              "brier_gain_vs_sharp": -0.02522874594640619,
+              "ece": 0.1304206840175955,
+              "log_loss": 0.7303676421875651,
+              "logloss_gain_ci95_lower": -0.25808856600453195,
+              "logloss_gain_ci95_upper": 0.15034390407539733,
+              "logloss_gain_vs_sharp": -0.0538723309645673,
+              "mean_probability": 0.48545233185542047,
+              "model_paired": {
+                "accuracy_50": 0.6,
+                "brier": 0.29376071714043617,
+                "ece": 0.5352362289261087,
+                "log_loss": 0.7842399731521323,
+                "mean_probability": 0.5665307643071393,
+                "n": 5,
+                "observed_rate": 0.4
+              },
+              "n": 5,
+              "observed_rate": 0.4,
+              "paired_inference": "paired per-game score differences; normal 95% CI",
+              "paired_n": 5
+            }
+          }
+        }
+      },
+      "FINAL": {
+        "games": 2,
+        "markets": {
+          "ML": {
+            "accuracy_50": 0.5,
+            "brier": 0.2576360837434476,
+            "calibration": [
+              {
+                "lower": 0.5,
+                "mean_probability": 0.5395972587563718,
+                "n": 2,
+                "observed_rate": 0.5,
+                "upper": 0.6
+              }
+            ],
+            "ece": 0.03959725875637177,
+            "log_loss": 0.708507357054629,
+            "mean_probability": 0.5395972587563718,
+            "n": 2,
+            "observed_rate": 0.5,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": 0.5,
+              "brier": 0.2576360837434476,
+              "ece": 0.03959725875637177,
+              "log_loss": 0.708507357054629,
+              "mean_probability": 0.5395972587563718,
+              "n": 2,
+              "observed_rate": 0.5
+            },
+            "sharp_benchmark": {
+              "accuracy_50": 0.5,
+              "brier": 0.30287056102015075,
+              "brier_gain_ci95_lower": -0.1040822457466528,
+              "brier_gain_ci95_upper": 0.19455120030005912,
+              "brier_gain_vs_sharp": 0.04523447727670317,
+              "ece": 0.5396942792291587,
+              "log_loss": 0.8040176717796855,
+              "logloss_gain_ci95_lower": -0.21430894405544437,
+              "logloss_gain_ci95_upper": 0.4053295735055574,
+              "logloss_gain_vs_sharp": 0.0955103147250565,
+              "mean_probability": 0.6077062950224807,
+              "model_paired": {
+                "accuracy_50": 0.5,
+                "brier": 0.2576360837434476,
+                "ece": 0.03959725875637177,
+                "log_loss": 0.708507357054629,
+                "mean_probability": 0.5395972587563718,
+                "n": 2,
+                "observed_rate": 0.5
+              },
+              "n": 2,
+              "observed_rate": 0.5,
+              "paired_inference": "paired per-game score differences; normal 95% CI",
+              "paired_n": 2
+            }
+          },
+          "RL_AWAY_-1.5": {
+            "accuracy_50": 0.5,
+            "brier": 0.29776960480577996,
+            "calibration": [
+              {
+                "lower": 0.3,
+                "mean_probability": 0.32987970988360404,
+                "n": 2,
+                "observed_rate": 0.5,
+                "upper": 0.4
+              }
+            ],
+            "ece": 0.17012029011639596,
+            "log_loss": 0.7974866949082472,
+            "mean_probability": 0.32987970988360404,
+            "n": 2,
+            "observed_rate": 0.5,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": 0.5,
+              "brier": 0.29776960480577996,
+              "ece": 0.17012029011639596,
+              "log_loss": 0.7974866949082472,
+              "mean_probability": 0.32987970988360404,
+              "n": 2,
+              "observed_rate": 0.5
+            },
+            "sharp_benchmark": {
+              "brier": null,
+              "brier_gain_ci95_lower": null,
+              "brier_gain_vs_sharp": null,
+              "log_loss": null,
+              "logloss_gain_ci95_lower": null,
+              "logloss_gain_vs_sharp": null,
+              "model_paired": {
+                "accuracy_50": null,
+                "brier": null,
+                "ece": null,
+                "log_loss": null,
+                "mean_probability": null,
+                "n": 0,
+                "observed_rate": null
+              },
+              "n": 0,
+              "paired_n": 0
+            }
+          },
+          "RL_HOME_-1.5": {
+            "accuracy_50": 0.5,
+            "brier": 0.25122190815975565,
+            "calibration": [
+              {
+                "lower": 0.3,
+                "mean_probability": 0.3980406906803303,
+                "n": 1,
+                "observed_rate": 0.0,
+                "upper": 0.4
+              },
+              {
+                "lower": 0.4,
+                "mean_probability": 0.41347853842997623,
+                "n": 1,
+                "observed_rate": 1.0,
+                "upper": 0.5
+              }
+            ],
+            "ece": 0.4922810761251771,
+            "log_loss": 0.6953575482701797,
+            "mean_probability": 0.4057596145551533,
+            "n": 2,
+            "observed_rate": 0.5,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": 0.5,
+              "brier": 0.25122190815975565,
+              "ece": 0.4922810761251771,
+              "log_loss": 0.6953575482701797,
+              "mean_probability": 0.4057596145551533,
+              "n": 2,
+              "observed_rate": 0.5
+            },
+            "sharp_benchmark": {
+              "accuracy_50": 0.5,
+              "brier": 0.2954402772778609,
+              "brier_gain_ci95_lower": 0.012893936250504417,
+              "brier_gain_ci95_upper": 0.07554280198570595,
+              "brier_gain_vs_sharp": 0.044218369118105186,
+              "ece": 0.5388519577857616,
+              "log_loss": 0.7861224345724244,
+              "logloss_gain_ci95_lower": 0.028038075472935617,
+              "logloss_gain_ci95_upper": 0.1534916971315537,
+              "logloss_gain_vs_sharp": 0.09076488630224466,
+              "mean_probability": 0.42873398518008243,
+              "model_paired": {
+                "accuracy_50": 0.5,
+                "brier": 0.25122190815975565,
+                "ece": 0.4922810761251771,
+                "log_loss": 0.6953575482701797,
+                "mean_probability": 0.4057596145551533,
+                "n": 2,
+                "observed_rate": 0.5
+              },
+              "n": 2,
+              "observed_rate": 0.5,
+              "paired_inference": "paired per-game score differences; normal 95% CI",
+              "paired_n": 2
+            }
+          },
+          "TOTAL_OVER": {
+            "accuracy_50": 0.5,
+            "brier": 0.3237598419962579,
+            "calibration": [
+              {
+                "lower": 0.5,
+                "mean_probability": 0.533746247278077,
+                "n": 1,
+                "observed_rate": 1.0,
+                "upper": 0.6
+              },
+              {
+                "lower": 0.6,
+                "mean_probability": 0.6558407749333978,
+                "n": 1,
+                "observed_rate": 0.0,
+                "upper": 0.7
+              }
+            ],
+            "ece": 0.5610472638276605,
+            "log_loss": 0.8472428052280481,
+            "mean_probability": 0.5947935111057374,
+            "n": 2,
+            "observed_rate": 0.5,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": 0.5,
+              "brier": 0.3237598419962579,
+              "ece": 0.5610472638276605,
+              "log_loss": 0.8472428052280481,
+              "mean_probability": 0.5947935111057374,
+              "n": 2,
+              "observed_rate": 0.5
+            },
+            "sharp_benchmark": {
+              "accuracy_50": 0.5,
+              "brier": 0.23738049937849803,
+              "brier_gain_ci95_lower": -0.24857902217183156,
+              "brier_gain_ci95_upper": 0.07582033693631182,
+              "brier_gain_vs_sharp": -0.08637934261775987,
+              "ece": 0.024261948610066364,
+              "log_loss": 0.667842557352579,
+              "logloss_gain_ci95_lower": -0.5167442144438785,
+              "logloss_gain_ci95_upper": 0.15794371869294033,
+              "logloss_gain_vs_sharp": -0.1794002478754691,
+              "mean_probability": 0.5242619486100664,
+              "model_paired": {
+                "accuracy_50": 0.5,
+                "brier": 0.3237598419962579,
+                "ece": 0.5610472638276605,
+                "log_loss": 0.8472428052280481,
+                "mean_probability": 0.5947935111057374,
+                "n": 2,
+                "observed_rate": 0.5
+              },
+              "n": 2,
+              "observed_rate": 0.5,
+              "paired_inference": "paired per-game score differences; normal 95% CI",
+              "paired_n": 2
+            }
+          }
+        }
+      },
+      "LATE": {
+        "games": 1,
+        "markets": {
+          "ML": {
+            "accuracy_50": 0.0,
+            "brier": 0.26596837505141385,
+            "calibration": [
+              {
+                "lower": 0.4,
+                "mean_probability": 0.4842787816548423,
+                "n": 1,
+                "observed_rate": 1.0,
+                "upper": 0.5
+              }
+            ],
+            "ece": 0.5157212183451577,
+            "log_loss": 0.7250945429324097,
+            "mean_probability": 0.4842787816548423,
+            "n": 1,
+            "observed_rate": 1.0,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": 0.0,
+              "brier": 0.26596837505141385,
+              "ece": 0.5157212183451577,
+              "log_loss": 0.7250945429324097,
+              "mean_probability": 0.4842787816548423,
+              "n": 1,
+              "observed_rate": 1.0
+            },
+            "sharp_benchmark": {
+              "accuracy_50": 0.0,
+              "brier": 0.2949716741991253,
+              "brier_gain_ci95_lower": null,
+              "brier_gain_ci95_upper": null,
+              "brier_gain_vs_sharp": 0.029003299147711437,
+              "ece": 0.5431129479207113,
+              "log_loss": 0.7833190694459119,
+              "logloss_gain_ci95_lower": null,
+              "logloss_gain_ci95_upper": null,
+              "logloss_gain_vs_sharp": 0.058224526513502184,
+              "mean_probability": 0.45688705207928865,
+              "model_paired": {
+                "accuracy_50": 0.0,
+                "brier": 0.26596837505141385,
+                "ece": 0.5157212183451577,
+                "log_loss": 0.7250945429324097,
+                "mean_probability": 0.4842787816548423,
+                "n": 1,
+                "observed_rate": 1.0
+              },
+              "n": 1,
+              "observed_rate": 1.0,
+              "paired_inference": "paired per-game score differences; normal 95% CI",
+              "paired_n": 1
+            }
+          },
+          "RL_AWAY_-1.5": {
+            "accuracy_50": 1.0,
+            "brier": 0.13756944791080747,
+            "calibration": [
+              {
+                "lower": 0.3,
+                "mean_probability": 0.37090355607732783,
+                "n": 1,
+                "observed_rate": 0.0,
+                "upper": 0.4
+              }
+            ],
+            "ece": 0.37090355607732783,
+            "log_loss": 0.4634707050645198,
+            "mean_probability": 0.37090355607732783,
+            "n": 1,
+            "observed_rate": 0.0,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": 1.0,
+              "brier": 0.13756944791080747,
+              "ece": 0.37090355607732783,
+              "log_loss": 0.4634707050645198,
+              "mean_probability": 0.37090355607732783,
+              "n": 1,
+              "observed_rate": 0.0
+            },
+            "sharp_benchmark": {
+              "accuracy_50": 1.0,
+              "brier": 0.16805204488505918,
+              "brier_gain_ci95_lower": null,
+              "brier_gain_ci95_upper": null,
+              "brier_gain_vs_sharp": 0.030482596974251708,
+              "ece": 0.4099415139810302,
+              "log_loss": 0.5275336181495998,
+              "logloss_gain_ci95_lower": null,
+              "logloss_gain_ci95_upper": null,
+              "logloss_gain_vs_sharp": 0.06406291308507994,
+              "mean_probability": 0.4099415139810302,
+              "model_paired": {
+                "accuracy_50": 1.0,
+                "brier": 0.13756944791080747,
+                "ece": 0.37090355607732783,
+                "log_loss": 0.4634707050645198,
+                "mean_probability": 0.37090355607732783,
+                "n": 1,
+                "observed_rate": 0.0
+              },
+              "n": 1,
+              "observed_rate": 0.0,
+              "paired_inference": "paired per-game score differences; normal 95% CI",
+              "paired_n": 1
+            }
+          },
+          "RL_HOME_-1.5": {
+            "accuracy_50": 0.0,
+            "brier": 0.4333689281968688,
+            "calibration": [
+              {
+                "lower": 0.3,
+                "mean_probability": 0.34169237571112027,
+                "n": 1,
+                "observed_rate": 1.0,
+                "upper": 0.4
+              }
+            ],
+            "ece": 0.6583076242888797,
+            "log_loss": 1.0738444329248087,
+            "mean_probability": 0.34169237571112027,
+            "n": 1,
+            "observed_rate": 1.0,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": 0.0,
+              "brier": 0.4333689281968688,
+              "ece": 0.6583076242888797,
+              "log_loss": 1.0738444329248087,
+              "mean_probability": 0.34169237571112027,
+              "n": 1,
+              "observed_rate": 1.0
+            },
+            "sharp_benchmark": {
+              "brier": null,
+              "brier_gain_ci95_lower": null,
+              "brier_gain_vs_sharp": null,
+              "log_loss": null,
+              "logloss_gain_ci95_lower": null,
+              "logloss_gain_vs_sharp": null,
+              "model_paired": {
+                "accuracy_50": null,
+                "brier": null,
+                "ece": null,
+                "log_loss": null,
+                "mean_probability": null,
+                "n": 0,
+                "observed_rate": null
+              },
+              "n": 0,
+              "paired_n": 0
+            }
+          },
+          "TOTAL_OVER": {
+            "accuracy_50": 1.0,
+            "brier": 0.12846559937226854,
+            "calibration": [
+              {
+                "lower": 0.6,
+                "mean_probability": 0.6415790193469856,
+                "n": 1,
+                "observed_rate": 1.0,
+                "upper": 0.7
+              }
+            ],
+            "ece": 0.3584209806530144,
+            "log_loss": 0.44382292348354335,
+            "mean_probability": 0.6415790193469856,
+            "n": 1,
+            "observed_rate": 1.0,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": 1.0,
+              "brier": 0.12846559937226854,
+              "ece": 0.3584209806530144,
+              "log_loss": 0.44382292348354335,
+              "mean_probability": 0.6415790193469856,
+              "n": 1,
+              "observed_rate": 1.0
+            },
+            "sharp_benchmark": {
+              "brier": null,
+              "brier_gain_ci95_lower": null,
+              "brier_gain_vs_sharp": null,
+              "log_loss": null,
+              "logloss_gain_ci95_lower": null,
+              "logloss_gain_vs_sharp": null,
+              "model_paired": {
+                "accuracy_50": null,
+                "brier": null,
+                "ece": null,
+                "log_loss": null,
+                "mean_probability": null,
+                "n": 0,
+                "observed_rate": null
+              },
+              "n": 0,
+              "paired_n": 0
+            }
+          }
+        }
+      }
+    },
+    "rolling": {
+      "30d": {
+        "games": 8,
+        "markets": {
+          "ML": {
+            "accuracy_50": 0.625,
+            "brier": 0.25966349636116354,
+            "calibration": [
+              {
+                "lower": 0.4,
+                "mean_probability": 0.45848457868517595,
+                "n": 3,
+                "observed_rate": 0.3333333333333333,
+                "upper": 0.5
+              },
+              {
+                "lower": 0.5,
+                "mean_probability": 0.5271343302406092,
+                "n": 4,
+                "observed_rate": 0.75,
+                "upper": 0.6
+              },
+              {
+                "lower": 0.6,
+                "mean_probability": 0.6511315470701035,
+                "n": 1,
+                "observed_rate": 0.0,
+                "upper": 0.7
+              }
+            ],
+            "ece": 0.2397559952703993,
+            "log_loss": 0.7137126136927897,
+            "mean_probability": 0.5168903255110086,
+            "n": 8,
+            "observed_rate": 0.5,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": 0.625,
+              "brier": 0.25966349636116354,
+              "ece": 0.2397559952703993,
+              "log_loss": 0.7137126136927897,
+              "mean_probability": 0.5168903255110086,
+              "n": 8,
+              "observed_rate": 0.5
+            },
+            "sharp_benchmark": {
+              "accuracy_50": 0.5,
+              "brier": 0.26123858809383466,
+              "brier_gain_ci95_lower": -0.039024921216593025,
+              "brier_gain_ci95_upper": 0.04217510468193529,
+              "brier_gain_vs_sharp": 0.0015750917326711293,
+              "ece": 0.23249916407029128,
+              "log_loss": 0.7163821360085547,
+              "logloss_gain_ci95_lower": -0.08224642316065556,
+              "logloss_gain_ci95_upper": 0.0875854677921856,
+              "logloss_gain_vs_sharp": 0.002669522315765019,
+              "mean_probability": 0.5179347175621448,
+              "model_paired": {
+                "accuracy_50": 0.625,
+                "brier": 0.25966349636116354,
+                "ece": 0.2397559952703993,
+                "log_loss": 0.7137126136927897,
+                "mean_probability": 0.5168903255110086,
+                "n": 8,
+                "observed_rate": 0.5
+              },
+              "n": 8,
+              "observed_rate": 0.5,
+              "paired_inference": "paired per-game score differences; normal 95% CI",
+              "paired_n": 8
+            }
+          },
+          "RL_AWAY_-1.5": {
+            "accuracy_50": 0.5,
+            "brier": 0.28639502164879493,
+            "calibration": [
+              {
+                "lower": 0.2,
+                "mean_probability": 0.2144660552091463,
+                "n": 1,
+                "observed_rate": 1.0,
+                "upper": 0.3
+              },
+              {
+                "lower": 0.3,
+                "mean_probability": 0.34378445068565294,
+                "n": 6,
+                "observed_rate": 0.3333333333333333,
+                "upper": 0.4
+              },
+              {
+                "lower": 0.4,
+                "mean_probability": 0.4358106995254426,
+                "n": 1,
+                "observed_rate": 1.0,
+                "upper": 0.5
+              }
+            ],
+            "ece": 0.1765537436724161,
+            "log_loss": 0.7801621785163605,
+            "mean_probability": 0.33912293235606333,
+            "n": 8,
+            "observed_rate": 0.5,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": 0.5,
+              "brier": 0.28639502164879493,
+              "ece": 0.1765537436724161,
+              "log_loss": 0.7801621785163605,
+              "mean_probability": 0.33912293235606333,
+              "n": 8,
+              "observed_rate": 0.5
+            },
+            "sharp_benchmark": {
+              "accuracy_50": 0.5,
+              "brier": 0.23802136962424125,
+              "brier_gain_ci95_lower": -0.0448168693817929,
+              "brier_gain_ci95_upper": 0.03545550874599243,
+              "brier_gain_vs_sharp": -0.00468068031790023,
+              "ece": 0.08616123879646648,
+              "log_loss": 0.6689417582114676,
+              "logloss_gain_ci95_lower": -0.09135611765369324,
+              "logloss_gain_ci95_upper": 0.07481530572462007,
+              "logloss_gain_vs_sharp": -0.008270405964536584,
+              "mean_probability": 0.4138387612035335,
+              "model_paired": {
+                "accuracy_50": 0.5,
+                "brier": 0.2427020499421415,
+                "ece": 0.15972121860111718,
+                "log_loss": 0.6772121641760042,
+                "mean_probability": 0.37762656836383846,
+                "n": 4,
+                "observed_rate": 0.5
+              },
+              "n": 4,
+              "observed_rate": 0.5,
+              "paired_inference": "paired per-game score differences; normal 95% CI",
+              "paired_n": 4
+            }
+          },
+          "RL_HOME_-1.5": {
+            "accuracy_50": 0.625,
+            "brier": 0.23621994078370154,
+            "calibration": [
+              {
+                "lower": 0.2,
+                "mean_probability": 0.252611054498617,
+                "n": 1,
+                "observed_rate": 0.0,
+                "upper": 0.3
+              },
+              {
+                "lower": 0.3,
+                "mean_probability": 0.36181161497312186,
+                "n": 5,
+                "observed_rate": 0.4,
+                "upper": 0.4
+              },
+              {
+                "lower": 0.4,
+                "mean_probability": 0.45625532083102094,
+                "n": 2,
+                "observed_rate": 0.5,
+                "upper": 0.5
+              }
+            ],
+            "ece": 0.06638029224637074,
+            "log_loss": 0.6626261148290652,
+            "mean_probability": 0.3717724713782835,
+            "n": 8,
+            "observed_rate": 0.375,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": 0.625,
+              "brier": 0.23621994078370154,
+              "ece": 0.06638029224637074,
+              "log_loss": 0.6626261148290652,
+              "mean_probability": 0.3717724713782835,
+              "n": 8,
+              "observed_rate": 0.375
+            },
+            "sharp_benchmark": {
+              "accuracy_50": 0.75,
+              "brier": 0.21915012343359674,
+              "brier_gain_ci95_lower": -0.05835780318963707,
+              "brier_gain_ci95_upper": 0.05915015780655626,
+              "brier_gain_vs_sharp": 0.00039617730845959917,
+              "ece": 0.28720199002585933,
+              "log_loss": 0.6299116829748159,
+              "logloss_gain_ci95_lower": -0.1182374945033493,
+              "logloss_gain_ci95_upper": 0.12056465628897975,
+              "logloss_gain_vs_sharp": 0.001163580892815222,
+              "mean_probability": 0.4025132278049224,
+              "model_paired": {
+                "accuracy_50": 0.75,
+                "brier": 0.21875394612513713,
+                "ece": 0.20925277461790603,
+                "log_loss": 0.6287481020820007,
+                "mean_probability": 0.415508095448927,
+                "n": 4,
+                "observed_rate": 0.25
+              },
+              "n": 4,
+              "observed_rate": 0.25,
+              "paired_inference": "paired per-game score differences; normal 95% CI",
+              "paired_n": 4
+            }
+          },
+          "TOTAL_OVER": {
+            "accuracy_50": 0.625,
+            "brier": 0.28059860863337066,
+            "calibration": [
+              {
+                "lower": 0.4,
+                "mean_probability": 0.47966168781759544,
+                "n": 1,
+                "observed_rate": 0.0,
+                "upper": 0.5
+              },
+              {
+                "lower": 0.5,
+                "mean_probability": 0.5373275285768846,
+                "n": 3,
+                "observed_rate": 1.0,
+                "upper": 0.6
+              },
+              {
+                "lower": 0.6,
+                "mean_probability": 0.6430438973864769,
+                "n": 4,
+                "observed_rate": 0.25,
+                "upper": 0.7
+              }
+            ],
+            "ece": 0.42998183645410615,
+            "log_loss": 0.7574385499625377,
+            "mean_probability": 0.5829774828867696,
+            "n": 8,
+            "observed_rate": 0.5,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": 0.625,
+              "brier": 0.28059860863337066,
+              "ece": 0.42998183645410615,
+              "log_loss": 0.7574385499625377,
+              "mean_probability": 0.5829774828867696,
+              "n": 8,
+              "observed_rate": 0.5
+            },
+            "sharp_benchmark": {
+              "accuracy_50": 0.42857142857142855,
+              "brier": 0.2596315506753065,
+              "brier_gain_ci95_lower": -0.12316257042804388,
+              "brier_gain_ci95_upper": 0.03776188043731512,
+              "brier_gain_vs_sharp": -0.04270034499536438,
+              "ece": 0.1000896167583015,
+              "log_loss": 0.712503332234712,
+              "logloss_gain_ci95_lower": -0.2550771543653034,
+              "logloss_gain_ci95_upper": 0.0756022542013678,
+              "logloss_gain_vs_sharp": -0.0897374500819678,
+              "mean_probability": 0.4965407937853193,
+              "model_paired": {
+                "accuracy_50": 0.5714285714285714,
+                "brier": 0.302331895670671,
+                "ece": 0.542610810326552,
+                "log_loss": 0.8022407823166798,
+                "mean_probability": 0.5746058348210246,
+                "n": 7,
+                "observed_rate": 0.42857142857142855
+              },
+              "n": 7,
+              "observed_rate": 0.42857142857142855,
+              "paired_inference": "paired per-game score differences; normal 95% CI",
+              "paired_n": 7
+            }
+          }
+        },
+        "through": "2026-08-28T18:20:00+00:00"
+      },
+      "60d": {
+        "games": 8,
+        "markets": {
+          "ML": {
+            "accuracy_50": 0.625,
+            "brier": 0.25966349636116354,
+            "calibration": [
+              {
+                "lower": 0.4,
+                "mean_probability": 0.45848457868517595,
+                "n": 3,
+                "observed_rate": 0.3333333333333333,
+                "upper": 0.5
+              },
+              {
+                "lower": 0.5,
+                "mean_probability": 0.5271343302406092,
+                "n": 4,
+                "observed_rate": 0.75,
+                "upper": 0.6
+              },
+              {
+                "lower": 0.6,
+                "mean_probability": 0.6511315470701035,
+                "n": 1,
+                "observed_rate": 0.0,
+                "upper": 0.7
+              }
+            ],
+            "ece": 0.2397559952703993,
+            "log_loss": 0.7137126136927897,
+            "mean_probability": 0.5168903255110086,
+            "n": 8,
+            "observed_rate": 0.5,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": 0.625,
+              "brier": 0.25966349636116354,
+              "ece": 0.2397559952703993,
+              "log_loss": 0.7137126136927897,
+              "mean_probability": 0.5168903255110086,
+              "n": 8,
+              "observed_rate": 0.5
+            },
+            "sharp_benchmark": {
+              "accuracy_50": 0.5,
+              "brier": 0.26123858809383466,
+              "brier_gain_ci95_lower": -0.039024921216593025,
+              "brier_gain_ci95_upper": 0.04217510468193529,
+              "brier_gain_vs_sharp": 0.0015750917326711293,
+              "ece": 0.23249916407029128,
+              "log_loss": 0.7163821360085547,
+              "logloss_gain_ci95_lower": -0.08224642316065556,
+              "logloss_gain_ci95_upper": 0.0875854677921856,
+              "logloss_gain_vs_sharp": 0.002669522315765019,
+              "mean_probability": 0.5179347175621448,
+              "model_paired": {
+                "accuracy_50": 0.625,
+                "brier": 0.25966349636116354,
+                "ece": 0.2397559952703993,
+                "log_loss": 0.7137126136927897,
+                "mean_probability": 0.5168903255110086,
+                "n": 8,
+                "observed_rate": 0.5
+              },
+              "n": 8,
+              "observed_rate": 0.5,
+              "paired_inference": "paired per-game score differences; normal 95% CI",
+              "paired_n": 8
+            }
+          },
+          "RL_AWAY_-1.5": {
+            "accuracy_50": 0.5,
+            "brier": 0.28639502164879493,
+            "calibration": [
+              {
+                "lower": 0.2,
+                "mean_probability": 0.2144660552091463,
+                "n": 1,
+                "observed_rate": 1.0,
+                "upper": 0.3
+              },
+              {
+                "lower": 0.3,
+                "mean_probability": 0.34378445068565294,
+                "n": 6,
+                "observed_rate": 0.3333333333333333,
+                "upper": 0.4
+              },
+              {
+                "lower": 0.4,
+                "mean_probability": 0.4358106995254426,
+                "n": 1,
+                "observed_rate": 1.0,
+                "upper": 0.5
+              }
+            ],
+            "ece": 0.1765537436724161,
+            "log_loss": 0.7801621785163605,
+            "mean_probability": 0.33912293235606333,
+            "n": 8,
+            "observed_rate": 0.5,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": 0.5,
+              "brier": 0.28639502164879493,
+              "ece": 0.1765537436724161,
+              "log_loss": 0.7801621785163605,
+              "mean_probability": 0.33912293235606333,
+              "n": 8,
+              "observed_rate": 0.5
+            },
+            "sharp_benchmark": {
+              "accuracy_50": 0.5,
+              "brier": 0.23802136962424125,
+              "brier_gain_ci95_lower": -0.0448168693817929,
+              "brier_gain_ci95_upper": 0.03545550874599243,
+              "brier_gain_vs_sharp": -0.00468068031790023,
+              "ece": 0.08616123879646648,
+              "log_loss": 0.6689417582114676,
+              "logloss_gain_ci95_lower": -0.09135611765369324,
+              "logloss_gain_ci95_upper": 0.07481530572462007,
+              "logloss_gain_vs_sharp": -0.008270405964536584,
+              "mean_probability": 0.4138387612035335,
+              "model_paired": {
+                "accuracy_50": 0.5,
+                "brier": 0.2427020499421415,
+                "ece": 0.15972121860111718,
+                "log_loss": 0.6772121641760042,
+                "mean_probability": 0.37762656836383846,
+                "n": 4,
+                "observed_rate": 0.5
+              },
+              "n": 4,
+              "observed_rate": 0.5,
+              "paired_inference": "paired per-game score differences; normal 95% CI",
+              "paired_n": 4
+            }
+          },
+          "RL_HOME_-1.5": {
+            "accuracy_50": 0.625,
+            "brier": 0.23621994078370154,
+            "calibration": [
+              {
+                "lower": 0.2,
+                "mean_probability": 0.252611054498617,
+                "n": 1,
+                "observed_rate": 0.0,
+                "upper": 0.3
+              },
+              {
+                "lower": 0.3,
+                "mean_probability": 0.36181161497312186,
+                "n": 5,
+                "observed_rate": 0.4,
+                "upper": 0.4
+              },
+              {
+                "lower": 0.4,
+                "mean_probability": 0.45625532083102094,
+                "n": 2,
+                "observed_rate": 0.5,
+                "upper": 0.5
+              }
+            ],
+            "ece": 0.06638029224637074,
+            "log_loss": 0.6626261148290652,
+            "mean_probability": 0.3717724713782835,
+            "n": 8,
+            "observed_rate": 0.375,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": 0.625,
+              "brier": 0.23621994078370154,
+              "ece": 0.06638029224637074,
+              "log_loss": 0.6626261148290652,
+              "mean_probability": 0.3717724713782835,
+              "n": 8,
+              "observed_rate": 0.375
+            },
+            "sharp_benchmark": {
+              "accuracy_50": 0.75,
+              "brier": 0.21915012343359674,
+              "brier_gain_ci95_lower": -0.05835780318963707,
+              "brier_gain_ci95_upper": 0.05915015780655626,
+              "brier_gain_vs_sharp": 0.00039617730845959917,
+              "ece": 0.28720199002585933,
+              "log_loss": 0.6299116829748159,
+              "logloss_gain_ci95_lower": -0.1182374945033493,
+              "logloss_gain_ci95_upper": 0.12056465628897975,
+              "logloss_gain_vs_sharp": 0.001163580892815222,
+              "mean_probability": 0.4025132278049224,
+              "model_paired": {
+                "accuracy_50": 0.75,
+                "brier": 0.21875394612513713,
+                "ece": 0.20925277461790603,
+                "log_loss": 0.6287481020820007,
+                "mean_probability": 0.415508095448927,
+                "n": 4,
+                "observed_rate": 0.25
+              },
+              "n": 4,
+              "observed_rate": 0.25,
+              "paired_inference": "paired per-game score differences; normal 95% CI",
+              "paired_n": 4
+            }
+          },
+          "TOTAL_OVER": {
+            "accuracy_50": 0.625,
+            "brier": 0.28059860863337066,
+            "calibration": [
+              {
+                "lower": 0.4,
+                "mean_probability": 0.47966168781759544,
+                "n": 1,
+                "observed_rate": 0.0,
+                "upper": 0.5
+              },
+              {
+                "lower": 0.5,
+                "mean_probability": 0.5373275285768846,
+                "n": 3,
+                "observed_rate": 1.0,
+                "upper": 0.6
+              },
+              {
+                "lower": 0.6,
+                "mean_probability": 0.6430438973864769,
+                "n": 4,
+                "observed_rate": 0.25,
+                "upper": 0.7
+              }
+            ],
+            "ece": 0.42998183645410615,
+            "log_loss": 0.7574385499625377,
+            "mean_probability": 0.5829774828867696,
+            "n": 8,
+            "observed_rate": 0.5,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": 0.625,
+              "brier": 0.28059860863337066,
+              "ece": 0.42998183645410615,
+              "log_loss": 0.7574385499625377,
+              "mean_probability": 0.5829774828867696,
+              "n": 8,
+              "observed_rate": 0.5
+            },
+            "sharp_benchmark": {
+              "accuracy_50": 0.42857142857142855,
+              "brier": 0.2596315506753065,
+              "brier_gain_ci95_lower": -0.12316257042804388,
+              "brier_gain_ci95_upper": 0.03776188043731512,
+              "brier_gain_vs_sharp": -0.04270034499536438,
+              "ece": 0.1000896167583015,
+              "log_loss": 0.712503332234712,
+              "logloss_gain_ci95_lower": -0.2550771543653034,
+              "logloss_gain_ci95_upper": 0.0756022542013678,
+              "logloss_gain_vs_sharp": -0.0897374500819678,
+              "mean_probability": 0.4965407937853193,
+              "model_paired": {
+                "accuracy_50": 0.5714285714285714,
+                "brier": 0.302331895670671,
+                "ece": 0.542610810326552,
+                "log_loss": 0.8022407823166798,
+                "mean_probability": 0.5746058348210246,
+                "n": 7,
+                "observed_rate": 0.42857142857142855
+              },
+              "n": 7,
+              "observed_rate": 0.42857142857142855,
+              "paired_inference": "paired per-game score differences; normal 95% CI",
+              "paired_n": 7
+            }
+          }
+        },
+        "through": "2026-08-28T18:20:00+00:00"
+      },
+      "90d": {
+        "games": 8,
+        "markets": {
+          "ML": {
+            "accuracy_50": 0.625,
+            "brier": 0.25966349636116354,
+            "calibration": [
+              {
+                "lower": 0.4,
+                "mean_probability": 0.45848457868517595,
+                "n": 3,
+                "observed_rate": 0.3333333333333333,
+                "upper": 0.5
+              },
+              {
+                "lower": 0.5,
+                "mean_probability": 0.5271343302406092,
+                "n": 4,
+                "observed_rate": 0.75,
+                "upper": 0.6
+              },
+              {
+                "lower": 0.6,
+                "mean_probability": 0.6511315470701035,
+                "n": 1,
+                "observed_rate": 0.0,
+                "upper": 0.7
+              }
+            ],
+            "ece": 0.2397559952703993,
+            "log_loss": 0.7137126136927897,
+            "mean_probability": 0.5168903255110086,
+            "n": 8,
+            "observed_rate": 0.5,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": 0.625,
+              "brier": 0.25966349636116354,
+              "ece": 0.2397559952703993,
+              "log_loss": 0.7137126136927897,
+              "mean_probability": 0.5168903255110086,
+              "n": 8,
+              "observed_rate": 0.5
+            },
+            "sharp_benchmark": {
+              "accuracy_50": 0.5,
+              "brier": 0.26123858809383466,
+              "brier_gain_ci95_lower": -0.039024921216593025,
+              "brier_gain_ci95_upper": 0.04217510468193529,
+              "brier_gain_vs_sharp": 0.0015750917326711293,
+              "ece": 0.23249916407029128,
+              "log_loss": 0.7163821360085547,
+              "logloss_gain_ci95_lower": -0.08224642316065556,
+              "logloss_gain_ci95_upper": 0.0875854677921856,
+              "logloss_gain_vs_sharp": 0.002669522315765019,
+              "mean_probability": 0.5179347175621448,
+              "model_paired": {
+                "accuracy_50": 0.625,
+                "brier": 0.25966349636116354,
+                "ece": 0.2397559952703993,
+                "log_loss": 0.7137126136927897,
+                "mean_probability": 0.5168903255110086,
+                "n": 8,
+                "observed_rate": 0.5
+              },
+              "n": 8,
+              "observed_rate": 0.5,
+              "paired_inference": "paired per-game score differences; normal 95% CI",
+              "paired_n": 8
+            }
+          },
+          "RL_AWAY_-1.5": {
+            "accuracy_50": 0.5,
+            "brier": 0.28639502164879493,
+            "calibration": [
+              {
+                "lower": 0.2,
+                "mean_probability": 0.2144660552091463,
+                "n": 1,
+                "observed_rate": 1.0,
+                "upper": 0.3
+              },
+              {
+                "lower": 0.3,
+                "mean_probability": 0.34378445068565294,
+                "n": 6,
+                "observed_rate": 0.3333333333333333,
+                "upper": 0.4
+              },
+              {
+                "lower": 0.4,
+                "mean_probability": 0.4358106995254426,
+                "n": 1,
+                "observed_rate": 1.0,
+                "upper": 0.5
+              }
+            ],
+            "ece": 0.1765537436724161,
+            "log_loss": 0.7801621785163605,
+            "mean_probability": 0.33912293235606333,
+            "n": 8,
+            "observed_rate": 0.5,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": 0.5,
+              "brier": 0.28639502164879493,
+              "ece": 0.1765537436724161,
+              "log_loss": 0.7801621785163605,
+              "mean_probability": 0.33912293235606333,
+              "n": 8,
+              "observed_rate": 0.5
+            },
+            "sharp_benchmark": {
+              "accuracy_50": 0.5,
+              "brier": 0.23802136962424125,
+              "brier_gain_ci95_lower": -0.0448168693817929,
+              "brier_gain_ci95_upper": 0.03545550874599243,
+              "brier_gain_vs_sharp": -0.00468068031790023,
+              "ece": 0.08616123879646648,
+              "log_loss": 0.6689417582114676,
+              "logloss_gain_ci95_lower": -0.09135611765369324,
+              "logloss_gain_ci95_upper": 0.07481530572462007,
+              "logloss_gain_vs_sharp": -0.008270405964536584,
+              "mean_probability": 0.4138387612035335,
+              "model_paired": {
+                "accuracy_50": 0.5,
+                "brier": 0.2427020499421415,
+                "ece": 0.15972121860111718,
+                "log_loss": 0.6772121641760042,
+                "mean_probability": 0.37762656836383846,
+                "n": 4,
+                "observed_rate": 0.5
+              },
+              "n": 4,
+              "observed_rate": 0.5,
+              "paired_inference": "paired per-game score differences; normal 95% CI",
+              "paired_n": 4
+            }
+          },
+          "RL_HOME_-1.5": {
+            "accuracy_50": 0.625,
+            "brier": 0.23621994078370154,
+            "calibration": [
+              {
+                "lower": 0.2,
+                "mean_probability": 0.252611054498617,
+                "n": 1,
+                "observed_rate": 0.0,
+                "upper": 0.3
+              },
+              {
+                "lower": 0.3,
+                "mean_probability": 0.36181161497312186,
+                "n": 5,
+                "observed_rate": 0.4,
+                "upper": 0.4
+              },
+              {
+                "lower": 0.4,
+                "mean_probability": 0.45625532083102094,
+                "n": 2,
+                "observed_rate": 0.5,
+                "upper": 0.5
+              }
+            ],
+            "ece": 0.06638029224637074,
+            "log_loss": 0.6626261148290652,
+            "mean_probability": 0.3717724713782835,
+            "n": 8,
+            "observed_rate": 0.375,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": 0.625,
+              "brier": 0.23621994078370154,
+              "ece": 0.06638029224637074,
+              "log_loss": 0.6626261148290652,
+              "mean_probability": 0.3717724713782835,
+              "n": 8,
+              "observed_rate": 0.375
+            },
+            "sharp_benchmark": {
+              "accuracy_50": 0.75,
+              "brier": 0.21915012343359674,
+              "brier_gain_ci95_lower": -0.05835780318963707,
+              "brier_gain_ci95_upper": 0.05915015780655626,
+              "brier_gain_vs_sharp": 0.00039617730845959917,
+              "ece": 0.28720199002585933,
+              "log_loss": 0.6299116829748159,
+              "logloss_gain_ci95_lower": -0.1182374945033493,
+              "logloss_gain_ci95_upper": 0.12056465628897975,
+              "logloss_gain_vs_sharp": 0.001163580892815222,
+              "mean_probability": 0.4025132278049224,
+              "model_paired": {
+                "accuracy_50": 0.75,
+                "brier": 0.21875394612513713,
+                "ece": 0.20925277461790603,
+                "log_loss": 0.6287481020820007,
+                "mean_probability": 0.415508095448927,
+                "n": 4,
+                "observed_rate": 0.25
+              },
+              "n": 4,
+              "observed_rate": 0.25,
+              "paired_inference": "paired per-game score differences; normal 95% CI",
+              "paired_n": 4
+            }
+          },
+          "TOTAL_OVER": {
+            "accuracy_50": 0.625,
+            "brier": 0.28059860863337066,
+            "calibration": [
+              {
+                "lower": 0.4,
+                "mean_probability": 0.47966168781759544,
+                "n": 1,
+                "observed_rate": 0.0,
+                "upper": 0.5
+              },
+              {
+                "lower": 0.5,
+                "mean_probability": 0.5373275285768846,
+                "n": 3,
+                "observed_rate": 1.0,
+                "upper": 0.6
+              },
+              {
+                "lower": 0.6,
+                "mean_probability": 0.6430438973864769,
+                "n": 4,
+                "observed_rate": 0.25,
+                "upper": 0.7
+              }
+            ],
+            "ece": 0.42998183645410615,
+            "log_loss": 0.7574385499625377,
+            "mean_probability": 0.5829774828867696,
+            "n": 8,
+            "observed_rate": 0.5,
+            "pushes_excluded": 0,
+            "raw_metrics": {
+              "accuracy_50": 0.625,
+              "brier": 0.28059860863337066,
+              "ece": 0.42998183645410615,
+              "log_loss": 0.7574385499625377,
+              "mean_probability": 0.5829774828867696,
+              "n": 8,
+              "observed_rate": 0.5
+            },
+            "sharp_benchmark": {
+              "accuracy_50": 0.42857142857142855,
+              "brier": 0.2596315506753065,
+              "brier_gain_ci95_lower": -0.12316257042804388,
+              "brier_gain_ci95_upper": 0.03776188043731512,
+              "brier_gain_vs_sharp": -0.04270034499536438,
+              "ece": 0.1000896167583015,
+              "log_loss": 0.712503332234712,
+              "logloss_gain_ci95_lower": -0.2550771543653034,
+              "logloss_gain_ci95_upper": 0.0756022542013678,
+              "logloss_gain_vs_sharp": -0.0897374500819678,
+              "mean_probability": 0.4965407937853193,
+              "model_paired": {
+                "accuracy_50": 0.5714285714285714,
+                "brier": 0.302331895670671,
+                "ece": 0.542610810326552,
+                "log_loss": 0.8022407823166798,
+                "mean_probability": 0.5746058348210246,
+                "n": 7,
+                "observed_rate": 0.42857142857142855
+              },
+              "n": 7,
+              "observed_rate": 0.42857142857142855,
+              "paired_inference": "paired per-game score differences; normal 95% CI",
+              "paired_n": 7
+            }
+          }
+        },
+        "through": "2026-08-28T18:20:00+00:00"
+      }
+    }
+  },
   "selection_feedback": {
     "by_date": {
       "2026-08-25": {
@@ -248,5 +2620,6 @@
     "prediction_feature_usage": false,
     "role": "evaluation_only",
     "schema": "pulsar-v14-pick-performance-v1"
-  }
+  },
+  "total_push_policy": "excluded from binary Brier/LogLoss/calibration/benchmark"
 }

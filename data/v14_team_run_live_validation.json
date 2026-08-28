@@ -1,0 +1,103 @@
+{
+  "auto_activation": false,
+  "candidate_fingerprint": "f8de963f156e360034512e271163bc3e22c7d72cc65bc6369cea00af7aa6841c",
+  "candidate_frozen_at": "2026-08-28T11:08:03.931066+00:00",
+  "candidate_id": "team-run-r33165632253-v1",
+  "candidate_source_run_id": 33165632253,
+  "champion_impact": false,
+  "evidence_artifact_sha256": "1d8723739e1e67da0fbce287380edca4c05186621e93abf614c232ad667bbf48",
+  "evidence_contract": "persisted READY_SHADOW before first pitch; exact candidate_id, candidate_fingerprint and source_run_id",
+  "gates": {
+    "all_market_nonregression": true,
+    "enough_games": false,
+    "ml_brier_and_logloss_ci95_positive": false,
+    "paired_team_mse_ci95_positive": false,
+    "passes": false,
+    "total_mae_nonregression": false
+  },
+  "generated_at": "2026-08-28T21:49:15.738300+00:00",
+  "markets": {
+    "ML": {
+      "brier_gain": {
+        "ci95_lower": null,
+        "ci95_upper": null,
+        "mean": -0.03971019360072675,
+        "n": 1
+      },
+      "logloss_gain": {
+        "ci95_lower": null,
+        "ci95_upper": null,
+        "mean": -0.08075600007573791,
+        "n": 1
+      },
+      "n": 1,
+      "pushes_excluded": 0
+    },
+    "RL_AWAY_-1.5": {
+      "brier_gain": {
+        "ci95_lower": null,
+        "ci95_upper": null,
+        "mean": -0.03795845490330696,
+        "n": 1
+      },
+      "logloss_gain": {
+        "ci95_lower": null,
+        "ci95_upper": null,
+        "mean": -0.09080850030422583,
+        "n": 1
+      },
+      "n": 1,
+      "pushes_excluded": 0
+    },
+    "RL_HOME_-1.5": {
+      "brier_gain": {
+        "ci95_lower": null,
+        "ci95_upper": null,
+        "mean": -0.03359203121366394,
+        "n": 1
+      },
+      "logloss_gain": {
+        "ci95_lower": null,
+        "ci95_upper": null,
+        "mean": -0.0690625860334575,
+        "n": 1
+      },
+      "n": 1,
+      "pushes_excluded": 0
+    },
+    "TOTAL_OVER": {
+      "brier_gain": {
+        "ci95_lower": null,
+        "ci95_upper": null,
+        "mean": 0.0358660541269078,
+        "n": 1
+      },
+      "logloss_gain": {
+        "ci95_lower": null,
+        "ci95_upper": null,
+        "mean": 0.07260558671678585,
+        "n": 1
+      },
+      "n": 1,
+      "pushes_excluded": 0
+    }
+  },
+  "model_generation": "pulsar-v14-context-v3",
+  "n": 1,
+  "promotion_policy": "PROMOTION_REVIEW is a human/versioned review state only; never auto-activate or change MODEL_GENERATION",
+  "required": 200,
+  "run_mse_gain": {
+    "ci95_lower": null,
+    "ci95_upper": null,
+    "mean": 1.3716740698424026,
+    "n": 1
+  },
+  "schema": "pulsar-v14-historical-team-run-live-validation-v2",
+  "status": "COLLECTING",
+  "total_mae_gain": {
+    "ci95_lower": null,
+    "ci95_upper": null,
+    "mean": 0.4153219640707775,
+    "n": 1
+  }
+}

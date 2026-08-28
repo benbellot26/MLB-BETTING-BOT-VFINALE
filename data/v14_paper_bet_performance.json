@@ -1,0 +1,61 @@
+{
+  "by_market": {},
+  "canonical_policy": "first strict verified current-policy, timestamp-matched pregame row per game x canonical market; immutable",
+  "certification_clv": {
+    "definition": "entry executable implied probability to verified <=15m no-vig sharp fair close",
+    "mean_clv": null,
+    "mean_clv_ci95_lower": null,
+    "mean_clv_ci95_upper": null,
+    "n": 0,
+    "positive_rate": null,
+    "role": "PRIMARY_BETTING_CERTIFICATION",
+    "status": "UNAVAILABLE"
+  },
+  "close_policy": {
+    "capture_window_minutes": 120.0,
+    "certified_max_minutes_to_game": 15.0,
+    "event_match": "persisted Odds event id plus timestamp within MLB/Odds tolerance are required for current certification evidence",
+    "execution_close_requires_fresh_book": true,
+    "ml_rl_close_independent_of_total_market": true
+  },
+  "clv": {
+    "definition": "entry sharp fair probability to verified <=15m sharp fair close",
+    "mean_clv": null,
+    "mean_clv_ci95_lower": null,
+    "mean_clv_ci95_upper": null,
+    "n": 0,
+    "positive_rate": null,
+    "role": "DIAGNOSTIC_ONLY",
+    "status": "UNAVAILABLE"
+  },
+  "entry_policy": "first strict verified current-policy, timestamp-matched qualifying game x canonical market; no retrospective timing selection",
+  "excluded_other_generation_rows": 0,
+  "excluded_other_policy_rows": 0,
+  "excluded_unverified_event_time_rows": 0,
+  "execution_clv": {
+    "definition": "entry executable implied probability to same-book fresh <=15m close",
+    "mean_clv": null,
+    "mean_clv_ci95_lower": null,
+    "mean_clv_ci95_upper": null,
+    "n": 0,
+    "positive_rate": null,
+    "role": "SECONDARY_EXECUTION_CERTIFICATION",
+    "status": "UNAVAILABLE"
+  },
+  "flat_1u_profit": 0,
+  "flat_1u_roi": null,
+  "generated_at": "2026-08-28T21:49:14.951519+00:00",
+  "independent_games": 0,
+  "latest_certified_close_at": null,
+  "latest_settled_at": null,
+  "losses": 0,
+  "model_generation": "pulsar-v14-context-v3",
+  "observations": 0,
+  "probability_policy_id": "pulsar-v14-probability-policy-v1",
+  "pushes": 0,
+  "raw_observations": 0,
+  "role": "CERTIFICATION_EVIDENCE_ONLY",
+  "schema": "pulsar-v14-paper-bet-performance-v7",
+  "settled": 0,
+  "wins": 0
+}

@@ -1,0 +1,46 @@
+{
+  "auto_activation": false,
+  "baseball_probability_remains_independent": true,
+  "chronological_holdout": true,
+  "markets": {
+    "ML": {
+      "active": false,
+      "auto_activation": false,
+      "minimum_n": 600,
+      "n": 8,
+      "pushes_excluded": false,
+      "reason": "insufficient_verified_sharp_observations",
+      "status": "COLLECTING"
+    },
+    "RL_AWAY_-1.5": {
+      "active": false,
+      "auto_activation": false,
+      "minimum_n": 600,
+      "n": 4,
+      "pushes_excluded": false,
+      "reason": "insufficient_verified_sharp_observations",
+      "status": "COLLECTING"
+    },
+    "RL_HOME_-1.5": {
+      "active": false,
+      "auto_activation": false,
+      "minimum_n": 600,
+      "n": 4,
+      "pushes_excluded": false,
+      "reason": "insufficient_verified_sharp_observations",
+      "status": "COLLECTING"
+    },
+    "TOTAL_OVER": {
+      "active": false,
+      "auto_activation": false,
+      "minimum_n": 600,
+      "n": 7,
+      "pushes_excluded": true,
+      "reason": "insufficient_verified_sharp_observations",
+      "status": "COLLECTING"
+    }
+  },
+  "note": "Market information is downstream only. Promotion requires explicit market-by-market OOS approval.",
+  "role": "CHALLENGER_ONLY",
+  "schema": "pulsar-v14-market-posterior-challenger-v2"
+}

@@ -1,0 +1,201 @@
+{
+  "calibrators": {
+    "MARKET:ML": {
+      "accepted": false,
+      "active": false,
+      "intercept": 0.0,
+      "method": "identity",
+      "minimum_n": 400,
+      "n": 8,
+      "reason": "insufficient_chronological_evidence",
+      "slope": 1.0,
+      "status": "COLLECTING"
+    },
+    "MARKET:RL_AWAY_-1.5": {
+      "accepted": false,
+      "active": false,
+      "intercept": 0.0,
+      "method": "identity",
+      "minimum_n": 400,
+      "n": 8,
+      "reason": "insufficient_chronological_evidence",
+      "slope": 1.0,
+      "status": "COLLECTING"
+    },
+    "MARKET:RL_HOME_-1.5": {
+      "accepted": false,
+      "active": false,
+      "intercept": 0.0,
+      "method": "identity",
+      "minimum_n": 400,
+      "n": 8,
+      "reason": "insufficient_chronological_evidence",
+      "slope": 1.0,
+      "status": "COLLECTING"
+    },
+    "MARKET:TOTAL_OVER": {
+      "accepted": false,
+      "active": false,
+      "intercept": 0.0,
+      "method": "identity",
+      "minimum_n": 400,
+      "n": 8,
+      "reason": "insufficient_chronological_evidence",
+      "slope": 1.0,
+      "status": "COLLECTING"
+    },
+    "PHASE:EARLY:ML": {
+      "accepted": false,
+      "active": false,
+      "intercept": 0.0,
+      "method": "identity",
+      "minimum_n": 300,
+      "n": 7,
+      "reason": "insufficient_chronological_evidence",
+      "slope": 1.0,
+      "status": "COLLECTING"
+    },
+    "PHASE:EARLY:RL_AWAY_-1.5": {
+      "accepted": false,
+      "active": false,
+      "intercept": 0.0,
+      "method": "identity",
+      "minimum_n": 300,
+      "n": 7,
+      "reason": "insufficient_chronological_evidence",
+      "slope": 1.0,
+      "status": "COLLECTING"
+    },
+    "PHASE:EARLY:RL_HOME_-1.5": {
+      "accepted": false,
+      "active": false,
+      "intercept": 0.0,
+      "method": "identity",
+      "minimum_n": 300,
+      "n": 7,
+      "reason": "insufficient_chronological_evidence",
+      "slope": 1.0,
+      "status": "COLLECTING"
+    },
+    "PHASE:EARLY:TOTAL_OVER": {
+      "accepted": false,
+      "active": false,
+      "intercept": 0.0,
+      "method": "identity",
+      "minimum_n": 300,
+      "n": 7,
+      "reason": "insufficient_chronological_evidence",
+      "slope": 1.0,
+      "status": "COLLECTING"
+    },
+    "PHASE:FINAL:ML": {
+      "accepted": false,
+      "active": false,
+      "intercept": 0.0,
+      "method": "identity",
+      "minimum_n": 300,
+      "n": 2,
+      "reason": "insufficient_chronological_evidence",
+      "slope": 1.0,
+      "status": "COLLECTING"
+    },
+    "PHASE:FINAL:RL_AWAY_-1.5": {
+      "accepted": false,
+      "active": false,
+      "intercept": 0.0,
+      "method": "identity",
+      "minimum_n": 300,
+      "n": 2,
+      "reason": "insufficient_chronological_evidence",
+      "slope": 1.0,
+      "status": "COLLECTING"
+    },
+    "PHASE:FINAL:RL_HOME_-1.5": {
+      "accepted": false,
+      "active": false,
+      "intercept": 0.0,
+      "method": "identity",
+      "minimum_n": 300,
+      "n": 2,
+      "reason": "insufficient_chronological_evidence",
+      "slope": 1.0,
+      "status": "COLLECTING"
+    },
+    "PHASE:FINAL:TOTAL_OVER": {
+      "accepted": false,
+      "active": false,
+      "intercept": 0.0,
+      "method": "identity",
+      "minimum_n": 300,
+      "n": 2,
+      "reason": "insufficient_chronological_evidence",
+      "slope": 1.0,
+      "status": "COLLECTING"
+    },
+    "PHASE:LATE:ML": {
+      "accepted": false,
+      "active": false,
+      "intercept": 0.0,
+      "method": "identity",
+      "minimum_n": 300,
+      "n": 2,
+      "reason": "insufficient_chronological_evidence",
+      "slope": 1.0,
+      "status": "COLLECTING"
+    },
+    "PHASE:LATE:RL_AWAY_-1.5": {
+      "accepted": false,
+      "active": false,
+      "intercept": 0.0,
+      "method": "identity",
+      "minimum_n": 300,
+      "n": 2,
+      "reason": "insufficient_chronological_evidence",
+      "slope": 1.0,
+      "status": "COLLECTING"
+    },
+    "PHASE:LATE:RL_HOME_-1.5": {
+      "accepted": false,
+      "active": false,
+      "intercept": 0.0,
+      "method": "identity",
+      "minimum_n": 300,
+      "n": 2,
+      "reason": "insufficient_chronological_evidence",
+      "slope": 1.0,
+      "status": "COLLECTING"
+    },
+    "PHASE:LATE:TOTAL_OVER": {
+      "accepted": false,
+      "active": false,
+      "intercept": 0.0,
+      "method": "identity",
+      "minimum_n": 300,
+      "n": 2,
+      "reason": "insufficient_chronological_evidence",
+      "slope": 1.0,
+      "status": "COLLECTING"
+    }
+  },
+  "chronological_holdout": true,
+  "chronological_order": "game_date_utc_then_analyzed_at",
+  "eligible_current_policy_rows": 16,
+  "excluded_other_policy_rows": 54,
+  "generated_at": "2026-08-28T21:49:15.146789+00:00",
+  "latest_observation_at": "2026-08-28T18:20:00+00:00",
+  "market_probability_used_as_feature": false,
+  "market_snapshot_policy": "latest strictly-pregame snapshot per game",
+  "model_generation": "pulsar-v14-context-v3",
+  "phase_snapshot_policy": "latest strictly-pregame snapshot per (game, phase)",
+  "policy": {
+    "exact_probability_policy_required": true,
+    "identity_acceptance": "holdout ECE<=0.05, slope 0.80..1.20, |intercept|<=0.25",
+    "market_min_n": 400,
+    "phase_min_n": 300,
+    "transform_activation": "paired holdout Brier gain CI95 lower >0 + LogLoss lower >= -0.001 + stable parameters"
+  },
+  "probability_policy_id": "pulsar-v14-probability-policy-v1",
+  "schema": "pulsar-v14-calibration-v3",
+  "strictly_pregame": true,
+  "total_push_policy": "exclude pushes from binary calibration"
+}

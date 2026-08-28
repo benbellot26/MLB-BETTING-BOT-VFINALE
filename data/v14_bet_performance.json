@@ -1,0 +1,34 @@
+{
+  "bets": 0,
+  "by_market": {},
+  "clv": {
+    "definition": "compatibility alias for sharp-information CLV; use execution_clv for tradable price quality",
+    "mean_clv": null,
+    "n": 0,
+    "status": "UNAVAILABLE"
+  },
+  "dedupe_policy": "one authorized bet per game x canonical market",
+  "execution_clv": {
+    "mean_clv": null,
+    "n": 0,
+    "status": "UNAVAILABLE"
+  },
+  "execution_confirmed": false,
+  "ledger_role": "SYSTEM_AUTHORIZED_BET",
+  "losses": 0,
+  "profit_bankroll_fraction": 0,
+  "pushes": 0,
+  "roi": null,
+  "roi_scope": "system-authorized hypothetical execution at the captured price; not user-realized ROI",
+  "schema": "pulsar-v14-authorized-bet-performance-v5",
+  "settled": 0,
+  "sharp_information_clv": {
+    "mean_clv": null,
+    "n": 0,
+    "status": "UNAVAILABLE"
+  },
+  "staked_bankroll_fraction": 0,
+  "staking_policy": "persistent slate-wide per-bet/game/market/day caps across runtime calls",
+  "wins": 0,
+  "write_gate": "current generation + global certification + market certification + qualified decision + sharp sportsbook source + executable price"
+}
