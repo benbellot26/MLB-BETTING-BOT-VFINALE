@@ -2,7 +2,7 @@ import tempfile
 from pathlib import Path
 import unittest
 
-from v14 import MODEL_GENERATION
+from v14 import MODEL_GENERATION, PROBABILITY_POLICY_ID
 from v14.native_payload import authorize_payload, build_native_discord_payload
 from v14.tracking import append_snapshot, _read_jsonl
 
@@ -19,7 +19,7 @@ class V14EndToEndTrackingTests(unittest.TestCase):
                 "market_snapshot":{"schema":"pulsar-v14-market-snapshot-v2","markets":{"ML":{"selections":{"home":{"price":1.90},"away":{"price":2.00}}}}},
                 "market_diagnostics":{"schema":"pulsar-v14-market-diagnostics-v1","markets":{"ML":{"selections":{"home":{"edge_pp":3.0,"expected_value_per_unit":.04}}}}},
                 "training_features":{"schema":"pulsar-v14-training-features-v7","capture_mode":"PROSPECTIVE_LIVE_SNAPSHOT","research_challengers":{"historical_distribution_shadow":distribution_shadow,"historical_team_run_shadow":team_shadow}},
-                "v14_prediction":{"role":"PRODUCTION","model_generation":MODEL_GENERATION,"game_pk":"123","game_date":"2026-08-25T18:00:00Z","analyzed_at":"2026-08-25T12:00:00Z","home":"Home","away":"Away","phase":"EARLY","total_line":8.5,"market_probability_used_as_feature":False,"run_projection":{"home_mu":4.6,"away_mu":4.0,"total_line":8.5},"probabilities":{"away_ml":.44,"home_ml":.56,"away_plus_1_5":.61,"home_minus_1_5":.39,"home_plus_1_5":.70,"away_minus_1_5":.30,"over":.52,"under":.48}},
+                "v14_prediction":{"role":"PRODUCTION","model_generation":MODEL_GENERATION,"calibration":{"probability_policy_id":PROBABILITY_POLICY_ID},"game_pk":"123","game_date":"2026-08-25T18:00:00Z","analyzed_at":"2026-08-25T12:00:00Z","home":"Home","away":"Away","phase":"EARLY","total_line":8.5,"market_probability_used_as_feature":False,"run_projection":{"home_mu":4.6,"away_mu":4.0,"total_line":8.5},"probabilities":{"away_ml":.44,"home_ml":.56,"away_plus_1_5":.61,"home_minus_1_5":.39,"home_plus_1_5":.70,"away_minus_1_5":.30,"over":.52,"under":.48}},
             }],
         }
         production=authorize_payload(build_native_discord_payload(candidate),production_authorized=True)
