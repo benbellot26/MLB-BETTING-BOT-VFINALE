@@ -1,6 +1,6 @@
 """Pulsar V14 production model package."""
 
-VERSION = "14.5.3"
+VERSION = "14.5.4"
 MODEL_GENERATION = "pulsar-v14-context-v3"
 PROBABILITY_POLICY_ID = "pulsar-v14-probability-policy-v1"
 SCHEMA = "pulsar-v14-probability-v2"
