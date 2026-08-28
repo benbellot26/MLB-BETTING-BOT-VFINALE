@@ -174,13 +174,16 @@ def build_artifact(rows:list[dict[str,Any]])->dict[str,Any]:
 
 
 def _empty_artifact()->dict[str,Any]: return {"schema":"pulsar-v14-calibration-v3","model_generation":MODEL_GENERATION,"probability_policy_id":PROBABILITY_POLICY_ID,"calibrators":{}}
+def _validated_artifact(payload:Any)->dict[str,Any]:
+    if not isinstance(payload,dict): return _empty_artifact()
+    if payload.get("schema")!="pulsar-v14-calibration-v3" or payload.get("model_generation")!=MODEL_GENERATION or payload.get("probability_policy_id")!=PROBABILITY_POLICY_ID: return _empty_artifact()
+    return payload
 def load_artifact(path:Path|str=ARTIFACT)->dict[str,Any]:
     target=Path(path)
     if not target.exists(): return _empty_artifact()
     try: payload=json.loads(target.read_text(encoding="utf-8"))
     except Exception: return _empty_artifact()
-    if payload.get("schema")!="pulsar-v14-calibration-v3" or payload.get("model_generation")!=MODEL_GENERATION or payload.get("probability_policy_id")!=PROBABILITY_POLICY_ID: return _empty_artifact()
-    return payload
+    return _validated_artifact(payload)
 def _accepted(cal:dict[str,Any])->bool: return cal.get("accepted") is True or cal.get("active") is True
 def _select_calibrator(artifact:dict[str,Any],market:str,phase:str)->tuple[str,dict[str,Any]]:
     calibrators=artifact.get("calibrators") or {}; phase_key=f"PHASE:{str(phase).upper()}:{market}"; market_key=f"MARKET:{market}"; phase_cal=calibrators.get(phase_key) or {}
@@ -189,14 +192,14 @@ def _select_calibrator(artifact:dict[str,Any],market:str,phase:str)->tuple[str,d
     if _accepted(market_cal): return market_key,market_cal
     return market_key,market_cal or {"active":False,"accepted":False,"method":"identity","n":0,"minimum_n":MIN_MARKET_OBSERVATIONS}
 def calibrate_probability(p:float,market:str,phase:str,artifact:dict[str,Any]|None=None)->tuple[float,dict[str,Any]]:
-    data=load_artifact() if artifact is None else artifact; key,cal=_select_calibrator(data,market,phase)
+    data=load_artifact() if artifact is None else _validated_artifact(artifact); key,cal=_select_calibrator(data,market,phase)
     common={"probability_policy_id":PROBABILITY_POLICY_ID,"artifact_generated_at":data.get("generated_at"),"artifact_latest_observation_at":data.get("latest_observation_at")}
     if cal.get("active") is not True: return float(p),{**common,"active":False,"accepted":_accepted(cal),"key":key,"method":"identity","n":int(cal.get("n") or 0),"status":str(cal.get("status") or "COLLECTING"),"holdout":cal.get("raw_holdout") or {}}
     a=_num(cal.get("slope")); b=_num(cal.get("intercept"))
     if a is None or b is None: return float(p),{**common,"active":False,"accepted":False,"key":key,"method":"identity","n":int(cal.get("n") or 0),"status":"INVALID_ARTIFACT"}
     return _sigmoid(a*_logit(_clip(p))+b),{**common,"active":True,"accepted":True,"key":key,"method":"platt-logit","n":int(cal.get("n") or 0),"slope":a,"intercept":b,"status":str(cal.get("status") or "ACTIVE_TRANSFORM"),"holdout":cal.get("calibrated_holdout") or {}}
 def calibrate_surface(probabilities:dict[str,Any],*,phase:str,artifact:dict[str,Any]|None=None)->tuple[dict[str,float],dict[str,Any]]:
-    data=load_artifact() if artifact is None else artifact; surface={k:float(v) for k,v in probabilities.items() if _num(v) is not None}; details={}
+    data=load_artifact() if artifact is None else _validated_artifact(artifact); surface={k:float(v) for k,v in probabilities.items() if _num(v) is not None}; details={}
     for canonical_key,(left,right,market) in PAIR_MAP.items():
         if canonical_key not in surface or right not in surface: continue
         q,meta=calibrate_probability(surface[canonical_key],market,phase,data); q=min(1.0,max(0.0,q)); surface[left]=q; surface[right]=1-q; details[market]=meta

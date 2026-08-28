@@ -8,14 +8,14 @@ on:
       - "tests/test_v14_*.py"
       - "data/v137/**"
       - "data/v138_dataset_manifest.json"
-      - ".github/workflows/v14-ci.yml"
+      - ".github/workflows/**"
   pull_request:
     paths:
       - "v14/**"
       - "tests/test_v14_*.py"
       - "data/v137/**"
       - "data/v138_dataset_manifest.json"
-      - ".github/workflows/v14-ci.yml"
+      - ".github/workflows/**"
   workflow_dispatch:
 
 permissions:
@@ -25,8 +25,8 @@ jobs:
   v14:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
       - name: Compile production and research V14
@@ -42,8 +42,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
       - name: Validate 2021-2026 PIT dataset and frozen holdouts
@@ -93,7 +93,7 @@ jobs:
               raise SystemExit('historical distribution total-line diagnostic contract is not explicit')
           PY
       - name: Archive V14.5 historical evidence
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pulsar-v14-historical-validation-${{ github.run_id }}
           path: |
@@ -108,8 +108,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
       - name: Build current PIT defense catcher baserunning shadow artifact
@@ -139,7 +139,7 @@ jobs:
               raise SystemExit('Savant normalized artifact violated shadow PIT contract')
           PY
       - name: Archive normalized Savant PIT shadow data
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pulsar-v14-savant-run-value-${{ github.run_id }}
           path: runtime/v14/v14_defense_baserunning_priors.json
@@ -151,8 +151,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
       - name: Fetch a bounded recent Statcast window strictly before cutoff
@@ -194,7 +194,7 @@ jobs:
                       raise SystemExit('Statcast aggregated prior crossed target cutoff')
           PY
       - name: Archive Statcast PIT smoke evidence
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pulsar-v14-statcast-pit-${{ github.run_id }}
           path: runtime/v14/v14_statcast_pit_smoke.json
@@ -206,8 +206,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
       - name: Reconstruct strict pregame weather provenance on recorded historical features
@@ -231,7 +231,7 @@ jobs:
                   raise SystemExit('weather row missing strict PIT provenance')
           PY
       - name: Archive weather PIT smoke evidence
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pulsar-v14-weather-pit-${{ github.run_id }}
           path: runtime/v14/v14_weather_pit_smoke.json
@@ -243,8 +243,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
       - name: Resolve posthoc identities without target-game performance leakage
@@ -272,7 +272,7 @@ jobs:
                   raise SystemExit('historical identity scaffold leaked/overclaimed target-game evidence')
           PY
       - name: Archive identity scaffold evidence
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pulsar-v14-identity-scaffold-${{ github.run_id }}
           path: runtime/v14/v14_identity_smoke.json
