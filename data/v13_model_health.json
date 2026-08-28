@@ -105,19 +105,19 @@
       "native_live": "authenticated live snapshots stay separate and may become eligible only through existing promotion gates"
     },
     "mlb_native_state": {
-      "archive": "data/v137/mlb_state/mlb_state_2026-08-25.json.gz",
+      "archive": "data/v137/mlb_state/mlb_state_2026-08-28.json.gz",
       "injured_list_transaction_signals": 105,
       "native_live": true,
-      "observed_at": "2026-08-25T12:07:15.819492+00:00",
+      "observed_at": "2026-08-28T08:49:16.775190+00:00",
       "point_in_time": true,
       "promotion_eligible": false,
       "roster_failures": [],
       "rosters_ok": 30,
       "schema": "v13-7-mlb-native-state-report-v1",
-      "snapshot_day": "2026-08-25",
+      "snapshot_day": "2026-08-28",
       "teams": 30,
       "transaction_error": null,
-      "transactions": 544
+      "transactions": 531
     },
     "paid_sources_required": false,
     "park_factors": {
@@ -213,22 +213,6 @@
       "cap_hits": 0,
       "chunk_days": 3,
       "chunks": [
-        {
-          "cap_hits": 0,
-          "end": "2026-07-13",
-          "requests": [
-            {
-              "cap_hit": false,
-              "end": "2026-07-13",
-              "rows": 8996,
-              "start": "2026-07-11"
-            }
-          ],
-          "rows": 8996,
-          "splits": 0,
-          "start": "2026-07-11",
-          "status": "OK"
-        },
         {
           "cap_hits": 0,
           "end": "2026-07-16",
@@ -452,19 +436,35 @@
           "splits": 0,
           "start": "2026-08-22",
           "status": "OK"
+        },
+        {
+          "cap_hits": 0,
+          "end": "2026-08-27",
+          "requests": [
+            {
+              "cap_hit": false,
+              "end": "2026-08-27",
+              "rows": 8976,
+              "start": "2026-08-25"
+            }
+          ],
+          "rows": 8976,
+          "splits": 0,
+          "start": "2026-08-25",
+          "status": "OK"
         }
       ],
       "chunks_failed": 0,
       "chunks_ok": 15,
       "claim": "free ID-first Statcast priors; any observed server row-cap is split and unresolved truncation fails closed",
       "cohort": "HISTORICAL_RECONSTRUCTED_FREE",
-      "cutoff_day": "2026-08-25",
-      "hitter_ids": 515,
+      "cutoff_day": "2026-08-28",
+      "hitter_ids": 510,
       "lookback_days": 45,
-      "pitcher_ids": 608,
+      "pitcher_ids": 606,
       "point_in_time": true,
       "promotion_eligible": false,
-      "raw_rows": 165548,
+      "raw_rows": 165528,
       "requests_made": 15,
       "schema": "v13-7-statcast-priors-report-v2",
       "stable_id_only": true,
@@ -473,17 +473,17 @@
     "status": "DEGRADED",
     "team_history": {
       "cohort": "HISTORICAL_RECONSTRUCTED_FREE",
-      "end": "2026-08-24",
-      "feature_rows": 1974,
+      "end": "2026-08-27",
+      "feature_rows": 2011,
       "files": [
         "data/v137/team_features_2026.jsonl.gz",
         "data/v137/team_labels_2026.jsonl.gz"
       ],
-      "label_rows": 1974,
+      "label_rows": 2011,
       "leakage_policy": "target labels separate; target and same-day scores never enter target feature row; park factors end before target season",
       "native_live": false,
-      "park_prior_coverage": 0.9321175278622087,
-      "park_prior_rows": 1840,
+      "park_prior_coverage": 0.9323719542516161,
+      "park_prior_rows": 1875,
       "promotion_eligible": false,
       "schema": "v13-7-free-team-history-report-v2",
       "seasons": [
@@ -493,32 +493,32 @@
         "missing_score_or_team": 4
       },
       "start": "2026-03-01",
-      "unique_games": 1974
+      "unique_games": 2011
     },
     "warnings": [
       "weather_previous_runs_fallback_used"
     ],
     "weather": {
       "archive_available_from": "2024-03-14",
-      "available_rows": 46,
+      "available_rows": 45,
       "cohort": "HISTORICAL_RECONSTRUCTED_FREE",
-      "end": "2026-07-19",
+      "end": "2026-07-14",
       "fallback_policy": "Single Runs first; documented Previous Runs fixed lead selected conservatively when exact run is unavailable",
       "files": [
         "data/v137/weather_2026-07.jsonl.gz"
       ],
-      "generated_at": "2026-08-25T12:10:06.830847+00:00",
+      "generated_at": "2026-08-28T08:53:21.367807+00:00",
       "lead_hours": 2,
-      "point_in_time_rows": 46,
+      "point_in_time_rows": 45,
       "promotion_eligible": false,
       "provider_counts": {
-        "Open-Meteo Previous Runs / Best Match": 46
+        "Open-Meteo Previous Runs / Best Match": 45
       },
-      "rows": 46,
+      "rows": 45,
       "schema": "v13-7-free-weather-backfill-report-v2",
-      "start": "2026-07-15",
+      "start": "2026-07-10",
       "status_counts": {
-        "available": 46
+        "available": 45
       }
     }
   },
@@ -548,15 +548,15 @@
   },
   "probability_drift": {
     "ML": {
-      "confidence_shift": -0.018644960000000002,
-      "mean_probability_shift": -0.02307951999999991,
-      "observations": 215,
-      "prior_mean_abs_edge_from_50": 0.07384496,
-      "prior_mean_probability": 0.5475563999999999,
-      "prior_n": 50,
-      "recent_mean_abs_edge_from_50": 0.0552,
-      "recent_mean_probability": 0.52447688,
-      "recent_n": 50,
+      "confidence_shift": null,
+      "mean_probability_shift": null,
+      "observations": 0,
+      "prior_mean_abs_edge_from_50": null,
+      "prior_mean_probability": null,
+      "prior_n": 0,
+      "recent_mean_abs_edge_from_50": null,
+      "recent_mean_probability": null,
+      "recent_n": 0,
       "sample_policy": "current-generation attested; one canonical settled side per game/market"
     },
     "RUNLINE": {
@@ -783,111 +783,111 @@
       "features": {
         "away_l14_rpg": {
           "alert": false,
-          "recent_mean": 4.379,
-          "reference_mean": 4.468635853852942,
-          "standardized_shift": -0.08846791148030819
+          "recent_mean": 4.367571428571429,
+          "reference_mean": 4.469099342434756,
+          "standardized_shift": -0.10019118316817034
         },
         "away_l30_rpg": {
           "alert": false,
-          "recent_mean": 4.469666666666667,
-          "reference_mean": 4.460392464888716,
-          "standardized_shift": 0.011204804778338408
+          "recent_mean": 4.462466666666666,
+          "reference_mean": 4.460605067689413,
+          "standardized_shift": 0.002249376814737065
         },
         "away_l7_rpg": {
           "alert": false,
-          "recent_mean": 4.365142857142857,
-          "reference_mean": 4.47751756153534,
-          "standardized_shift": -0.08545192053862473
+          "recent_mean": 4.363428571428572,
+          "reference_mean": 4.477796246967441,
+          "standardized_shift": -0.08695554410369871
         },
         "away_offense_talent": {
           "alert": false,
-          "recent_mean": 4.453125601313742,
-          "reference_mean": 4.451886542239107,
-          "standardized_shift": 0.0032284104187731565
+          "recent_mean": 4.450260370910013,
+          "reference_mean": 4.452019408183902,
+          "standardized_shift": -0.004582440772872479
         },
         "away_offense_x_home_defense": {
           "alert": false,
-          "recent_mean": 4.479589461526481,
-          "reference_mean": 4.432352346426485,
-          "standardized_shift": 0.052602263029633695
+          "recent_mean": 4.47857012224532,
+          "reference_mean": 4.432520080216431,
+          "standardized_shift": 0.05127632925462023
         },
         "away_ra_pg": {
           "alert": false,
-          "recent_mean": 4.5048888306986115,
-          "reference_mean": 4.4163683324107055,
-          "standardized_shift": 0.11385570577250799
+          "recent_mean": 4.505028198596535,
+          "reference_mean": 4.416456542755785,
+          "standardized_shift": 0.11395389773318144
         },
         "away_rest": {
           "alert": false,
-          "recent_mean": 0.128,
-          "reference_mean": 0.1810167499265354,
-          "standardized_shift": -0.10494090141461869
+          "recent_mean": 0.118,
+          "reference_mean": 0.18125091763324033,
+          "standardized_shift": -0.12482253379386771
         },
         "away_season_rpg": {
           "alert": false,
-          "recent_mean": 4.500106918135323,
-          "reference_mean": 4.416309111741736,
-          "standardized_shift": 0.11694472069459326
+          "recent_mean": 4.499864047407341,
+          "reference_mean": 4.416395068582038,
+          "standardized_shift": 0.11650828037808485
         },
         "away_win_pct": {
           "alert": false,
-          "recent_mean": 0.4985130100153116,
-          "reference_mean": 0.49948804225806237,
-          "standardized_shift": -0.008382760548934335
+          "recent_mean": 0.49859206397376293,
+          "reference_mean": 0.49949114592319277,
+          "standardized_shift": -0.007732299764902897
         },
         "home_l14_rpg": {
           "alert": false,
-          "recent_mean": 4.394142857142857,
-          "reference_mean": 4.46872589873802,
-          "standardized_shift": -0.0721510745872867
+          "recent_mean": 4.389142857142857,
+          "reference_mean": 4.468743613643408,
+          "standardized_shift": -0.07701333194215393
         },
         "home_l30_rpg": {
           "alert": false,
-          "recent_mean": 4.470866666666667,
-          "reference_mean": 4.467068704326529,
-          "standardized_shift": 0.00448888536865832
+          "recent_mean": 4.469600000000001,
+          "reference_mean": 4.466968081287088,
+          "standardized_shift": 0.0031115173509596666
         },
         "home_l7_rpg": {
           "alert": false,
-          "recent_mean": 4.322285714285715,
-          "reference_mean": 4.456363257909688,
-          "standardized_shift": -0.10224690624851601
+          "recent_mean": 4.312285714285714,
+          "reference_mean": 4.456290419559396,
+          "standardized_shift": -0.10982330624279248
         },
         "home_offense_talent": {
           "alert": false,
-          "recent_mean": 4.450206054461088,
-          "reference_mean": 4.449119666614186,
-          "standardized_shift": 0.002866238174971968
+          "recent_mean": 4.448707982196507,
+          "reference_mean": 4.449096625816383,
+          "standardized_shift": -0.0010255484752295513
         },
         "home_offense_x_away_defense": {
           "alert": false,
-          "recent_mean": 4.502907127255206,
-          "reference_mean": 4.42288520393777,
-          "standardized_shift": 0.08746095819413695
+          "recent_mean": 4.501678763407567,
+          "reference_mean": 4.42293681340694,
+          "standardized_shift": 0.08608972335756788
         },
         "home_ra_pg": {
           "alert": false,
-          "recent_mean": 4.474782683724999,
-          "reference_mean": 4.42214433874121,
-          "standardized_shift": 0.06941779507388646
+          "recent_mean": 4.47719460225104,
+          "reference_mean": 4.422170079952563,
+          "standardized_shift": 0.07257052306327677
         },
         "home_rest": {
           "alert": false,
-          "recent_mean": 0.14,
-          "reference_mean": 0.18762856303261827,
-          "standardized_shift": -0.09272932324615862
+          "recent_mean": 0.13,
+          "reference_mean": 0.18785787696373513,
+          "standardized_shift": -0.11231986994215697
         },
         "home_season_rpg": {
           "alert": false,
-          "recent_mean": 4.49055459396716,
-          "reference_mean": 4.419994579391439,
-          "standardized_shift": 0.09552578302282222
+          "recent_mean": 4.490491419350567,
+          "reference_mean": 4.419986213198565,
+          "standardized_shift": 0.09547901397931652
         },
         "home_win_pct": {
           "alert": false,
-          "recent_mean": 0.5028887594187852,
-          "reference_mean": 0.5002625781895675,
-          "standardized_shift": 0.022638434379956086
+          "recent_mean": 0.502465494619388,
+          "reference_mean": 0.5002554669121282,
+          "standardized_shift": 0.01905539175480715
         },
         "park_run_factor": {
           "alert": false,
@@ -932,7 +932,7 @@
           "ML": {
             "active": false,
             "minimum_n": 300,
-            "n": 138,
+            "n": 148,
             "reason": "INSUFFICIENT_MARKET_SPECIFIC_NATIVE_TARGETS"
           },
           "RUNLINE": {
@@ -949,10 +949,10 @@
           }
         },
         "minimum_n_per_market": 300,
-        "n": 138,
+        "n": 148,
         "production_applied": false
       },
-      "independent_targets": 138,
+      "independent_targets": 148,
       "uncertainty_coverage": {
         "activation_scope": "per-market; aggregate active only when ML, RUNLINE and TOTAL each pass independently",
         "active": false,
@@ -966,7 +966,7 @@
             "frequentist_confidence_interval": false,
             "mean_interval_half_width": null,
             "minimum_n": 300,
-            "n": 84,
+            "n": 94,
             "reason": "INSUFFICIENT_MARKET_SPECIFIC_NATIVE_TARGETS",
             "usable_bins": 0,
             "user_facing_type": "model_uncertainty_band",
@@ -1004,7 +1004,7 @@
           }
         },
         "minimum_n_per_market": 300,
-        "n": 84,
+        "n": 94,
         "production_applied": false
       }
     },
@@ -1016,8 +1016,8 @@
         "hierarchical": 0.08750000000000005,
         "naive": 0.9125
       },
-      "games": 14112,
-      "holdout_games": 2823,
+      "games": 14122,
+      "holdout_games": 2825,
       "holdout_isolation": true,
       "promotion_eligible": false,
       "status": "TRAINED_RESEARCH_ONLY"
