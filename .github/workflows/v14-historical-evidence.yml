@@ -56,6 +56,7 @@ jobs:
           strict=tiers.get('strict_team_history') or {}
           replay=tiers.get('exact_recorded_legacy_replays') or {}
           tracking=((tiers.get('legacy_market_tracking') or {}).get('raw_inventory') or {})
+          credit=(x.get('current_certification_credit') or {}).get('games')
           print('STRICT_TEAM_HISTORY_GAMES=',strict.get('games'))
           print('EXACT_LEGACY_REPLAY_GAMES=',replay.get('independent_latest_pregame_games'))
           print('LEGACY_TRACKING_UNIQUE_GAMES=',tracking.get('unique_games'))
@@ -64,7 +65,7 @@ jobs:
           print('CURRENT_CERTIFICATION_CREDIT=',json.dumps(x.get('current_certification_credit') or {},sort_keys=True))
           if x.get('research_only') is not True or x.get('certification_eligible') is not False or x.get('champion_impact') is not False:
               raise SystemExit('legacy evidence escaped research-only isolation')
-          if int((x.get('current_certification_credit') or {}).get('games') or -1) != 0:
+          if credit is None or int(credit) != 0:
               raise SystemExit('legacy games were incorrectly credited to V14 certification')
           if int(strict.get('games') or 0) < 14000:
               raise SystemExit('strict historical team dataset unexpectedly small')
