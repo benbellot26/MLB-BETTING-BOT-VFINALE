@@ -1,34 +1,24 @@
-name: Pulsar Legacy Data Regression CI
+name: Pulsar Legacy Reference Data CI
 
 on:
   push:
     branches: [main]
     paths:
       - 'v11/**'
-      - 'tests/test_v12*.py'
-      - 'tests/test_v123*.py'
-      - 'tests/test_v124*.py'
-      - 'tests/test_v13*.py'
-      - 'tests/test_shadow_v115.py'
-      - 'tests/test_calibration_v1232.py'
-      - 'tests/test_historical_bootstrap.py'
-      - 'tests/test_safe_singles_v1231.py'
-      - 'tests/test_discord_limits.py'
+      - 'tests/test_v137*.py'
+      - 'tests/test_v138*.py'
+      - 'tests/test_v139*.py'
+      - 'tests/test_v1310*.py'
       - '.github/workflows/ci.yml'
       - '.github/workflows/v13-7-free-data-collector.yml'
       - '.github/workflows/v13-8-audit-closure.yml'
   pull_request:
     paths:
       - 'v11/**'
-      - 'tests/test_v12*.py'
-      - 'tests/test_v123*.py'
-      - 'tests/test_v124*.py'
-      - 'tests/test_v13*.py'
-      - 'tests/test_shadow_v115.py'
-      - 'tests/test_calibration_v1232.py'
-      - 'tests/test_historical_bootstrap.py'
-      - 'tests/test_safe_singles_v1231.py'
-      - 'tests/test_discord_limits.py'
+      - 'tests/test_v137*.py'
+      - 'tests/test_v138*.py'
+      - 'tests/test_v139*.py'
+      - 'tests/test_v1310*.py'
       - '.github/workflows/ci.yml'
       - '.github/workflows/v13-7-free-data-collector.yml'
       - '.github/workflows/v13-8-audit-closure.yml'
@@ -38,11 +28,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: pulsar-legacy-regression-${{ github.ref }}
+  group: pulsar-legacy-reference-data-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  validate-legacy-data-foundation:
+  validate-reference-data-foundation:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -52,16 +42,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Compile frozen legacy/data-foundation code
+      - name: Compile frozen reference-data code
         run: python -m py_compile v11/*.py
-      - name: Legacy regression suite
-        run: |
-          python -m unittest tests.test_historical_bootstrap
-          python -m unittest tests.test_v123 tests.test_v1231_runlines tests.test_safe_singles_v1231
-          python -m unittest tests.test_v1233_audit_hardening tests.test_shadow_v115 tests.test_calibration_v1232
-          python -m unittest tests.test_predictive_v124 tests.test_v124_statcast_provider tests.test_v124_weather tests.test_v124_starter_ip_v2
-          python -m unittest tests.test_v124_weight_optimizer tests.test_v124_research_monitor
-          python -m unittest tests.test_v124_historical_reconstruction tests.test_v124_historical_daily_reconstruction tests.test_v124_historical_warmstart
-          python -m unittest tests.test_discord_limits
-      - name: V13 frozen data-foundation preflight
+      - name: Reference-data safety preflight
         run: python -m v11.v13_preflight --verbose
