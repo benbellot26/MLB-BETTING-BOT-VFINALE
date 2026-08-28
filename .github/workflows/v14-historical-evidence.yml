@@ -1,0 +1,82 @@
+name: Pulsar V14 Historical Evidence Inventory
+
+on:
+  pull_request:
+    paths:
+      - 'v14/historical_dataset.py'
+      - 'v14/legacy_evidence_inventory.py'
+      - 'tests/test_v14_legacy_evidence_inventory.py'
+      - '.github/workflows/v14-historical-evidence.yml'
+      - '.github/workflows/v13-7-free-data-collector.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  legacy-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Compile and test evidence isolation
+        run: |
+          python -m py_compile v14/*.py
+          python -m unittest tests.test_v14_legacy_evidence_inventory -v
+
+      - name: Recover retained V13 market telemetry from archive
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/v14
+          ARCHIVE='archive/pre-v14-5-4-max-audit-20260827'
+          git fetch --no-tags origin "refs/heads/${ARCHIVE}:refs/remotes/origin/${ARCHIVE}"
+          git show "origin/${ARCHIVE}:data/v13_market_tracking_report.json" > runtime/v14/v13_market_tracking_report.json
+          git show "origin/${ARCHIVE}:data/v13_market_tracking.jsonl" > runtime/v14/v13_market_tracking.jsonl
+          test -s runtime/v14/v13_market_tracking_report.json
+          test -s runtime/v14/v13_market_tracking.jsonl
+
+      - name: Build generation-separated historical evidence inventory
+        run: |
+          python -m v14.legacy_evidence_inventory \
+            --market-report runtime/v14/v13_market_tracking_report.json \
+            --market-tracking runtime/v14/v13_market_tracking.jsonl \
+            --output runtime/v14/v14_legacy_evidence_inventory.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('runtime/v14/v14_legacy_evidence_inventory.json').read_text(encoding='utf-8'))
+          tiers=x.get('tiers') or {}
+          strict=tiers.get('strict_team_history') or {}
+          replay=tiers.get('exact_recorded_legacy_replays') or {}
+          tracking=((tiers.get('legacy_market_tracking') or {}).get('raw_inventory') or {})
+          print('STRICT_TEAM_HISTORY_GAMES=',strict.get('games'))
+          print('EXACT_LEGACY_REPLAY_GAMES=',replay.get('independent_latest_pregame_games'))
+          print('LEGACY_TRACKING_UNIQUE_GAMES=',tracking.get('unique_games'))
+          print('LEGACY_TRACKING_PREGAME_GAMES=',tracking.get('strictly_pregame_unique_games'))
+          print('LEGACY_GENERATIONS=',json.dumps(tracking.get('source_generations') or {},sort_keys=True))
+          print('CURRENT_CERTIFICATION_CREDIT=',json.dumps(x.get('current_certification_credit') or {},sort_keys=True))
+          if x.get('research_only') is not True or x.get('certification_eligible') is not False or x.get('champion_impact') is not False:
+              raise SystemExit('legacy evidence escaped research-only isolation')
+          if int((x.get('current_certification_credit') or {}).get('games') or -1) != 0:
+              raise SystemExit('legacy games were incorrectly credited to V14 certification')
+          if int(strict.get('games') or 0) < 14000:
+              raise SystemExit('strict historical team dataset unexpectedly small')
+          if int(replay.get('independent_latest_pregame_games') or 0) < 50:
+              raise SystemExit('exact legacy pregame replay evidence unexpectedly small')
+          if int((tiers.get('legacy_market_tracking') or {}).get('reported_tracked_observations') or 0) < 5000:
+              raise SystemExit('retained legacy market telemetry unexpectedly small')
+          PY
+
+      - name: Archive compact evidence report only
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pulsar-v14-historical-evidence-${{ github.run_id }}
+          path: runtime/v14/v14_legacy_evidence_inventory.json
+          retention-days: 90
