@@ -1,10 +1,10 @@
 {
-  "code_sha": "3a9a1d8d532fd482ce12c12748ee0c945f451f52",
-  "dataset_content_sha256": "50061745f1a5634b927b4376f7caf4a745efd87bfd76591a6905a6e8daed396c",
+  "code_sha": "2c3df379117789b9be543439506a71db58600ddb",
+  "dataset_content_sha256": "2d9d3dba468d4eff979824fde6004fba7548a588f17474024ac5801229d5cdf1",
   "dataset_fingerprint_policy": "SHA256 over path + SHA256 of every compressed source feature/label file; any feature or label byte changes the fingerprint",
-  "dataset_version": "3a9a1d8d532fd482ce12c12748ee0c945f451f52",
+  "dataset_version": "2c3df379117789b9be543439506a71db58600ddb",
   "feature_contract_sha256": "08b35bb22ea34adb3113de13d335975ca00e401b9c1d80deada2473a9b661a61",
-  "feature_rows": 14122,
+  "feature_rows": 14159,
   "files": [
     {
       "bytes": 361219,
@@ -32,9 +32,9 @@
       "sha256": "f64bf53fdf40e946bcf9eea1235c5a4d684d719015c3fe416fec5d1716fbe5dd"
     },
     {
-      "bytes": 412411,
+      "bytes": 420244,
       "path": "data/v137/team_features_2026.jsonl.gz",
-      "sha256": "ef087eabe72571d7a88551d001d9259f87bdd9eb297aec771cb0ea9a01de1d30"
+      "sha256": "20b8d5a0780c59535ea7b4da9e8e032b7a1591247587dbd503b224e8dd2bd650"
     },
     {
       "bytes": 42643,
@@ -62,9 +62,9 @@
       "sha256": "e9fea7ac9d410b3b1de224afada02452add916ce07ee0c85ca5d84302d8bd2c9"
     },
     {
-      "bytes": 35918,
+      "bytes": 36562,
       "path": "data/v137/team_labels_2026.jsonl.gz",
-      "sha256": "d62a6bc4efcc7a11f030e70f5c93774438aee8bcc5d6e33b25188c689b200798"
+      "sha256": "499e7c86aab469b7909a608e0dde3fedb6235043e4749d9c5cfb1278aad1f051"
     },
     {
       "bytes": 2895872,
@@ -82,9 +82,11 @@
       "sha256": "59a876c2a5ef9a3c381e54d43618bbd0fb444cbed475052a9518ccc77becca4a"
     }
   ],
-  "label_rows": 14122,
+  "label_rows": 14159,
   "schema": "v13-10-versioned-dataset-store-v2",
   "separation_policy": "features and labels remain separate physical tables",
+  "source_manifest_refresh_policy": "after intentional team-history rebuild and successful full PIT audit",
+  "source_manifest_refreshed_at": "2026-08-28T11:18:14.264093+00:00",
   "split_policy": "strict temporal / walk-forward",
   "storage": {
     "duckdb": "data/v138/v138.duckdb",
