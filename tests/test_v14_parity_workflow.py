@@ -19,7 +19,7 @@ class V14ParityWorkflowTests(unittest.TestCase):
         self.assertIn("assessment.get('publication_authorized') is not False", text)
         self.assertIn('market probability leaked into native model features', text)
         self.assertIn('native_parity_assessment.json', text)
-        self.assertIn('actions/upload-artifact@v4', text)
+        self.assertRegex(text, r'actions/upload-artifact@[0-9a-f]{40}')
 
 
 if __name__ == '__main__':
