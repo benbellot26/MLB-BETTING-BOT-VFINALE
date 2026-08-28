@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/v13-7-free-data-collector.yml'
       - 'v11/v137_*.py'
+      - 'v14/historical_dataset.py'
   schedule:
     # Free-only collector: no Odds API secret and no paid provider.
     - cron: '11 11 * * *'
@@ -137,6 +138,10 @@ jobs:
             --start "${{ steps.dates.outputs.team_start }}" \
             --end "${{ steps.dates.outputs.team_end }}"
 
+      - name: Rebind strict historical source manifest
+        run: |
+          python -m v14.historical_dataset refresh-manifest
+
       - name: Collect archived point-in-time weather
         run: |
           python -m v11.v137_weather_backfill \
@@ -210,6 +215,7 @@ jobs:
           git config user.name 'MLB Betting Bot V13.10 Free Data'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           [ -d data/v137 ] && git add -f data/v137
+          [ -f data/v138_dataset_manifest.json ] && git add -f data/v138_dataset_manifest.json
           [ -f data/v137_statcast_priors_latest.json.gz ] && git add -f data/v137_statcast_priors_latest.json.gz
           [ -f data/v137_statcast_priors_report.json ] && git add -f data/v137_statcast_priors_report.json
           [ -f data/v137_park_factors.json ] && git add -f data/v137_park_factors.json
