@@ -1,8 +1,9 @@
 import unittest
 
-from v14 import MODEL_GENERATION
+from v14 import MODEL_GENERATION, PROBABILITY_POLICY_ID
 from v14.discord import build_game_embed
 from v14.uncertainty import intervals
+from v14.uncertainty_fit import build as build_uncertainty_artifact
 
 
 PROBABILITIES = {
@@ -63,10 +64,11 @@ class V14UncertaintyTransparencyTests(unittest.TestCase):
             ["lineup_incomplete", "lineup_severely_incomplete"],
         )
 
-    def test_exact_generation_empirical_cell_is_labeled_empirical(self):
+    def test_exact_generation_and_policy_empirical_cell_is_labeled_empirical(self):
         artifact = {
-            "schema": "pulsar-v14-uncertainty-fit-v2",
+            "schema": "pulsar-v14-uncertainty-fit-v3",
             "model_generation": MODEL_GENERATION,
+            "probability_policy_id": PROBABILITY_POLICY_ID,
             "cells": {
                 "ML:FINAL:0.6-0.7": {
                     "ready": True,
@@ -92,6 +94,65 @@ class V14UncertaintyTransparencyTests(unittest.TestCase):
         self.assertEqual(row["evidence_n"], 420)
         self.assertAlmostEqual(row["base_half_width_pp"], 4.1)
         self.assertAlmostEqual(row["half_width_pp"], 4.1)
+
+    def test_empirical_artifact_without_policy_fails_closed_to_fallback(self):
+        artifact = {
+            "schema": "pulsar-v14-uncertainty-fit-v2",
+            "model_generation": MODEL_GENERATION,
+            "cells": {
+                "ML:FINAL:0.6-0.7": {
+                    "ready": True,
+                    "n": 420,
+                    "empirical_half_width": .025,
+                }
+            },
+        }
+        quality = {"eligible": True, "home_lineup_count": 9, "away_lineup_count": 9}
+        out = intervals(
+            PROBABILITIES,
+            {"phase": "FINAL", "markets": {}},
+            data_quality=quality,
+            starter_degraded=False,
+            market_fresh=True,
+            artifact=artifact,
+        )
+        row = out["selections"]["home_ml"]
+        self.assertEqual(row["uncertainty_source"], "fallback")
+        self.assertEqual(row["band_basis"], "CONSERVATIVE_FALLBACK")
+        self.assertAlmostEqual(row["base_half_width_pp"], 6.0)
+
+    def test_empirical_artifact_from_other_policy_fails_closed_to_fallback(self):
+        artifact = {
+            "schema": "pulsar-v14-uncertainty-fit-v3",
+            "model_generation": MODEL_GENERATION,
+            "probability_policy_id": "pulsar-v14-probability-policy-old",
+            "cells": {
+                "ML:FINAL:0.6-0.7": {
+                    "ready": True,
+                    "n": 420,
+                    "empirical_half_width": .025,
+                }
+            },
+        }
+        quality = {"eligible": True, "home_lineup_count": 9, "away_lineup_count": 9}
+        out = intervals(
+            PROBABILITIES,
+            {"phase": "FINAL", "markets": {}},
+            data_quality=quality,
+            starter_degraded=False,
+            market_fresh=True,
+            artifact=artifact,
+        )
+        row = out["selections"]["home_ml"]
+        self.assertEqual(row["uncertainty_source"], "fallback")
+        self.assertEqual(row["band_basis"], "CONSERVATIVE_FALLBACK")
+        self.assertAlmostEqual(row["base_half_width_pp"], 6.0)
+
+    def test_uncertainty_fit_stamps_exact_probability_identity(self):
+        artifact = build_uncertainty_artifact([])
+        self.assertEqual(artifact["schema"], "pulsar-v14-uncertainty-fit-v3")
+        self.assertEqual(artifact["model_generation"], MODEL_GENERATION)
+        self.assertEqual(artifact["probability_policy_id"], PROBABILITY_POLICY_ID)
 
     def test_discord_explains_fallback_and_shows_runline_intervals(self):
         quality = {"eligible": True, "home_lineup_count": 9, "away_lineup_count": 9}
