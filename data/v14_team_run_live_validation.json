@@ -8,96 +8,96 @@
   "evidence_artifact_sha256": "1d8723739e1e67da0fbce287380edca4c05186621e93abf614c232ad667bbf48",
   "evidence_contract": "persisted READY_SHADOW before first pitch; exact candidate_id, candidate_fingerprint and source_run_id",
   "gates": {
-    "all_market_nonregression": true,
+    "all_market_nonregression": false,
     "enough_games": false,
     "ml_brier_and_logloss_ci95_positive": false,
     "paired_team_mse_ci95_positive": false,
     "passes": false,
     "total_mae_nonregression": false
   },
-  "generated_at": "2026-08-28T21:49:15.738300+00:00",
+  "generated_at": "2026-08-29T09:35:12.470883+00:00",
   "markets": {
     "ML": {
       "brier_gain": {
-        "ci95_lower": null,
-        "ci95_upper": null,
-        "mean": -0.03971019360072675,
-        "n": 1
+        "ci95_lower": -0.033304109977032495,
+        "ci95_upper": 0.023098978982609285,
+        "mean": -0.005102565497211603,
+        "n": 15
       },
       "logloss_gain": {
-        "ci95_lower": null,
-        "ci95_upper": null,
-        "mean": -0.08075600007573791,
-        "n": 1
+        "ci95_lower": -0.0682421628138613,
+        "ci95_upper": 0.04646105055536977,
+        "mean": -0.010890556129245773,
+        "n": 15
       },
-      "n": 1,
+      "n": 15,
       "pushes_excluded": 0
     },
     "RL_AWAY_-1.5": {
       "brier_gain": {
-        "ci95_lower": null,
-        "ci95_upper": null,
-        "mean": -0.03795845490330696,
-        "n": 1
+        "ci95_lower": -0.02258853342115146,
+        "ci95_upper": 0.02274657662196478,
+        "mean": 7.902160040666184e-05,
+        "n": 15
       },
       "logloss_gain": {
-        "ci95_lower": null,
-        "ci95_upper": null,
-        "mean": -0.09080850030422583,
-        "n": 1
+        "ci95_lower": -0.054613875254335156,
+        "ci95_upper": 0.04714605922211855,
+        "mean": -0.0037339080161083006,
+        "n": 15
       },
-      "n": 1,
+      "n": 15,
       "pushes_excluded": 0
     },
     "RL_HOME_-1.5": {
       "brier_gain": {
-        "ci95_lower": null,
-        "ci95_upper": null,
-        "mean": -0.03359203121366394,
-        "n": 1
+        "ci95_lower": -0.021188352326136927,
+        "ci95_upper": 0.03544514088111637,
+        "mean": 0.007128394277489719,
+        "n": 15
       },
       "logloss_gain": {
-        "ci95_lower": null,
-        "ci95_upper": null,
-        "mean": -0.0690625860334575,
-        "n": 1
+        "ci95_lower": -0.044270111891123134,
+        "ci95_upper": 0.07926796714733356,
+        "mean": 0.017498927628105208,
+        "n": 15
       },
-      "n": 1,
+      "n": 15,
       "pushes_excluded": 0
     },
     "TOTAL_OVER": {
       "brier_gain": {
-        "ci95_lower": null,
-        "ci95_upper": null,
-        "mean": 0.0358660541269078,
-        "n": 1
+        "ci95_lower": -0.04918883796466274,
+        "ci95_upper": 0.009939049714847669,
+        "mean": -0.019624894124907536,
+        "n": 15
       },
       "logloss_gain": {
-        "ci95_lower": null,
-        "ci95_upper": null,
-        "mean": 0.07260558671678585,
-        "n": 1
+        "ci95_lower": -0.1016038690259623,
+        "ci95_upper": 0.020242259164940976,
+        "mean": -0.04068080493051066,
+        "n": 15
       },
-      "n": 1,
+      "n": 15,
       "pushes_excluded": 0
     }
   },
   "model_generation": "pulsar-v14-context-v3",
-  "n": 1,
+  "n": 15,
   "promotion_policy": "PROMOTION_REVIEW is a human/versioned review state only; never auto-activate or change MODEL_GENERATION",
   "required": 200,
   "run_mse_gain": {
-    "ci95_lower": null,
-    "ci95_upper": null,
-    "mean": 1.3716740698424026,
-    "n": 1
+    "ci95_lower": -0.8589693258908905,
+    "ci95_upper": 0.7604034234698677,
+    "mean": -0.049282951210511364,
+    "n": 15
   },
   "schema": "pulsar-v14-historical-team-run-live-validation-v2",
   "status": "COLLECTING",
   "total_mae_gain": {
-    "ci95_lower": null,
-    "ci95_upper": null,
-    "mean": 0.4153219640707775,
-    "n": 1
+    "ci95_lower": -0.44537115837859875,
+    "ci95_upper": 0.1744562711166703,
+    "mean": -0.1354574436309642,
+    "n": 15
   }
 }
