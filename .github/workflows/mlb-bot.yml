@@ -115,6 +115,9 @@ jobs:
           python -m v14.tracking snapshot \
             --payload runtime/v14/discord_payload.json \
             --predictions data/v14_predictions.jsonl
+          python -m v14.market_close_ledger record \
+            --payload runtime/v14/discord_payload.json \
+            --ledger data/v14_market_close_ledger.jsonl
           python -m v14.paper_ledger record \
             --payload runtime/v14/discord_payload.json \
             --ledger data/v14_paper_bet_ledger.jsonl
@@ -124,6 +127,7 @@ jobs:
           git config user.name 'Pulsar V14'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           git add -f data/v14_predictions.jsonl
+          [ -f data/v14_market_close_ledger.jsonl ] && git add -f data/v14_market_close_ledger.jsonl
           [ -f data/v14_paper_bet_ledger.jsonl ] && git add -f data/v14_paper_bet_ledger.jsonl
           [ -f data/v14_bet_ledger.jsonl ] && git add -f data/v14_bet_ledger.jsonl
           if ! git diff --cached --quiet; then
