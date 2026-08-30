@@ -31,12 +31,15 @@ jobs:
 
       - name: Validate close-capture modules
         run: |
-          python -m py_compile v14/market_close_ledger.py v14/paper_ledger.py v14/official_close.py v14/sharp_market.py
+          python -m py_compile v14/market_close_bootstrap.py v14/market_close_ledger.py v14/paper_ledger.py v14/official_close.py v14/sharp_market.py
 
-      - name: Capture tracked market, paper and official closes
+      - name: Bootstrap future games and capture verified closes
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: |
+          python -m v14.market_close_bootstrap \
+            --predictions data/v14_predictions.jsonl \
+            --ledger data/v14_market_close_ledger.jsonl
           python -m v14.market_close_ledger capture \
             --ledger data/v14_market_close_ledger.jsonl \
             --report data/v14_market_close_report.json
