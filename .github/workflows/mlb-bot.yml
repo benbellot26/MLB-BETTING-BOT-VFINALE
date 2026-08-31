@@ -149,6 +149,7 @@ jobs:
         continue-on-error: true
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          V14_MAX_PAID_CLOSE_SNAPSHOTS_PER_DAY: '12'
         run: |
           set -euo pipefail
           CAPTURE_RC=0
@@ -156,10 +157,14 @@ jobs:
           python -m v14.cost_aware_close_capture \
             --market-ledger data/v14_market_close_ledger.jsonl \
             --paper-ledger data/v14_paper_bet_ledger.jsonl \
-            --bet-ledger data/v14_bet_ledger.jsonl || CAPTURE_RC=$?
+            --bet-ledger data/v14_bet_ledger.jsonl \
+            --api-usage-ledger data/v14_api_usage.jsonl || CAPTURE_RC=$?
           python -m v14.market_close_ledger hydrate-paper \
             --ledger data/v14_market_close_ledger.jsonl \
             --paper-ledger data/v14_paper_bet_ledger.jsonl || HYDRATE_RC=$?
+          python -m v14.api_budget report \
+            --ledger data/v14_api_usage.jsonl \
+            --output data/v14_api_usage_report.json
 
           git config user.name 'Pulsar V14'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
@@ -167,6 +172,8 @@ jobs:
           [ -f data/v14_market_close_report.json ] && git add -f data/v14_market_close_report.json
           [ -f data/v14_paper_bet_ledger.jsonl ] && git add -f data/v14_paper_bet_ledger.jsonl
           [ -f data/v14_bet_ledger.jsonl ] && git add -f data/v14_bet_ledger.jsonl
+          [ -f data/v14_api_usage.jsonl ] && git add -f data/v14_api_usage.jsonl
+          [ -f data/v14_api_usage_report.json ] && git add -f data/v14_api_usage_report.json
           if ! git diff --cached --quiet; then
             git commit -m 'data: capture V14 cost-aware immediate closes [skip ci]'
             git pull --rebase origin "$GITHUB_REF_NAME"
@@ -193,5 +200,6 @@ jobs:
             data/v14_venue_park_factors.json
             data/v14_defense_baserunning_priors.json
             data/v14_coverage_report.json
+            data/v14_api_usage_report.json
           if-no-files-found: ignore
           retention-days: 90
