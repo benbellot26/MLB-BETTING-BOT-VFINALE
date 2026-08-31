@@ -1,6 +1,11 @@
 name: Pulsar V14 Production
 
 on:
+  schedule:
+    # Frequent wake-up is cheap: the gate performs only a free MLB schedule read
+    # plus local ledger checks. Odds is called only when an uncovered canonical
+    # FINAL observation is objectively due.
+    - cron: '*/10 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -12,7 +17,7 @@ concurrency:
 
 jobs:
   run-bot:
-    name: Exécution manuelle Pulsar V14
+    name: Pulsar V14 manual / scheduled FINAL
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -27,25 +32,64 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Resolve manual or objective scheduled FINAL gate
+        id: gate
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/v14
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            python -m py_compile \
+              v14/certification_timing.py \
+              v14/api_budget.py \
+              v14/scheduled_prediction_gate.py
+            python -m v14.scheduled_prediction_gate \
+              --predictions data/v14_predictions.jsonl \
+              --api-usage-ledger data/v14_api_usage.jsonl \
+              --output runtime/v14/scheduled_prediction_gate.json
+            python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+          gate=json.loads(Path('runtime/v14/scheduled_prediction_gate.json').read_text(encoding='utf-8'))
+          print('run_required=' + ('true' if gate.get('run_required') else 'false'))
+          print('run_trigger=' + str(gate.get('run_trigger') or 'SCHEDULED_FINAL'))
+          print('target_date=' + str(gate.get('target_date') or ''))
+          print('due_game_ids=' + ','.join(str(x) for x in gate.get('due_game_ids') or []))
+          PY
+          else
+            TARGET_DATE=$(python - <<'PY'
+          from v14.acquisition import resolve_target_date
+          print(resolve_target_date())
+          PY
+            )
+            echo "run_required=true" >> "$GITHUB_OUTPUT"
+            echo "run_trigger=MANUAL" >> "$GITHUB_OUTPUT"
+            echo "target_date=$TARGET_DATE" >> "$GITHUB_OUTPUT"
+            echo "due_game_ids=" >> "$GITHUB_OUTPUT"
+          fi
+          echo "PULSAR_V14_GATE event=${{ github.event_name }} run_required=${{ steps.gate.outputs.run_required }}"
+
+      - name: Explain scheduled no-op
+        if: steps.gate.outputs.run_required != 'true'
+        run: |
+          echo 'PULSAR_V14_SCHEDULED_NOOP no uncovered canonical FINAL snapshot is objectively due'
+          [ -f runtime/v14/scheduled_prediction_gate.json ] && cat runtime/v14/scheduled_prediction_gate.json
+
       - name: Validate Pulsar V14 production contract
+        if: steps.gate.outputs.run_required == 'true'
         run: |
           python -m py_compile v14/*.py
           python -m v14.preflight
 
       - name: Resolve slate date natively
-        id: slate
+        if: steps.gate.outputs.run_required == 'true'
         run: |
-          TARGET_DATE=$(python - <<'PY'
-          from v14.acquisition import resolve_target_date
-          print(resolve_target_date())
-          PY
-          )
-          echo "target_date=$TARGET_DATE" >> "$GITHUB_OUTPUT"
-          echo "PULSAR_V14_PRODUCTION_DATE=$TARGET_DATE"
+          echo "PULSAR_V14_PRODUCTION_DATE=${{ steps.gate.outputs.target_date }}"
+          echo "PULSAR_V14_RUN_TRIGGER=${{ steps.gate.outputs.run_trigger }}"
 
       - name: Build deterministic PIT venue-park shadow
+        if: steps.gate.outputs.run_required == 'true'
         run: |
-          TARGET_DATE="${{ steps.slate.outputs.target_date }}"
+          TARGET_DATE="${{ steps.gate.outputs.target_date }}"
           TARGET_SEASON="${TARGET_DATE:0:4}"
           python -m v14.venue_park_builder \
             --target-season "$TARGET_SEASON" \
@@ -53,9 +97,10 @@ jobs:
             --output data/v14_venue_park_factors.json
 
       - name: Build PIT defense catcher baserunning shadow fail-soft
+        if: steps.gate.outputs.run_required == 'true'
         run: |
           set +e
-          TARGET_DATE="${{ steps.slate.outputs.target_date }}"
+          TARGET_DATE="${{ steps.gate.outputs.target_date }}"
           mkdir -p runtime/v14
           rm -f data/v14_defense_baserunning_priors.json
           python -m v14.savant_run_value_builder "$TARGET_DATE" --output runtime/v14/v14_defense_baserunning_priors.json
@@ -84,17 +129,43 @@ jobs:
           fi
           exit 0
 
+      - name: Reserve and persist automated FINAL prediction budget
+        if: steps.gate.outputs.run_required == 'true' && steps.gate.outputs.run_trigger == 'SCHEDULED_FINAL'
+        env:
+          V14_MAX_PAID_PREDICTION_SNAPSHOTS_PER_DAY: '12'
+        run: |
+          set -euo pipefail
+          python -m v14.api_budget record-prediction \
+            --ledger data/v14_api_usage.jsonl \
+            --due-games "${{ steps.gate.outputs.due_game_ids }}"
+          python -m v14.api_budget report \
+            --ledger data/v14_api_usage.jsonl \
+            --output data/v14_api_usage_report.json
+          git config user.name 'Pulsar V14'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add -f data/v14_api_usage.jsonl data/v14_api_usage_report.json
+          if ! git diff --cached --quiet; then
+            # Persist the reservation before the paid request. A later failure
+            # therefore cannot create an uncounted retry loop.
+            git commit -m 'data: reserve V14 scheduled FINAL prediction request [skip ci]'
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
+
       - name: Build native Pulsar V14 production payload
+        if: steps.gate.outputs.run_required == 'true'
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: |
           mkdir -p runtime/v14
           python -m v14.production_runtime \
-            --target-date "${{ steps.slate.outputs.target_date }}" \
+            --target-date "${{ steps.gate.outputs.target_date }}" \
+            --run-trigger "${{ steps.gate.outputs.run_trigger }}" \
             --destination runtime/v14/discord_payload.json \
             --candidate-destination runtime/v14/native_candidate.json
 
       - name: Record zero-API slate coverage and rejection reasons
+        if: steps.gate.outputs.run_required == 'true'
         run: |
           python -m v14.coverage_ledger record \
             --candidate runtime/v14/native_candidate.json \
@@ -104,6 +175,7 @@ jobs:
             --output data/v14_coverage_report.json
 
       - name: Validate Pulsar V14 publication state
+        if: steps.gate.outputs.run_required == 'true'
         run: |
           python - <<'PY'
           import json
@@ -113,11 +185,13 @@ jobs:
           payload = json.loads(path.read_text(encoding='utf-8'))
           validate_production_payload(payload)
           print('PULSAR_V14_PUBLICATION_STATE_OK games=', len(payload.get('results') or []))
+          print('PULSAR_V14_RUN_TRIGGER=', payload.get('run_trigger'))
           print('PULSAR_V14_AUTHORIZATION=', json.dumps(payload.get('authorization_basis'), sort_keys=True))
           print('PULSAR_V14_BETTING_CERTIFICATION=', json.dumps(payload.get('betting_certification'), sort_keys=True))
           PY
 
       - name: Persist PIT predictions and decision evidence
+        if: steps.gate.outputs.run_required == 'true'
         run: |
           python -m v14.tracking snapshot \
             --payload runtime/v14/discord_payload.json \
@@ -128,9 +202,13 @@ jobs:
           python -m v14.paper_ledger record \
             --payload runtime/v14/discord_payload.json \
             --ledger data/v14_paper_bet_ledger.jsonl
-          python -m v14.bet_ledger record \
-            --payload runtime/v14/discord_payload.json \
-            --ledger data/v14_bet_ledger.jsonl
+          # Hidden scheduled evidence must never consume the operational staking
+          # exposure used by a later manual/user-facing authorization run.
+          if [ "${{ steps.gate.outputs.run_trigger }}" = "MANUAL" ]; then
+            python -m v14.bet_ledger record \
+              --payload runtime/v14/discord_payload.json \
+              --ledger data/v14_bet_ledger.jsonl
+          fi
           git config user.name 'Pulsar V14'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           git add -f data/v14_predictions.jsonl
@@ -139,6 +217,8 @@ jobs:
           [ -f data/v14_bet_ledger.jsonl ] && git add -f data/v14_bet_ledger.jsonl
           [ -f data/v14_coverage_ledger.jsonl ] && git add -f data/v14_coverage_ledger.jsonl
           [ -f data/v14_coverage_report.json ] && git add -f data/v14_coverage_report.json
+          [ -f data/v14_api_usage.jsonl ] && git add -f data/v14_api_usage.jsonl
+          [ -f data/v14_api_usage_report.json ] && git add -f data/v14_api_usage_report.json
           if ! git diff --cached --quiet; then
             git commit -m 'data: persist V14 pregame predictions, decisions and coverage [skip ci]'
             git pull --rebase origin "$GITHUB_REF_NAME"
@@ -146,6 +226,7 @@ jobs:
           fi
 
       - name: Capture immediate certified close only if actually due
+        if: steps.gate.outputs.run_required == 'true'
         continue-on-error: true
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
@@ -184,6 +265,7 @@ jobs:
           fi
 
       - name: Publish Pulsar V14 Discord analytics
+        if: steps.gate.outputs.run_required == 'true' && steps.gate.outputs.run_trigger == 'MANUAL'
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: python -m v14.production_runtime --send-persisted --destination runtime/v14/discord_payload.json
@@ -196,6 +278,7 @@ jobs:
           path: |
             runtime/v14/discord_payload.json
             runtime/v14/native_candidate.json
+            runtime/v14/scheduled_prediction_gate.json
             runtime/v14/v14_defense_baserunning_priors.json
             data/v14_venue_park_factors.json
             data/v14_defense_baserunning_priors.json
