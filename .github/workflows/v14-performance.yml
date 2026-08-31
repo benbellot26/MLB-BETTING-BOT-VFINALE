@@ -59,28 +59,41 @@ jobs:
             --predictions data/v14_predictions.jsonl \
             --output data/v14_uncertainty.json
 
-      - name: Rebuild performance and certification with current evidence
-        run: |
-          python -m v14.tracking report \
-            --predictions data/v14_predictions.jsonl \
-            --report data/v14_performance.json
-
-      - name: Build zero-API audit hardening evidence
+      - name: Build zero-API canonical and primary-sharp evidence
         run: |
           # These commands use only persisted ledgers. They make no Odds/API calls.
+          # The strict Pinnacle report is rebuilt AFTER settlement and BEFORE the
+          # final performance/certification report, so certification cannot use a
+          # stale pre-settlement primary benchmark.
           python -m v14.snapshot_policy \
             --predictions data/v14_predictions.jsonl \
             --output data/v14_snapshot_policy_report.json
+          python -m v14.sharp_benchmark \
+            --predictions data/v14_predictions.jsonl \
+            --output data/v14_sharp_benchmark_report.json
           python -m v14.prospective_cohort \
             --predictions data/v14_predictions.jsonl \
             --registry data/v14_experiment_registry.jsonl \
             --output data/v14_prospective_cohorts.json
-          python -m v14.sharp_benchmark \
-            --predictions data/v14_predictions.jsonl \
-            --output data/v14_sharp_benchmark_report.json
           python -m v14.coverage_ledger report \
             --ledger data/v14_coverage_ledger.jsonl \
             --output data/v14_coverage_report.json
+
+      - name: Rebuild performance with current evidence
+        run: |
+          python -m v14.tracking report \
+            --predictions data/v14_predictions.jsonl \
+            --report data/v14_performance.json
+          # Production runtime calls certification.load_status(), which also
+          # requires the freshly rebuilt canonical FINAL Pinnacle bootstrap file.
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from v14.certification import load_status
+          status=load_status()
+          Path('data/v14_betting_certification.json').write_text(json.dumps(status,ensure_ascii=False,indent=2,sort_keys=True)+'\n',encoding='utf-8')
+          print('PULSAR_V14_STRICT_CERTIFICATION',json.dumps({'probability_status':status.get('probability_status'),'betting_status':status.get('betting_status'),'primary_sharp':(status.get('policy') or {}).get('primary_sharp_benchmark')},sort_keys=True))
+          PY
 
       - name: Evaluate all shadow challengers
         run: |
@@ -122,6 +135,7 @@ jobs:
           for file in \
             data/v14_predictions.jsonl \
             data/v14_performance.json \
+            data/v14_betting_certification.json \
             data/v14_calibration.json \
             data/v14_uncertainty.json \
             data/v14_snapshot_policy_report.json \
