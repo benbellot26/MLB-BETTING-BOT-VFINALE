@@ -5,7 +5,8 @@ from __future__ import annotations
 The workflow may wake frequently, but this module makes ZERO network calls until
 at least one tracked/paper/official row is inside the certified-close window and
 still lacks a certified close. When a call is due, ONE Odds snapshot is fetched
-and reused by the market archive, paper ledger and official bet ledger.
+and reused by the market archive, paper ledger and official bet ledger. A
+persistent daily budget also prevents runaway automated paid calls.
 """
 
 import argparse
@@ -15,6 +16,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from .acquisition import odds_snapshot, parse_time
+from .api_budget import LEDGER as API_USAGE_LEDGER, allowance as api_allowance, record_close_snapshot
 from .bet_ledger import LEDGER as BET_LEDGER
 from .market_close_ledger import LEDGER as MARKET_LEDGER, _read as read_market, capture as capture_market
 from .official_close import capture as capture_official
@@ -75,25 +77,30 @@ def run(
     paper_path:Path|str=PAPER_LEDGER,
     bet_path:Path|str=BET_LEDGER,
     *,
+    api_usage_path:Path|str=API_USAGE_LEDGER,
     api_key:str|None=None,
     events_loader:Callable[[],list[dict[str,Any]]]|None=None,
     now:datetime|None=None,
 )->dict[str,Any]:
     due=due_games(market_path,paper_path,bet_path,now=now)
+    budget=api_allowance(api_usage_path,now=now)
     if not due:
-        return {"api_call_performed":False,"paid_api_snapshots":0,"captured":{"market":0,"paper":0,"official":0},"due_rows":0,"reason":"no row needs a first certified close","cost_policy":"wake often; paid Odds call only when first certified close is due"}
+        return {"api_call_performed":False,"paid_api_snapshots":0,"captured":{"market":0,"paper":0,"official":0},"due_rows":0,"budget":budget,"reason":"no row needs a first certified close","cost_policy":"wake often; paid Odds call only when first certified close is due"}
+    if not budget["allowed"]:
+        return {"api_call_performed":False,"paid_api_snapshots":0,"captured":{"market":0,"paper":0,"official":0},"due_rows":len(due),"due":due,"budget":budget,"budget_exhausted":True,"reason":"automated close API daily budget exhausted; fail closed without network call","cost_policy":"persistent daily cap protects against runaway paid requests"}
     # Exactly one paid snapshot for this run. All consumers reuse the same in-memory events.
     events=(events_loader or (lambda:odds_snapshot(api_key=api_key)))()
+    record_close_snapshot(api_usage_path,now=now,due_rows=len(due))
     loader=lambda:events
     market_changed=capture_market(market_path,api_key=api_key,events_loader=loader,now=now)
     paper_changed=capture_paper(paper_path,api_key=api_key,events_loader=loader,now=now)
     official_changed=capture_official(path=bet_path,api_key=api_key,events_loader=loader,now=now)
-    return {"api_call_performed":True,"paid_api_snapshots":1,"captured":{"market":market_changed,"paper":paper_changed,"official":official_changed},"due_rows":len(due),"due":due,"cost_policy":"one Odds snapshot shared across market/paper/official close capture; certified rows never trigger another paid call"}
+    return {"api_call_performed":True,"paid_api_snapshots":1,"captured":{"market":market_changed,"paper":paper_changed,"official":official_changed},"due_rows":len(due),"due":due,"budget_before":budget,"budget_after":api_allowance(api_usage_path,now=now),"cost_policy":"one Odds snapshot shared across market/paper/official close capture; certified rows never trigger another paid call; daily budget enforced"}
 
 
 def main()->None:
     parser=argparse.ArgumentParser(description="Cost-aware unified V14 certified close capture")
-    parser.add_argument("--market-ledger",default=str(MARKET_LEDGER));parser.add_argument("--paper-ledger",default=str(PAPER_LEDGER));parser.add_argument("--bet-ledger",default=str(BET_LEDGER));parser.add_argument("--api-key");args=parser.parse_args()
-    print(json.dumps(run(args.market_ledger,args.paper_ledger,args.bet_ledger,api_key=args.api_key),ensure_ascii=False,sort_keys=True))
+    parser.add_argument("--market-ledger",default=str(MARKET_LEDGER));parser.add_argument("--paper-ledger",default=str(PAPER_LEDGER));parser.add_argument("--bet-ledger",default=str(BET_LEDGER));parser.add_argument("--api-usage-ledger",default=str(API_USAGE_LEDGER));parser.add_argument("--api-key");args=parser.parse_args()
+    print(json.dumps(run(args.market_ledger,args.paper_ledger,args.bet_ledger,api_usage_path=args.api_usage_ledger,api_key=args.api_key),ensure_ascii=False,sort_keys=True))
 
 if __name__=="__main__":main()
