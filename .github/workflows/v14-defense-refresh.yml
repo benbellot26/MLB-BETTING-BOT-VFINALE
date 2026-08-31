@@ -1,0 +1,80 @@
+name: Pulsar V14.6 Defense Catcher Baserunning
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'v14/savant_run_value_builder.py'
+      - 'v14/savant_run_value_pit.py'
+      - 'v14/defense_baserunning_challenger.py'
+      - 'v14/all_stats_context.py'
+      - 'tests/test_v14_savant_run_value_*.py'
+      - 'tests/test_v14_defense_baserunning_production.py'
+      - '.github/workflows/v14-defense-refresh.yml'
+  schedule:
+    - cron: '7 11 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mlb-betting-bot-state
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Compile and test PIT run-value contract
+        run: |
+          set -euo pipefail
+          python -m py_compile v14/savant_run_value_pit.py v14/savant_run_value_builder.py v14/defense_baserunning_challenger.py v14/all_stats_context.py
+          python -m unittest tests.test_v14_savant_run_value_pit tests.test_v14_savant_run_value_builder tests.test_v14_defense_baserunning_production -v
+      - name: Refresh defense catcher and baserunning production priors
+        run: |
+          set -euo pipefail
+          TARGET=$(date -u +%F)
+          python -m v14.savant_run_value_builder "$TARGET" --output data/v14_defense_baserunning_priors.json
+          python - <<'PY'
+          from datetime import date
+          import json
+          from pathlib import Path
+          p=Path('data/v14_defense_baserunning_priors.json')
+          x=json.loads(p.read_text(encoding='utf-8'))
+          print('V14_DEFENSE_SCHEMA=',x.get('schema'))
+          print('V14_DEFENSE_CUTOFF=',x.get('cutoff_day'))
+          print('V14_DEFENSE_COMPLETE_TEAMS=',(x.get('coverage') or {}).get('complete_teams'))
+          print('V14_DEFENSE_FAILURES=',len(x.get('failures') or []))
+          if x.get('schema')!='pulsar-v14-defense-baserunning-priors-v4':raise SystemExit('unexpected defense/baserunning schema')
+          if x.get('point_in_time') is not True or x.get('champion_impact') is not True:raise SystemExit('production PIT contract missing')
+          cutoff=date.fromisoformat(str(x.get('cutoff_day'))); target=date.fromisoformat(str(x.get('target_day')))
+          if cutoff>=target:raise SystemExit('defense/catcher cutoff is not strictly pregame')
+          if int((x.get('coverage') or {}).get('complete_teams') or 0)<25:raise SystemExit('insufficient complete team coverage')
+          PY
+      - name: Persist defense catcher baserunning priors
+        run: |
+          git config user.name 'Pulsar V14 Defense Data'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add -f data/v14_defense_baserunning_priors.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'data: refresh V14.6 defense catcher baserunning priors [skip ci]'
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
+      - name: Archive refresh evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pulsar-v14-defense-${{ github.run_id }}
+          path: data/v14_defense_baserunning_priors.json
+          if-no-files-found: ignore
+          retention-days: 30

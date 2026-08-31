@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-"""Build the rolling enriched Statcast artifact consumed by V14 shadows.
+"""Build the rolling enriched Statcast artifact consumed by V14.6 production.
 
-The refresh is data-only. It cannot modify MODEL_GENERATION or betting status.
-All raw pitches are fetched through the V14-native bounded/cap-aware provider
-layer, then enriched with exact pitch-type and handedness splits under the same
-strict cutoff.
+The refresh is data-only: it cannot modify MODEL_GENERATION or betting status,
+but the resulting PIT/stable-ID priors are probability-bearing inputs for the
+fixed V14.6 all-stats generation. Raw pitches are fetched through the V14-native
+bounded/cap-aware provider layer and enriched under the same strict cutoff.
 """
 
 import argparse
@@ -30,19 +30,21 @@ def _write_deterministic_gzip(payload:dict[str,Any],path:Path)->None:
 
 def refresh(cutoff_day:str,*,lookback_days:int=45,priors_path:Path|str=DEFAULT_PRIORS,report_path:Path|str=DEFAULT_REPORT,builder:Builder=build)->dict[str,Any]:
     cutoff=date.fromisoformat(str(cutoff_day)[:10]);days=max(7,min(120,int(lookback_days)));start=cutoff-timedelta(days=days);artifact=builder(cutoff.isoformat(),season_start=start.isoformat());priors=dict(artifact.get("priors") or {});coverage=artifact.get("coverage") or {}
-    if artifact.get("point_in_time") is not True or artifact.get("stable_id_only") is not True or artifact.get("champion_impact") is not False:raise ValueError("Statcast backfill envelope lost strict shadow PIT contract")
+    # The raw backfill envelope remains research/data-only. The reviewed daily
+    # normalization below is what turns it into a generation-bound input.
+    if artifact.get("point_in_time") is not True or artifact.get("stable_id_only") is not True or artifact.get("champion_impact") is not False:raise ValueError("Statcast backfill envelope lost strict PIT collection contract")
     if priors.get("schema")!="pulsar-v14-statcast-id-priors-v2" or priors.get("point_in_time") is not True or priors.get("stable_id_only") is not True:raise ValueError("enriched Statcast priors lost schema/PIT/stable-ID contract")
     if int(coverage.get("hitter_pitch_split_players") or 0)<=0 or int(coverage.get("hitter_pitch_split_buckets") or 0)<=0:raise ValueError("enriched Statcast artifact contains no hitter pitch-type splits")
     if int(coverage.get("hitter_pitcher_hand_split_players") or 0)<=0 or int(coverage.get("pitcher_batter_side_split_players") or 0)<=0:raise ValueError("enriched Statcast artifact contains no handedness splits")
     source_end=str(artifact.get("source_end") or "")
     if source_end and source_end>=cutoff.isoformat():raise ValueError("enriched Statcast artifact source_end crossed cutoff")
-    priors["rolling_window_days"]=days;priors["source_start"]=artifact.get("source_start");priors["source_end"]=artifact.get("source_end");priors["champion_impact"]=False;priors["auto_activation"]=False;target=Path(priors_path);_write_deterministic_gzip(priors,target)
-    report={"schema":"pulsar-v14-statcast-daily-report-v2","role":"SHADOW_DATA_ONLY","cutoff_day":cutoff.isoformat(),"lookback_days":days,"source_start":artifact.get("source_start"),"source_end":artifact.get("source_end"),"raw_pitch_rows":artifact.get("raw_pitch_rows"),"raw_rows_sha256":artifact.get("raw_rows_sha256"),"coverage":coverage,"request_chunks":len(artifact.get("requests") or []),"point_in_time":True,"stable_id_only":True,"champion_impact":False,"auto_activation":False,"artifact_path":str(target),"v14_native_provider":True,"handedness_enrichment":True}
+    priors["rolling_window_days"]=days;priors["source_start"]=artifact.get("source_start");priors["source_end"]=artifact.get("source_end");priors["role"]="PRODUCTION_ADVANCED_INPUT";priors["champion_impact"]=True;priors["auto_activation"]=False;priors["activation_contract"]="fixed by pulsar-v14-context-v4-all-stats; missing/unsafe artifact is neutral";target=Path(priors_path);_write_deterministic_gzip(priors,target)
+    report={"schema":"pulsar-v14-statcast-daily-report-v3","role":"PRODUCTION_ADVANCED_INPUT","cutoff_day":cutoff.isoformat(),"lookback_days":days,"source_start":artifact.get("source_start"),"source_end":artifact.get("source_end"),"raw_pitch_rows":artifact.get("raw_pitch_rows"),"raw_rows_sha256":artifact.get("raw_rows_sha256"),"coverage":coverage,"request_chunks":len(artifact.get("requests") or []),"point_in_time":True,"stable_id_only":True,"champion_impact":True,"auto_activation":False,"activation_contract":"fixed by pulsar-v14-context-v4-all-stats; missing/unsafe artifact is neutral","artifact_path":str(target),"v14_native_provider":True,"handedness_enrichment":True}
     rp=Path(report_path);rp.parent.mkdir(parents=True,exist_ok=True);rp.write_text(json.dumps(report,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8");return report
 
 
 def main()->None:
-    parser=argparse.ArgumentParser(description="Refresh enriched V14 rolling Statcast priors");parser.add_argument("--cutoff",required=True);parser.add_argument("--lookback-days",type=int,default=45);parser.add_argument("--priors",default=str(DEFAULT_PRIORS));parser.add_argument("--report",default=str(DEFAULT_REPORT));args=parser.parse_args();out=refresh(args.cutoff,lookback_days=args.lookback_days,priors_path=args.priors,report_path=args.report);print(json.dumps(out,sort_keys=True))
+    parser=argparse.ArgumentParser(description="Refresh enriched V14 rolling Statcast production priors");parser.add_argument("--cutoff",required=True);parser.add_argument("--lookback-days",type=int,default=45);parser.add_argument("--priors",default=str(DEFAULT_PRIORS));parser.add_argument("--report",default=str(DEFAULT_REPORT));args=parser.parse_args();out=refresh(args.cutoff,lookback_days=args.lookback_days,priors_path=args.priors,report_path=args.report);print(json.dumps(out,sort_keys=True))
 
 
 if __name__=="__main__":main()

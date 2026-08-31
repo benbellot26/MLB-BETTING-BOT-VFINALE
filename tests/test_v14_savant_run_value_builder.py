@@ -32,11 +32,14 @@ class SavantRunValueBuilderTests(unittest.TestCase):
         self.assertAlmostEqual(row["fielding_run_value_per_150"],18.0)
         self.assertAlmostEqual(row["catcher_run_value_per_150"],4.5)
         self.assertAlmostEqual(row["baserunning_runs_per_600_pa"],1.0)
+        self.assertEqual(out["schema"],"pulsar-v14-defense-baserunning-priors-v4")
+        self.assertEqual(out["role"],"PRODUCTION_ADVANCED_DATA")
         self.assertEqual(out["cutoff_day"],"2026-08-25")
         self.assertEqual(out["baserunning_source"]["source_season"],2025)
         self.assertEqual(out["coverage"]["complete_teams"],1)
-        self.assertFalse(out["promotion_ready"])
-        self.assertFalse(out["champion_impact"])
+        self.assertTrue(out["champion_impact"])
+        self.assertFalse(out["auto_activation"])
+        self.assertIn("pulsar-v14-context-v4-all-stats",out["activation_contract"])
 
     def test_unknown_provider_columns_fail_closed(self):
         def bad_text(url:str)->str:

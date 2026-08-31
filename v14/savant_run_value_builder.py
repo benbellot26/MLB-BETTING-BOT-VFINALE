@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-"""Build normalized point-in-time defense/catcher/baserunning shadow priors.
+"""Build normalized point-in-time defense/catcher/baserunning production priors.
 
 Fielding/catching comes from Baseball Savant through target-1 day and is
 normalized with official MLB games played through the same cutoff. Baserunning
 uses the completed prior season until a current-season date-bounded export is
 independently validated. Any source-schema or team-mapping ambiguity fails
-closed and cannot affect the champion.
+closed at team level; incomplete teams remain neutral in V14.6.
 """
 
 import argparse
@@ -127,7 +127,7 @@ def build(target_day:str,*,text_getter=None,json_getter:JsonGetter=http_json)->d
     for tid in ids:teams[tid]={**fielding.get(tid,{}),**running.get(tid,{})}
     complete=[tid for tid,row in teams.items() if all(row.get(k) is not None for k in ("fielding_run_value_per_150","catcher_run_value_per_150","baserunning_runs_per_600_pa"))]
     failures=ff+bf
-    return {"schema":"pulsar-v14-defense-baserunning-priors-v3","role":"SHADOW_DATA_ONLY","point_in_time":True,"cutoff_day":cutoff,"target_day":target.isoformat(),"fielding_source":{k:f.get(k) for k in ("provider","effective_cutoff","same_day_excluded","raw_columns")},"baserunning_source":{k:b.get(k) for k in ("provider","source_season","current_target_season_results_used","team_level","raw_columns")},"normalization":{"defense_catcher":"Savant run value scaled to 150 games using MLB byDateRange gamesPlayed through identical PIT cutoff","baserunning":"completed prior-season Savant run value per 600 official MLB plate appearances"},"teams":teams,"coverage":{"mapped_teams":len(teams),"complete_teams":len(complete),"complete_team_ids":complete},"failures":failures[:100],"promotion_ready":False,"champion_impact":False}
+    return {"schema":"pulsar-v14-defense-baserunning-priors-v4","role":"PRODUCTION_ADVANCED_DATA","point_in_time":True,"cutoff_day":cutoff,"target_day":target.isoformat(),"fielding_source":{k:f.get(k) for k in ("provider","effective_cutoff","same_day_excluded","raw_columns")},"baserunning_source":{k:b.get(k) for k in ("provider","source_season","current_target_season_results_used","team_level","raw_columns")},"normalization":{"defense_catcher":"Savant run value scaled to 150 games using MLB byDateRange gamesPlayed through identical PIT cutoff","baserunning":"completed prior-season Savant run value per 600 official MLB plate appearances"},"teams":teams,"coverage":{"mapped_teams":len(teams),"complete_teams":len(complete),"complete_team_ids":complete},"failures":failures[:100],"champion_impact":True,"auto_activation":False,"activation_contract":"fixed by pulsar-v14-context-v4-all-stats; incomplete/stale teams are neutral"}
 
 
 def write(target_day:str,path:Path|str=OUTPUT)->dict[str,Any]:

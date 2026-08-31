@@ -3,8 +3,8 @@ name: Pulsar V14 Close Capture
 on:
   schedule:
     # Frequent wake-up is cheap: the local due-check performs zero paid API calls.
-    # At most one Odds snapshot is fetched in a run, only while at least one
-    # certified close component is still missing, and that snapshot is shared.
+    # Ultra-low policy: at most one paid close snapshot per UTC day; that single
+    # snapshot is shared across every due game/component visible at that moment.
     - cron: '*/10 * * * *'
   workflow_dispatch:
 
@@ -53,18 +53,18 @@ jobs:
       - name: Capture closes with one shared paid snapshot only when due
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
-          V14_MAX_PAID_CLOSE_SNAPSHOTS_PER_DAY: '12'
+          V14_MAX_PAID_CLOSE_SNAPSHOTS_PER_DAY: '1'
+          V14_ODDS_PROVIDER_CREDITS_PER_SNAPSHOT: '3'
+          V14_MAX_AUTOMATED_ODDS_CREDITS_PER_UTC_MONTH: '180'
         run: |
           # Local archive hydration runs first. PRIMARY (Pinnacle no-vig) and
-          # EXECUTION (fresh same-book close) then remain independently retryable
-          # inside <=15m until each first valid component is frozen.
+          # EXECUTION (fresh same-book close) remain independently retryable,
+          # but the budget permits only the first paid close opportunity today.
           python -m v14.cost_aware_close_capture \
             --market-ledger data/v14_market_close_ledger.jsonl \
             --paper-ledger data/v14_paper_bet_ledger.jsonl \
             --bet-ledger data/v14_bet_ledger.jsonl \
             --api-usage-ledger data/v14_api_usage.jsonl
-          # Reporting below is purely local. Production hydration is owned by
-          # cost_aware_close_capture; do not invoke the generic hydrate-paper CLI.
           python -m v14.market_close_ledger report \
             --ledger data/v14_market_close_ledger.jsonl \
             --output data/v14_market_close_report.json

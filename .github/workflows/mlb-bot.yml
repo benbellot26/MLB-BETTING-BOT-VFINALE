@@ -131,7 +131,9 @@ jobs:
       - name: Reserve and persist automated FINAL prediction budget
         if: steps.gate.outputs.run_required == 'true' && steps.gate.outputs.run_trigger == 'SCHEDULED_FINAL'
         env:
-          V14_MAX_PAID_PREDICTION_SNAPSHOTS_PER_DAY: '12'
+          V14_MAX_PAID_PREDICTION_SNAPSHOTS_PER_DAY: '1'
+          V14_ODDS_PROVIDER_CREDITS_PER_SNAPSHOT: '3'
+          V14_MAX_AUTOMATED_ODDS_CREDITS_PER_UTC_MONTH: '180'
         run: |
           set -euo pipefail
           python -m v14.api_budget record-prediction \

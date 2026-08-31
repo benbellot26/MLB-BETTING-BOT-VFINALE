@@ -9,9 +9,9 @@ class WeatherLiveShadowTests(unittest.TestCase):
     def forecast_getter(self,url,params):
         return {"hourly":{"time":["2026-08-27T19:00","2026-08-27T20:00","2026-08-27T21:00"],"temperature_2m":[80,81,79],"relative_humidity_2m":[45,46,50],"surface_pressure":[1002,1001,1000],"wind_speed_10m":[8,9,7],"wind_direction_10m":[180,190,200]}}
 
-    def test_complete_forecast_is_strict_shadow(self):
+    def test_complete_forecast_is_strict_production_input(self):
         out=fetch(40.0,-75.0,game_date="2026-08-27T20:15:00Z",analyzed_at="2026-08-27T16:00:00Z",getter=self.forecast_getter)
-        self.assertEqual(out["status"],"READY_SHADOW");self.assertEqual(out["temperature_f"],81);self.assertEqual(out["humidity_pct"],46);self.assertEqual(out["pressure_hpa"],1001);self.assertEqual(out["wind_direction_deg"],190);self.assertIsNone(out["outfield_bearing_deg"]);self.assertFalse(out["champion_impact"]);self.assertFalse(out["auto_activation"])
+        self.assertEqual(out["status"],"READY_SHADOW");self.assertEqual(out["temperature_f"],81);self.assertEqual(out["humidity_pct"],46);self.assertEqual(out["pressure_hpa"],1001);self.assertEqual(out["wind_direction_deg"],190);self.assertIsNone(out["outfield_bearing_deg"]);self.assertTrue(out["champion_impact"]);self.assertEqual(out["role"],"PRODUCTION_ADVANCED_INPUT");self.assertFalse(out["auto_activation"])
 
     def test_reference_enrichment_supplies_bearing_and_venue_month_baseline(self):
         calls=[]

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-"""Defense, catcher and baserunning shadow contract.
+"""Defense, catcher and baserunning production component for V14.6.
 
-Expected artifacts should be built from authenticated PIT run-value data (e.g.
-OAA/fielding run value, catcher framing/blocking/throwing and baserunning run
-value).  Missing components are never silently imputed for promotion.
+Artifacts are built from PIT Savant run-value data. Missing/incomplete teams are
+neutral, and current-season fielding/catcher evidence is rejected when stale so
+a failed refresh cannot keep influencing probabilities indefinitely.
 """
 
 from datetime import date
@@ -13,8 +13,9 @@ import math
 from pathlib import Path
 from typing import Any
 
-ROLE="CHALLENGER_ONLY"
+ROLE="PRODUCTION_ADVANCED_COMPONENT"
 ARTIFACT=Path("data/v14_defense_baserunning_priors.json")
+FRESH_DAYS=3
 
 
 def _num(v:Any)->float|None:
@@ -31,9 +32,18 @@ def load(path:Path|str=ARTIFACT)->dict[str,Any]:
     return payload if isinstance(payload,dict) and payload.get("point_in_time") is True else {}
 
 
-def _safe(payload:dict[str,Any],target_date:str)->bool:
-    try: return date.fromisoformat(str(payload.get("cutoff_day")))<=date.fromisoformat(str(target_date)[:10])
-    except Exception: return False
+def _state(payload:dict[str,Any],target_date:str)->tuple[bool,str,int|None]:
+    try:
+        cutoff=date.fromisoformat(str(payload.get("cutoff_day")))
+        target=date.fromisoformat(str(target_date)[:10])
+    except Exception:
+        return False,"INVALID",None
+    if cutoff>target:
+        return False,"FUTURE_LEAKAGE",(target-cutoff).days
+    age=(target-cutoff).days
+    if age>FRESH_DAYS:
+        return False,"STALE",age
+    return True,"FRESH",age
 
 
 def _team(payload:dict[str,Any],team_id:Any)->dict[str,Any]:
@@ -48,8 +58,9 @@ def _factor(run_value:float|None,scale:float,low:float,high:float)->float|None:
 
 def build(*,home_team_id:Any,away_team_id:Any,target_date:str,artifact:dict[str,Any]|None=None)->dict[str,Any]:
     payload=load() if artifact is None else artifact
-    base={"schema":"pulsar-v14-defense-baserunning-challenger-v1","role":ROLE,"auto_activation":False,"target_date":str(target_date),"market_probability_used_as_feature":False}
-    if not payload or not _safe(payload,target_date): return {**base,"status":"COLLECTING","reason":"PIT defense/baserunning artifact unavailable or unsafe"}
+    safe,freshness,age=_state(payload,target_date) if payload else (False,"UNAVAILABLE",None)
+    base={"schema":"pulsar-v14-defense-baserunning-challenger-v2","role":ROLE,"auto_activation":False,"champion_impact":True,"target_date":str(target_date),"market_probability_used_as_feature":False,"artifact_freshness":freshness,"artifact_age_days":age}
+    if not payload or not safe: return {**base,"status":"COLLECTING","reason":"PIT defense/baserunning artifact unavailable, stale or unsafe"}
     out={}
     for side,team_id in (("home",home_team_id),("away",away_team_id)):
         row=_team(payload,team_id); defense=_num(row.get("fielding_run_value_per_150") or row.get("defense_runs_per_150")); catcher=_num(row.get("catcher_run_value_per_150")); running=_num(row.get("baserunning_runs_per_600_pa"))
