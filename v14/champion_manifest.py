@@ -44,7 +44,7 @@ CHAMPION_SOURCE_BLOBS={
 
     # Defense/catcher/baserunning PIT production path.
     "v14/defense_baserunning_challenger.py":"15e30a3cbeda1572949d535cbf22798e886481e1",
-    "v14/savant_run_value_builder.py":"9142e5d01928dd738700359acd0a9934c92936bd",
+    "v14/savant_run_value_builder.py":"c200db9e746a099bd678d7aff5caa232c84223d8",
     "v14/savant_run_value_pit.py":"61dd17fe8bdd69efdb58ee91a4f3d12a17eb78a0",
 
     # Venue-relative physical weather production path.
