@@ -39,18 +39,18 @@ class V14ScheduledWorkflowContractTests(unittest.TestCase):
 
     def test_scheduled_hidden_evidence_never_consumes_operational_bet_exposure(self):
         start=self.text.index("- name: Persist PIT predictions and decision evidence")
-        end=self.text.index("- name: Capture immediate certified close",start)
+        end=self.text.index("- name: Close collection policy",start)
         block=self.text[start:end]
         self.assertIn('if [ "${{ steps.gate.outputs.run_trigger }}" = "MANUAL" ]; then',block)
         self.assertIn("python -m v14.bet_ledger record",block)
 
-    def test_scheduled_entry_does_not_take_same_run_close_or_publish_discord(self):
-        close_start=self.text.index("- name: Capture immediate certified close only if actually due")
-        close_end=self.text.index("- name: Publish Pulsar V14 Discord analytics",close_start)
-        close_block=self.text[close_start:close_end]
-        self.assertIn("steps.gate.outputs.run_trigger == 'MANUAL'",close_block)
-        publish=self.text[close_end:]
-        self.assertIn("steps.gate.outputs.run_trigger == 'MANUAL'",publish)
+    def test_no_production_run_can_choose_certification_close_timing(self):
+        self.assertNotIn("python -m v14.cost_aware_close_capture",self.text)
+        self.assertNotIn("python -m v14.market_close_ledger hydrate-paper",self.text)
+        close_policy=self.text.index("- name: Close collection policy")
+        publish=self.text.index("- name: Publish Pulsar V14 Discord analytics",close_policy)
+        self.assertIn("dedicated v14-close-capture.yml only",self.text[close_policy:publish])
+        self.assertIn("steps.gate.outputs.run_trigger == 'MANUAL'",self.text[publish:])
 
     def test_gate_does_not_read_its_own_step_outputs(self):
         start=self.text.index("- name: Resolve manual or objective scheduled FINAL gate")
