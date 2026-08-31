@@ -238,11 +238,22 @@ def performance_report(rows:list[dict[str,Any]])->dict[str,Any]:
 
 def write_performance(path:Path|str=PREDICTIONS,report_path:Path|str=PERFORMANCE)->dict[str,Any]:
     report=performance_report(_read_jsonl(path)); report["selection_feedback"]=load_pick_performance()
+    diagnostic={"certified":False,"betting_status":"RESEARCH_ONLY","reasons":["diagnostic_unavailable"]}
     try:
         from .certification import evaluate as evaluate_certification
         from .probability_calibration import load_artifact
-        report["betting_certification"]=evaluate_certification(report,load_artifact())
-    except Exception as exc: report["betting_certification"]={"certified":False,"betting_status":"RESEARCH_ONLY","reasons":[f"certification_error:{type(exc).__name__}"]}
+        diagnostic=evaluate_certification(report,load_artifact())
+    except Exception as exc:
+        diagnostic={"certified":False,"betting_status":"RESEARCH_ONLY","reasons":[f"certification_error:{type(exc).__name__}"]}
+    diagnostic=dict(diagnostic)
+    diagnostic.update({
+        "role":"PERFORMANCE_DIAGNOSTIC_ONLY",
+        "authoritative":False,
+        "can_authorize_bet":False,
+        "authoritative_source":"v14.certification.load_status() / data/v14_betting_certification.json",
+        "note":"Embedded performance certification is retained for dashboard compatibility only; production authorization never reads this block.",
+    })
+    report["betting_certification"]=diagnostic
     target=Path(report_path); target.parent.mkdir(parents=True,exist_ok=True); target.write_text(json.dumps(report,ensure_ascii=False,indent=2,sort_keys=True)+"\n",encoding="utf-8"); return report
 
 
