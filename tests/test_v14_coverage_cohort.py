@@ -1,10 +1,12 @@
 import unittest
 
-from v14.coverage_ledger import LEGACY_TRIGGER, report, rows_from_candidate
+from v14 import MODEL_GENERATION
+from v14.coverage_ledger import LEGACY_GENERATION, LEGACY_TRIGGER, report, rows_from_candidate
 
 
 def _result(*, game_pk="1", analyzed_at="2026-08-31T14:00:00+00:00", trigger="SCHEDULED_FINAL", phase="FINAL", market_fresh=True, sharp_fresh=True, execution_fresh=True):
     return {
+        "model_generation": MODEL_GENERATION,
         "game_pk": game_pk,
         "game_date": "2026-08-31T14:30:00+00:00",
         "analyzed_at": analyzed_at,
@@ -18,9 +20,10 @@ def _result(*, game_pk="1", analyzed_at="2026-08-31T14:00:00+00:00", trigger="SC
     }
 
 
-def _coverage_row(*, game_pk="1", analyzed_at="2026-08-31T14:00:00+00:00", trigger="SCHEDULED_FINAL", phase="FINAL", predicted=True, observable=True, reason=None):
+def _coverage_row(*, game_pk="1", analyzed_at="2026-08-31T14:00:00+00:00", trigger="SCHEDULED_FINAL", phase="FINAL", predicted=True, observable=True, reason=None, generation=MODEL_GENERATION):
     return {
         "schema": "pulsar-v14-coverage-record-v1",
+        "model_generation": generation,
         "target_date": "2026-08-31",
         "analyzed_at": analyzed_at,
         "game_pk": game_pk,
@@ -39,6 +42,7 @@ def _coverage_row(*, game_pk="1", analyzed_at="2026-08-31T14:00:00+00:00", trigg
 class V14CoverageCohortTests(unittest.TestCase):
     def test_execution_requires_explicit_verified_freshness(self):
         candidate = {
+            "model_generation": MODEL_GENERATION,
             "target_date": "2026-08-31",
             "analyzed_at": "2026-08-31T14:00:00+00:00",
             "run_trigger": "SCHEDULED_FINAL",
@@ -46,6 +50,7 @@ class V14CoverageCohortTests(unittest.TestCase):
             "skipped": [],
         }
         row = rows_from_candidate(candidate)[0]
+        self.assertEqual(row["model_generation"], MODEL_GENERATION)
         self.assertFalse(row["execution_available"])
         self.assertFalse(row["fully_market_observable"])
 
@@ -87,8 +92,9 @@ class V14CoverageCohortTests(unittest.TestCase):
         self.assertEqual(canonical["fully_market_observable"], 0)
         self.assertEqual(canonical["rejection_reasons"], {"FINAL snapshot requires both confirmed 9/9 lineups": 1})
 
-    def test_skipped_row_inherits_candidate_run_trigger(self):
+    def test_skipped_row_inherits_candidate_run_trigger_and_generation(self):
         candidate = {
+            "model_generation": MODEL_GENERATION,
             "target_date": "2026-08-31",
             "analyzed_at": "2026-08-31T14:00:00+00:00",
             "run_trigger": "SCHEDULED_FINAL",
@@ -96,6 +102,7 @@ class V14CoverageCohortTests(unittest.TestCase):
             "skipped": [{"game_pk": "2", "reason": "odds_event_unmatched"}],
         }
         row = rows_from_candidate(candidate)[0]
+        self.assertEqual(row["model_generation"], MODEL_GENERATION)
         self.assertEqual(row["run_trigger"], "SCHEDULED_FINAL")
         self.assertFalse(row["odds_matched"])
         self.assertFalse(row["eligible"])
@@ -115,6 +122,19 @@ class V14CoverageCohortTests(unittest.TestCase):
         self.assertEqual(out["by_phase"]["FINAL"]["raw"]["observations"], 1)
         self.assertEqual(out["by_phase"]["UNKNOWN"]["raw"]["observations"], 1)
         self.assertEqual(out["by_phase"]["UNKNOWN"]["first_observation_unique_games"]["rejection_reasons"], {"input_failure": 1})
+
+    def test_other_or_missing_generations_cannot_pollute_current_coverage(self):
+        rows = [
+            _coverage_row(game_pk="1", generation=MODEL_GENERATION),
+            _coverage_row(game_pk="2", generation="old-generation"),
+            _coverage_row(game_pk="3", generation=None),
+        ]
+        out = report(rows)
+        self.assertEqual(out["observations"], 1)
+        self.assertEqual(out["excluded_other_generation_observations"], 2)
+        self.assertEqual(out["raw_observations_by_model_generation"][MODEL_GENERATION], 1)
+        self.assertEqual(out["raw_observations_by_model_generation"]["old-generation"], 1)
+        self.assertEqual(out["raw_observations_by_model_generation"][LEGACY_GENERATION], 1)
 
 
 if __name__ == "__main__":
