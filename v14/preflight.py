@@ -6,6 +6,7 @@ import unittest
 CRITICAL_TEST_MODULES=(
     "tests.test_v14_acquisition",
     "tests.test_v14_artifacts",
+    "tests.test_v14_audit_hardening",
     "tests.test_v14_certification_strict",
     "tests.test_v14_champion_manifest",
     "tests.test_v14_context_overlay",
