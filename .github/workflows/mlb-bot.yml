@@ -66,7 +66,6 @@ jobs:
             echo "target_date=$TARGET_DATE" >> "$GITHUB_OUTPUT"
             echo "due_game_ids=" >> "$GITHUB_OUTPUT"
           fi
-          echo "PULSAR_V14_GATE event=${{ github.event_name }} run_required=${{ steps.gate.outputs.run_required }}"
 
       - name: Explain scheduled no-op
         if: steps.gate.outputs.run_required != 'true'
@@ -226,7 +225,10 @@ jobs:
           fi
 
       - name: Capture immediate certified close only if actually due
-        if: steps.gate.outputs.run_required == 'true'
+        # Manual-only. Scheduled FINAL entry evidence must use a later independent
+        # close snapshot from v14-close-capture.yml; reusing the entry run would
+        # spend an extra Odds call and could create meaningless same-snapshot CLV.
+        if: steps.gate.outputs.run_required == 'true' && steps.gate.outputs.run_trigger == 'MANUAL'
         continue-on-error: true
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
