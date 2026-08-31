@@ -144,10 +144,10 @@ def build(
     target_at=parse_time(plan["target_at"]) if plan.get("target_at") else None
     waiting_for_cluster=bool(due and target_at is not None and target_at>current+timedelta(seconds=30))
     if not due:reason="NO_FINAL_SNAPSHOT_DUE"
-    elif not budget.get("allowed"):reason="AUTOMATED_PREDICTION_BUDGET_EXHAUSTED"
     elif cooldown_remaining>0:reason="PREDICTION_RETRY_COOLDOWN"
+    elif not budget.get("allowed"):reason="AUTOMATED_PREDICTION_BUDGET_EXHAUSTED"
     elif waiting_for_cluster:reason="WAITING_FOR_BEST_DAILY_CLUSTER"
-    else:reason="FINAL_SNAPSHOT_DUE_AT_BEST_CLUSTER"
+    else:reason="FINAL_SNAPSHOT_DUE"
     run_required=bool(due and budget.get("allowed") and cooldown_remaining<=0 and not waiting_for_cluster)
     return {
         "schema":"pulsar-v14-scheduled-prediction-gate-v2",
