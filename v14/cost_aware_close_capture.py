@@ -15,22 +15,42 @@ ledger cannot silently rewrite an already-certified market, paper or official
 close. Legacy rows without an event ID may still preserve the historical paid-
 gate/budget contract, but they receive no snapshot events and therefore cannot
 cross-match another game through this shared orchestration path.
+
+Paper hydration is also local and immutable: only an unclosed current-policy paper
+row may be hydrated, and it uses the earliest prospectively archived <=15 minute
+close that contains the exact Pinnacle no-vig probability for that selection.
 """
 
 import argparse
 from datetime import datetime, timezone
 import json
+import math
 from pathlib import Path
 from typing import Any, Callable
 
+from . import MODEL_GENERATION, PROBABILITY_POLICY_ID
 from .acquisition import odds_snapshot, parse_time
 from .api_budget import LEDGER as API_USAGE_LEDGER, allowance as api_allowance, record_close_snapshot
 from .bet_ledger import LEDGER as BET_LEDGER
-from .market_close_ledger import LEDGER as MARKET_LEDGER, _read as read_market, capture as capture_market
+from .market_close_ledger import (
+    CERTIFIED_CLOSE_MAX_MINUTES,
+    LEDGER as MARKET_LEDGER,
+    PRIMARY_SHARP_BENCHMARK,
+    _execution_from_close,
+    _read as read_market,
+    _selection_from_close,
+    capture as capture_market,
+)
 from .official_close import capture as capture_official
 from .paper_ledger import LEDGER as PAPER_LEDGER, capture_close as capture_paper
 
 CERTIFIED_DUE_WINDOW_MINUTES = 15.0
+
+
+def _num(value:Any)->float|None:
+    try:out=float(value)
+    except Exception:return None
+    return out if math.isfinite(out) else None
 
 
 def _generic_read(path: Path | str) -> list[dict[str, Any]]:
@@ -43,6 +63,11 @@ def _generic_read(path: Path | str) -> list[dict[str, Any]]:
         except Exception:continue
         if isinstance(row,dict):out.append(row)
     return out
+
+
+def _generic_write(path:Path|str,rows:list[dict[str,Any]])->None:
+    target=Path(path);target.parent.mkdir(parents=True,exist_ok=True)
+    target.write_text("".join(json.dumps(row,ensure_ascii=False,separators=(",",":"))+"\n" for row in rows),encoding="utf-8")
 
 
 def _has_certified_close(row:dict[str,Any])->bool:
@@ -76,21 +101,60 @@ def _events_for_source(events:list[dict[str,Any]],due:list[dict[str,Any]],source
     return [event for event in events if str(event.get("id") or "") in event_ids]
 
 
+def _first_primary_archive_close(archive:dict[str,Any],paper:dict[str,Any])->tuple[dict[str,Any],dict[str,Any],float,float]|None:
+    try:analyzed=parse_time(paper.get("analyzed_at"));game=parse_time(paper.get("game_date"))
+    except Exception:return None
+    candidates=[]
+    for close in archive.get("close_history") or []:
+        if not isinstance(close,dict) or str(close.get("quality") or "")!="CERTIFIED_CLOSE":continue
+        if str(close.get("odds_event_id") or "")!=str(paper.get("odds_event_id") or ""):continue
+        try:captured=parse_time(close.get("captured_at"))
+        except Exception:continue
+        mins=_num(close.get("minutes_to_game"))
+        if not (analyzed<=captured<game) or mins is None or not (0<mins<=CERTIFIED_CLOSE_MAX_MINUTES):continue
+        selection=_selection_from_close(close,paper) or {};consensus=_num(selection.get("fair_probability"));pinnacle=_num(selection.get("pinnacle_no_vig_probability"))
+        if consensus is None or pinnacle is None or not (0<consensus<1 and 0<pinnacle<1):continue
+        candidates.append((captured,close,selection,consensus,pinnacle))
+    if not candidates:return None
+    candidates.sort(key=lambda item:item[0]);_,close,selection,consensus,pinnacle=candidates[0]
+    return close,selection,consensus,pinnacle
+
+
+def hydrate_first_paper(market_path:Path|str=MARKET_LEDGER,paper_path:Path|str=PAPER_LEDGER)->int:
+    """Hydrate only the first usable primary close; never rewrite a certified paper row."""
+    archives={str(row.get("game_pk") or ""):row for row in read_market(market_path) if row.get("model_generation")==MODEL_GENERATION and row.get("probability_policy_id")==PROBABILITY_POLICY_ID and row.get("certification_eligible") is False};papers=_generic_read(paper_path);changed=0
+    for paper in papers:
+        if paper.get("model_generation")!=MODEL_GENERATION or paper.get("probability_policy_id")!=PROBABILITY_POLICY_ID:continue
+        if str(paper.get("close_quality") or "")=="CERTIFIED_CLOSE":continue
+        archive=archives.get(str(paper.get("game_pk") or ""));event_id=str(paper.get("odds_event_id") or "")
+        if archive is None or not event_id or str(archive.get("odds_event_id") or "")!=event_id:continue
+        chosen=_first_primary_archive_close(archive,paper)
+        if chosen is None:continue
+        close,selection,consensus,pinnacle=chosen;archive_mins=_num(close.get("minutes_to_game"));entry_sharp=_num(paper.get("entry_sharp_probability"));entry_exec=_num(paper.get("entry_execution_implied_probability"))
+        if entry_exec is None:
+            odds=_num(paper.get("execution_odds"));entry_exec=1/odds if odds is not None and odds>1 else None
+        if entry_exec is None:continue
+        execution_close=_execution_from_close(close,paper)
+        marker={"captured_at":close.get("captured_at"),"minutes_to_game":archive_mins,"quality":"CERTIFIED_CLOSE","sharp_fair_probability":consensus,"pinnacle_no_vig_probability":pinnacle,"primary_benchmark":PRIMARY_SHARP_BENCHMARK,"sharp_dispersion_pp":_num(selection.get("dispersion_pp")),"execution_close_odds":execution_close,"odds_event_id":close.get("odds_event_id"),"event_time_delta_minutes":archive.get("odds_event_time_delta_minutes"),"source":"RESEARCH_MARKET_CLOSE_ARCHIVE_FIRST_PRIMARY"}
+        history=paper.get("close_history") if isinstance(paper.get("close_history"),list) else []
+        if not any(isinstance(item,dict) and item.get("captured_at")==marker["captured_at"] and item.get("odds_event_id")==marker["odds_event_id"] and item.get("source")==marker["source"] for item in history):history.append(marker)
+        paper["close_history"]=history;paper["close_captured_at"]=close.get("captured_at");paper["close_minutes_to_game"]=archive_mins;paper["close_quality"]="CERTIFIED_CLOSE";paper["closing_sharp_probability"]=consensus;paper["closing_pinnacle_probability"]=pinnacle;paper["sharp_fair_close_odds"]=1/consensus;paper["pinnacle_fair_close_odds"]=1/pinnacle;paper["sharp_clv_pp"]=(consensus-entry_sharp)*100 if entry_sharp is not None else None;paper["certification_clv_pp"]=(pinnacle-entry_exec)*100;paper["certification_clv_benchmark"]=PRIMARY_SHARP_BENCHMARK;paper["execution_close_odds"]=execution_close;paper["execution_price_clv_pp"]=(1/execution_close-entry_exec)*100 if execution_close is not None and execution_close>1 else None;changed+=1
+    if changed:_generic_write(paper_path,papers)
+    return changed
+
+
 def run(market_path:Path|str=MARKET_LEDGER,paper_path:Path|str=PAPER_LEDGER,bet_path:Path|str=BET_LEDGER,*,api_usage_path:Path|str=API_USAGE_LEDGER,api_key:str|None=None,events_loader:Callable[[],list[dict[str,Any]]]|None=None,now:datetime|None=None)->dict[str,Any]:
-    due=due_games(market_path,paper_path,bet_path,now=now);budget=api_allowance(api_usage_path,now=now)
+    hydrated=hydrate_first_paper(market_path,paper_path);due=due_games(market_path,paper_path,bet_path,now=now);budget=api_allowance(api_usage_path,now=now)
     if not due:
-        return {"api_call_performed":False,"paid_api_snapshots":0,"budget_reserved":False,"captured":{"market":0,"paper":0,"official":0},"due_rows":0,"budget":budget,"reason":"no row needs a first certified close","cost_policy":"wake often; paid Odds call only when first certified close is due"}
+        return {"api_call_performed":False,"paid_api_snapshots":0,"budget_reserved":False,"captured":{"market":0,"paper":0,"official":0},"hydrated_paper":hydrated,"due_rows":0,"budget":budget,"reason":"no row needs a first certified close","cost_policy":"local first-primary hydration runs before due-check; paid Odds call only when a first certified close is still due"}
     if not budget["allowed"]:
-        return {"api_call_performed":False,"paid_api_snapshots":0,"budget_reserved":False,"captured":{"market":0,"paper":0,"official":0},"due_rows":len(due),"due":due,"budget":budget,"budget_exhausted":True,"reason":"automated close API daily budget exhausted; fail closed without network call","cost_policy":"persistent daily cap protects against runaway paid requests"}
-    # Reserve before touching the paid endpoint. Even a process/network failure
-    # after this point consumes the conservative request-equivalent allowance,
-    # preventing an uncounted retry loop.
+        return {"api_call_performed":False,"paid_api_snapshots":0,"budget_reserved":False,"captured":{"market":0,"paper":0,"official":0},"hydrated_paper":hydrated,"due_rows":len(due),"due":due,"budget":budget,"budget_exhausted":True,"reason":"automated close API daily budget exhausted; fail closed without network call","cost_policy":"persistent daily cap protects against runaway paid requests"}
     reservation=record_close_snapshot(api_usage_path,now=now,due_rows=len(due))
     events=(events_loader or (lambda:odds_snapshot(api_key=api_key)))()
     market_events=_events_for_source(events,due,"MARKET");paper_events=_events_for_source(events,due,"PAPER");official_events=_events_for_source(events,due,"OFFICIAL")
     market_changed=capture_market(market_path,api_key=api_key,events_loader=lambda:market_events,now=now);paper_changed=capture_paper(paper_path,api_key=api_key,events_loader=lambda:paper_events,now=now);official_changed=capture_official(path=bet_path,api_key=api_key,events_loader=lambda:official_events,now=now)
-    legacy_due=sum(1 for row in due if not row.get("odds_event_id"))
-    return {"api_call_performed":True,"paid_api_snapshots":1,"budget_reserved":True,"reservation":reservation,"captured":{"market":market_changed,"paper":paper_changed,"official":official_changed},"due_rows":len(due),"due":due,"legacy_due_without_event_id":legacy_due,"consumer_event_counts":{"market":len(market_events),"paper":len(paper_events),"official":len(official_events)},"budget_before":budget,"budget_after":api_allowance(api_usage_path,now=now),"cost_policy":"budget reserved before paid request; one Odds snapshot shared across consumers; each consumer sees only its due exact event IDs; legacy no-ID rows see no events; first certified close is immutable against incidental later snapshots; daily budget enforced"}
+    hydrated+=hydrate_first_paper(market_path,paper_path);legacy_due=sum(1 for row in due if not row.get("odds_event_id"))
+    return {"api_call_performed":True,"paid_api_snapshots":1,"budget_reserved":True,"reservation":reservation,"captured":{"market":market_changed,"paper":paper_changed,"official":official_changed},"hydrated_paper":hydrated,"due_rows":len(due),"due":due,"legacy_due_without_event_id":legacy_due,"consumer_event_counts":{"market":len(market_events),"paper":len(paper_events),"official":len(official_events)},"budget_before":budget,"budget_after":api_allowance(api_usage_path,now=now),"cost_policy":"one paid snapshot shared across consumers; each sees only due exact event IDs; legacy no-ID rows see no events; local hydration uses earliest archived Pinnacle-primary close only; certified paper rows are immutable"}
 
 
 def main()->None:
