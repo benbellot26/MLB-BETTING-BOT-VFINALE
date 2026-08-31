@@ -29,6 +29,7 @@ PREDICTIONS=Path("data/v14_predictions.jsonl")
 API_USAGE=Path("data/v14_api_usage.jsonl")
 OUTPUT=Path("runtime/v14/scheduled_prediction_gate.json")
 RETRY_COOLDOWN_MINUTES=15.0
+NON_STARTABLE_DETAIL_TOKENS=("postponed","cancelled","canceled","suspended","delayed")
 
 
 def _now(value:datetime|None=None)->datetime:
@@ -66,13 +67,20 @@ def covered_game_ids(rows:list[dict[str,Any]])->set[str]:
     return covered
 
 
+def _startable_pregame(game:dict[str,Any])->bool:
+    status=game.get("status") or {}
+    abstract=str(status.get("abstractGameState") or "").strip().lower()
+    if abstract in {"live","final"}:return False
+    detailed=str(status.get("detailedState") or "").strip().lower()
+    if any(token in detailed for token in NON_STARTABLE_DETAIL_TOKENS):return False
+    return True
+
+
 def due_games(games:list[dict[str,Any]],predictions:list[dict[str,Any]],*,now:datetime|None=None)->list[dict[str,Any]]:
     current=_now(now);covered=covered_game_ids(predictions);due=[]
     for game in games:
         game_pk=str(game.get("gamePk") or "")
-        if not game_pk or game_pk in covered:continue
-        state=str(((game.get("status") or {}).get("abstractGameState") or "")).lower()
-        if state in {"live","final"}:continue
+        if not game_pk or game_pk in covered or not _startable_pregame(game):continue
         try:game_time=parse_time(game.get("gameDate"))
         except Exception:continue
         minutes=(game_time-current).total_seconds()/60.0
