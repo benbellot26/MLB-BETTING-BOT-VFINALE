@@ -1,12 +1,15 @@
 from __future__ import annotations
 
-"""Prospective research ledger used to earn market-specific betting certification.
+"""Prospective paper ledger used to earn market-specific betting certification.
 
-Paper bets emulate executable behavior: the first qualified decision for a
-(game, canonical market) is immutable. Repeated EARLY/LATE/FINAL snapshots do
-not let the evaluator choose a better entry time after the fact. Certification
-evidence is fail-closed to the exact current generation, probability policy,
-strict pregame timing and a timestamp-verified Odds event match.
+Paper entries emulate the strategy that may eventually be authorized, not a
+broader research signal. The first qualifying FINAL decision for a (game,
+canonical market) is immutable. EARLY/LATE snapshots remain research evidence
+elsewhere but can never earn betting CLV for a FINAL-only execution policy.
+
+Certification evidence is fail-closed to the exact current generation and
+probability policy, strict pregame timing, a timestamp-verified Odds event,
+Pinnacle-primary edge qualification, and fresh executable market state.
 
 The primary certification CLV is executable entry implied probability versus a
 verified <=15m Pinnacle no-vig close. The weighted sharp consensus is retained
@@ -34,6 +37,7 @@ CERTIFIED_CLOSE_MAX_MINUTES=15.0
 EVENT_TOLERANCE_MINUTES=60.0
 EVENT_AMBIGUITY_MARGIN_MINUTES=20.0
 PRIMARY_SHARP_BENCHMARK="PINNACLE_NO_VIG"
+CERTIFICATION_ENTRY_PHASE="FINAL"
 
 
 def _num(v:Any)->float|None:
@@ -80,6 +84,10 @@ def _strictly_pregame(analyzed_at:Any,game_date:Any)->bool:
     except Exception: return False
 
 
+def _phase(result:dict[str,Any],prediction:dict[str,Any]|None=None)->str:
+    return str(result.get("phase") or (prediction or {}).get("phase") or "").upper()
+
+
 def _prediction_policy(result:dict[str,Any])->str|None:
     prediction=result.get("v14_prediction") or {}
     direct=prediction.get("probability_policy_id")
@@ -122,6 +130,8 @@ def record_payload(payload:dict[str,Any],path:Path|str=LEDGER)->int:
         prediction=result.get("v14_prediction") or {}
         if prediction.get("model_generation")!=MODEL_GENERATION: continue
         if _prediction_policy(result)!=PROBABILITY_POLICY_ID: continue
+        phase=_phase(result,prediction)
+        if phase!=CERTIFICATION_ENTRY_PHASE: continue
         if (result.get("starter_fallback") or {}).get("degraded"): continue
         analyzed_at=str(result.get("analyzed_at") or payload.get("analyzed_at") or ""); game_date=result.get("game_date")
         if not _strictly_pregame(analyzed_at,game_date): continue
@@ -133,14 +143,18 @@ def record_payload(payload:dict[str,Any],path:Path|str=LEDGER)->int:
         sharp=(result.get("sharp_market") or {}).get("selections") or {}
         total_line=(result.get("canonical_lines") or {}).get("TOTAL"); game_pk=str(result.get("game_pk") or "")
         for candidate in (result.get("decision") or {}).get("candidates") or []:
+            # Paper certification must emulate the eventual executable betting rule.
+            # Certification itself may still be absent, but all non-certification
+            # betting gates (including Pinnacle-primary robust edge) must already pass.
             if candidate.get("research_ready") is not True or candidate.get("edge_qualified") is not True: continue
+            if candidate.get("primary_edge_qualified") is not True or candidate.get("betting_edge_qualified") is not True: continue
             canonical=_canonical_market(candidate); key=(game_pk,canonical)
             if not game_pk or not canonical or key in occupied: continue
-            price=_num(candidate.get("price")); execution_book=str(candidate.get("execution_book") or ""); robust_sharp=_num(candidate.get("robust_sharp_edge_pp"))
-            if price is None or price<=1 or not execution_book or robust_sharp is None or robust_sharp<=0: continue
+            price=_num(candidate.get("price")); execution_book=str(candidate.get("execution_book") or ""); robust_sharp=_num(candidate.get("robust_sharp_edge_pp")); robust_primary=_num(candidate.get("robust_primary_sharp_edge_pp"))
+            if price is None or price<=1 or not execution_book or robust_sharp is None or robust_sharp<=0 or robust_primary is None or robust_primary<=0: continue
             selection=str(candidate.get("selection") or ""); sharp_row=sharp.get(selection) or {}; entry_sharp=_num(sharp_row.get("fair_probability")); entry_pinnacle=_pinnacle_probability(sharp_row)
-            if entry_sharp is None or not 0<entry_sharp<1: continue
-            row={"schema":"pulsar-v14-paper-bet-v8","paper_bet_id":f"{game_pk}:{canonical}","model_generation":MODEL_GENERATION,"probability_policy_id":PROBABILITY_POLICY_ID,"game_pk":game_pk,"odds_event_id":result.get("odds_event_id"),"odds_event_time_verified":True,"odds_event_time_delta_minutes":time_delta,"target_date":str(payload.get("target_date") or ""),"game_date":game_date,"analyzed_at":analyzed_at,"phase":result.get("phase") or prediction.get("phase"),"home":result.get("home"),"away":result.get("away"),"market":candidate.get("market"),"canonical_market":canonical,"selection":selection,"total_line":total_line,"execution_odds":price,"execution_book":execution_book,"entry_execution_implied_probability":1/price,"probability":candidate.get("probability"),"raw_probability":_num(raw.get(selection)),"lower_probability":candidate.get("lower_probability"),"entry_sharp_probability":entry_sharp,"entry_pinnacle_probability":entry_pinnacle,"primary_sharp_benchmark":PRIMARY_SHARP_BENCHMARK,"model_edge_pp":candidate.get("model_edge_pp"),"robust_edge_pp":candidate.get("robust_edge_pp"),"sharp_edge_pp":candidate.get("sharp_edge_pp"),"robust_sharp_edge_pp":robust_sharp,"primary_sharp_edge_pp":candidate.get("primary_sharp_edge_pp"),"robust_primary_sharp_edge_pp":candidate.get("robust_primary_sharp_edge_pp"),"entry_market_freshness_verified":True,"entry_sharp_freshness_verified":True,"entry_execution_freshness_verified":True,"close_history":[],"close_captured_at":None,"close_minutes_to_game":None,"close_quality":None,"closing_sharp_probability":None,"closing_pinnacle_probability":None,"sharp_fair_close_odds":None,"pinnacle_fair_close_odds":None,"sharp_clv_pp":None,"certification_clv_pp":None,"certification_clv_benchmark":None,"execution_close_odds":None,"execution_price_clv_pp":None,"result":None,"flat_1u_profit":None,"home_score":None,"away_score":None,"settled_at":None}
+            if entry_sharp is None or not 0<entry_sharp<1 or entry_pinnacle is None or not 0<entry_pinnacle<1: continue
+            row={"schema":"pulsar-v14-paper-bet-v8","paper_bet_id":f"{game_pk}:{canonical}","model_generation":MODEL_GENERATION,"probability_policy_id":PROBABILITY_POLICY_ID,"game_pk":game_pk,"odds_event_id":result.get("odds_event_id"),"odds_event_time_verified":True,"odds_event_time_delta_minutes":time_delta,"target_date":str(payload.get("target_date") or ""),"game_date":game_date,"analyzed_at":analyzed_at,"phase":phase,"home":result.get("home"),"away":result.get("away"),"market":candidate.get("market"),"canonical_market":canonical,"selection":selection,"total_line":total_line,"execution_odds":price,"execution_book":execution_book,"entry_execution_implied_probability":1/price,"probability":candidate.get("probability"),"raw_probability":_num(raw.get(selection)),"lower_probability":candidate.get("lower_probability"),"entry_sharp_probability":entry_sharp,"entry_pinnacle_probability":entry_pinnacle,"primary_sharp_benchmark":PRIMARY_SHARP_BENCHMARK,"model_edge_pp":candidate.get("model_edge_pp"),"robust_edge_pp":candidate.get("robust_edge_pp"),"sharp_edge_pp":candidate.get("sharp_edge_pp"),"robust_sharp_edge_pp":robust_sharp,"primary_sharp_edge_pp":candidate.get("primary_sharp_edge_pp"),"robust_primary_sharp_edge_pp":robust_primary,"primary_edge_qualified":True,"betting_edge_qualified":True,"entry_market_freshness_verified":True,"entry_sharp_freshness_verified":True,"entry_execution_freshness_verified":True,"close_history":[],"close_captured_at":None,"close_minutes_to_game":None,"close_quality":None,"closing_sharp_probability":None,"closing_pinnacle_probability":None,"sharp_fair_close_odds":None,"pinnacle_fair_close_odds":None,"sharp_clv_pp":None,"certification_clv_pp":None,"certification_clv_benchmark":None,"execution_close_odds":None,"execution_price_clv_pp":None,"result":None,"flat_1u_profit":None,"home_score":None,"away_score":None,"settled_at":None}
             existing.append(row); occupied.add(key)
     ordered=sorted(existing,key=lambda r:(str(r.get("game_date") or ""),str(r.get("game_pk") or ""),_row_market(r),str(r.get("analyzed_at") or "")))
     _write(ordered,path); return len(existing)-before
@@ -193,6 +207,7 @@ def capture_close(path:Path|str=LEDGER,*,api_key:str|None=None,events_loader:Cal
     current=current.astimezone(timezone.utc); pending=[]
     for row in rows:
         if row.get("model_generation")!=MODEL_GENERATION or row.get("probability_policy_id")!=PROBABILITY_POLICY_ID: continue
+        if str(row.get("phase") or "").upper()!=CERTIFICATION_ENTRY_PHASE: continue
         try: mins=(parse_time(row.get("game_date"))-current).total_seconds()/60
         except Exception: continue
         if 0<mins<=CLOSE_WINDOW_MINUTES: pending.append((row,mins))
@@ -233,7 +248,7 @@ def _grade(selection:str,hs:int,aws:int,line:float|None)->str:
 def settle(path:Path|str=LEDGER,*,schedule_loader:Callable[[str],list[dict[str,Any]]]|None=None)->int:
     rows=_read(path); loader=schedule_loader or (lambda day:mlb_schedule(day,hydrate="linescore")); by_day=defaultdict(list)
     for row in rows:
-        if row.get("model_generation")==MODEL_GENERATION and row.get("probability_policy_id")==PROBABILITY_POLICY_ID and not row.get("result"): by_day[str(row.get("target_date") or "")].append(row)
+        if row.get("model_generation")==MODEL_GENERATION and row.get("probability_policy_id")==PROBABILITY_POLICY_ID and str(row.get("phase") or "").upper()==CERTIFICATION_ENTRY_PHASE and not row.get("result"): by_day[str(row.get("target_date") or "")].append(row)
     changed=0; now=datetime.now(timezone.utc).isoformat()
     for day,pending in by_day.items():
         if not day: continue
@@ -260,6 +275,7 @@ def _canonical_rows(rows:list[dict[str,Any]])->list[dict[str,Any]]:
     earliest={}
     for row in rows:
         if row.get("model_generation")!=MODEL_GENERATION or row.get("probability_policy_id")!=PROBABILITY_POLICY_ID: continue
+        if str(row.get("phase") or "").upper()!=CERTIFICATION_ENTRY_PHASE: continue
         if row.get("odds_event_time_verified") is not True: continue
         if not _strictly_pregame(row.get("analyzed_at"),row.get("game_date")): continue
         game=str(row.get("game_pk") or ""); market=_row_market(row)
@@ -288,17 +304,19 @@ def _slice(rows:list[dict[str,Any]])->dict[str,Any]:
     execution=[_num(r.get("execution_price_clv_pp")) for r in canonical if r.get("close_quality")=="CERTIFIED_CLOSE"]; execution=[v for v in execution if v is not None]
     any_certified_rows=[r for r in canonical if r.get("close_quality")=="CERTIFIED_CLOSE"]
     primary_certified_rows=[r for r in any_certified_rows if r.get("certification_clv_benchmark")==PRIMARY_SHARP_BENCHMARK and _num(r.get("certification_clv_pp")) is not None]
-    return {"raw_observations":len(rows),"observations":len(canonical),"independent_games":len({str(r.get("game_pk") or "") for r in canonical}),"canonical_policy":"first strict verified current-policy, timestamp-matched pregame row per game x canonical market; immutable","settled":len(settled),"wins":sum(r.get("result")=="WIN" for r in settled),"losses":sum(r.get("result")=="LOSS" for r in settled),"pushes":sum(r.get("result")=="PUSH" for r in settled),"flat_1u_profit":profit,"flat_1u_roi":profit/len(decisions) if decisions else None,"latest_certified_close_at":_latest_timestamp(primary_certified_rows,"close_captured_at"),"latest_any_certified_close_at":_latest_timestamp(any_certified_rows,"close_captured_at"),"latest_settled_at":_latest_timestamp(settled,"settled_at"),"clv":{**_ci(directional,label="paper-consensus-clv"),"status":"AVAILABLE" if directional else "UNAVAILABLE","role":"DIAGNOSTIC_ONLY","benchmark":"WEIGHTED_SHARP_CONSENSUS","definition":"entry consensus sharp fair probability to verified <=15m consensus sharp fair close"},"certification_clv":{**_ci(certification,label="paper-pinnacle-certification-clv"),"status":"AVAILABLE" if certification else "UNAVAILABLE","role":"PRIMARY_BETTING_CERTIFICATION","benchmark":PRIMARY_SHARP_BENCHMARK,"definition":"entry executable implied probability to verified <=15m Pinnacle no-vig fair close"},"execution_clv":{**_ci(execution,label="paper-same-book-execution-clv"),"status":"AVAILABLE" if execution else "UNAVAILABLE","role":"SECONDARY_EXECUTION_CERTIFICATION","definition":"entry executable implied probability to same-book fresh <=15m close"}}
+    return {"raw_observations":len(rows),"observations":len(canonical),"independent_games":len({str(r.get("game_pk") or "") for r in canonical}),"canonical_policy":"first strict verified current-policy FINAL row per game x canonical market; immutable","settled":len(settled),"wins":sum(r.get("result")=="WIN" for r in settled),"losses":sum(r.get("result")=="LOSS" for r in settled),"pushes":sum(r.get("result")=="PUSH" for r in settled),"flat_1u_profit":profit,"flat_1u_roi":profit/len(decisions) if decisions else None,"latest_certified_close_at":_latest_timestamp(primary_certified_rows,"close_captured_at"),"latest_any_certified_close_at":_latest_timestamp(any_certified_rows,"close_captured_at"),"latest_settled_at":_latest_timestamp(settled,"settled_at"),"clv":{**_ci(directional,label="paper-consensus-clv"),"status":"AVAILABLE" if directional else "UNAVAILABLE","role":"DIAGNOSTIC_ONLY","benchmark":"WEIGHTED_SHARP_CONSENSUS","definition":"FINAL entry consensus sharp fair probability to verified <=15m consensus sharp fair close"},"certification_clv":{**_ci(certification,label="paper-pinnacle-certification-clv"),"status":"AVAILABLE" if certification else "UNAVAILABLE","role":"PRIMARY_BETTING_CERTIFICATION","benchmark":PRIMARY_SHARP_BENCHMARK,"definition":"FINAL executable entry implied probability to verified <=15m Pinnacle no-vig fair close"},"execution_clv":{**_ci(execution,label="paper-same-book-execution-clv"),"status":"AVAILABLE" if execution else "UNAVAILABLE","role":"SECONDARY_EXECUTION_CERTIFICATION","definition":"FINAL executable entry implied probability to same-book fresh <=15m close"}}
 
 
 def report(rows:list[dict[str,Any]])->dict[str,Any]:
     current=[r for r in rows if r.get("model_generation")==MODEL_GENERATION and r.get("probability_policy_id")==PROBABILITY_POLICY_ID and r.get("odds_event_time_verified") is True]
+    final_current=[r for r in current if str(r.get("phase") or "").upper()==CERTIFICATION_ENTRY_PHASE]
     excluded_generation=sum(r.get("model_generation")!=MODEL_GENERATION for r in rows)
     excluded_policy=sum(r.get("model_generation")==MODEL_GENERATION and r.get("probability_policy_id")!=PROBABILITY_POLICY_ID for r in rows)
     excluded_event_time=sum(r.get("model_generation")==MODEL_GENERATION and r.get("probability_policy_id")==PROBABILITY_POLICY_ID and r.get("odds_event_time_verified") is not True for r in rows)
-    overall=_slice(current); by_market={}
-    for market in sorted({_row_market(r) for r in current if _row_market(r)}): by_market[market]=_slice([r for r in current if _row_market(r)==market])
-    return {"schema":"pulsar-v14-paper-bet-performance-v8","role":"CERTIFICATION_EVIDENCE_ONLY","model_generation":MODEL_GENERATION,"probability_policy_id":PROBABILITY_POLICY_ID,"generated_at":datetime.now(timezone.utc).isoformat(),"excluded_other_generation_rows":excluded_generation,"excluded_other_policy_rows":excluded_policy,"excluded_unverified_event_time_rows":excluded_event_time,"primary_clv_benchmark":PRIMARY_SHARP_BENCHMARK,"legacy_consensus_certification_clv_can_certify":False,**overall,"by_market":by_market,"close_policy":{"certified_max_minutes_to_game":CERTIFIED_CLOSE_MAX_MINUTES,"capture_window_minutes":CLOSE_WINDOW_MINUTES,"event_match":"persisted Odds event id plus timestamp within MLB/Odds tolerance are required for current certification evidence","primary_certification_close":"Pinnacle sportsbook no-vig fair probability; missing Pinnacle fails closed for certification CLV","consensus_close_role":"diagnostic only","execution_close_requires_fresh_book":True,"ml_rl_close_independent_of_total_market":True},"entry_policy":"first strict verified current-policy, timestamp-matched qualifying game x canonical market; no retrospective timing selection"}
+    excluded_non_final=sum(r.get("model_generation")==MODEL_GENERATION and r.get("probability_policy_id")==PROBABILITY_POLICY_ID and r.get("odds_event_time_verified") is True and str(r.get("phase") or "").upper()!=CERTIFICATION_ENTRY_PHASE for r in rows)
+    overall=_slice(final_current); by_market={}
+    for market in sorted({_row_market(r) for r in final_current if _row_market(r)}): by_market[market]=_slice([r for r in final_current if _row_market(r)==market])
+    return {"schema":"pulsar-v14-paper-bet-performance-v8","role":"CERTIFICATION_EVIDENCE_ONLY","model_generation":MODEL_GENERATION,"probability_policy_id":PROBABILITY_POLICY_ID,"generated_at":datetime.now(timezone.utc).isoformat(),"certification_entry_phase":CERTIFICATION_ENTRY_PHASE,"excluded_other_generation_rows":excluded_generation,"excluded_other_policy_rows":excluded_policy,"excluded_unverified_event_time_rows":excluded_event_time,"excluded_non_final_rows":excluded_non_final,"primary_clv_benchmark":PRIMARY_SHARP_BENCHMARK,"legacy_consensus_certification_clv_can_certify":False,**overall,"by_market":by_market,"close_policy":{"certified_max_minutes_to_game":CERTIFIED_CLOSE_MAX_MINUTES,"capture_window_minutes":CLOSE_WINDOW_MINUTES,"event_match":"persisted Odds event id plus timestamp within MLB/Odds tolerance are required for current certification evidence","primary_certification_close":"Pinnacle sportsbook no-vig fair probability; missing Pinnacle fails closed for certification CLV","consensus_close_role":"diagnostic only","execution_close_requires_fresh_book":True,"ml_rl_close_independent_of_total_market":True},"entry_policy":"first strict verified current-policy FINAL row per game x canonical market that passes all non-certification betting gates, including Pinnacle-primary robust edge; immutable"}
 
 
 def write_report(path:Path|str=LEDGER,output:Path|str=REPORT)->dict[str,Any]:
