@@ -6,6 +6,8 @@ Only current-generation, current-probability-policy, fresh, strict-schema
 evidence can authorize betting. Legacy or stale reports remain diagnostic only.
 Production load_status additionally requires canonical FINAL evidence against a
 Pinnacle no-vig primary benchmark with paired nonparametric bootstrap inference.
+Primary betting CLV must use that same Pinnacle benchmark; legacy consensus CLV
+can never be reinterpreted as certification evidence.
 """
 
 from datetime import datetime, timezone
@@ -35,10 +37,11 @@ MAX_FUTURE_SKEW_MINUTES=10.0
 MARKETS=("ML","RL_HOME_-1.5","RL_AWAY_-1.5","TOTAL_OVER")
 STRICT_PERFORMANCE_SCHEMA="pulsar-v14-performance-v5"
 STRICT_CALIBRATION_SCHEMA="pulsar-v14-calibration-v3"
-STRICT_PAPER_SCHEMA_PREFIX="pulsar-v14-paper-bet-performance-v"
+STRICT_PAPER_SCHEMA="pulsar-v14-paper-bet-performance-v8"
 STRICT_SHARP_BENCHMARK_SCHEMA="pulsar-v14-sharp-benchmark-report-v1"
 PRIMARY_SHARP_BENCHMARK="PINNACLE_NO_VIG"
 CERTIFICATION_PHASE="FINAL"
+BOOTSTRAP_METHOD="paired nonparametric bootstrap mean"
 
 
 def _load(path:Path|str)->dict[str,Any]:
@@ -101,6 +104,17 @@ def _paper_scope(paper:dict[str,Any],market:str)->dict[str,Any]:
     return ((paper.get("by_market") or {}).get(market) or {})
 
 
+def _strict_paper_contract(paper:dict[str,Any])->bool:
+    return bool(
+        paper.get("schema")==STRICT_PAPER_SCHEMA
+        and paper.get("by_market") is not None
+        and paper.get("model_generation")==MODEL_GENERATION
+        and paper.get("probability_policy_id")==PROBABILITY_POLICY_ID
+        and paper.get("primary_clv_benchmark")==PRIMARY_SHARP_BENCHMARK
+        and paper.get("legacy_consensus_certification_clv_can_certify") is False
+    )
+
+
 def _drift_failures(performance:dict[str,Any],market:str)->list[str]:
     rolling=(((performance.get("segments") or {}).get("rolling") or {}).get("60d") or {});metrics=(rolling.get("markets") or {}).get(market) or {}
     if int(metrics.get("n") or 0)<MIN_ROLLING_N:return []
@@ -139,15 +153,17 @@ def _primary_sharp_failures(report:dict[str,Any],market:str,now:datetime)->list[
     if paired<MIN_PAIRED_SHARP_N:failures.append(f"pinnacle_final_paired_n<{MIN_PAIRED_SHARP_N}")
     brier=evidence.get("brier_gain") or {};logloss=evidence.get("logloss_gain") or {}
     b_lower=brier.get("ci95_lower");l_lower=logloss.get("ci95_lower")
-    if str(brier.get("method") or "")!="paired nonparametric bootstrap mean":failures.append("pinnacle_brier_paired_bootstrap_required")
-    if str(logloss.get("method") or "")!="paired nonparametric bootstrap mean":failures.append("pinnacle_logloss_paired_bootstrap_required")
+    if str(brier.get("method") or "")!=BOOTSTRAP_METHOD:failures.append("pinnacle_brier_paired_bootstrap_required")
+    if str(logloss.get("method") or "")!=BOOTSTRAP_METHOD:failures.append("pinnacle_logloss_paired_bootstrap_required")
     if b_lower is None or float(b_lower)<=0:failures.append("pinnacle_final_brier_bootstrap_ci95_not_positive")
     if l_lower is None or float(l_lower)<-.001:failures.append("pinnacle_final_logloss_bootstrap_ci95_regression")
     return failures
 
 
-def _clv_failures(clv:dict[str,Any],*,minimum_n:int,prefix:str,positive_rate_required:bool)->list[str]:
+def _clv_failures(clv:dict[str,Any],*,minimum_n:int,prefix:str,positive_rate_required:bool,expected_benchmark:str|None=None,require_bootstrap:bool=True)->list[str]:
     failures=[]; n=int(clv.get("n") or 0); mean=clv.get("mean_clv"); ci=clv.get("mean_clv_ci95_lower")
+    if expected_benchmark is not None and clv.get("benchmark")!=expected_benchmark:failures.append(f"{prefix}_benchmark_mismatch")
+    if require_bootstrap and str(clv.get("inference_method") or "")!=BOOTSTRAP_METHOD:failures.append(f"{prefix}_paired_bootstrap_required")
     if n<minimum_n:failures.append(f"{prefix}_n<{minimum_n}")
     if mean is None or float(mean)<=0:failures.append(f"{prefix}_mean_not_positive")
     if positive_rate_required:
@@ -186,7 +202,7 @@ def evaluate(
     calibration_observation=cal.get("latest_observation_at"); calibration_observation_failure=_timestamp_freshness_failure(calibration_observation,"latest_calibration_observation",current,MAX_OBSERVATION_AGE_HOURS)
     if calibration_observation_failure:global_probability_reasons.append(calibration_observation_failure)
     if games<MIN_GAMES:global_probability_reasons.append(f"games_settled<{MIN_GAMES}")
-    strict_paper=bool(str(paper.get("schema") or "").startswith(STRICT_PAPER_SCHEMA_PREFIX) and paper.get("by_market") is not None and paper.get("model_generation")==MODEL_GENERATION and paper.get("probability_policy_id")==PROBABILITY_POLICY_ID)
+    strict_paper=_strict_paper_contract(paper)
     paper_freshness=_freshness_failure(paper,"paper",current) if strict_paper else None
 
     perf_markets=perf.get("markets") or {};calibrators=cal.get("calibrators") or {};market_status={};any_probability=False;any_betting=False
@@ -201,20 +217,20 @@ def evaluate(
         probability_certified=not failures;any_probability=any_probability or probability_certified
 
         betting_failures=list(failures); scope=_paper_scope(paper,market) if strict_paper else {}
-        if not strict_paper:betting_failures.append("strict_current_generation_policy_market_specific_paper_schema_required")
+        if not strict_paper:betting_failures.append("strict_pinnacle_primary_paper_schema_required")
         elif paper_freshness:betting_failures.append(paper_freshness)
         if strict_paper:
             close_failure=_timestamp_freshness_failure(scope.get("latest_certified_close_at"),f"{market}_latest_certified_close",current,MAX_PAPER_CLOSE_AGE_HOURS)
             if close_failure:betting_failures.append(close_failure)
         primary=scope.get("certification_clv") or {}; execution=scope.get("execution_clv") or {}
-        betting_failures.extend(_clv_failures(primary,minimum_n=MIN_PAPER_CLV_N,prefix="paper_certification_clv",positive_rate_required=True))
-        betting_failures.extend(_clv_failures(execution,minimum_n=MIN_EXECUTION_CLV_N,prefix="paper_execution_clv",positive_rate_required=False))
+        betting_failures.extend(_clv_failures(primary,minimum_n=MIN_PAPER_CLV_N,prefix="paper_certification_clv",positive_rate_required=True,expected_benchmark=PRIMARY_SHARP_BENCHMARK,require_bootstrap=True))
+        betting_failures.extend(_clv_failures(execution,minimum_n=MIN_EXECUTION_CLV_N,prefix="paper_execution_clv",positive_rate_required=False,require_bootstrap=True))
         betting_certified=probability_certified and not betting_failures;any_betting=any_betting or betting_certified
         market_status[market]={"probability_certified":probability_certified,"betting_certified":betting_certified,"probability_status":"PROBABILITY_CERTIFIED" if probability_certified else "PROBABILITY_RESEARCH","betting_status":"BETTING_CERTIFIED" if betting_certified else "RESEARCH_ONLY","n":n,"ece":ece,"calibration_status":calibrator.get("status"),"failures":failures,"betting_failures":betting_failures,"primary_sharp_bootstrap":_primary_sharp_market(primary_sharp,market) if require_primary_benchmark else {},"paper_certification_clv":primary,"paper_execution_clv":execution,"paper_latest_certified_close_at":scope.get("latest_certified_close_at")}
 
     probability_reasons=sorted({reason for row in market_status.values() for reason in row["failures"]}) if not any_probability else []
     betting_reasons=sorted({reason for row in market_status.values() for reason in row["betting_failures"]}) if not any_betting else []
-    return {"schema":"pulsar-v14-betting-certification-v9","model_generation":MODEL_GENERATION,"probability_policy_id":PROBABILITY_POLICY_ID,"software_role":"PRODUCTION","generated_at":current.isoformat(),"probability_status":"PROBABILITY_CERTIFIED" if any_probability else "PROBABILITY_RESEARCH","probability_certified":any_probability,"betting_status":"BETTING_CERTIFIED" if any_betting else "RESEARCH_ONLY","certified":any_betting,"markets":market_status,"probability_reasons":probability_reasons,"reasons":betting_reasons,"paired_inference_required":True,"paper_ci_required":True,"legacy_evidence_can_certify":False,"paper_clv":paper.get("certification_clv") or {},"paper_execution_clv":paper.get("execution_clv") or {},"evidence_age_hours":{"performance_report":_evidence_age_hours(perf,current),"performance_observation":_age_hours(observation_at,current),"calibration_report":_evidence_age_hours(cal,current),"calibration_observation":_age_hours(calibration_observation,current),"paper_report":_evidence_age_hours(paper,current),"primary_sharp_benchmark_report":_evidence_age_hours(primary_sharp,current) if require_primary_benchmark else None},"policy":{"strict_performance_schema":STRICT_PERFORMANCE_SCHEMA,"strict_calibration_schema":STRICT_CALIBRATION_SCHEMA,"exact_model_generation_required":True,"exact_probability_policy_required_for_performance_calibration_and_paper":True,"max_evidence_age_hours":MAX_EVIDENCE_AGE_HOURS,"max_observation_age_hours":MAX_OBSERVATION_AGE_HOURS,"max_paper_close_age_hours":MAX_PAPER_CLOSE_AGE_HOURS,"min_games":MIN_GAMES,"min_market_n":MIN_MARKET_N,"max_ece":MAX_ECE,"min_paired_sharp_n":MIN_PAIRED_SHARP_N,"min_paper_certification_clv_n":MIN_PAPER_CLV_N,"min_paper_execution_clv_n":MIN_EXECUTION_CLV_N,"min_positive_clv_rate":MIN_POSITIVE_CLV_RATE,"market_specific_authorization":True,"rolling_drift_window_days":60,"paper_market_specific":True,"paper_independent_observations_required":True,"primary_clv_definition":"entry executable implied probability to verified no-vig sharp fair close","secondary_clv_definition":"entry executable implied probability to fresh same-book close","production_primary_sharp_required":bool(require_primary_benchmark),"primary_sharp_benchmark":PRIMARY_SHARP_BENCHMARK if require_primary_benchmark else None,"primary_sharp_phase":CERTIFICATION_PHASE if require_primary_benchmark else None,"primary_sharp_inference":"paired nonparametric bootstrap" if require_primary_benchmark else None,"exchange_proxy_can_be_primary":False}}
+    return {"schema":"pulsar-v14-betting-certification-v9","model_generation":MODEL_GENERATION,"probability_policy_id":PROBABILITY_POLICY_ID,"software_role":"PRODUCTION","generated_at":current.isoformat(),"probability_status":"PROBABILITY_CERTIFIED" if any_probability else "PROBABILITY_RESEARCH","probability_certified":any_probability,"betting_status":"BETTING_CERTIFIED" if any_betting else "RESEARCH_ONLY","certified":any_betting,"markets":market_status,"probability_reasons":probability_reasons,"reasons":betting_reasons,"paired_inference_required":True,"paper_ci_required":True,"legacy_evidence_can_certify":False,"paper_clv":paper.get("certification_clv") or {},"paper_execution_clv":paper.get("execution_clv") or {},"evidence_age_hours":{"performance_report":_evidence_age_hours(perf,current),"performance_observation":_age_hours(observation_at,current),"calibration_report":_evidence_age_hours(cal,current),"calibration_observation":_age_hours(calibration_observation,current),"paper_report":_evidence_age_hours(paper,current),"primary_sharp_benchmark_report":_evidence_age_hours(primary_sharp,current) if require_primary_benchmark else None},"policy":{"strict_performance_schema":STRICT_PERFORMANCE_SCHEMA,"strict_calibration_schema":STRICT_CALIBRATION_SCHEMA,"strict_paper_schema":STRICT_PAPER_SCHEMA,"exact_model_generation_required":True,"exact_probability_policy_required_for_performance_calibration_and_paper":True,"max_evidence_age_hours":MAX_EVIDENCE_AGE_HOURS,"max_observation_age_hours":MAX_OBSERVATION_AGE_HOURS,"max_paper_close_age_hours":MAX_PAPER_CLOSE_AGE_HOURS,"min_games":MIN_GAMES,"min_market_n":MIN_MARKET_N,"max_ece":MAX_ECE,"min_paired_sharp_n":MIN_PAIRED_SHARP_N,"min_paper_certification_clv_n":MIN_PAPER_CLV_N,"min_paper_execution_clv_n":MIN_EXECUTION_CLV_N,"min_positive_clv_rate":MIN_POSITIVE_CLV_RATE,"market_specific_authorization":True,"rolling_drift_window_days":60,"paper_market_specific":True,"paper_independent_observations_required":True,"paper_primary_clv_benchmark":PRIMARY_SHARP_BENCHMARK,"paper_clv_inference":BOOTSTRAP_METHOD,"legacy_consensus_clv_can_certify":False,"primary_clv_definition":"entry executable implied probability to verified <=15m Pinnacle no-vig fair close","secondary_clv_definition":"entry executable implied probability to fresh same-book close","production_primary_sharp_required":bool(require_primary_benchmark),"primary_sharp_benchmark":PRIMARY_SHARP_BENCHMARK if require_primary_benchmark else None,"primary_sharp_phase":CERTIFICATION_PHASE if require_primary_benchmark else None,"primary_sharp_inference":BOOTSTRAP_METHOD if require_primary_benchmark else None,"exchange_proxy_can_be_primary":False}}
 
 
 def load_status(
