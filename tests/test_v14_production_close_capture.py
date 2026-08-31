@@ -10,31 +10,17 @@ class V14ProductionCloseCaptureWorkflowTests(unittest.TestCase):
     def setUpClass(cls):
         cls.text = WORKFLOW.read_text(encoding="utf-8")
 
-    def test_durable_prediction_persistence_precedes_immediate_close_capture(self):
-        persist = self.text.index("- name: Persist PIT predictions and decision evidence")
-        immediate = self.text.index("- name: Capture immediate certified close only if actually due")
-        publish = self.text.index("- name: Publish Pulsar V14 Discord analytics")
-        self.assertLess(persist, immediate)
-        self.assertLess(immediate, publish)
-
-    def test_immediate_capture_is_fail_soft_cost_aware_and_keeps_scheduled_fallback(self):
-        start = self.text.index("- name: Capture immediate certified close only if actually due")
-        end = self.text.index("- name: Publish Pulsar V14 Discord analytics")
-        block = self.text[start:end]
-        self.assertIn("continue-on-error: true", block)
-        self.assertIn("ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}", block)
-        self.assertIn("python -m v14.cost_aware_close_capture", block)
-        self.assertIn("--api-usage-ledger data/v14_api_usage.jsonl", block)
-        self.assertIn("python -m v14.market_close_ledger hydrate-paper", block)
-        self.assertIn("python -m v14.api_budget report", block)
-        self.assertIn("scheduled cost-aware close capture remains fallback", block)
-        self.assertNotIn("python -m v14.market_close_ledger capture", block)
-        self.assertNotIn("python -m v14.paper_ledger capture-close", block)
-        self.assertNotIn("python -m v14.official_close", block)
+    def test_production_workflow_never_performs_close_acquisition(self):
+        self.assertNotIn("python -m v14.cost_aware_close_capture", self.text)
+        self.assertNotIn("python -m v14.market_close_ledger hydrate-paper", self.text)
+        self.assertNotIn("python -m v14.market_close_ledger capture", self.text)
+        self.assertNotIn("python -m v14.paper_ledger capture-close", self.text)
+        self.assertNotIn("python -m v14.official_close", self.text)
+        self.assertIn("dedicated v14-close-capture.yml only", self.text)
 
     def test_core_persistence_does_not_depend_on_close_api(self):
         start = self.text.index("- name: Persist PIT predictions and decision evidence")
-        end = self.text.index("- name: Capture immediate certified close only if actually due")
+        end = self.text.index("- name: Close collection policy")
         block = self.text[start:end]
         self.assertNotIn("ODDS_API_KEY", block)
         self.assertNotIn("cost_aware_close_capture", block)
@@ -62,11 +48,11 @@ class V14ProductionCloseCaptureWorkflowTests(unittest.TestCase):
         block = self.text[start:end]
         self.assertIn("ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}", block)
         self.assertIn('--run-trigger "${{ steps.gate.outputs.run_trigger }}"', block)
-        self.assertIn('if: steps.gate.outputs.run_required == \'true\'', block)
+        self.assertIn("if: steps.gate.outputs.run_required == 'true'", block)
 
     def test_hidden_scheduled_run_never_consumes_operational_bet_exposure(self):
         start = self.text.index("- name: Persist PIT predictions and decision evidence")
-        end = self.text.index("- name: Capture immediate certified close only if actually due")
+        end = self.text.index("- name: Close collection policy")
         block = self.text[start:end]
         self.assertIn('if [ "${{ steps.gate.outputs.run_trigger }}" = "MANUAL" ]; then', block)
         self.assertIn("python -m v14.bet_ledger record", block)
