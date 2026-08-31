@@ -35,6 +35,7 @@ CRITICAL_TEST_MODULES=(
     "tests.test_v14_parity_workflow",
     "tests.test_v14_phase",
     "tests.test_v14_pipeline",
+    "tests.test_v14_policy_freeze",
     "tests.test_v14_production_close_capture",
     "tests.test_v14_production_runtime",
     "tests.test_v14_professional_hardening",
@@ -60,14 +61,13 @@ CRITICAL_TEST_MODULES=(
 )
 
 def run(verbosity:int=1)->bool:
-    suite=unittest.TestSuite(); loader=unittest.defaultTestLoader
+    suite=unittest.TestSuite();loader=unittest.defaultTestLoader
     for name in CRITICAL_TEST_MODULES:
-        module=__import__(name,fromlist=["*"]); suite.addTests(loader.loadTestsFromModule(module))
+        module=__import__(name,fromlist=["*"]);suite.addTests(loader.loadTestsFromModule(module))
     return unittest.TextTestRunner(verbosity=verbosity).run(suite).wasSuccessful()
-
 def main()->None:
-    parser=argparse.ArgumentParser(description="Run Pulsar V14 production and governance tests"); parser.add_argument("--verbose",action="store_true"); args=parser.parse_args()
-    if not run(verbosity=2 if args.verbose else 1): raise SystemExit(1)
+    parser=argparse.ArgumentParser(description="Run Pulsar V14 production and governance tests");parser.add_argument("--verbose",action="store_true");args=parser.parse_args()
+    if not run(verbosity=2 if args.verbose else 1):raise SystemExit(1)
     print("Pulsar V14 production/governance preflight OK")
 
-if __name__=="__main__": main()
+if __name__=="__main__":main()
