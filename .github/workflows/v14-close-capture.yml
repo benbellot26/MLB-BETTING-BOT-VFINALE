@@ -40,6 +40,7 @@ jobs:
             v14/paper_ledger.py \
             v14/official_close.py \
             v14/sharp_market.py \
+            v14/api_budget.py \
             v14/cost_aware_close_capture.py
 
       - name: Bootstrap tracked games from persisted predictions
@@ -51,20 +52,26 @@ jobs:
       - name: Capture closes with one shared paid snapshot only when due
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          # Override in repository/environment variables only if deliberately desired.
+          V14_MAX_PAID_CLOSE_SNAPSHOTS_PER_DAY: '12'
         run: |
           python -m v14.cost_aware_close_capture \
             --market-ledger data/v14_market_close_ledger.jsonl \
             --paper-ledger data/v14_paper_bet_ledger.jsonl \
-            --bet-ledger data/v14_bet_ledger.jsonl
-          # Hydration is purely local and reuses the captured market archive.
+            --bet-ledger data/v14_bet_ledger.jsonl \
+            --api-usage-ledger data/v14_api_usage.jsonl
+          # Hydration/reporting below is purely local.
           python -m v14.market_close_ledger hydrate-paper \
             --ledger data/v14_market_close_ledger.jsonl \
             --paper-ledger data/v14_paper_bet_ledger.jsonl
           python -m v14.market_close_ledger report \
             --ledger data/v14_market_close_ledger.jsonl \
             --output data/v14_market_close_report.json
+          python -m v14.api_budget report \
+            --ledger data/v14_api_usage.jsonl \
+            --output data/v14_api_usage_report.json
 
-      - name: Persist prospective close evidence
+      - name: Persist prospective close evidence and paid-request accounting
         run: |
           git config user.name 'Pulsar V14'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
@@ -72,6 +79,8 @@ jobs:
           [ -f data/v14_market_close_report.json ] && git add -f data/v14_market_close_report.json
           [ -f data/v14_paper_bet_ledger.jsonl ] && git add -f data/v14_paper_bet_ledger.jsonl
           [ -f data/v14_bet_ledger.jsonl ] && git add -f data/v14_bet_ledger.jsonl
+          [ -f data/v14_api_usage.jsonl ] && git add -f data/v14_api_usage.jsonl
+          [ -f data/v14_api_usage_report.json ] && git add -f data/v14_api_usage_report.json
           if ! git diff --cached --quiet; then
             git commit -m 'data: capture cost-aware V14 prospective closes [skip ci]'
             git pull --rebase origin "$GITHUB_REF_NAME"
