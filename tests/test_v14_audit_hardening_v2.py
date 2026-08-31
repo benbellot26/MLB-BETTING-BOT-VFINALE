@@ -72,16 +72,28 @@ class V14AuditHardeningV2Tests(unittest.TestCase):
         self.assertEqual(out["primary_clv_benchmark"],PRIMARY_SHARP_BENCHMARK)
         self.assertFalse(out["legacy_consensus_certification_clv_can_certify"])
 
-    def test_only_explicit_pinnacle_clv_counts_as_primary_certification_evidence(self):
+    def test_only_explicit_final_pinnacle_clv_counts_as_primary_certification_evidence(self):
         row={
             "schema":"pulsar-v14-paper-bet-v8","model_generation":MODEL_GENERATION,"probability_policy_id":PROBABILITY_POLICY_ID,
-            "odds_event_time_verified":True,"game_pk":"1","canonical_market":"ML","analyzed_at":"2026-08-31T17:00:00Z","game_date":"2026-08-31T20:00:00Z",
+            "phase":"FINAL","odds_event_time_verified":True,"game_pk":"1","canonical_market":"ML","analyzed_at":"2026-08-31T17:00:00Z","game_date":"2026-08-31T20:00:00Z",
             "close_quality":"CERTIFIED_CLOSE","close_captured_at":"2026-08-31T19:50:00Z","certification_clv_pp":1.25,"certification_clv_benchmark":PRIMARY_SHARP_BENCHMARK,
         }
         out=paper_report([row])
         self.assertEqual(out["certification_clv"]["n"],1)
         self.assertEqual(out["certification_clv"]["benchmark"],PRIMARY_SHARP_BENCHMARK)
         self.assertEqual(out["latest_certified_close_at"],"2026-08-31T19:50:00Z")
+        self.assertEqual(out["certification_entry_phase"],"FINAL")
+
+    def test_early_pinnacle_clv_is_excluded_from_final_certification_evidence(self):
+        row={
+            "schema":"pulsar-v14-paper-bet-v8","model_generation":MODEL_GENERATION,"probability_policy_id":PROBABILITY_POLICY_ID,
+            "phase":"EARLY","odds_event_time_verified":True,"game_pk":"1","canonical_market":"ML","analyzed_at":"2026-08-31T17:00:00Z","game_date":"2026-08-31T20:00:00Z",
+            "close_quality":"CERTIFIED_CLOSE","close_captured_at":"2026-08-31T19:50:00Z","certification_clv_pp":1.25,"certification_clv_benchmark":PRIMARY_SHARP_BENCHMARK,
+        }
+        out=paper_report([row])
+        self.assertEqual(out["certification_clv"]["n"],0)
+        self.assertEqual(out["excluded_non_final_rows"],1)
+        self.assertIsNone(out["latest_certified_close_at"])
 
     def _experiment_spec(self):
         return {
