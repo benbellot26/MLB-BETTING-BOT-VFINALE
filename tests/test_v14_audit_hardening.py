@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
 from v14.coverage_ledger import rows_from_candidate
-from v14.cost_aware_close_capture import due_games, run as cost_aware_run
+from v14.cost_aware_close_capture import run as cost_aware_run
 from v14.paired_inference import bootstrap_mean_ci
 from v14.research_registry import register, verify
 from v14.sharp_benchmark import pinnacle_probability
@@ -57,13 +56,14 @@ class AuditHardeningTests(unittest.TestCase):
 
     def test_cost_gate_does_not_call_loader_when_nothing_due(self) -> None:
         with TemporaryDirectory() as tmp:
-            ledger=Path(tmp)/"ledger.jsonl"
+            root=Path(tmp); market=root/"market.jsonl"; paper=root/"paper.jsonl"; bet=root/"bet.jsonl"
             called={"n":0}
             def loader():
                 called["n"]+=1
                 return []
-            out=cost_aware_run(ledger,events_loader=loader,now=datetime(2026,9,1,tzinfo=timezone.utc))
+            out=cost_aware_run(market,paper,bet,events_loader=loader,now=datetime(2026,9,1,tzinfo=timezone.utc))
             self.assertFalse(out["api_call_performed"])
+            self.assertEqual(out["paid_api_snapshots"],0)
             self.assertEqual(called["n"],0)
 
 
