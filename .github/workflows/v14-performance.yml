@@ -128,6 +128,16 @@ jobs:
             --predictions data/v14_predictions.jsonl \
             --output data/v14_learned_run_mean_candidate.json
 
+      - name: Fail closed on non-preregistered promotion claims
+        run: |
+          # Historical/reused holdouts can nominate challengers, but no promotion-
+          # capable status may be persisted unless the artifact carries exact
+          # post-registration prospective provenance tied to the sealed code SHA.
+          python -m v14.promotion_guard \
+            --registry data/v14_experiment_registry.jsonl \
+            --output data/v14_promotion_guard.json \
+            --fail-on-unsafe
+
       - name: Persist V14 settled performance and research artifacts
         run: |
           git config user.name 'Pulsar V14'
@@ -144,6 +154,7 @@ jobs:
             data/v14_coverage_ledger.jsonl \
             data/v14_coverage_report.json \
             data/v14_experiment_registry.jsonl \
+            data/v14_promotion_guard.json \
             data/v14_distribution_candidate.json \
             data/v14_team_run_live_validation.json \
             data/v14_distribution_live_validation.json \
