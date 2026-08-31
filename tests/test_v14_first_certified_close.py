@@ -17,6 +17,7 @@ def _write_jsonl(path: Path, rows: list[dict]) -> None:
 
 def _row(game_pk: str, event_id: str | None, *, certified: bool = False) -> dict:
     row = {
+        "schema": "pulsar-v14-market-close-v1",
         "game_pk": game_pk,
         "odds_event_id": event_id,
         "odds_event_time_verified": True,
