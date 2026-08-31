@@ -105,19 +105,19 @@
       "native_live": "authenticated live snapshots stay separate and may become eligible only through existing promotion gates"
     },
     "mlb_native_state": {
-      "archive": "data/v137/mlb_state/mlb_state_2026-08-28.json.gz",
-      "injured_list_transaction_signals": 105,
+      "archive": "data/v137/mlb_state/mlb_state_2026-08-31.json.gz",
+      "injured_list_transaction_signals": 113,
       "native_live": true,
-      "observed_at": "2026-08-28T11:18:08.716735+00:00",
+      "observed_at": "2026-08-31T11:18:45.480685+00:00",
       "point_in_time": true,
       "promotion_eligible": false,
       "roster_failures": [],
       "rosters_ok": 30,
       "schema": "v13-7-mlb-native-state-report-v1",
-      "snapshot_day": "2026-08-28",
+      "snapshot_day": "2026-08-31",
       "teams": 30,
       "transaction_error": null,
-      "transactions": 531
+      "transactions": 530
     },
     "paid_sources_required": false,
     "park_factors": {
@@ -213,22 +213,6 @@
       "cap_hits": 0,
       "chunk_days": 3,
       "chunks": [
-        {
-          "cap_hits": 0,
-          "end": "2026-07-16",
-          "requests": [
-            {
-              "cap_hit": false,
-              "end": "2026-07-16",
-              "rows": 262,
-              "start": "2026-07-14"
-            }
-          ],
-          "rows": 262,
-          "splits": 0,
-          "start": "2026-07-14",
-          "status": "OK"
-        },
         {
           "cap_hits": 0,
           "end": "2026-07-19",
@@ -452,19 +436,35 @@
           "splits": 0,
           "start": "2026-08-25",
           "status": "OK"
+        },
+        {
+          "cap_hits": 0,
+          "end": "2026-08-30",
+          "requests": [
+            {
+              "cap_hit": false,
+              "end": "2026-08-30",
+              "rows": 13569,
+              "start": "2026-08-28"
+            }
+          ],
+          "rows": 13569,
+          "splits": 0,
+          "start": "2026-08-28",
+          "status": "OK"
         }
       ],
       "chunks_failed": 0,
       "chunks_ok": 15,
       "claim": "free ID-first Statcast priors; any observed server row-cap is split and unresolved truncation fails closed",
       "cohort": "HISTORICAL_RECONSTRUCTED_FREE",
-      "cutoff_day": "2026-08-28",
-      "hitter_ids": 511,
+      "cutoff_day": "2026-08-31",
+      "hitter_ids": 518,
       "lookback_days": 45,
-      "pitcher_ids": 609,
+      "pitcher_ids": 624,
       "point_in_time": true,
       "promotion_eligible": false,
-      "raw_rows": 167546,
+      "raw_rows": 180853,
       "requests_made": 15,
       "schema": "v13-7-statcast-priors-report-v2",
       "stable_id_only": true,
@@ -473,52 +473,53 @@
     "status": "DEGRADED",
     "team_history": {
       "cohort": "HISTORICAL_RECONSTRUCTED_FREE",
-      "end": "2026-08-27",
-      "feature_rows": 2011,
+      "end": "2026-08-30",
+      "feature_rows": 2057,
       "files": [
         "data/v137/team_features_2026.jsonl.gz",
         "data/v137/team_labels_2026.jsonl.gz"
       ],
-      "label_rows": 2011,
+      "label_rows": 2057,
       "leakage_policy": "target labels separate; target and same-day scores never enter target feature row; park factors end before target season",
       "native_live": false,
-      "park_prior_coverage": 0.9323719542516161,
-      "park_prior_rows": 1875,
+      "park_prior_coverage": 0.9309674282936315,
+      "park_prior_rows": 1915,
       "promotion_eligible": false,
       "schema": "v13-7-free-team-history-report-v2",
       "seasons": [
         2026
       ],
       "skipped": {
-        "missing_score_or_team": 4
+        "missing_score_or_team": 3
       },
       "start": "2026-03-01",
-      "unique_games": 2011
+      "unique_games": 2057
     },
     "warnings": [
       "weather_previous_runs_fallback_used"
     ],
     "weather": {
       "archive_available_from": "2024-03-14",
-      "available_rows": 67,
+      "available_rows": 66,
       "cohort": "HISTORICAL_RECONSTRUCTED_FREE",
-      "end": "2026-07-09",
+      "end": "2026-07-04",
       "fallback_policy": "Single Runs first; documented Previous Runs fixed lead selected conservatively when exact run is unavailable",
       "files": [
+        "data/v137/weather_2026-06.jsonl.gz",
         "data/v137/weather_2026-07.jsonl.gz"
       ],
-      "generated_at": "2026-08-28T11:22:48.940073+00:00",
+      "generated_at": "2026-08-31T11:25:01.094202+00:00",
       "lead_hours": 2,
-      "point_in_time_rows": 67,
+      "point_in_time_rows": 66,
       "promotion_eligible": false,
       "provider_counts": {
-        "Open-Meteo Previous Runs / Best Match": 67
+        "Open-Meteo Previous Runs / Best Match": 66
       },
-      "rows": 67,
+      "rows": 66,
       "schema": "v13-7-free-weather-backfill-report-v2",
-      "start": "2026-07-05",
+      "start": "2026-06-30",
       "status_counts": {
-        "available": 67
+        "available": 66
       }
     }
   },
