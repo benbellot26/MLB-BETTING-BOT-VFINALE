@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from .all_stats_context import all_stats_overlay_from_feature_row
 from .champion_contract import CHAMPION_DISPERSION, CHAMPION_ENVIRONMENT_SIGMA, parameters_from_champion_result, validated_extra_innings_home_probability
 from .context_overlay import context_overlay_from_feature_row
 from .distribution import probability_surface
@@ -39,7 +40,8 @@ def _selected_feature_row(feature_row:dict[str,Any]|None,*,game_pk:str,analyzed_
 def _finish_prediction(*,structural_base:dict[str,Any],game_pk:str,game_date:str,analyzed_at:str,home:str,away:str,total_line:float,phase:str,feature_row:dict[str,Any]|None,dispersion:float,environment_sigma:float,extra_innings_home_probability:float,source_generation:str)->dict[str,Any]:
     selected=_selected_feature_row(feature_row,game_pk=game_pk,analyzed_at=analyzed_at)
     overlay=context_overlay_from_feature_row(selected,float(structural_base["home_mu"]),float(structural_base["away_mu"]))
-    projection=RunProjection(game_pk=game_pk,game_date=game_date,analyzed_at=analyzed_at,home=home,away=away,home_mu=float(overlay["home_mu"]),away_mu=float(overlay["away_mu"]),total_line=float(total_line),phase=str(phase or "EARLY").upper(),dispersion=float(dispersion),environment_sigma=float(environment_sigma),extra_innings_home_probability=float(extra_innings_home_probability),source_generation=source_generation).validated()
+    advanced=all_stats_overlay_from_feature_row(selected,float(overlay["home_mu"]),float(overlay["away_mu"]))
+    projection=RunProjection(game_pk=game_pk,game_date=game_date,analyzed_at=analyzed_at,home=home,away=away,home_mu=float(advanced["home_mu"]),away_mu=float(advanced["away_mu"]),total_line=float(total_line),phase=str(phase or "EARLY").upper(),dispersion=float(dispersion),environment_sigma=float(environment_sigma),extra_innings_home_probability=float(extra_innings_home_probability),source_generation=source_generation).validated()
 
     raw_surface,tail_mass=probability_surface(projection)
     raw_probabilities=raw_surface.as_dict()
@@ -61,6 +63,7 @@ def _finish_prediction(*,structural_base:dict[str,Any],game_pk:str,game_date:str
     }
     output["base_run_projection"]={"home_mu":float(structural_base["home_mu"]),"away_mu":float(structural_base["away_mu"]),"active_layers":list(structural_base.get("active_layers") or [])}
     output["context_adjustment"]={"eligible":bool(overlay.get("eligible")),"home_delta":float(overlay.get("home_delta") or 0),"away_delta":float(overlay.get("away_delta") or 0),"feature_as_of":(feature_row or {}).get("as_of") if selected is not None else None,"components":overlay.get("components") or {}}
+    output["advanced_stats_adjustment"]={"schema":advanced.get("schema"),"eligible":bool(advanced.get("eligible")),"home_delta":float(advanced.get("home_delta") or 0),"away_delta":float(advanced.get("away_delta") or 0),"active_components":list(advanced.get("active_components") or []),"statcast_artifact_schema":advanced.get("statcast_artifact_schema"),"statcast_freshness":advanced.get("statcast_freshness"),"pitch_matchup_status":advanced.get("pitch_matchup_status"),"defense_baserunning_status":advanced.get("defense_baserunning_status"),"components":advanced.get("components") or {},"market_probability_used_as_feature":False}
     return output
 
 
