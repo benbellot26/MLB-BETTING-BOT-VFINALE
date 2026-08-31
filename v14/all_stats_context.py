@@ -19,10 +19,11 @@ Missing/unsafe components are neutral. Every component and the final team effect
 are bounded. The market is never a feature.
 """
 
+from functools import lru_cache
 import math
 from typing import Any
 
-from .defense_baserunning_challenger import build as defense_baserunning
+from .defense_baserunning_challenger import build as defense_baserunning, load as load_defense_baserunning
 from .environment_physics_challenger import evaluate as environment_physics
 from .pitch_matchup_challenger import build as pitch_matchup
 from .starter_usage_challenger import estimate as starter_usage
@@ -36,6 +37,16 @@ MAX_FIELDING_DELTA = 0.012
 MAX_BASERUNNING_DELTA = 0.006
 MAX_PHYSICS_DELTA = 0.004
 TIMEZONE_PENALTY = -0.008
+
+
+@lru_cache(maxsize=1)
+def _cached_statcast_priors() -> dict[str, Any]:
+    return load_priors()
+
+
+@lru_cache(maxsize=1)
+def _cached_defense_priors() -> dict[str, Any]:
+    return load_defense_baserunning()
 
 
 def _num(value: Any) -> float | None:
@@ -213,13 +224,15 @@ def all_stats_overlay_from_feature_row(row: dict[str, Any] | None, home_mu: floa
     context = _mapping(row.get("context"))
     features = _mapping(row.get("features"))
     operational = _mapping(features.get("operational"))
-    artifact = load_priors()
+    artifact = _cached_statcast_priors()
     statcast = build_shadow_features(row, target_date=target_date, artifact=artifact if artifact else None)
     matchup = pitch_matchup(row, statcast, artifact) if artifact else {"status": "COLLECTING"}
+    defense_artifact = _cached_defense_priors()
     defense = defense_baserunning(
         home_team_id=context.get("home_id"),
         away_team_id=context.get("away_id"),
         target_date=target_date,
+        artifact=defense_artifact if defense_artifact else None,
     )
 
     home_stat = _mapping(statcast.get("home"))
