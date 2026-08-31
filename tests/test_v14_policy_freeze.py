@@ -69,7 +69,7 @@ def strict_evidence(*,ece=.02,calibration_payload=None):
         "probability_policy_id":PROBABILITY_POLICY_ID,"generated_at":NOW_ISO,
         "certification_entry_phase":"FINAL","certification_run_trigger":"SCHEDULED_FINAL",
         "primary_clv_benchmark":"PINNACLE_NO_VIG","legacy_consensus_certification_clv_can_certify":False,
-        "by_market":{"ML":{"latest_certified_close_at":NOW_ISO,"certification_clv":cert_clv,"execution_clv":execution_clv}},
+        "by_market":{"ML":{"latest_certified_close_at":NOW_ISO,"latest_primary_close_at":NOW_ISO,"latest_execution_close_at":NOW_ISO,"certification_clv":cert_clv,"execution_clv":execution_clv}},
     }
     calibration_payload=calibration_payload if calibration_payload is not None else {}
     return performance,calibration_payload,paper,sharp
