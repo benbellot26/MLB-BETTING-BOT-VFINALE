@@ -7,6 +7,11 @@ at least one tracked/paper/official row is inside the certified-close window and
 still lacks a certified close. When a call is due, one request-equivalent budget
 reservation is persisted BEFORE the paid Odds request, then ONE returned snapshot
 is reused by the market archive, paper ledger and official bet ledger.
+
+Each consumer receives only the event IDs for rows that are due in that consumer.
+This makes the first certified close immutable in the production collection path:
+a later paid snapshot triggered by another game or another ledger cannot silently
+rewrite an already-certified market, paper or official close.
 """
 
 import argparse
@@ -47,9 +52,11 @@ def _due(rows:list[dict[str,Any]],current:datetime,source:str)->list[dict[str,An
     due=[]
     for row in rows:
         if _has_certified_close(row):continue
+        event_id=str(row.get("odds_event_id") or "")
+        if not event_id:continue
         try:minutes=(parse_time(row.get("game_date"))-current).total_seconds()/60.0
         except Exception:continue
-        if 0<minutes<=CERTIFIED_DUE_WINDOW_MINUTES:due.append({"source":source,"game_pk":row.get("game_pk"),"minutes_to_game":minutes})
+        if 0<minutes<=CERTIFIED_DUE_WINDOW_MINUTES:due.append({"source":source,"game_pk":row.get("game_pk"),"odds_event_id":event_id,"minutes_to_game":minutes})
     return due
 
 
@@ -58,6 +65,13 @@ def due_games(market_path:Path|str=MARKET_LEDGER,paper_path:Path|str=PAPER_LEDGE
     if current.tzinfo is None:current=current.replace(tzinfo=timezone.utc)
     current=current.astimezone(timezone.utc);market_rows=[r for r in read_market(market_path) if r.get("odds_event_time_verified") is True]
     return _due(market_rows,current,"MARKET")+_due(_generic_read(paper_path),current,"PAPER")+_due(_generic_read(bet_path),current,"OFFICIAL")
+
+
+def _events_for_source(events:list[dict[str,Any]],due:list[dict[str,Any]],source:str)->list[dict[str,Any]]:
+    """Return only snapshot events explicitly due for one ledger consumer."""
+    event_ids={str(row.get("odds_event_id") or "") for row in due if str(row.get("source") or "").upper()==source and row.get("odds_event_id")}
+    if not event_ids:return []
+    return [event for event in events if str(event.get("id") or "") in event_ids]
 
 
 def run(market_path:Path|str=MARKET_LEDGER,paper_path:Path|str=PAPER_LEDGER,bet_path:Path|str=BET_LEDGER,*,api_usage_path:Path|str=API_USAGE_LEDGER,api_key:str|None=None,events_loader:Callable[[],list[dict[str,Any]]]|None=None,now:datetime|None=None)->dict[str,Any]:
@@ -71,9 +85,9 @@ def run(market_path:Path|str=MARKET_LEDGER,paper_path:Path|str=PAPER_LEDGER,bet_
     # preventing an uncounted retry loop.
     reservation=record_close_snapshot(api_usage_path,now=now,due_rows=len(due))
     events=(events_loader or (lambda:odds_snapshot(api_key=api_key)))()
-    loader=lambda:events
-    market_changed=capture_market(market_path,api_key=api_key,events_loader=loader,now=now);paper_changed=capture_paper(paper_path,api_key=api_key,events_loader=loader,now=now);official_changed=capture_official(path=bet_path,api_key=api_key,events_loader=loader,now=now)
-    return {"api_call_performed":True,"paid_api_snapshots":1,"budget_reserved":True,"reservation":reservation,"captured":{"market":market_changed,"paper":paper_changed,"official":official_changed},"due_rows":len(due),"due":due,"budget_before":budget,"budget_after":api_allowance(api_usage_path,now=now),"cost_policy":"budget reserved before paid request; one Odds snapshot shared across market/paper/official; certified rows never trigger another paid call; daily budget enforced"}
+    market_events=_events_for_source(events,due,"MARKET");paper_events=_events_for_source(events,due,"PAPER");official_events=_events_for_source(events,due,"OFFICIAL")
+    market_changed=capture_market(market_path,api_key=api_key,events_loader=lambda:market_events,now=now);paper_changed=capture_paper(paper_path,api_key=api_key,events_loader=lambda:paper_events,now=now);official_changed=capture_official(path=bet_path,api_key=api_key,events_loader=lambda:official_events,now=now)
+    return {"api_call_performed":True,"paid_api_snapshots":1,"budget_reserved":True,"reservation":reservation,"captured":{"market":market_changed,"paper":paper_changed,"official":official_changed},"due_rows":len(due),"due":due,"consumer_event_counts":{"market":len(market_events),"paper":len(paper_events),"official":len(official_events)},"budget_before":budget,"budget_after":api_allowance(api_usage_path,now=now),"cost_policy":"budget reserved before paid request; one Odds snapshot shared across consumers; each consumer sees only its due event IDs; first certified close is immutable against incidental later snapshots; daily budget enforced"}
 
 
 def main()->None:
