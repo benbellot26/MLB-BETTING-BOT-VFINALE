@@ -3,8 +3,8 @@ name: Pulsar V14 Close Capture
 on:
   schedule:
     # Frequent wake-up is cheap: the local due-check performs zero paid API calls.
-    # At most one Odds snapshot is fetched in a run, only when a first certified
-    # close is actually due, and that snapshot is shared by all three ledgers.
+    # At most one Odds snapshot is fetched in a run, only while at least one
+    # certified close component is still missing, and that snapshot is shared.
     - cron: '*/10 * * * *'
   workflow_dispatch:
 
@@ -39,6 +39,7 @@ jobs:
             v14/market_close_ledger.py \
             v14/paper_ledger.py \
             v14/official_close.py \
+            v14/component_close_capture.py \
             v14/sharp_market.py \
             v14/api_budget.py \
             v14/cost_aware_close_capture.py
@@ -54,17 +55,16 @@ jobs:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           V14_MAX_PAID_CLOSE_SNAPSHOTS_PER_DAY: '12'
         run: |
-          # This command performs local first-Pinnacle-primary paper hydration
-          # before the due-check, then at most one paid shared Odds snapshot.
+          # Local archive hydration runs first. PRIMARY (Pinnacle no-vig) and
+          # EXECUTION (fresh same-book close) then remain independently retryable
+          # inside <=15m until each first valid component is frozen.
           python -m v14.cost_aware_close_capture \
             --market-ledger data/v14_market_close_ledger.jsonl \
             --paper-ledger data/v14_paper_bet_ledger.jsonl \
             --bet-ledger data/v14_bet_ledger.jsonl \
             --api-usage-ledger data/v14_api_usage.jsonl
-          # Reporting below is purely local. Do not invoke the legacy generic
-          # hydrate-paper command here: production hydration is intentionally
-          # owned by cost_aware_close_capture so a later archive snapshot cannot
-          # replace the first usable Pinnacle-primary paper close.
+          # Reporting below is purely local. Production hydration is owned by
+          # cost_aware_close_capture; do not invoke the generic hydrate-paper CLI.
           python -m v14.market_close_ledger report \
             --ledger data/v14_market_close_ledger.jsonl \
             --output data/v14_market_close_report.json
