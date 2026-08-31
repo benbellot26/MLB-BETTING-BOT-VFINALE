@@ -7,6 +7,12 @@ diagnostics and nomination. They may not pass a promotion-capable status through
 the production research workflow unless the artifact explicitly proves that the
 promotion decision used only the cohort sealed after preregistration.
 
+Legacy live-validation artifacts that can emit a promotion-review status are
+also enumerated here. Because they were not sealed in the current experiment
+registry, they remain usable for research but fail closed if they ever claim a
+promotion-capable state. They must be re-preregistered prospectively rather than
+receiving retroactive promotion credit.
+
 This module does not score a challenger and never activates one. It is a final
 scientific governance gate between research outputs and persisted promotion
 claims.
@@ -31,6 +37,11 @@ ARTIFACT_EXPERIMENTS={
     "data/v14_bootstrap_uncertainty_candidate.json":"V14-UNCERTAINTY-01",
     "data/v14_sharp_book_weights_candidate.json":"V14-SHARPWEIGHT-01",
     "data/v14_market_posterior_candidate.json":"V14-MARKETPOST-01",
+    # These older frozen challengers can emit PROMOTION_REVIEW but were not
+    # preregistered in the current sealed registry. Enumerating them prevents a
+    # review-state claim from bypassing the guard; no retroactive registration.
+    "data/v14_team_run_live_validation.json":"V14-HISTTEAM-LIVE-UNREGISTERED",
+    "data/v14_distribution_live_validation.json":"V14-HISTDIST-LIVE-UNREGISTERED",
 }
 
 
@@ -96,7 +107,7 @@ def build(*,registry:Path|str=REGISTRY,artifact_paths:dict[str,str]|None=None)->
             if not authorized:
                 unsafe.append({"artifact":raw_path,"experiment_id":experiment_id,"promotion_paths":promotion_paths,"failures":sorted(set(failures))})
         artifacts[raw_path]={"experiment_id":experiment_id,"registered":registration is not None,"registered_at":registration.get("registered_at") if registration else None,"registered_code_commit_sha":registration.get("code_commit_sha") if registration else None,"promotion_claims":[{"path":p,"status":s} for p,s in promotion_paths],"promotion_authorized":bool(promotion_paths and authorized),"failures":sorted(set(failures))}
-    return {"schema":"pulsar-v14-promotion-guard-v1","generated_at":datetime.now(timezone.utc).isoformat(),"fail_closed":True,"promotion_statuses":sorted(PROMOTION_STATUSES),"unsafe_promotion_claims":unsafe,"valid":not unsafe,"policy":"historical/reused evidence may nominate or rank challengers; persisted promotion-capable claims require exact preregistration provenance and post-registration prospective-only evidence","artifacts":artifacts}
+    return {"schema":"pulsar-v14-promotion-guard-v1","generated_at":datetime.now(timezone.utc).isoformat(),"fail_closed":True,"promotion_statuses":sorted(PROMOTION_STATUSES),"unsafe_promotion_claims":unsafe,"valid":not unsafe,"policy":"historical/reused evidence may rank or nominate challengers; every persisted promotion-capable claim, including legacy PROMOTION_REVIEW artifacts, requires exact preregistration provenance and post-registration prospective-only evidence","artifacts":artifacts}
 
 
 def write(*,registry:Path|str=REGISTRY,output:Path|str=OUTPUT,fail_on_unsafe:bool=False)->dict[str,Any]:
