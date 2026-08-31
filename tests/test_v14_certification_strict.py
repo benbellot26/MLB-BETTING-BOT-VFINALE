@@ -36,9 +36,9 @@ def clv(n=120,mean=.40,positive=.56,ci=.08,*,benchmark=None,method="paired nonpa
 def paper(primary=None,execution=None,close_at=FRESH,phase="FINAL",trigger=CERTIFICATION_RUN_TRIGGER):
     scoped={}
     if primary is not None:
-        primary=dict(primary); primary.setdefault("benchmark","PINNACLE_NO_VIG"); scoped["certification_clv"]=primary
-    if execution is not None: scoped["execution_clv"]=execution
-    if primary is not None or execution is not None: scoped["latest_certified_close_at"]=close_at
+        primary=dict(primary); primary.setdefault("benchmark","PINNACLE_NO_VIG"); scoped["certification_clv"]=primary; scoped["latest_certified_close_at"]=close_at; scoped["latest_primary_close_at"]=close_at
+    if execution is not None:
+        scoped["execution_clv"]=execution; scoped["latest_execution_close_at"]=close_at
     return {"schema":"pulsar-v14-paper-bet-performance-v8","model_generation":MODEL_GENERATION,"probability_policy_id":PROBABILITY_POLICY_ID,"generated_at":FRESH,"certification_entry_phase":phase,"certification_run_trigger":trigger,"primary_clv_benchmark":"PINNACLE_NO_VIG","legacy_consensus_certification_clv_can_certify":False,"by_market":({"ML":scoped} if scoped else {})}
 
 
@@ -64,7 +64,7 @@ class V14StrictCertificationTests(unittest.TestCase):
 
     def test_same_book_execution_evidence_is_also_required(self):
         performance,calibration=probability_ready(); out=evaluate(performance,calibration,paper(clv(),None),now=NOW)
-        self.assertFalse(out["markets"]["ML"]["betting_certified"]); self.assertIn("paper_execution_clv_n<50",out["markets"]["ML"]["betting_failures"])
+        self.assertFalse(out["markets"]["ML"]["betting_certified"]); self.assertIn("paper_execution_clv_n<50",out["markets"]["ML"]["betting_failures"]); self.assertIn("ML_latest_execution_close_missing_or_invalid",out["markets"]["ML"]["betting_failures"])
 
     def test_legacy_performance_cannot_certify_even_with_good_nominal_metrics(self):
         performance,calibration=probability_ready(); performance.pop("schema"); out=evaluate(performance,calibration,paper(clv(),clv(n=80)),now=NOW)
@@ -127,7 +127,7 @@ class V14StrictCertificationTests(unittest.TestCase):
 
     def test_stale_paper_close_blocks_betting_even_if_report_is_fresh(self):
         performance,calibration=probability_ready(); out=evaluate(performance,calibration,paper(clv(),clv(n=80),close_at="2026-08-20T00:00:00+00:00"),now=NOW)
-        self.assertTrue(out["markets"]["ML"]["probability_certified"]); self.assertFalse(out["markets"]["ML"]["betting_certified"]); self.assertTrue(any("latest_certified_close_stale" in reason for reason in out["markets"]["ML"]["betting_failures"]))
+        self.assertTrue(out["markets"]["ML"]["probability_certified"]); self.assertFalse(out["markets"]["ML"]["betting_certified"]); self.assertTrue(any("latest_primary_close_stale" in reason or "latest_execution_close_stale" in reason for reason in out["markets"]["ML"]["betting_failures"]))
 
     def test_production_primary_benchmark_missing_fails_closed(self):
         performance,calibration=probability_ready(); out=evaluate(performance,calibration,paper(clv(),clv(n=80)),now=NOW,sharp_benchmark_report={},require_primary_benchmark=True)
