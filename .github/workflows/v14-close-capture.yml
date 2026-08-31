@@ -54,15 +54,17 @@ jobs:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           V14_MAX_PAID_CLOSE_SNAPSHOTS_PER_DAY: '12'
         run: |
+          # This command performs local first-Pinnacle-primary paper hydration
+          # before the due-check, then at most one paid shared Odds snapshot.
           python -m v14.cost_aware_close_capture \
             --market-ledger data/v14_market_close_ledger.jsonl \
             --paper-ledger data/v14_paper_bet_ledger.jsonl \
             --bet-ledger data/v14_bet_ledger.jsonl \
             --api-usage-ledger data/v14_api_usage.jsonl
-          # Hydration/reporting below is purely local.
-          python -m v14.market_close_ledger hydrate-paper \
-            --ledger data/v14_market_close_ledger.jsonl \
-            --paper-ledger data/v14_paper_bet_ledger.jsonl
+          # Reporting below is purely local. Do not invoke the legacy generic
+          # hydrate-paper command here: production hydration is intentionally
+          # owned by cost_aware_close_capture so a later archive snapshot cannot
+          # replace the first usable Pinnacle-primary paper close.
           python -m v14.market_close_ledger report \
             --ledger data/v14_market_close_ledger.jsonl \
             --output data/v14_market_close_report.json
