@@ -5,13 +5,13 @@ from pathlib import Path
 import unittest
 
 NATIVE_MODULES=(
-    "acquisition.py","certification.py","context_overlay.py","decision.py","defense_baserunning_challenger.py","discord.py","distribution.py","distribution_tuning.py",
+    "acquisition.py","all_stats_context.py","certification.py","context_overlay.py","decision.py","defense_baserunning_challenger.py","discord.py","distribution.py","distribution_tuning.py",
     "environment_physics_challenger.py","execution_market.py","historical_distribution_shadow.py","historical_pit.py","historical_team_shadow.py","heteroskedastic_distribution_challenger.py","inning_simulator_challenger.py",
     "market_edge.py","market_lines.py","mlb_inputs.py","model.py","native_candidate.py","native_payload.py","parity_gate.py","park.py","phase.py","pipeline.py",
     "pitch_matchup_challenger.py","probability_calibration.py","production_runtime.py","provider_http.py","residual_challenger.py","run_decomposition_challenger.py","run_stack.py",
-    "sharp_market.py","sharp_weight_challenger.py","starter_fallback.py","starter_integrity.py","starter_recent_usage.py","starter_usage_challenger.py",
+    "savant_run_value_builder.py","savant_run_value_pit.py","sharp_market.py","sharp_weight_challenger.py","starter_fallback.py","starter_integrity.py","starter_recent_usage.py","starter_usage_challenger.py",
     "statcast_base.py","statcast_daily.py","statcast_enrichment.py","statcast_pit_backfill.py","statcast_shadow.py",
-    "structural.py","timezone_challenger.py","total_market.py","tracking.py","true_talent_challenger.py","uncertainty.py","uncertainty_fit.py","venue_park_challenger.py","weather_live_shadow.py",
+    "structural.py","timezone_challenger.py","total_market.py","tracking.py","true_talent_challenger.py","uncertainty.py","uncertainty_fit.py","venue_geometry.py","venue_park_challenger.py","weather_climatology.py","weather_live_shadow.py",
     "calibration_methods_challenger.py",
 )
 
@@ -43,15 +43,31 @@ class V14ImportBoundaryTests(unittest.TestCase):
     def test_research_extensions_cannot_auto_activate(self):
         for filename in (
             "starter_usage_challenger.py","environment_physics_challenger.py","run_decomposition_challenger.py","timezone_challenger.py","pitch_matchup_challenger.py",
-            "defense_baserunning_challenger.py","venue_park_challenger.py","true_talent_challenger.py","heteroskedastic_distribution_challenger.py","inning_simulator_challenger.py",
+            "venue_park_challenger.py","true_talent_challenger.py","heteroskedastic_distribution_challenger.py","inning_simulator_challenger.py",
             "sharp_weight_challenger.py","calibration_methods_challenger.py",
         ):
             text=(Path("v14")/filename).read_text(encoding="utf-8")
             self.assertIn("CHALLENGER_ONLY",text)
             self.assertIn("auto_activation",text)
 
+    def test_v146_advanced_inputs_are_explicit_and_generation_bound(self):
+        defense=Path("v14/defense_baserunning_challenger.py").read_text(encoding="utf-8")
+        weather=Path("v14/weather_live_shadow.py").read_text(encoding="utf-8")
+        manifest=Path("v14/champion_manifest.py").read_text(encoding="utf-8")
+        overlay=Path("v14/all_stats_context.py").read_text(encoding="utf-8")
+        self.assertIn("PRODUCTION_ADVANCED_COMPONENT",defense)
+        self.assertIn('"champion_impact":True',defense)
+        self.assertIn("PRODUCTION_ADVANCED_INPUT",weather)
+        self.assertIn('"champion_impact":True',weather)
+        self.assertIn("market_probability_used_as_feature",defense)
+        self.assertIn("market_probability_used_as_feature",weather)
+        self.assertIn("defense_baserunning_challenger.py",manifest)
+        self.assertIn("weather_live_shadow.py",manifest)
+        self.assertIn("defense_baserunning",overlay)
+        self.assertIn("environment_physics",overlay)
+
     def test_validated_native_shadows_remain_non_activating(self):
-        for filename in ("historical_team_shadow.py","historical_distribution_shadow.py","weather_live_shadow.py"):
+        for filename in ("historical_team_shadow.py","historical_distribution_shadow.py"):
             text=(Path("v14")/filename).read_text(encoding="utf-8")
             self.assertIn("SHADOW_ONLY",text)
             self.assertIn("auto_activation",text)
