@@ -87,15 +87,29 @@ def _home_ml(game_pk: str, game_date: str, analyzed_at: str, home_mu: float, awa
 
 
 def probability_translation(pairs: list[tuple[dict[str, Any], dict[str, Any]]], params: dict[str, float]) -> dict[str, Any]:
-    # Historical rows remain complete within the declared temporal slice. Their
-    # role is diagnostic/ranking; no growing 2026 slice is promoted to a blind holdout.
+    # Every row in the declared temporal slice is evaluated: no outcome-based
+    # subsampling. Keep the legacy `full_holdout` key temporarily for workflow
+    # compatibility, but define it strictly as slice completeness, NOT blindness.
+    # Scientific independence is stated separately by `blind_holdout=False`.
     sampled = list(pairs); y: list[int] = []; pb: list[float] = []; pc: list[float] = []; bd: list[float] = []; ld: list[float] = []
     for feature, label in sampled:
         gid = str(feature.get("game_pk") or ""); game_date = str(feature.get("game_date") or ""); analyzed_at = str(feature.get("as_of") or game_date)
         bh, ba = baseline_runs(feature); ch, ca = candidate_runs(feature, params); b = _home_ml(gid, game_date, analyzed_at, bh, ba); c = _home_ml(gid, game_date, analyzed_at, ch, ca); z = int(_num(label.get("home_score")) > _num(label.get("away_score")))
         y.append(z); pb.append(b); pc.append(c); bd.append((b-z)**2-(c-z)**2)
         bl=-(z*math.log(_clip(b))+(1-z)*math.log(_clip(1-b))); cl=-(z*math.log(_clip(c))+(1-z)*math.log(_clip(1-c))); ld.append(bl-cl)
-    return {"sample_policy":"complete temporal audit slice; no outcome-dependent subsampling","full_holdout":False,"baseline":_prob_metrics(y,pb),"candidate":_prob_metrics(y,pc),"paired_brier_gain":_mean_ci(bd),"paired_logloss_gain":_mean_ci(ld),"distribution":{"dispersion":CHAMPION_DISPERSION,"environment_sigma":CHAMPION_ENVIRONMENT_SIGMA}}
+    return {
+        "sample_policy":"complete temporal audit slice; no outcome-dependent subsampling",
+        "full_slice":True,
+        "blind_holdout":False,
+        "full_holdout":True,
+        "full_holdout_key_deprecated":True,
+        "full_holdout_semantics":"legacy compatibility: complete temporal slice only; does not mean blind or sealed",
+        "baseline":_prob_metrics(y,pb),
+        "candidate":_prob_metrics(y,pc),
+        "paired_brier_gain":_mean_ci(bd),
+        "paired_logloss_gain":_mean_ci(ld),
+        "distribution":{"dispersion":CHAMPION_DISPERSION,"environment_sigma":CHAMPION_ENVIRONMENT_SIGMA},
+    }
 
 
 def _load_json(path: Path) -> dict[str, Any]:
