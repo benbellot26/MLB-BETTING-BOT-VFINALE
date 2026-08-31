@@ -25,10 +25,17 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Validate V14 production and statistical hardening
+      - name: Validate V14 production and seal research protocol
         run: |
           python -m py_compile v14/*.py
           python -m v14.preflight
+          # First run after merge registers each declared experiment with the
+          # exact code SHA. Prior evidence can remain descriptive but cannot
+          # count toward promotion of these preregistered experiments.
+          python -m v14.research_registry bootstrap \
+            --specs research/v14_experiments.json \
+            --registry data/v14_experiment_registry.jsonl \
+            --commit-sha "$GITHUB_SHA"
           python -m v14.research_registry verify --registry data/v14_experiment_registry.jsonl
 
       - name: Settle finished predictions and ledgers
