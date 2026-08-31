@@ -7,6 +7,11 @@ diagnostics and nomination. They may not pass a promotion-capable status through
 the production research workflow unless the artifact explicitly proves that the
 promotion decision used only the cohort sealed after preregistration.
 
+Promotion evidence is additionally bound to the same current-generation,
+current-probability-policy, first-observed SCHEDULED_FINAL cohort used by the
+strict prospective accounting. Generic post-registration observations can never
+be relabelled as promotion evidence.
+
 Legacy live-validation artifacts that can emit a promotion-review status are
 also enumerated here. Because they were not sealed in the current experiment
 registry, they remain usable for research but fail closed if they ever claim a
@@ -24,10 +29,13 @@ import json
 from pathlib import Path
 from typing import Any
 
+from . import MODEL_GENERATION, PROBABILITY_POLICY_ID
+from .certification_timing import CERTIFICATION_PHASE, CERTIFICATION_RUN_TRIGGER
 from .research_registry import REGISTRY, registrations
 
 OUTPUT=Path("data/v14_promotion_guard.json")
 PROMOTION_STATUSES={"PROMOTION_ELIGIBLE","PROMOTION_REVIEW","PROMOTION_CANDIDATE","PROSPECTIVE_PROMOTION_ELIGIBLE"}
+PROMOTION_COHORT_POLICY="FIRST_SCHEDULED_FINAL_CURRENT_POLICY_PER_GAME"
 ARTIFACT_EXPERIMENTS={
     "data/v14_distribution_candidate.json":"V14-DISTRIBUTION-01",
     "data/v14_heteroskedastic_candidate.json":"V14-HETERO-01",
@@ -78,6 +86,11 @@ def _evidence_ok(artifact:dict[str,Any],registration:dict[str,Any])->tuple[bool,
     evidence=artifact.get("promotion_evidence") or {}; failures=[]
     if evidence.get("prospective_only") is not True:failures.append("prospective_only_evidence_required")
     if str(evidence.get("experiment_id") or "")!=str(registration.get("experiment_id") or ""):failures.append("experiment_id_mismatch")
+    if evidence.get("model_generation")!=MODEL_GENERATION:failures.append("promotion_model_generation_mismatch")
+    if evidence.get("probability_policy_id")!=PROBABILITY_POLICY_ID:failures.append("promotion_probability_policy_mismatch")
+    if str(evidence.get("phase") or "").upper()!=CERTIFICATION_PHASE:failures.append("promotion_phase_must_be_final")
+    if str(evidence.get("run_trigger") or "").upper()!=CERTIFICATION_RUN_TRIGGER:failures.append("promotion_run_trigger_must_be_scheduled_final")
+    if str(evidence.get("cohort_policy") or "")!=PROMOTION_COHORT_POLICY:failures.append("promotion_cohort_policy_mismatch")
     registered_at=_dt(registration.get("registered_at")); evidence_registered=_dt(evidence.get("registration_timestamp")); first=_dt(evidence.get("first_observation_at")); latest=_dt(evidence.get("latest_observation_at"))
     if registered_at is None:failures.append("registration_timestamp_invalid")
     if evidence_registered is None or registered_at is None or evidence_registered!=registered_at:failures.append("evidence_registration_timestamp_mismatch")
@@ -107,7 +120,7 @@ def build(*,registry:Path|str=REGISTRY,artifact_paths:dict[str,str]|None=None)->
             if not authorized:
                 unsafe.append({"artifact":raw_path,"experiment_id":experiment_id,"promotion_paths":promotion_paths,"failures":sorted(set(failures))})
         artifacts[raw_path]={"experiment_id":experiment_id,"registered":registration is not None,"registered_at":registration.get("registered_at") if registration else None,"registered_code_commit_sha":registration.get("code_commit_sha") if registration else None,"promotion_claims":[{"path":p,"status":s} for p,s in promotion_paths],"promotion_authorized":bool(promotion_paths and authorized),"failures":sorted(set(failures))}
-    return {"schema":"pulsar-v14-promotion-guard-v1","generated_at":datetime.now(timezone.utc).isoformat(),"fail_closed":True,"promotion_statuses":sorted(PROMOTION_STATUSES),"unsafe_promotion_claims":unsafe,"valid":not unsafe,"policy":"historical/reused evidence may rank or nominate challengers; every persisted promotion-capable claim, including legacy PROMOTION_REVIEW artifacts, requires exact preregistration provenance and post-registration prospective-only evidence","artifacts":artifacts}
+    return {"schema":"pulsar-v14-promotion-guard-v2","generated_at":datetime.now(timezone.utc).isoformat(),"fail_closed":True,"promotion_statuses":sorted(PROMOTION_STATUSES),"promotion_cohort_policy":PROMOTION_COHORT_POLICY,"promotion_phase":CERTIFICATION_PHASE,"promotion_run_trigger":CERTIFICATION_RUN_TRIGGER,"model_generation":MODEL_GENERATION,"probability_policy_id":PROBABILITY_POLICY_ID,"unsafe_promotion_claims":unsafe,"valid":not unsafe,"policy":"historical/reused evidence may rank or nominate challengers; every persisted promotion-capable claim, including legacy PROMOTION_REVIEW artifacts, requires exact preregistration provenance plus post-registration first-SCHEDULED_FINAL current-generation/current-policy evidence","artifacts":artifacts}
 
 
 def write(*,registry:Path|str=REGISTRY,output:Path|str=OUTPUT,fail_on_unsafe:bool=False)->dict[str,Any]:
@@ -117,7 +130,7 @@ def write(*,registry:Path|str=REGISTRY,output:Path|str=OUTPUT,fail_on_unsafe:boo
 
 
 def main()->None:
-    parser=argparse.ArgumentParser(description="Fail-closed preregistered challenger promotion guard");parser.add_argument("--registry",default=str(REGISTRY));parser.add_argument("--output",default=str(OUTPUT));parser.add_argument("--fail-on-unsafe",action="store_true");args=parser.parse_args();out=write(registry=args.registry,output=args.output,fail_on_unsafe=args.fail_on_unsafe);print(json.dumps({"valid":out["valid"],"unsafe":len(out["unsafe_promotion_claims"])},sort_keys=True))
+    parser=argparse.ArgumentParser(description="Fail-closed preregistered challenger promotion guard");parser.add_argument("--registry",default=str(REGISTRY));parser.add_argument("--output",default=str(OUTPUT));parser.add_argument("--fail-on-unsafe",action="store_true");args=parser.parse_args();out=write(registry=args.registry,output=args.output,fail_on_unsafe=args.fail_on_unsafe);print(json.dumps({"valid":out["valid"],"unsafe":len(out["unsafe_promotion_claims"]),"promotion_cohort_policy":out["promotion_cohort_policy"]},sort_keys=True))
 
 
 if __name__=="__main__":main()

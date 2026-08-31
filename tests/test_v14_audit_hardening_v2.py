@@ -9,7 +9,7 @@ from v14.api_budget import record_prediction_snapshot
 from v14.certification_timing import CERTIFICATION_RUN_TRIGGER
 from v14.decision import evaluate as decision_status
 from v14.paper_ledger import PRIMARY_SHARP_BENCHMARK, report as paper_report
-from v14.promotion_guard import build as promotion_guard
+from v14.promotion_guard import PROMOTION_COHORT_POLICY, build as promotion_guard
 from v14.research_registry import register
 from v14.scheduled_prediction_gate import build as scheduled_prediction_gate
 
@@ -191,7 +191,14 @@ class V14AuditHardeningV2Tests(unittest.TestCase):
             artifact.write_text(json.dumps({
                 "status":"PROSPECTIVE_PROMOTION_ELIGIBLE",
                 "promotion_evidence":{
-                    "prospective_only":True,"experiment_id":"TEST-EXP-01","registration_timestamp":"2026-08-31T10:00:00Z",
+                    "prospective_only":True,
+                    "experiment_id":"TEST-EXP-01",
+                    "model_generation":MODEL_GENERATION,
+                    "probability_policy_id":PROBABILITY_POLICY_ID,
+                    "phase":"FINAL",
+                    "run_trigger":CERTIFICATION_RUN_TRIGGER,
+                    "cohort_policy":PROMOTION_COHORT_POLICY,
+                    "registration_timestamp":"2026-08-31T10:00:00Z",
                     "first_observation_at":"2026-08-31T10:01:00Z","latest_observation_at":"2026-09-30T10:00:00Z",
                     "eligible_observations":400,"code_commit_sha":"abc123","success_rule_locked":True,
                 },
