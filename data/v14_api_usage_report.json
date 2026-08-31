@@ -1,0 +1,65 @@
+{
+  "automated_close_today": {
+    "allowed": true,
+    "daily_allowed": true,
+    "kind": "ODDS_CLOSE_SNAPSHOT",
+    "limit": 1,
+    "monthly": {
+      "allowed": true,
+      "provider_credit_limit": 180,
+      "provider_credits_remaining": 177,
+      "provider_credits_used": 3,
+      "snapshots": 1,
+      "utc_month": "2026-08"
+    },
+    "remaining": 1,
+    "used": 0,
+    "utc_day": "2026-08-31"
+  },
+  "automated_month": {
+    "allowed": true,
+    "provider_credit_limit": 180,
+    "provider_credits_remaining": 177,
+    "provider_credits_used": 3,
+    "snapshots": 1,
+    "utc_month": "2026-08"
+  },
+  "automated_prediction_today": {
+    "allowed": false,
+    "daily_allowed": false,
+    "kind": "ODDS_SCHEDULED_FINAL_PREDICTION_SNAPSHOT",
+    "limit": 1,
+    "monthly": {
+      "allowed": true,
+      "provider_credit_limit": 180,
+      "provider_credits_remaining": 177,
+      "provider_credits_used": 3,
+      "snapshots": 1,
+      "utc_month": "2026-08"
+    },
+    "remaining": 0,
+    "used": 1,
+    "utc_day": "2026-08-31"
+  },
+  "by_kind": {
+    "ODDS_SCHEDULED_FINAL_PREDICTION_SNAPSHOT": 1
+  },
+  "generated_at": "2026-08-31T22:15:28.645495+00:00",
+  "known_provider_credits_total": 3,
+  "policy": {
+    "close_config_env": "V14_MAX_PAID_CLOSE_SNAPSHOTS_PER_DAY",
+    "default_max_automated_provider_credits_per_utc_month": 180,
+    "default_max_paid_close_snapshots_per_utc_day": 1,
+    "default_max_paid_prediction_snapshots_per_utc_day": 1,
+    "default_provider_credits_per_snapshot": 3,
+    "manual_prediction_runs_budgeted": false,
+    "monthly_credit_config_env": "V14_MAX_AUTOMATED_ODDS_CREDITS_PER_UTC_MONTH",
+    "policy_mode": "ULTRA_LOW_MINIMUM_VIABLE_PROSPECTIVE_COLLECTION",
+    "prediction_config_env": "V14_MAX_PAID_PREDICTION_SNAPSHOTS_PER_DAY",
+    "provider_credit_cost_env": "V14_ODDS_PROVIDER_CREDITS_PER_SNAPSHOT",
+    "reserved_nonautomatic_credits_at_default_policy": 320,
+    "target_plan_provider_credits_per_month": 500
+  },
+  "request_equivalents_total": 1,
+  "schema": "pulsar-v14-api-usage-report-v3"
+}
