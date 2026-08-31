@@ -15,7 +15,7 @@ concurrency:
 jobs:
   settle:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -24,10 +24,13 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
+
       - name: Validate V14 production and statistical hardening
         run: |
           python -m py_compile v14/*.py
           python -m v14.preflight
+          python -m v14.research_registry verify --registry data/v14_experiment_registry.jsonl
+
       - name: Settle finished predictions and ledgers
         run: |
           python -m v14.tracking settle \
@@ -39,7 +42,8 @@ jobs:
           python -m v14.bet_ledger settle \
             --ledger data/v14_bet_ledger.jsonl \
             --report data/v14_bet_performance.json
-      - name: Fit fail-closed probability calibration and uncertainty
+
+      - name: Fit fail-closed probability calibration and current safety uncertainty
         run: |
           python -m v14.probability_calibration fit \
             --predictions data/v14_predictions.jsonl \
@@ -47,11 +51,30 @@ jobs:
           python -m v14.uncertainty_fit \
             --predictions data/v14_predictions.jsonl \
             --output data/v14_uncertainty.json
+
       - name: Rebuild performance and certification with current evidence
         run: |
           python -m v14.tracking report \
             --predictions data/v14_predictions.jsonl \
             --report data/v14_performance.json
+
+      - name: Build zero-API audit hardening evidence
+        run: |
+          # These commands use only persisted ledgers. They make no Odds/API calls.
+          python -m v14.snapshot_policy \
+            --predictions data/v14_predictions.jsonl \
+            --output data/v14_snapshot_policy_report.json
+          python -m v14.prospective_cohort \
+            --predictions data/v14_predictions.jsonl \
+            --registry data/v14_experiment_registry.jsonl \
+            --output data/v14_prospective_cohorts.json
+          python -m v14.sharp_benchmark \
+            --predictions data/v14_predictions.jsonl \
+            --output data/v14_sharp_benchmark_report.json
+          python -m v14.coverage_ledger report \
+            --ledger data/v14_coverage_ledger.jsonl \
+            --output data/v14_coverage_report.json
+
       - name: Evaluate all shadow challengers
         run: |
           python -m v14.distribution_tuning \
@@ -78,6 +101,13 @@ jobs:
           python -m v14.sharp_weight_challenger \
             --predictions data/v14_predictions.jsonl \
             --output data/v14_sharp_book_weights_candidate.json
+          python -m v14.bootstrap_uncertainty_challenger \
+            --predictions data/v14_predictions.jsonl \
+            --output data/v14_bootstrap_uncertainty_candidate.json
+          python -m v14.learned_run_mean_challenger \
+            --predictions data/v14_predictions.jsonl \
+            --output data/v14_learned_run_mean_candidate.json
+
       - name: Persist V14 settled performance and research artifacts
         run: |
           git config user.name 'Pulsar V14'
@@ -87,6 +117,12 @@ jobs:
             data/v14_performance.json \
             data/v14_calibration.json \
             data/v14_uncertainty.json \
+            data/v14_snapshot_policy_report.json \
+            data/v14_prospective_cohorts.json \
+            data/v14_sharp_benchmark_report.json \
+            data/v14_coverage_ledger.jsonl \
+            data/v14_coverage_report.json \
+            data/v14_experiment_registry.jsonl \
             data/v14_distribution_candidate.json \
             data/v14_team_run_live_validation.json \
             data/v14_distribution_live_validation.json \
@@ -95,6 +131,8 @@ jobs:
             data/v14_calibration_methods_candidate.json \
             data/v14_heteroskedastic_candidate.json \
             data/v14_sharp_book_weights_candidate.json \
+            data/v14_bootstrap_uncertainty_candidate.json \
+            data/v14_learned_run_mean_candidate.json \
             data/v14_paper_bet_ledger.jsonl \
             data/v14_paper_bet_performance.json \
             data/v14_bet_ledger.jsonl \
@@ -102,7 +140,7 @@ jobs:
             [ -f "$file" ] && git add -f "$file"
           done
           if ! git diff --cached --quiet; then
-            git commit -m 'data: settle V14 performance, ledgers and challengers [skip ci]'
+            git commit -m 'data: settle V14 performance and audit-hardened research evidence [skip ci]'
             git pull --rebase origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
