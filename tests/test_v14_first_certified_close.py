@@ -43,6 +43,18 @@ def _row(game_pk: str, event_id: str | None, *, certified: bool = False) -> dict
     return row
 
 
+def _complete_paper_like_row(game_pk: str, event_id: str) -> dict:
+    row=_row(game_pk,event_id,certified=True)
+    row.update({
+        "closing_pinnacle_probability":0.56,
+        "certification_clv_pp":6.0,
+        "certification_clv_benchmark":"PINNACLE_NO_VIG",
+        "execution_close_odds":1.90,
+        "execution_price_clv_pp":2.631578947368418,
+    })
+    return row
+
+
 def _event(event_id: str) -> dict:
     return {"id": event_id, "commence_time": (NOW + timedelta(minutes=10)).isoformat(), "bookmakers": []}
 
@@ -147,10 +159,10 @@ class V14FirstCertifiedCloseTests(unittest.TestCase):
         self.assertEqual(seen["paper"], ["event-a"])
         self.assertEqual(seen["official"], [])
 
-    def test_certified_paper_row_cannot_be_rewritten_by_market_due_snapshot(self):
+    def test_complete_paper_components_cannot_be_rewritten_by_market_due_snapshot(self):
         out, seen = self._run_with_spies(
             [_row("B", "event-b", certified=False)],
-            [_row("A", "event-a", certified=True)],
+            [_complete_paper_like_row("A", "event-a")],
             [],
             [_event("event-a"), _event("event-b")],
         )
@@ -158,6 +170,18 @@ class V14FirstCertifiedCloseTests(unittest.TestCase):
         self.assertEqual(seen["market"], ["event-b"])
         self.assertEqual(seen["paper"], [])
         self.assertEqual(seen["official"], [])
+
+    def test_timing_certified_without_components_remains_due(self):
+        out, seen = self._run_with_spies(
+            [],
+            [_row("A", "event-a", certified=True)],
+            [],
+            [_event("event-a")],
+        )
+        self.assertEqual(out["due_rows"],1)
+        self.assertEqual(out["component_due_counts"]["primary"],1)
+        self.assertEqual(out["component_due_counts"]["execution"],1)
+        self.assertEqual(seen["paper"],["event-a"])
 
     def test_legacy_due_row_without_event_id_preserves_gate_but_sees_no_events(self):
         out, seen = self._run_with_spies(
@@ -192,8 +216,10 @@ class V14FirstCertifiedCloseTests(unittest.TestCase):
             self.assertAlmostEqual(hydrated["closing_pinnacle_probability"], 0.56)
             self.assertAlmostEqual(hydrated["certification_clv_pp"], 6.0)
             self.assertEqual(hydrated["certification_clv_benchmark"], "PINNACLE_NO_VIG")
+            self.assertEqual(hydrated["primary_close_captured_at"],(NOW+timedelta(minutes=10)).isoformat())
+            self.assertEqual(hydrated["execution_close_captured_at"],(NOW+timedelta(minutes=6)).isoformat())
 
-    def test_hydrated_certified_paper_close_is_immutable(self):
+    def test_hydrated_components_are_immutable_independently(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp); market = root / "market.jsonl"; paper = root / "paper.jsonl"
             archive = _row("A", "event-a")
@@ -205,13 +231,14 @@ class V14FirstCertifiedCloseTests(unittest.TestCase):
             _write_jsonl(market, [archive]); _write_jsonl(paper, [_paper_row("event-a")])
             self.assertEqual(hydrate_first_paper(market, paper), 1)
             first = json.loads(paper.read_text(encoding="utf-8").splitlines()[0])
-            self.assertEqual(first["close_captured_at"], (NOW + timedelta(minutes=8)).isoformat())
             archive["close_history"] = [_primary_close("event-a", NOW + timedelta(minutes=15), 5.0, consensus=0.78, pinnacle=0.77)]
             _write_jsonl(market, [archive])
             self.assertEqual(hydrate_first_paper(market, paper), 0)
             second = json.loads(paper.read_text(encoding="utf-8").splitlines()[0])
-            self.assertEqual(second["close_captured_at"], first["close_captured_at"])
+            self.assertEqual(second["primary_close_captured_at"], first["primary_close_captured_at"])
+            self.assertEqual(second["execution_close_captured_at"], first["execution_close_captured_at"])
             self.assertAlmostEqual(second["closing_pinnacle_probability"], first["closing_pinnacle_probability"])
+            self.assertAlmostEqual(second["execution_close_odds"], first["execution_close_odds"])
 
 
 if __name__ == "__main__":
