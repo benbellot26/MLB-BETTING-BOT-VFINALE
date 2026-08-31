@@ -5,6 +5,10 @@ from __future__ import annotations
 Primary benchmark: Pinnacle no-vig fair probability when present in the existing
 sharp contributors. Secondary benchmark: Pulsar's existing multi-book sharp
 consensus. Exchange proxies never become the primary benchmark here.
+
+Diagnostic phase reports may use all observed snapshots. Betting-certification
+benchmark evidence is isolated to the first objectively observed SCHEDULED_FINAL
+snapshot per game inside the shared timing window.
 """
 
 import argparse
@@ -15,6 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from . import MODEL_GENERATION, PROBABILITY_POLICY_ID
+from .certification_timing import CERTIFICATION_PHASE, CERTIFICATION_RUN_TRIGGER, first_certification_snapshots
 from .paired_inference import block_bootstrap_mean_ci, bootstrap_mean_ci, paired_score_differences
 from .snapshot_policy import select_canonical
 
@@ -89,12 +94,20 @@ def _logloss(p: float, y: int) -> float:
     return -(y * math.log(q) + (1 - y) * math.log(1 - q))
 
 
+def _ece(items:list[tuple[float,int]],bins:int=10)->float|None:
+    if not items:return None
+    grouped=[[] for _ in range(bins)]
+    for p,y in items:grouped[min(bins-1,max(0,int(p*bins)))].append((p,y))
+    return sum(len(group)/len(items)*abs(sum(p for p,_ in group)/len(group)-sum(y for _,y in group)/len(group)) for group in grouped if group)
+
+
 def _metrics(items: list[tuple[float, int]]) -> dict[str, Any]:
-    if not items: return {"n": 0, "brier": None, "logloss": None}
+    if not items: return {"n": 0, "brier": None, "logloss": None, "ece":None}
     return {
         "n": len(items),
         "brier": sum((p - y) ** 2 for p, y in items) / len(items),
         "logloss": sum(_logloss(p, y) for p, y in items) / len(items),
+        "ece":_ece(items),
     }
 
 
@@ -113,9 +126,10 @@ def _market_report(rows: list[dict[str, Any]], market: str) -> dict[str, Any]:
             secondary.append((p2, y)); paired_secondary.append((model, p2, y))
             diff = paired_score_differences([(model, p2, y)])["brier_gain"][0]; dated_secondary.append((str(row.get("target_date") or ""), diff))
     def inference(items: list[tuple[float, float, int]], dated: list[tuple[str, float]], label: str) -> dict[str, Any]:
-        diffs = paired_score_differences(items)
+        diffs = paired_score_differences(items); model_items=[(model,y) for model,_benchmark,y in items]
         return {
             "paired_n": len(items),
+            "model_metrics":_metrics(model_items),
             "brier_gain": bootstrap_mean_ci(diffs["brier_gain"], label=f"{label}:brier"),
             "logloss_gain": bootstrap_mean_ci(diffs["logloss_gain"], label=f"{label}:logloss"),
             "calendar_block_brier_gain": block_bootstrap_mean_ci(dated, label=f"{label}:block-brier"),
@@ -129,13 +143,12 @@ def _market_report(rows: list[dict[str, Any]], market: str) -> dict[str, Any]:
 
 
 def build(path: Path | str = PREDICTIONS) -> dict[str, Any]:
-    all_rows=_read(path)
-    rows = [r for r in all_rows if r.get("settled") and _current_row(r)]
-    selected = select_canonical(rows)
-    phases: dict[str, Any] = {}
+    all_rows=_read(path);rows=[r for r in all_rows if r.get("settled") and _current_row(r)];selected=select_canonical(rows);phases:dict[str,Any]={}
     for phase in ("EARLY", "LATE", "FINAL"):
-        phase_rows = [by_phase[phase] for by_phase in selected.values() if phase in by_phase]
-        phases[phase] = {"games": len(phase_rows), "markets": {m: _market_report(phase_rows, m) for m in MARKETS}}
+        phase_rows=[by_phase[phase] for by_phase in selected.values() if phase in by_phase]
+        phases[phase]={"games":len(phase_rows),"markets":{m:_market_report(phase_rows,m) for m in MARKETS}}
+    certification_rows=first_certification_snapshots(rows)
+    certification={"phase":CERTIFICATION_PHASE,"run_trigger":CERTIFICATION_RUN_TRIGGER,"games":len(certification_rows),"canonical_policy":"first observed SCHEDULED_FINAL snapshot per game in shared certification window; no manual substitution","markets":{m:_market_report(certification_rows,m) for m in MARKETS}}
     return {
         "schema": "pulsar-v14-sharp-benchmark-report-v1",
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -147,9 +160,11 @@ def build(path: Path | str = PREDICTIONS) -> dict[str, Any]:
         "primary_benchmark": "PINNACLE_NO_VIG",
         "secondary_benchmark": "WEIGHTED_SHARP_CONSENSUS",
         "exchange_policy": "exchange proxies remain secondary; no raw exchange price can serve as primary benchmark",
-        "snapshot_policy": "canonical observed EARLY/LATE/FINAL windows; no cross-phase mixing",
-        "certification_phase": "FINAL",
+        "snapshot_policy": "diagnostic EARLY/LATE/FINAL windows remain observed-only; certification uses first SCHEDULED_FINAL observation only",
+        "certification_phase": CERTIFICATION_PHASE,
+        "certification_run_trigger":CERTIFICATION_RUN_TRIGGER,
         "bootstrap_policy": "deterministic paired nonparametric bootstrap; calendar-block diagnostic",
+        "certification":certification,
         "phases": phases,
     }
 
@@ -163,7 +178,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Build zero-API Pinnacle/consensus sharp benchmark report")
     parser.add_argument("--predictions", default=str(PREDICTIONS)); parser.add_argument("--output", default=str(OUTPUT)); args = parser.parse_args()
     report = write(args.predictions, args.output)
-    print(json.dumps({"schema": report["schema"], "primary": report["primary_benchmark"], "generation":report["model_generation"], "policy":report["probability_policy_id"], "network_calls": 0}, sort_keys=True))
+    print(json.dumps({"schema": report["schema"], "primary": report["primary_benchmark"], "generation":report["model_generation"], "policy":report["probability_policy_id"], "certification_trigger":report["certification_run_trigger"], "network_calls": 0}, sort_keys=True))
 
 
 if __name__ == "__main__": main()

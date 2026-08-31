@@ -28,15 +28,18 @@ class CalibrationArtifactIdentityTests(unittest.TestCase):
             },
         }
 
-    def test_exact_identity_injected_artifact_can_activate(self) -> None:
+    def test_exact_identity_injected_artifact_is_shadow_only_until_policy_promotion(self) -> None:
         surface, meta = calibrate_surface(
             {"home_ml": 0.60, "away_ml": 0.40},
             phase="EARLY",
             artifact=self._artifact(),
         )
-        self.assertTrue(meta["any_active"])
+        self.assertFalse(meta["any_active"])
+        self.assertTrue(meta["any_research_candidate_active"])
+        self.assertFalse(meta["production_transform_applied"])
         self.assertTrue(meta["all_accepted"])
-        self.assertNotAlmostEqual(surface["home_ml"], 0.60)
+        self.assertAlmostEqual(surface["home_ml"], 0.60)
+        self.assertAlmostEqual(surface["away_ml"], 0.40)
         self.assertAlmostEqual(surface["home_ml"] + surface["away_ml"], 1.0)
 
     def test_injected_artifact_fails_closed_on_schema_generation_or_policy_mismatch(self) -> None:

@@ -7,6 +7,7 @@ CRITICAL_TEST_MODULES=(
     "tests.test_v14_acquisition",
     "tests.test_v14_artifacts",
     "tests.test_v14_audit_hardening",
+    "tests.test_v14_audit_hardening_v2",
     "tests.test_v14_certification_strict",
     "tests.test_v14_champion_manifest",
     "tests.test_v14_context_overlay",
@@ -34,6 +35,8 @@ CRITICAL_TEST_MODULES=(
     "tests.test_v14_parity_workflow",
     "tests.test_v14_phase",
     "tests.test_v14_pipeline",
+    "tests.test_v14_policy_freeze",
+    "tests.test_v14_production_close_capture",
     "tests.test_v14_production_runtime",
     "tests.test_v14_professional_hardening",
     "tests.test_v14_research_extensions",
@@ -41,6 +44,8 @@ CRITICAL_TEST_MODULES=(
     "tests.test_v14_run_stack_parity",
     "tests.test_v14_savant_run_value_builder",
     "tests.test_v14_savant_run_value_pit",
+    "tests.test_v14_scheduled_prediction_gate",
+    "tests.test_v14_scheduled_workflow_contract",
     "tests.test_v14_statcast_daily",
     "tests.test_v14_statcast_enrichment",
     "tests.test_v14_statcast_pit_backfill",
@@ -57,14 +62,13 @@ CRITICAL_TEST_MODULES=(
 )
 
 def run(verbosity:int=1)->bool:
-    suite=unittest.TestSuite(); loader=unittest.defaultTestLoader
+    suite=unittest.TestSuite();loader=unittest.defaultTestLoader
     for name in CRITICAL_TEST_MODULES:
-        module=__import__(name,fromlist=["*"]); suite.addTests(loader.loadTestsFromModule(module))
+        module=__import__(name,fromlist=["*"]);suite.addTests(loader.loadTestsFromModule(module))
     return unittest.TextTestRunner(verbosity=verbosity).run(suite).wasSuccessful()
-
 def main()->None:
-    parser=argparse.ArgumentParser(description="Run Pulsar V14 production and governance tests"); parser.add_argument("--verbose",action="store_true"); args=parser.parse_args()
-    if not run(verbosity=2 if args.verbose else 1): raise SystemExit(1)
+    parser=argparse.ArgumentParser(description="Run Pulsar V14 production and governance tests");parser.add_argument("--verbose",action="store_true");args=parser.parse_args()
+    if not run(verbosity=2 if args.verbose else 1):raise SystemExit(1)
     print("Pulsar V14 production/governance preflight OK")
 
-if __name__=="__main__": main()
+if __name__=="__main__":main()
