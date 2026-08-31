@@ -4,8 +4,9 @@ from __future__ import annotations
 
 Consumes the already-built native candidate only; it never calls MLB/Odds APIs.
 Coverage is audit-only and cannot authorize a bet. Raw snapshot counts are kept
-for compatibility, while unique-game first-observation views make repeated runs
-and run-trigger selection visible instead of silently inflating coverage.
+for compatibility, while unique-game first-observation views make repeated runs,
+run-trigger selection and model-generation boundaries visible instead of silently
+inflating or mixing coverage.
 """
 
 import argparse
@@ -15,10 +16,13 @@ import json
 from pathlib import Path
 from typing import Any
 
+from . import MODEL_GENERATION
+
 LEDGER = Path("data/v14_coverage_ledger.jsonl")
 REPORT = Path("data/v14_coverage_report.json")
 SCHEMA = "pulsar-v14-coverage-record-v1"
 LEGACY_TRIGGER = "LEGACY_UNSPECIFIED"
+LEGACY_GENERATION = "LEGACY_UNSPECIFIED"
 
 
 def _read(path: Path | str = LEDGER) -> list[dict[str, Any]]:
@@ -40,6 +44,10 @@ def _write(rows: list[dict[str, Any]], path: Path | str = LEDGER) -> None:
 
 def _trigger(value: Any) -> str:
     return str(value or LEGACY_TRIGGER).strip().upper() or LEGACY_TRIGGER
+
+
+def _generation(value: Any) -> str:
+    return str(value or LEGACY_GENERATION).strip() or LEGACY_GENERATION
 
 
 def _phase(value: Any) -> str:
@@ -75,6 +83,7 @@ def rows_from_candidate(candidate: dict[str, Any]) -> list[dict[str, Any]]:
     target_date = str(candidate.get("target_date") or "")
     analyzed_at = str(candidate.get("analyzed_at") or "")
     candidate_trigger = _trigger(candidate.get("run_trigger"))
+    candidate_generation = _generation(candidate.get("model_generation") or MODEL_GENERATION)
     results = candidate.get("results") or []
     skipped = candidate.get("skipped") or []
     rows: list[dict[str, Any]] = []
@@ -85,7 +94,8 @@ def rows_from_candidate(candidate: dict[str, Any]) -> list[dict[str, Any]]:
         sharp_available = sharp.get("freshness_verified") is True and bool(sharp.get("selections"))
         execution_available = execution.get("freshness_verified") is True and bool(execution.get("selections"))
         rows.append({
-            "schema": SCHEMA, "target_date": target_date, "analyzed_at": str(result.get("analyzed_at") or analyzed_at), "game_pk": game_pk,
+            "schema": SCHEMA, "model_generation": _generation(result.get("model_generation") or candidate_generation),
+            "target_date": target_date, "analyzed_at": str(result.get("analyzed_at") or analyzed_at), "game_pk": game_pk,
             "game_date": result.get("game_date"), "home": result.get("home"), "away": result.get("away"), "scheduled": True,
             "run_trigger": _trigger(result.get("run_trigger") or candidate_trigger), "phase": result.get("phase"),
             "odds_matched": True, "prediction_generated": True,
@@ -97,7 +107,8 @@ def rows_from_candidate(candidate: dict[str, Any]) -> list[dict[str, Any]]:
     for item in skipped:
         reason = str(item.get("reason") or "unknown")
         rows.append({
-            "schema": SCHEMA, "target_date": target_date, "analyzed_at": str(item.get("analyzed_at") or analyzed_at),
+            "schema": SCHEMA, "model_generation": _generation(item.get("model_generation") or candidate_generation),
+            "target_date": target_date, "analyzed_at": str(item.get("analyzed_at") or analyzed_at),
             "game_pk": str(item.get("game_pk") or ""), "game_date": item.get("game_date"), "home": item.get("home"), "away": item.get("away"), "scheduled": True,
             "run_trigger": _trigger(item.get("run_trigger") or candidate_trigger), "phase": item.get("phase"),
             "odds_matched": reason != "odds_event_unmatched", "prediction_generated": False,
@@ -112,13 +123,13 @@ def record(candidate_path: Path | str, ledger_path: Path | str = LEDGER) -> int:
     candidate = json.loads(Path(candidate_path).read_text(encoding="utf-8"))
     existing = _read(ledger_path)
     index = {
-        (str(r.get("target_date")), str(r.get("analyzed_at")), str(r.get("game_pk")), _trigger(r.get("run_trigger"))): r
+        (_generation(r.get("model_generation")), str(r.get("target_date")), str(r.get("analyzed_at")), str(r.get("game_pk")), _trigger(r.get("run_trigger"))): r
         for r in existing
     }
     before = len(index)
     for row in rows_from_candidate(candidate):
-        index[(str(row.get("target_date")), str(row.get("analyzed_at")), str(row.get("game_pk")), _trigger(row.get("run_trigger")))] = row
-    rows = sorted(index.values(), key=lambda r: (str(r.get("target_date")), str(r.get("analyzed_at")), str(r.get("game_pk")), _trigger(r.get("run_trigger"))))
+        index[(_generation(row.get("model_generation")), str(row.get("target_date")), str(row.get("analyzed_at")), str(row.get("game_pk")), _trigger(row.get("run_trigger")))] = row
+    rows = sorted(index.values(), key=lambda r: (_generation(r.get("model_generation")), str(r.get("target_date")), str(r.get("analyzed_at")), str(r.get("game_pk")), _trigger(r.get("run_trigger"))))
     _write(rows, ledger_path); return len(index) - before
 
 
@@ -155,7 +166,10 @@ def _summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def report(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    normalized = [dict(r, run_trigger=_trigger(r.get("run_trigger")), phase=_phase(r.get("phase"))) for r in rows]
+    all_normalized = [dict(r, model_generation=_generation(r.get("model_generation")), run_trigger=_trigger(r.get("run_trigger")), phase=_phase(r.get("phase"))) for r in rows]
+    generation_counts = Counter(str(r.get("model_generation")) for r in all_normalized)
+    normalized = [r for r in all_normalized if r.get("model_generation") == MODEL_GENERATION]
+    excluded = len(all_normalized) - len(normalized)
     overall = _summary(normalized)
     raw = overall["raw"]
     triggers = sorted({_trigger(r.get("run_trigger")) for r in normalized})
@@ -164,8 +178,10 @@ def report(rows: list[dict[str, Any]]) -> dict[str, Any]:
     by_phase = {phase: _summary([r for r in normalized if _phase(r.get("phase")) == phase]) for phase in phases}
     scheduled_final = by_trigger.get("SCHEDULED_FINAL", _summary([]))
     return {
-        "schema": "pulsar-v14-coverage-report-v1", "network_calls": 0,
-        # Compatibility fields remain raw snapshot-observation totals.
+        "schema": "pulsar-v14-coverage-report-v1", "network_calls": 0, "model_generation": MODEL_GENERATION,
+        "excluded_other_generation_observations": excluded,
+        "raw_observations_by_model_generation": dict(sorted(generation_counts.items())),
+        # Compatibility fields now describe current-generation raw snapshot observations only.
         "observations": raw["observations"], "predicted": raw["predicted"], "sharp_available": raw["sharp_available"],
         "execution_available": raw["execution_available"], "eligible": raw["eligible"],
         "prediction_coverage": raw["predicted"] / raw["observations"] if raw["observations"] else 0.0,
@@ -177,17 +193,19 @@ def report(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "by_run_trigger": by_trigger,
         "by_phase": by_phase,
         "scheduled_final_trigger": scheduled_final,
-        "canonical_policy": "within each reported cohort, first observed row per target_date x game_pk; later successful snapshots cannot replace an earlier failure",
+        "canonical_policy": "within each current-generation reported cohort, first observed row per target_date x game_pk; later successful snapshots cannot replace an earlier failure",
         "semantics": {
             "eligible": "native prediction generated; this is analyzability, not betting authorization",
             "fully_market_observable": "prediction generated with verified-fresh canonical market, sharp market selections, and execution market selections",
             "execution_available_requires_freshness_verified_true": True,
             "scheduled_final_trigger_is_not_exact_final_phase_cohort": True,
+            "current_model_generation_only": True,
+            "legacy_missing_model_generation": LEGACY_GENERATION,
             "legacy_missing_run_trigger": LEGACY_TRIGGER,
             "audit_only": True,
             "can_authorize_bet": False,
         },
-        "interpretation": "performance describes a selected analyzable universe; inspect first-observation unique-game and trigger/phase slices before assuming rejection missingness is random",
+        "interpretation": "performance describes a selected analyzable universe; inspect current-generation first-observation unique-game and trigger/phase slices before assuming rejection missingness is random",
     }
 
 
