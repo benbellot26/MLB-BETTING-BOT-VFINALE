@@ -22,7 +22,12 @@ from .market_close_ledger import LEDGER as MARKET_LEDGER, _read as read_market, 
 from .official_close import capture as capture_official
 from .paper_ledger import LEDGER as PAPER_LEDGER, capture_close as capture_paper
 
-CERTIFIED_DUE_WINDOW_MINUTES = 18.0
+# Never pay for a provisional close. The downstream ledgers define a certified
+# close as <=15 minutes to first pitch, so the network gate uses the same limit.
+# With the 10-minute wake cadence this still gives every game a scheduled check
+# inside the certified window while avoiding a possible 16-18m paid call followed
+# by a second paid certified call on the next wake-up.
+CERTIFIED_DUE_WINDOW_MINUTES = 15.0
 
 
 def _generic_read(path: Path | str) -> list[dict[str, Any]]:
