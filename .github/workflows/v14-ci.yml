@@ -37,7 +37,7 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_v14_*.py' -v
 
   historical-pit:
-    name: V14.5 strict historical PIT holdout
+    name: V14.6 strict historical PIT holdout
     needs: v14
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -92,7 +92,7 @@ jobs:
           if (d.get('market_line_contract') or {}).get('total_line') != 8.5:
               raise SystemExit('historical distribution total-line diagnostic contract is not explicit')
           PY
-      - name: Archive V14.5 historical evidence
+      - name: Archive V14.6 historical evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pulsar-v14-historical-validation-${{ github.run_id }}
@@ -103,7 +103,7 @@ jobs:
           retention-days: 90
 
   savant-pit:
-    name: V14.5 live Savant run-value PIT smoke
+    name: V14.6 live Savant run-value PIT smoke
     needs: v14
     runs-on: ubuntu-latest
     timeout-minutes: 12
@@ -112,7 +112,7 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
-      - name: Build current PIT defense catcher baserunning shadow artifact
+      - name: Build current PIT defense catcher baserunning production artifact
         run: |
           set -euo pipefail
           mkdir -p runtime/v14
@@ -135,10 +135,12 @@ jobs:
           expected=(date.fromisoformat(os.environ['TARGET_DAY'])-timedelta(days=1)).isoformat()
           if x.get('cutoff_day') != expected:
               raise SystemExit(f'Savant PIT cutoff {x.get("cutoff_day")} != target-1 {expected}')
-          if x.get('point_in_time') is not True or x.get('champion_impact') is not False:
-              raise SystemExit('Savant normalized artifact violated shadow PIT contract')
+          if x.get('point_in_time') is not True or x.get('champion_impact') is not True:
+              raise SystemExit('Savant normalized artifact violated V14.6 production PIT contract')
+          if x.get('role') != 'PRODUCTION_ADVANCED_DATA':
+              raise SystemExit('Savant normalized artifact is not generation-bound production data')
           PY
-      - name: Archive normalized Savant PIT shadow data
+      - name: Archive normalized Savant PIT production data
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pulsar-v14-savant-run-value-${{ github.run_id }}
@@ -146,7 +148,7 @@ jobs:
           retention-days: 30
 
   statcast-pit:
-    name: V14.5 live enriched Statcast PIT source smoke
+    name: V14.6 live enriched Statcast PIT source smoke
     needs: v14
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -179,7 +181,7 @@ jobs:
           print('STATCAST_ROWS=',x.get('raw_pitch_rows'),'HITTERS=',len(hitters),'PITCHERS=',len(pitchers))
           print('STATCAST_ENRICHED_COVERAGE=',json.dumps(coverage,sort_keys=True))
           if x.get('point_in_time') is not True or x.get('stable_id_only') is not True or x.get('champion_impact') is not False:
-              raise SystemExit('Statcast PIT contract violation')
+              raise SystemExit('Statcast PIT source/backfill contract violation')
           if priors.get('schema') != 'pulsar-v14-statcast-id-priors-v2':
               raise SystemExit('Statcast smoke did not build enriched V14 priors')
           if int(x.get('raw_pitch_rows') or 0) <= 0 or not hitters or not pitchers:
@@ -201,7 +203,7 @@ jobs:
           retention-days: 30
 
   weather-pit:
-    name: V14.5 archived weather PIT smoke
+    name: V14.6 archived weather PIT smoke
     needs: v14
     runs-on: ubuntu-latest
     timeout-minutes: 12
@@ -223,7 +225,7 @@ jobs:
           print('WEATHER_COVERAGE=',json.dumps(c,sort_keys=True))
           print('WEATHER_FAILURES=',json.dumps((x.get('failures') or [])[:20],sort_keys=True))
           if x.get('point_in_time') is not True or x.get('champion_impact') is not False:
-              raise SystemExit('weather PIT artifact contract violation')
+              raise SystemExit('weather historical PIT artifact contract violation')
           if int(c.get('pit_rows') or 0) != int(c.get('input_rows') or 0):
               raise SystemExit('some historical weather rows failed PIT provenance validation')
           for row in x.get('rows') or []:
@@ -238,7 +240,7 @@ jobs:
           retention-days: 30
 
   identity-scaffold:
-    name: V14.5 historical identity scaffold smoke
+    name: V14.6 historical identity scaffold smoke
     needs: v14
     runs-on: ubuntu-latest
     timeout-minutes: 10
