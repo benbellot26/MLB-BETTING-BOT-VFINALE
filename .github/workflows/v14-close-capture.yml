@@ -52,7 +52,6 @@ jobs:
       - name: Capture closes with one shared paid snapshot only when due
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
-          # Override in repository/environment variables only if deliberately desired.
           V14_MAX_PAID_CLOSE_SNAPSHOTS_PER_DAY: '12'
         run: |
           python -m v14.cost_aware_close_capture \
@@ -71,18 +70,42 @@ jobs:
             --ledger data/v14_api_usage.jsonl \
             --output data/v14_api_usage_report.json
 
-      - name: Persist prospective close evidence and paid-request accounting
+      - name: Persist only substantive close evidence changes
         run: |
           git config user.name 'Pulsar V14'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          [ -f data/v14_market_close_ledger.jsonl ] && git add -f data/v14_market_close_ledger.jsonl
-          [ -f data/v14_market_close_report.json ] && git add -f data/v14_market_close_report.json
-          [ -f data/v14_paper_bet_ledger.jsonl ] && git add -f data/v14_paper_bet_ledger.jsonl
-          [ -f data/v14_bet_ledger.jsonl ] && git add -f data/v14_bet_ledger.jsonl
-          [ -f data/v14_api_usage.jsonl ] && git add -f data/v14_api_usage.jsonl
-          [ -f data/v14_api_usage_report.json ] && git add -f data/v14_api_usage_report.json
+
+          MARKET_CHANGED=0
+          API_CHANGED=0
+          if [ -f data/v14_market_close_ledger.jsonl ] && ! git diff --quiet -- data/v14_market_close_ledger.jsonl; then
+            git add -f data/v14_market_close_ledger.jsonl
+            MARKET_CHANGED=1
+          fi
+          if [ -f data/v14_paper_bet_ledger.jsonl ] && ! git diff --quiet -- data/v14_paper_bet_ledger.jsonl; then
+            git add -f data/v14_paper_bet_ledger.jsonl
+          fi
+          if [ -f data/v14_bet_ledger.jsonl ] && ! git diff --quiet -- data/v14_bet_ledger.jsonl; then
+            git add -f data/v14_bet_ledger.jsonl
+          fi
+          if [ -f data/v14_api_usage.jsonl ] && ! git diff --quiet -- data/v14_api_usage.jsonl; then
+            git add -f data/v14_api_usage.jsonl
+            API_CHANGED=1
+          fi
+
+          # Reports carry generated_at. Stage them only when the evidence they
+          # summarize actually changed, preventing timestamp-only commits every
+          # ten minutes.
+          if [ "$MARKET_CHANGED" -eq 1 ] && [ -f data/v14_market_close_report.json ]; then
+            git add -f data/v14_market_close_report.json
+          fi
+          if [ "$API_CHANGED" -eq 1 ] && [ -f data/v14_api_usage_report.json ]; then
+            git add -f data/v14_api_usage_report.json
+          fi
+
           if ! git diff --cached --quiet; then
             git commit -m 'data: capture cost-aware V14 prospective closes [skip ci]'
             git pull --rebase origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
+          else
+            echo 'PULSAR_V14_CLOSE_NO_SUBSTANTIVE_CHANGE no commit created'
           fi
