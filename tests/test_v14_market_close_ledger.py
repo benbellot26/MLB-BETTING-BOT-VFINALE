@@ -4,6 +4,7 @@ import tempfile
 import unittest
 
 from v14 import MODEL_GENERATION, PROBABILITY_POLICY_ID
+from v14.certification_timing import CERTIFICATION_RUN_TRIGGER
 from v14.market_close_ledger import (
     ROLE,
     _read,
@@ -16,7 +17,7 @@ from v14.paper_ledger import _read as read_paper
 from v14.paper_ledger import record_payload as record_paper
 
 GAME_DATE = "2026-08-25T23:00:00Z"
-ANALYZED_AT = "2026-08-25T20:00:00Z"
+ANALYZED_AT = "2026-08-25T22:30:00Z"
 CLOSE_AT = datetime(2026, 8, 25, 22, 50, tzinfo=timezone.utc)
 
 
@@ -60,7 +61,7 @@ def _event(event_id="odds-123", commence_time=GAME_DATE):
     }
 
 
-def _payload(*, analyzed_at=ANALYZED_AT, event_id="odds-123", event_time=GAME_DATE, edge=True, phase="FINAL"):
+def _payload(*, analyzed_at=ANALYZED_AT, event_id="odds-123", event_time=GAME_DATE, edge=True, phase="FINAL", run_trigger=CERTIFICATION_RUN_TRIGGER):
     candidate = {
         "selection": "home_ml",
         "canonical_market": "ML",
@@ -91,12 +92,14 @@ def _payload(*, analyzed_at=ANALYZED_AT, event_id="odds-123", event_time=GAME_DA
     }
     return {
         "model_generation": MODEL_GENERATION,
+        "run_trigger": run_trigger,
         "target_date": "2026-08-25",
         "analyzed_at": analyzed_at,
         "results": [
             {
                 "game_pk": "123",
                 "model_generation": MODEL_GENERATION,
+                "run_trigger": run_trigger,
                 "odds_event_id": event_id,
                 "game_date": GAME_DATE,
                 "analyzed_at": analyzed_at,
@@ -135,6 +138,7 @@ def _payload(*, analyzed_at=ANALYZED_AT, event_id="odds-123", event_time=GAME_DA
                 },
                 "v14_prediction": {
                     "model_generation": MODEL_GENERATION,
+                    "run_trigger": run_trigger,
                     "probability_policy_id": PROBABILITY_POLICY_ID,
                     "phase": phase,
                     "calibration": {"probability_policy_id": PROBABILITY_POLICY_ID},
@@ -232,6 +236,7 @@ class V14MarketCloseLedgerTests(unittest.TestCase):
             self.assertEqual(hydrate_paper(archive, paper), 1)
             row = read_paper(paper)[0]
             self.assertEqual(row["phase"], "FINAL")
+            self.assertEqual(row["run_trigger"], CERTIFICATION_RUN_TRIGGER)
             self.assertEqual(row["close_quality"], "CERTIFIED_CLOSE")
             self.assertEqual(row["close_captured_at"], CLOSE_AT.isoformat())
             self.assertIsNotNone(row["closing_sharp_probability"])
