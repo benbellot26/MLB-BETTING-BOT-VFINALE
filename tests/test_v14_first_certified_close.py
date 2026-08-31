@@ -5,7 +5,8 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from v14.cost_aware_close_capture import run
+from v14 import MODEL_GENERATION, PROBABILITY_POLICY_ID
+from v14.cost_aware_close_capture import hydrate_first_paper, run
 
 
 NOW = datetime(2026, 8, 31, 18, 0, tzinfo=timezone.utc)
@@ -18,6 +19,9 @@ def _write_jsonl(path: Path, rows: list[dict]) -> None:
 def _row(game_pk: str, event_id: str | None, *, certified: bool = False) -> dict:
     row = {
         "schema": "pulsar-v14-market-close-v1",
+        "model_generation": MODEL_GENERATION,
+        "probability_policy_id": PROBABILITY_POLICY_ID,
+        "certification_eligible": False,
         "game_pk": game_pk,
         "odds_event_id": event_id,
         "odds_event_time_verified": True,
@@ -41,6 +45,40 @@ def _row(game_pk: str, event_id: str | None, *, certified: bool = False) -> dict
 
 def _event(event_id: str) -> dict:
     return {"id": event_id, "commence_time": (NOW + timedelta(minutes=10)).isoformat(), "bookmakers": []}
+
+
+def _primary_close(event_id: str, captured_at: datetime, minutes_to_game: float, *, consensus: float, pinnacle: float | None) -> dict:
+    selection = {"fair_probability": consensus, "pinnacle_no_vig_probability": pinnacle, "dispersion_pp": 0.5}
+    return {
+        "captured_at": captured_at.isoformat(),
+        "minutes_to_game": minutes_to_game,
+        "quality": "CERTIFIED_CLOSE",
+        "odds_event_id": event_id,
+        "selections": {"home_ml": selection},
+        "execution_prices": {"pinnacle": {"home_ml": 1.90}},
+    }
+
+
+def _paper_row(event_id: str, game_pk: str = "A") -> dict:
+    return {
+        "schema": "pulsar-v14-paper-bet-v8",
+        "model_generation": MODEL_GENERATION,
+        "probability_policy_id": PROBABILITY_POLICY_ID,
+        "game_pk": game_pk,
+        "odds_event_id": event_id,
+        "analyzed_at": NOW.isoformat(),
+        "game_date": (NOW + timedelta(minutes=20)).isoformat(),
+        "selection": "home_ml",
+        "canonical_market": "ML",
+        "execution_book": "pinnacle",
+        "execution_odds": 2.0,
+        "entry_execution_implied_probability": 0.50,
+        "entry_sharp_probability": 0.52,
+        "close_history": [],
+        "close_quality": None,
+        "close_captured_at": None,
+        "close_minutes_to_game": None,
+    }
 
 
 class V14FirstCertifiedCloseTests(unittest.TestCase):
@@ -135,6 +173,45 @@ class V14FirstCertifiedCloseTests(unittest.TestCase):
         self.assertEqual(seen["paper"], [])
         self.assertEqual(seen["official"], [])
         self.assertEqual(out["consumer_event_counts"], {"market": 0, "paper": 0, "official": 0})
+
+    def test_hydration_uses_first_usable_pinnacle_primary_close_not_latest_close(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); market = root / "market.jsonl"; paper = root / "paper.jsonl"
+            archive = _row("A", "event-a")
+            archive["game_date"] = (NOW + timedelta(minutes=20)).isoformat()
+            archive["close_history"] = [
+                _primary_close("event-a", NOW + timedelta(minutes=6), 14.0, consensus=0.55, pinnacle=None),
+                _primary_close("event-a", NOW + timedelta(minutes=10), 10.0, consensus=0.57, pinnacle=0.56),
+                _primary_close("event-a", NOW + timedelta(minutes=15), 5.0, consensus=0.67, pinnacle=0.66),
+            ]
+            _write_jsonl(market, [archive]); _write_jsonl(paper, [_paper_row("event-a")])
+            self.assertEqual(hydrate_first_paper(market, paper), 1)
+            hydrated = json.loads(paper.read_text(encoding="utf-8").splitlines()[0])
+            self.assertEqual(hydrated["close_captured_at"], (NOW + timedelta(minutes=10)).isoformat())
+            self.assertAlmostEqual(hydrated["closing_sharp_probability"], 0.57)
+            self.assertAlmostEqual(hydrated["closing_pinnacle_probability"], 0.56)
+            self.assertAlmostEqual(hydrated["certification_clv_pp"], 6.0)
+            self.assertEqual(hydrated["certification_clv_benchmark"], "PINNACLE_NO_VIG")
+
+    def test_hydrated_certified_paper_close_is_immutable(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); market = root / "market.jsonl"; paper = root / "paper.jsonl"
+            archive = _row("A", "event-a")
+            archive["game_date"] = (NOW + timedelta(minutes=20)).isoformat()
+            archive["close_history"] = [
+                _primary_close("event-a", NOW + timedelta(minutes=8), 12.0, consensus=0.58, pinnacle=0.57),
+                _primary_close("event-a", NOW + timedelta(minutes=15), 5.0, consensus=0.68, pinnacle=0.67),
+            ]
+            _write_jsonl(market, [archive]); _write_jsonl(paper, [_paper_row("event-a")])
+            self.assertEqual(hydrate_first_paper(market, paper), 1)
+            first = json.loads(paper.read_text(encoding="utf-8").splitlines()[0])
+            self.assertEqual(first["close_captured_at"], (NOW + timedelta(minutes=8)).isoformat())
+            archive["close_history"] = [_primary_close("event-a", NOW + timedelta(minutes=15), 5.0, consensus=0.78, pinnacle=0.77)]
+            _write_jsonl(market, [archive])
+            self.assertEqual(hydrate_first_paper(market, paper), 0)
+            second = json.loads(paper.read_text(encoding="utf-8").splitlines()[0])
+            self.assertEqual(second["close_captured_at"], first["close_captured_at"])
+            self.assertAlmostEqual(second["closing_pinnacle_probability"], first["closing_pinnacle_probability"])
 
 
 if __name__ == "__main__":
