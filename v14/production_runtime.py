@@ -10,6 +10,7 @@ from typing import Any
 
 from . import MODEL_GENERATION
 from .acquisition import resolve_target_date
+from .certification_timing import ALLOWED_RUN_TRIGGERS, normalize_run_trigger
 from .discord import publication_gap_seconds, send_game
 from .native_candidate import build_candidate, persist_candidate
 from .native_payload import authorize_payload, build_native_discord_payload
@@ -48,6 +49,8 @@ def validate_production_payload(payload:dict[str,Any])->None:
     if payload.get("market_probability_used_as_feature") is not False: raise ValueError("market probability feature leak")
     if payload.get("chosen"): raise ValueError("analytics payload contains recommendations")
     if (payload.get("combo") or {}).get("official"): raise ValueError("analytics payload contains official combo")
+    top_trigger=payload.get("run_trigger")
+    if top_trigger is not None and str(top_trigger).upper() not in ALLOWED_RUN_TRIGGERS: raise ValueError("V14 payload run trigger invalid")
 
     top_cert=payload.get("betting_certification") or {}
     if top_cert and top_cert.get("model_generation")!=MODEL_GENERATION: raise ValueError("payload betting certification generation mismatch")
@@ -55,8 +58,10 @@ def validate_production_payload(payload:dict[str,Any])->None:
         game_pk=result.get("game_pk")
         if result.get("model_generation")!=MODEL_GENERATION: raise ValueError(f"game {game_pk} is not V14")
         if result.get("native_acquisition") is not True: raise ValueError(f"game {game_pk} is not native acquisition")
+        if top_trigger is not None and str(result.get("run_trigger") or "").upper()!=str(top_trigger).upper(): raise ValueError(f"game {game_pk} run trigger provenance mismatch")
         prediction=result.get("v14_prediction") or {}
         if prediction.get("model_generation")!=MODEL_GENERATION or prediction.get("role")!="PRODUCTION": raise ValueError(f"game {game_pk} missing V14 production prediction")
+        if top_trigger is not None and str(prediction.get("run_trigger") or "").upper()!=str(top_trigger).upper(): raise ValueError(f"game {game_pk} prediction run trigger provenance mismatch")
         if prediction.get("market_probability_used_as_feature") is not False: raise ValueError(f"game {game_pk} used market probability as model feature")
         surface=prediction.get("probabilities") or {}; pairs=((surface.get("away_ml"),surface.get("home_ml")),(surface.get("away_plus_1_5"),surface.get("home_minus_1_5")),(surface.get("home_plus_1_5"),surface.get("away_minus_1_5")),(surface.get("over"),surface.get("under")))
         for left,right in pairs:
@@ -77,8 +82,23 @@ def validate_production_payload(payload:dict[str,Any])->None:
         if fallback.get("degraded") and any(c.get("status")=="BET" for c in decision.get("candidates") or []): raise ValueError(f"game {game_pk} emitted BET with degraded starter data")
 
 
-def build_persisted(*,target_date:str|None=None,destination:Path|str=V14_PAYLOAD,candidate_destination:Path|str=V14_CANDIDATE)->dict[str,Any]:
-    date=target_date or resolve_target_date(); candidate=build_candidate(date); persist_candidate(candidate,candidate_destination); validate_candidate_coverage(candidate); unauthorized=build_native_discord_payload(candidate); payload=authorize_payload(unauthorized,production_authorized=True); payload["authorization_basis"]={"type":"software-production-contract","model_generation":MODEL_GENERATION,"priced_matched_coverage_gate":MIN_PRICED_MATCHED_COVERAGE,"matched_scheduled_coverage_gate":MIN_MATCHED_SCHEDULED_COVERAGE,"betting_certified":bool((payload.get("betting_certification") or {}).get("certified")),"note":"Publication is analytics/software authorization; betting requires the independent market-specific statistical certification gate."}; validate_production_payload(payload); target=Path(destination); target.parent.mkdir(parents=True,exist_ok=True); target.write_text(json.dumps(payload,ensure_ascii=False,separators=(",",":")),encoding="utf-8"); print(f"PULSAR_V14_NATIVE_PRODUCTION date={date} games={len(payload['results'])} path={target}"); return payload
+def _stamp_run_trigger(candidate:dict[str,Any],trigger:str)->None:
+    candidate["run_trigger"]=trigger
+    for result in candidate.get("results") or []:
+        if isinstance(result,dict):result["run_trigger"]=trigger
+
+
+def _stamp_payload_trigger(payload:dict[str,Any],trigger:str)->None:
+    payload["run_trigger"]=trigger
+    for result in payload.get("results") or []:
+        if not isinstance(result,dict):continue
+        result["run_trigger"]=trigger
+        prediction=result.get("v14_prediction") or {}
+        if isinstance(prediction,dict):prediction["run_trigger"]=trigger
+
+
+def build_persisted(*,target_date:str|None=None,destination:Path|str=V14_PAYLOAD,candidate_destination:Path|str=V14_CANDIDATE,run_trigger:str="MANUAL")->dict[str,Any]:
+    trigger=normalize_run_trigger(run_trigger);date=target_date or resolve_target_date();candidate=build_candidate(date);_stamp_run_trigger(candidate,trigger);persist_candidate(candidate,candidate_destination);validate_candidate_coverage(candidate);unauthorized=build_native_discord_payload(candidate);payload=authorize_payload(unauthorized,production_authorized=True);_stamp_payload_trigger(payload,trigger);payload["authorization_basis"]={"type":"software-production-contract","model_generation":MODEL_GENERATION,"run_trigger":trigger,"priced_matched_coverage_gate":MIN_PRICED_MATCHED_COVERAGE,"matched_scheduled_coverage_gate":MIN_MATCHED_SCHEDULED_COVERAGE,"betting_certified":bool((payload.get("betting_certification") or {}).get("certified")),"note":"Publication is analytics/software authorization; betting requires the independent market-specific statistical certification gate."};validate_production_payload(payload);target=Path(destination);target.parent.mkdir(parents=True,exist_ok=True);target.write_text(json.dumps(payload,ensure_ascii=False,separators=(",",":")),encoding="utf-8");print(f"PULSAR_V14_NATIVE_PRODUCTION date={date} trigger={trigger} games={len(payload['results'])} path={target}");return payload
 
 
 def send_persisted(*,path:Path|str=V14_PAYLOAD)->None:
@@ -93,8 +113,8 @@ def send_persisted(*,path:Path|str=V14_PAYLOAD)->None:
 
 
 def main()->None:
-    parser=argparse.ArgumentParser(description="Native Pulsar V14 production runtime"); parser.add_argument("--send-persisted",action="store_true"); parser.add_argument("--target-date"); parser.add_argument("--destination",default=str(V14_PAYLOAD)); parser.add_argument("--candidate-destination",default=str(V14_CANDIDATE)); args=parser.parse_args()
-    if args.send_persisted: send_persisted(path=args.destination)
-    else: build_persisted(target_date=args.target_date,destination=args.destination,candidate_destination=args.candidate_destination)
+    parser=argparse.ArgumentParser(description="Native Pulsar V14 production runtime");parser.add_argument("--send-persisted",action="store_true");parser.add_argument("--target-date");parser.add_argument("--destination",default=str(V14_PAYLOAD));parser.add_argument("--candidate-destination",default=str(V14_CANDIDATE));parser.add_argument("--run-trigger",default="MANUAL",choices=sorted(ALLOWED_RUN_TRIGGERS));args=parser.parse_args()
+    if args.send_persisted:send_persisted(path=args.destination)
+    else:build_persisted(target_date=args.target_date,destination=args.destination,candidate_destination=args.candidate_destination,run_trigger=args.run_trigger)
 
-if __name__=="__main__": main()
+if __name__=="__main__":main()
