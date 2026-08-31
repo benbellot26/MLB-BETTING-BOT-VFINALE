@@ -122,7 +122,7 @@ class V14StrictCertificationTests(unittest.TestCase):
         self.assertFalse(out["markets"]["ML"]["probability_certified"]); self.assertIn("performance_evidence_stale>48h",out["markets"]["ML"]["failures"])
 
     def test_fresh_report_over_stale_underlying_observations_fails_closed(self):
-        performance,calibration=probability_ready(); stale="2026-08-20T00:00:00+00:00"; performance["segments"]["rolling"]["60d"]["through"]=stale; calibration["latest_observation_at"]=stale; out=evaluate(performance,calibration,paper(clv(),clv(n=80)),now=NOW)
+        performance,calibration=probability_ready(); stale="2026-08-20T00:00:00+00:00"; performance["latest_observation_at"]=stale; performance["segments"]["rolling"]["60d"]["through"]=stale; calibration["latest_observation_at"]=stale; out=evaluate(performance,calibration,paper(clv(),clv(n=80)),now=NOW)
         self.assertFalse(out["markets"]["ML"]["probability_certified"]); self.assertTrue(any("latest_performance_observation_stale" in reason for reason in out["markets"]["ML"]["failures"]))
 
     def test_stale_paper_close_blocks_betting_even_if_report_is_fresh(self):
@@ -139,7 +139,7 @@ class V14StrictCertificationTests(unittest.TestCase):
         self.assertTrue(out["markets"]["ML"]["probability_certified"])
         self.assertEqual((out["policy"] or {}).get("primary_sharp_benchmark"),"PINNACLE_NO_VIG")
         self.assertEqual((out["policy"] or {}).get("primary_sharp_phase"),"FINAL")
-        self.assertEqual((out["policy"] or {}).get("certification_run_trigger"),CERTIFICATION_RUN_TRIGGER)
+        self.assertEqual((out["policy"] or {}).get("primary_sharp_run_trigger"),CERTIFICATION_RUN_TRIGGER)
         self.assertEqual((out["policy"] or {}).get("paper_entry_phase"),"FINAL")
         self.assertEqual((out["policy"] or {}).get("paper_primary_clv_benchmark"),"PINNACLE_NO_VIG")
 
