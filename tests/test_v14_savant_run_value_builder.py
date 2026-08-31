@@ -33,7 +33,7 @@ class SavantRunValueBuilderTests(unittest.TestCase):
         self.assertAlmostEqual(row["catcher_run_value_per_150"],4.5)
         self.assertAlmostEqual(row["baserunning_runs_per_600_pa"],1.0)
         self.assertEqual(out["schema"],"pulsar-v14-defense-baserunning-priors-v4")
-        self.assertEqual(out["role"],"PRODUCTION_ADVANCED_INPUT")
+        self.assertEqual(out["role"],"PRODUCTION_ADVANCED_DATA")
         self.assertEqual(out["cutoff_day"],"2026-08-25")
         self.assertEqual(out["baserunning_source"]["source_season"],2025)
         self.assertEqual(out["coverage"]["complete_teams"],1)
