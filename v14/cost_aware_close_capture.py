@@ -8,10 +8,13 @@ still lacks a certified close. When a call is due, one request-equivalent budget
 reservation is persisted BEFORE the paid Odds request, then ONE returned snapshot
 is reused by the market archive, paper ledger and official bet ledger.
 
-Each consumer receives only the event IDs for rows that are due in that consumer.
-This makes the first certified close immutable in the production collection path:
-a later paid snapshot triggered by another game or another ledger cannot silently
-rewrite an already-certified market, paper or official close.
+Each consumer receives only the exact event IDs for due rows that have a verified
+Odds identity. This makes the first certified close immutable in the production
+collection path: a later paid snapshot triggered by another game or another
+ledger cannot silently rewrite an already-certified market, paper or official
+close. Legacy rows without an event ID may still preserve the historical paid-
+gate/budget contract, but they receive no snapshot events and therefore cannot
+cross-match another game through this shared orchestration path.
 """
 
 import argparse
@@ -52,11 +55,10 @@ def _due(rows:list[dict[str,Any]],current:datetime,source:str)->list[dict[str,An
     due=[]
     for row in rows:
         if _has_certified_close(row):continue
-        event_id=str(row.get("odds_event_id") or "")
-        if not event_id:continue
         try:minutes=(parse_time(row.get("game_date"))-current).total_seconds()/60.0
         except Exception:continue
-        if 0<minutes<=CERTIFIED_DUE_WINDOW_MINUTES:due.append({"source":source,"game_pk":row.get("game_pk"),"odds_event_id":event_id,"minutes_to_game":minutes})
+        if 0<minutes<=CERTIFIED_DUE_WINDOW_MINUTES:
+            due.append({"source":source,"game_pk":row.get("game_pk"),"odds_event_id":str(row.get("odds_event_id") or ""),"minutes_to_game":minutes})
     return due
 
 
@@ -68,7 +70,7 @@ def due_games(market_path:Path|str=MARKET_LEDGER,paper_path:Path|str=PAPER_LEDGE
 
 
 def _events_for_source(events:list[dict[str,Any]],due:list[dict[str,Any]],source:str)->list[dict[str,Any]]:
-    """Return only snapshot events explicitly due for one ledger consumer."""
+    """Return only exact snapshot events explicitly due for one ledger consumer."""
     event_ids={str(row.get("odds_event_id") or "") for row in due if str(row.get("source") or "").upper()==source and row.get("odds_event_id")}
     if not event_ids:return []
     return [event for event in events if str(event.get("id") or "") in event_ids]
@@ -87,7 +89,8 @@ def run(market_path:Path|str=MARKET_LEDGER,paper_path:Path|str=PAPER_LEDGER,bet_
     events=(events_loader or (lambda:odds_snapshot(api_key=api_key)))()
     market_events=_events_for_source(events,due,"MARKET");paper_events=_events_for_source(events,due,"PAPER");official_events=_events_for_source(events,due,"OFFICIAL")
     market_changed=capture_market(market_path,api_key=api_key,events_loader=lambda:market_events,now=now);paper_changed=capture_paper(paper_path,api_key=api_key,events_loader=lambda:paper_events,now=now);official_changed=capture_official(path=bet_path,api_key=api_key,events_loader=lambda:official_events,now=now)
-    return {"api_call_performed":True,"paid_api_snapshots":1,"budget_reserved":True,"reservation":reservation,"captured":{"market":market_changed,"paper":paper_changed,"official":official_changed},"due_rows":len(due),"due":due,"consumer_event_counts":{"market":len(market_events),"paper":len(paper_events),"official":len(official_events)},"budget_before":budget,"budget_after":api_allowance(api_usage_path,now=now),"cost_policy":"budget reserved before paid request; one Odds snapshot shared across consumers; each consumer sees only its due event IDs; first certified close is immutable against incidental later snapshots; daily budget enforced"}
+    legacy_due=sum(1 for row in due if not row.get("odds_event_id"))
+    return {"api_call_performed":True,"paid_api_snapshots":1,"budget_reserved":True,"reservation":reservation,"captured":{"market":market_changed,"paper":paper_changed,"official":official_changed},"due_rows":len(due),"due":due,"legacy_due_without_event_id":legacy_due,"consumer_event_counts":{"market":len(market_events),"paper":len(paper_events),"official":len(official_events)},"budget_before":budget,"budget_after":api_allowance(api_usage_path,now=now),"cost_policy":"budget reserved before paid request; one Odds snapshot shared across consumers; each consumer sees only its due exact event IDs; legacy no-ID rows see no events; first certified close is immutable against incidental later snapshots; daily budget enforced"}
 
 
 def main()->None:
