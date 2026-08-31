@@ -20,16 +20,19 @@ def probability_ready():
     return performance,calibration
 
 
-def clv(n=120,mean=.40,positive=.56,ci=.08):
-    return {"n":n,"mean_clv":mean,"positive_rate":positive,"mean_clv_ci95_lower":ci,"mean_clv_ci95_upper":.70}
+def clv(n=120,mean=.40,positive=.56,ci=.08,*,benchmark=None,method="paired nonparametric bootstrap mean"):
+    row={"n":n,"mean_clv":mean,"positive_rate":positive,"mean_clv_ci95_lower":ci,"mean_clv_ci95_upper":.70,"inference_method":method,"bootstrap_reps":5000}
+    if benchmark is not None:row["benchmark"]=benchmark
+    return row
 
 
 def paper(primary=None,execution=None,close_at=FRESH):
     scoped={}
-    if primary is not None: scoped["certification_clv"]=primary
+    if primary is not None:
+        primary=dict(primary); primary.setdefault("benchmark","PINNACLE_NO_VIG"); scoped["certification_clv"]=primary
     if execution is not None: scoped["execution_clv"]=execution
     if primary is not None or execution is not None: scoped["latest_certified_close_at"]=close_at
-    return {"schema":"pulsar-v14-paper-bet-performance-v7","model_generation":MODEL_GENERATION,"probability_policy_id":PROBABILITY_POLICY_ID,"generated_at":FRESH,"by_market":({"ML":scoped} if scoped else {})}
+    return {"schema":"pulsar-v14-paper-bet-performance-v8","model_generation":MODEL_GENERATION,"probability_policy_id":PROBABILITY_POLICY_ID,"generated_at":FRESH,"primary_clv_benchmark":"PINNACLE_NO_VIG","legacy_consensus_certification_clv_can_certify":False,"by_market":({"ML":scoped} if scoped else {})}
 
 
 def primary_sharp(*,brier_lower=.002,logloss_lower=0.0,paired_n=500):
@@ -74,11 +77,26 @@ class V14StrictCertificationTests(unittest.TestCase):
 
     def test_paper_probability_policy_is_required(self):
         performance,calibration=probability_ready(); p=paper(clv(),clv(n=80)); p["probability_policy_id"]="old-policy"; out=evaluate(performance,calibration,p,now=NOW)
-        self.assertTrue(out["markets"]["ML"]["probability_certified"]); self.assertFalse(out["markets"]["ML"]["betting_certified"]); self.assertIn("strict_current_generation_policy_market_specific_paper_schema_required",out["markets"]["ML"]["betting_failures"])
+        self.assertTrue(out["markets"]["ML"]["probability_certified"]); self.assertFalse(out["markets"]["ML"]["betting_certified"]); self.assertIn("strict_pinnacle_primary_paper_schema_required",out["markets"]["ML"]["betting_failures"])
 
     def test_wrong_generation_paper_evidence_cannot_certify(self):
         performance,calibration=probability_ready(); p=paper(clv(n=200),clv(n=80)); p["model_generation"]="old-generation"; out=evaluate(performance,calibration,p,now=NOW)
-        self.assertFalse(out["markets"]["ML"]["betting_certified"]); self.assertIn("strict_current_generation_policy_market_specific_paper_schema_required",out["markets"]["ML"]["betting_failures"])
+        self.assertFalse(out["markets"]["ML"]["betting_certified"]); self.assertIn("strict_pinnacle_primary_paper_schema_required",out["markets"]["ML"]["betting_failures"])
+
+    def test_legacy_v7_consensus_clv_cannot_certify(self):
+        performance,calibration=probability_ready(); p=paper(clv(n=200),clv(n=80)); p["schema"]="pulsar-v14-paper-bet-performance-v7"; p.pop("primary_clv_benchmark"); p.pop("legacy_consensus_certification_clv_can_certify")
+        out=evaluate(performance,calibration,p,now=NOW)
+        self.assertFalse(out["markets"]["ML"]["betting_certified"]); self.assertIn("strict_pinnacle_primary_paper_schema_required",out["markets"]["ML"]["betting_failures"])
+
+    def test_wrong_primary_clv_benchmark_cannot_certify(self):
+        performance,calibration=probability_ready(); p=paper(clv(n=200),clv(n=80)); p["by_market"]["ML"]["certification_clv"]["benchmark"]="WEIGHTED_SHARP_CONSENSUS"
+        out=evaluate(performance,calibration,p,now=NOW)
+        self.assertFalse(out["markets"]["ML"]["betting_certified"]); self.assertIn("paper_certification_clv_benchmark_mismatch",out["markets"]["ML"]["betting_failures"])
+
+    def test_nonbootstrap_paper_clv_cannot_certify(self):
+        performance,calibration=probability_ready(); p=paper(clv(n=200,method="normal approximation"),clv(n=80))
+        out=evaluate(performance,calibration,p,now=NOW)
+        self.assertFalse(out["markets"]["ML"]["betting_certified"]); self.assertIn("paper_certification_clv_paired_bootstrap_required",out["markets"]["ML"]["betting_failures"])
 
     def test_stale_probability_report_expires_fail_closed(self):
         performance,calibration=probability_ready(); performance["generated_at"]="2026-08-23T00:00:00+00:00"; out=evaluate(performance,calibration,paper(clv(),clv(n=80)),now=NOW)
@@ -102,6 +120,7 @@ class V14StrictCertificationTests(unittest.TestCase):
         self.assertTrue(out["markets"]["ML"]["probability_certified"])
         self.assertEqual((out["policy"] or {}).get("primary_sharp_benchmark"),"PINNACLE_NO_VIG")
         self.assertEqual((out["policy"] or {}).get("primary_sharp_phase"),"FINAL")
+        self.assertEqual((out["policy"] or {}).get("paper_primary_clv_benchmark"),"PINNACLE_NO_VIG")
 
     def test_primary_pinnacle_bootstrap_negative_ci_blocks(self):
         performance,calibration=probability_ready(); out=evaluate(performance,calibration,paper(clv(),clv(n=80)),now=NOW,sharp_benchmark_report=primary_sharp(brier_lower=-.001),require_primary_benchmark=True)
