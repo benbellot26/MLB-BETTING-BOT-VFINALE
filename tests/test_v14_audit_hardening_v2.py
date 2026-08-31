@@ -112,6 +112,15 @@ class V14AuditHardeningV2Tests(unittest.TestCase):
             self.assertEqual(len(out["unsafe_promotion_claims"]),1)
             self.assertIn("prospective_only_evidence_required",out["unsafe_promotion_claims"][0]["failures"])
 
+    def test_promotion_guard_blocks_unregistered_promotion_review(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            registry=Path(tmp)/"registry.jsonl"; artifact=Path(tmp)/"legacy-live.json"
+            artifact.write_text(json.dumps({"status":"PROMOTION_REVIEW","role":"PROMOTION_EVIDENCE_ONLY"}),encoding="utf-8")
+            out=promotion_guard(registry=registry,artifact_paths={str(artifact):"UNREGISTERED-LEGACY-LIVE"})
+            self.assertFalse(out["valid"])
+            self.assertEqual(len(out["unsafe_promotion_claims"]),1)
+            self.assertIn("experiment_not_preregistered",out["unsafe_promotion_claims"][0]["failures"])
+
     def test_promotion_guard_accepts_exact_post_registration_provenance(self):
         with tempfile.TemporaryDirectory() as tmp:
             registry=Path(tmp)/"registry.jsonl"; artifact=Path(tmp)/"candidate.json"
