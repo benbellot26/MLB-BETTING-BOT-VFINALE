@@ -4,10 +4,11 @@ from __future__ import annotations
 
 Evidence tiers are deliberately separated:
 - Tier A: 14k+ strict J-1 team-history games, suitable for team-run priors.
-- Tier B: 1,801 richer 2026 reconstructions, suitable for ranking only.
+- Tier B: 1,801+ richer growing 2026 reconstructions, suitable for rolling audit/ranking only.
 - Tier C: exact recorded pregame replays, market-rich but currently small.
 Native V14 prospective data remains mandatory before a champion change and
-before betting certification.
+before betting certification. Growing 2026 data is explicitly NOT a blind or
+sealed frozen holdout.
 """
 
 import argparse
@@ -86,15 +87,15 @@ def _home_ml(game_pk: str, game_date: str, analyzed_at: str, home_mu: float, awa
 
 
 def probability_translation(pairs: list[tuple[dict[str, Any], dict[str, Any]]], params: dict[str, float]) -> dict[str, Any]:
-    # Final OOS probability evidence uses every untouched row. There is no
-    # outcome-dependent sampling and no cap that can hide an adverse segment.
+    # Historical rows remain complete within the declared temporal slice. Their
+    # role is diagnostic/ranking; no growing 2026 slice is promoted to a blind holdout.
     sampled = list(pairs); y: list[int] = []; pb: list[float] = []; pc: list[float] = []; bd: list[float] = []; ld: list[float] = []
     for feature, label in sampled:
         gid = str(feature.get("game_pk") or ""); game_date = str(feature.get("game_date") or ""); analyzed_at = str(feature.get("as_of") or game_date)
         bh, ba = baseline_runs(feature); ch, ca = candidate_runs(feature, params); b = _home_ml(gid, game_date, analyzed_at, bh, ba); c = _home_ml(gid, game_date, analyzed_at, ch, ca); z = int(_num(label.get("home_score")) > _num(label.get("away_score")))
         y.append(z); pb.append(b); pc.append(c); bd.append((b-z)**2-(c-z)**2)
         bl=-(z*math.log(_clip(b))+(1-z)*math.log(_clip(1-b))); cl=-(z*math.log(_clip(c))+(1-z)*math.log(_clip(1-c))); ld.append(bl-cl)
-    return {"sample_policy":"complete untouched temporal holdout; no subsampling","full_holdout":True,"baseline":_prob_metrics(y,pb),"candidate":_prob_metrics(y,pc),"paired_brier_gain":_mean_ci(bd),"paired_logloss_gain":_mean_ci(ld),"distribution":{"dispersion":CHAMPION_DISPERSION,"environment_sigma":CHAMPION_ENVIRONMENT_SIGMA}}
+    return {"sample_policy":"complete temporal audit slice; no outcome-dependent subsampling","full_holdout":False,"baseline":_prob_metrics(y,pb),"candidate":_prob_metrics(y,pc),"paired_brier_gain":_mean_ci(bd),"paired_logloss_gain":_mean_ci(ld),"distribution":{"dispersion":CHAMPION_DISPERSION,"environment_sigma":CHAMPION_ENVIRONMENT_SIGMA}}
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -108,28 +109,29 @@ def evidence_registry() -> dict[str, Any]:
     rich=_load_json(RICH_REPORT); replay=_load_json(REPLAY_REPORT); rich_games=int(rich.get("games") or 0); replay_games=int(replay.get("canonical_games") or 0); methodology=rich.get("methodology") or {}
     return {
         "tier_a_team_history":{"status":"VALIDATED_BY_THIS_RUN","use":"team-level run priors, recent-form shrinkage, run-distribution research"},
-        "tier_b_rich_2026_reconstruction":{"status":"RANKING_ONLY" if rich_games else "UNAVAILABLE","games":rich_games,"walk_forward":methodology.get("walk_forward"),"future_game_stats_used":methodology.get("future_game_stats_used"),"statcast_used":methodology.get("statcast_used"),"weather_used":methodology.get("weather_used"),"final_lineup_identity_with_prior_stats":methodology.get("actual_final_lineup_used_with_prior_player_stats"),"use":"starter/lineup/run-prior ranking; cannot validate missing Statcast/weather components"},
+        "tier_b_rich_2026_reconstruction":{"status":"ROLLING_AUDIT_ONLY" if rich_games else "UNAVAILABLE","games":rich_games,"walk_forward":methodology.get("walk_forward"),"future_game_stats_used":methodology.get("future_game_stats_used"),"statcast_used":methodology.get("statcast_used"),"weather_used":methodology.get("weather_used"),"final_lineup_identity_with_prior_stats":methodology.get("actual_final_lineup_used_with_prior_player_stats"),"blind_holdout":False,"use":"starter/lineup/run-prior ranking and regression detection; cannot certify alpha or champion promotion"},
         "tier_c_exact_pregame_replays":{"status":"SMALL_EXACT_REPLAY_EVIDENCE" if replay_games else "UNAVAILABLE","games":replay_games,"replay_pass":replay.get("replay_pass"),"replay_fail":replay.get("replay_fail"),"use":"feature-semantic parity and market/probability diagnostics; insufficient for promotion floors"},
-        "native_v14_prospective":{"status":"FINAL_AUTHORITY","use":"mandatory confirmation before champion promotion and only source that can satisfy betting certification"},
+        "native_v14_prospective":{"status":"FINAL_AUTHORITY","use":"mandatory sealed prospective confirmation before champion promotion and only source that can satisfy betting certification"},
     }
 
 
 def build() -> dict[str, Any]:
     pairs,dataset=load_verified(); split=split_by_season(pairs); tuning=tune(split["tuning"])
-    base={"schema":"pulsar-v14-historical-validation-v3","software_version":VERSION,"model_generation":MODEL_GENERATION,"role":"RESEARCH_EVIDENCE_ONLY","auto_activation":False,"generated_at":datetime.now(timezone.utc).isoformat(),"dataset":dataset,"split":{"tuning_2021_2024":len(split["tuning"]),"validation_2025":len(split["validation"]),"frozen_test_2026":len(split["frozen_test"]),"frozen_2026_used_for_parameter_selection":False},"evidence_registry":evidence_registry()}
+    audit_2026=split["frozen_test"]
+    base={"schema":"pulsar-v14-historical-validation-v4","software_version":VERSION,"model_generation":MODEL_GENERATION,"role":"RESEARCH_EVIDENCE_ONLY","auto_activation":False,"generated_at":datetime.now(timezone.utc).isoformat(),"dataset":dataset,"split":{"tuning_2021_2024":len(split["tuning"]),"validation_2025":len(split["validation"]),"audit_2026":len(audit_2026),"frozen_test_2026":len(audit_2026),"frozen_test_2026_key_deprecated":True,"audit_2026_role":"ROLLING_AUDIT_NOT_BLIND_HOLDOUT","audit_2026_used_for_parameter_selection":False,"frozen_2026_used_for_parameter_selection":False},"evidence_registry":evidence_registry()}
     if tuning.get("status")!="TUNED_RESEARCH_ONLY": return {**base,"status":"COLLECTING","team_run_challenger":{"tuning":tuning}}
-    params=tuning["parameters"]; validation=evaluate_split(split["validation"],params); frozen=evaluate_split(split["frozen_test"],params); gate=historical_gate(validation,frozen); pval=probability_translation(split["validation"],params); pfrozen=probability_translation(split["frozen_test"],params)
-    vb=pval["paired_brier_gain"]; vl=pval["paired_logloss_gain"]; fb=pfrozen["paired_brier_gain"]; fl=pfrozen["paired_logloss_gain"]
+    params=tuning["parameters"]; validation=evaluate_split(split["validation"],params); audit=evaluate_split(audit_2026,params); gate=historical_gate(validation,audit); pval=probability_translation(split["validation"],params); paudit=probability_translation(audit_2026,params)
+    vb=pval["paired_brier_gain"]; vl=pval["paired_logloss_gain"]; ab=paudit["paired_brier_gain"]; al=paudit["paired_logloss_gain"]
     downstream_validation=bool(vb.get("ci95_lower") is not None and float(vb["ci95_lower"])>=-.0015 and vl.get("ci95_lower") is not None and float(vl["ci95_lower"])>=-.003)
-    downstream_frozen=bool(fb.get("mean") is not None and float(fb["mean"])>=-.001 and fl.get("mean") is not None and float(fl["mean"])>=-.002)
-    historical_candidate=bool(gate.get("passes") and downstream_validation and downstream_frozen); status="HISTORICAL_PROMOTION_CANDIDATE" if historical_candidate else "REJECTED_HISTORICAL"
+    downstream_audit=bool(ab.get("mean") is not None and float(ab["mean"])>=-.001 and al.get("mean") is not None and float(al["mean"])>=-.002)
+    historical_candidate=bool(gate.get("passes") and downstream_validation and downstream_audit); status="HISTORICAL_SHADOW_CANDIDATE" if historical_candidate else "REJECTED_HISTORICAL"
     distribution=build_distribution_validation(split,params)
     component_recommendations={
         "run_means":"SHADOW_ON_NATIVE_V14" if historical_candidate else "KEEP_CURRENT_RUN_MEANS",
         "score_distribution":"SHADOW_ON_NATIVE_V14" if distribution.get("passes") else "KEEP_CURRENT_DISTRIBUTION",
         "advanced_features":"COLLECT_STRICT_PIT_AND_VALIDATE_OOS",
     }
-    return {**base,"status":status,"team_run_challenger":{"status":status,"tuning":tuning,"validation_2025":validation,"frozen_2026":frozen,"run_gate":gate,"probability_translation_2025":pval,"probability_translation_frozen_2026":pfrozen,"downstream_probability_validation_pass":downstream_validation,"downstream_probability_frozen_nonregression":downstream_frozen,"promotion_policy":"historical evidence may nominate a shadow challenger only; native V14 prospective confirmation is mandatory before changing MODEL_GENERATION"},"score_distribution_challenger":distribution,"component_recommendations":component_recommendations,"recommended_next_state":"SHADOW_ON_NATIVE_V14" if historical_candidate else "KEEP_CURRENT_CHAMPION"}
+    return {**base,"status":status,"team_run_challenger":{"status":status,"tuning":tuning,"validation_2025":validation,"audit_2026":audit,"frozen_2026":audit,"frozen_2026_key_deprecated":True,"run_gate":gate,"probability_translation_2025":pval,"probability_translation_audit_2026":paudit,"probability_translation_frozen_2026":paudit,"downstream_probability_validation_pass":downstream_validation,"downstream_probability_audit_nonregression":downstream_audit,"downstream_probability_frozen_nonregression":downstream_audit,"promotion_policy":"historical evidence may nominate a shadow challenger only; growing 2026 is rolling audit, never blind promotion evidence; preregistered native V14 prospective confirmation is mandatory before changing MODEL_GENERATION"},"score_distribution_challenger":distribution,"component_recommendations":component_recommendations,"recommended_next_state":"SHADOW_ON_NATIVE_V14" if historical_candidate else "KEEP_CURRENT_CHAMPION"}
 
 
 def write(output:Path|str=OUTPUT)->dict[str,Any]:
