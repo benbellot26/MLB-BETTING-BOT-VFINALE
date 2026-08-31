@@ -1,14 +1,173 @@
 {
-  "eligible": 0,
-  "execution_available": 0,
-  "execution_coverage": 0.0,
-  "interpretation": "performance describes the Pulsar-eligible universe; rejection missingness must not be assumed random",
+  "by_phase": {
+    "EARLY": {
+      "first_observation_unique_games": {
+        "eligible": 6,
+        "eligible_coverage": 1.0,
+        "execution_available": 6,
+        "execution_coverage": 1.0,
+        "fully_market_observable": 6,
+        "fully_market_observable_coverage": 1.0,
+        "market_fresh": 6,
+        "market_fresh_coverage": 1.0,
+        "observations": 6,
+        "predicted": 6,
+        "prediction_coverage": 1.0,
+        "rejection_reasons": {},
+        "sharp_available": 6,
+        "sharp_coverage": 1.0
+      },
+      "raw": {
+        "eligible": 6,
+        "execution_available": 6,
+        "fully_market_observable": 6,
+        "market_fresh": 6,
+        "observations": 6,
+        "predicted": 6,
+        "rejection_reasons": {},
+        "sharp_available": 6
+      }
+    },
+    "LATE": {
+      "first_observation_unique_games": {
+        "eligible": 6,
+        "eligible_coverage": 1.0,
+        "execution_available": 6,
+        "execution_coverage": 1.0,
+        "fully_market_observable": 6,
+        "fully_market_observable_coverage": 1.0,
+        "market_fresh": 6,
+        "market_fresh_coverage": 1.0,
+        "observations": 6,
+        "predicted": 6,
+        "prediction_coverage": 1.0,
+        "rejection_reasons": {},
+        "sharp_available": 6,
+        "sharp_coverage": 1.0
+      },
+      "raw": {
+        "eligible": 6,
+        "execution_available": 6,
+        "fully_market_observable": 6,
+        "market_fresh": 6,
+        "observations": 6,
+        "predicted": 6,
+        "rejection_reasons": {},
+        "sharp_available": 6
+      }
+    }
+  },
+  "by_run_trigger": {
+    "MANUAL": {
+      "first_observation_unique_games": {
+        "eligible": 12,
+        "eligible_coverage": 1.0,
+        "execution_available": 12,
+        "execution_coverage": 1.0,
+        "fully_market_observable": 12,
+        "fully_market_observable_coverage": 1.0,
+        "market_fresh": 12,
+        "market_fresh_coverage": 1.0,
+        "observations": 12,
+        "predicted": 12,
+        "prediction_coverage": 1.0,
+        "rejection_reasons": {},
+        "sharp_available": 12,
+        "sharp_coverage": 1.0
+      },
+      "raw": {
+        "eligible": 12,
+        "execution_available": 12,
+        "fully_market_observable": 12,
+        "market_fresh": 12,
+        "observations": 12,
+        "predicted": 12,
+        "rejection_reasons": {},
+        "sharp_available": 12
+      }
+    }
+  },
+  "canonical_policy": "within each current-generation reported cohort, first observed row per target_date x game_pk; later successful snapshots cannot replace an earlier failure",
+  "eligible": 12,
+  "excluded_other_generation_observations": 0,
+  "execution_available": 12,
+  "execution_coverage": 1.0,
+  "first_observation_unique_games": {
+    "eligible": 12,
+    "eligible_coverage": 1.0,
+    "execution_available": 12,
+    "execution_coverage": 1.0,
+    "fully_market_observable": 12,
+    "fully_market_observable_coverage": 1.0,
+    "market_fresh": 12,
+    "market_fresh_coverage": 1.0,
+    "observations": 12,
+    "predicted": 12,
+    "prediction_coverage": 1.0,
+    "rejection_reasons": {},
+    "sharp_available": 12,
+    "sharp_coverage": 1.0
+  },
+  "interpretation": "performance describes a selected analyzable universe; inspect current-generation first-observation unique-game and trigger/phase slices before assuming rejection missingness is random",
+  "model_generation": "pulsar-v14-context-v4-all-stats",
   "network_calls": 0,
-  "observations": 0,
-  "predicted": 0,
-  "prediction_coverage": 0.0,
+  "observations": 12,
+  "predicted": 12,
+  "prediction_coverage": 1.0,
+  "raw_observations_by_model_generation": {
+    "pulsar-v14-context-v4-all-stats": 12
+  },
+  "raw_snapshot_observations": {
+    "eligible": 12,
+    "execution_available": 12,
+    "fully_market_observable": 12,
+    "market_fresh": 12,
+    "observations": 12,
+    "predicted": 12,
+    "rejection_reasons": {},
+    "sharp_available": 12
+  },
   "rejection_reasons": {},
+  "scheduled_final_trigger": {
+    "first_observation_unique_games": {
+      "eligible": 0,
+      "eligible_coverage": 0.0,
+      "execution_available": 0,
+      "execution_coverage": 0.0,
+      "fully_market_observable": 0,
+      "fully_market_observable_coverage": 0.0,
+      "market_fresh": 0,
+      "market_fresh_coverage": 0.0,
+      "observations": 0,
+      "predicted": 0,
+      "prediction_coverage": 0.0,
+      "rejection_reasons": {},
+      "sharp_available": 0,
+      "sharp_coverage": 0.0
+    },
+    "raw": {
+      "eligible": 0,
+      "execution_available": 0,
+      "fully_market_observable": 0,
+      "market_fresh": 0,
+      "observations": 0,
+      "predicted": 0,
+      "rejection_reasons": {},
+      "sharp_available": 0
+    }
+  },
   "schema": "pulsar-v14-coverage-report-v1",
-  "sharp_available": 0,
-  "sharp_coverage": 0.0
+  "semantics": {
+    "audit_only": true,
+    "can_authorize_bet": false,
+    "current_model_generation_only": true,
+    "eligible": "native prediction generated; this is analyzability, not betting authorization",
+    "execution_available_requires_freshness_verified_true": true,
+    "fully_market_observable": "prediction generated with verified-fresh canonical market, sharp market selections, and execution market selections",
+    "legacy_missing_model_generation": "LEGACY_UNSPECIFIED",
+    "legacy_missing_run_trigger": "LEGACY_UNSPECIFIED",
+    "scheduled_final_trigger_is_not_exact_final_phase_cohort": true
+  },
+  "sharp_available": 12,
+  "sharp_coverage": 1.0
 }
