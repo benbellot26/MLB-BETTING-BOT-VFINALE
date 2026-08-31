@@ -30,58 +30,58 @@
     },
     "FINAL": {
       "first_observation_unique_games": {
-        "eligible": 5,
+        "eligible": 9,
         "eligible_coverage": 1.0,
-        "execution_available": 5,
+        "execution_available": 9,
         "execution_coverage": 1.0,
-        "fully_market_observable": 5,
+        "fully_market_observable": 9,
         "fully_market_observable_coverage": 1.0,
-        "market_fresh": 5,
+        "market_fresh": 9,
         "market_fresh_coverage": 1.0,
-        "observations": 5,
-        "predicted": 5,
+        "observations": 9,
+        "predicted": 9,
         "prediction_coverage": 1.0,
         "rejection_reasons": {},
-        "sharp_available": 5,
+        "sharp_available": 9,
         "sharp_coverage": 1.0
       },
       "raw": {
-        "eligible": 5,
-        "execution_available": 5,
-        "fully_market_observable": 5,
-        "market_fresh": 5,
-        "observations": 5,
-        "predicted": 5,
+        "eligible": 13,
+        "execution_available": 13,
+        "fully_market_observable": 13,
+        "market_fresh": 13,
+        "observations": 13,
+        "predicted": 13,
         "rejection_reasons": {},
-        "sharp_available": 5
+        "sharp_available": 13
       }
     },
     "LATE": {
       "first_observation_unique_games": {
-        "eligible": 10,
+        "eligible": 12,
         "eligible_coverage": 1.0,
-        "execution_available": 10,
+        "execution_available": 12,
         "execution_coverage": 1.0,
-        "fully_market_observable": 10,
+        "fully_market_observable": 12,
         "fully_market_observable_coverage": 1.0,
-        "market_fresh": 10,
+        "market_fresh": 12,
         "market_fresh_coverage": 1.0,
-        "observations": 10,
-        "predicted": 10,
+        "observations": 12,
+        "predicted": 12,
         "prediction_coverage": 1.0,
         "rejection_reasons": {},
-        "sharp_available": 10,
+        "sharp_available": 12,
         "sharp_coverage": 1.0
       },
       "raw": {
-        "eligible": 11,
-        "execution_available": 11,
-        "fully_market_observable": 11,
-        "market_fresh": 11,
-        "observations": 11,
-        "predicted": 11,
+        "eligible": 14,
+        "execution_available": 14,
+        "fully_market_observable": 14,
+        "market_fresh": 14,
+        "observations": 14,
+        "predicted": 14,
         "rejection_reasons": {},
-        "sharp_available": 11
+        "sharp_available": 14
       }
     }
   },
@@ -113,12 +113,40 @@
         "rejection_reasons": {},
         "sharp_available": 24
       }
+    },
+    "SCHEDULED_FINAL": {
+      "first_observation_unique_games": {
+        "eligible": 11,
+        "eligible_coverage": 1.0,
+        "execution_available": 11,
+        "execution_coverage": 1.0,
+        "fully_market_observable": 11,
+        "fully_market_observable_coverage": 1.0,
+        "market_fresh": 11,
+        "market_fresh_coverage": 1.0,
+        "observations": 11,
+        "predicted": 11,
+        "prediction_coverage": 1.0,
+        "rejection_reasons": {},
+        "sharp_available": 11,
+        "sharp_coverage": 1.0
+      },
+      "raw": {
+        "eligible": 11,
+        "execution_available": 11,
+        "fully_market_observable": 11,
+        "market_fresh": 11,
+        "observations": 11,
+        "predicted": 11,
+        "rejection_reasons": {},
+        "sharp_available": 11
+      }
     }
   },
   "canonical_policy": "within each current-generation reported cohort, first observed row per target_date x game_pk; later successful snapshots cannot replace an earlier failure",
-  "eligible": 24,
+  "eligible": 35,
   "excluded_other_generation_observations": 0,
-  "execution_available": 24,
+  "execution_available": 35,
   "execution_coverage": 1.0,
   "first_observation_unique_games": {
     "eligible": 12,
@@ -139,49 +167,49 @@
   "interpretation": "performance describes a selected analyzable universe; inspect current-generation first-observation unique-game and trigger/phase slices before assuming rejection missingness is random",
   "model_generation": "pulsar-v14-context-v4-all-stats",
   "network_calls": 0,
-  "observations": 24,
-  "predicted": 24,
+  "observations": 35,
+  "predicted": 35,
   "prediction_coverage": 1.0,
   "raw_observations_by_model_generation": {
-    "pulsar-v14-context-v4-all-stats": 24
+    "pulsar-v14-context-v4-all-stats": 35
   },
   "raw_snapshot_observations": {
-    "eligible": 24,
-    "execution_available": 24,
-    "fully_market_observable": 24,
-    "market_fresh": 24,
-    "observations": 24,
-    "predicted": 24,
+    "eligible": 35,
+    "execution_available": 35,
+    "fully_market_observable": 35,
+    "market_fresh": 35,
+    "observations": 35,
+    "predicted": 35,
     "rejection_reasons": {},
-    "sharp_available": 24
+    "sharp_available": 35
   },
   "rejection_reasons": {},
   "scheduled_final_trigger": {
     "first_observation_unique_games": {
-      "eligible": 0,
-      "eligible_coverage": 0.0,
-      "execution_available": 0,
-      "execution_coverage": 0.0,
-      "fully_market_observable": 0,
-      "fully_market_observable_coverage": 0.0,
-      "market_fresh": 0,
-      "market_fresh_coverage": 0.0,
-      "observations": 0,
-      "predicted": 0,
-      "prediction_coverage": 0.0,
+      "eligible": 11,
+      "eligible_coverage": 1.0,
+      "execution_available": 11,
+      "execution_coverage": 1.0,
+      "fully_market_observable": 11,
+      "fully_market_observable_coverage": 1.0,
+      "market_fresh": 11,
+      "market_fresh_coverage": 1.0,
+      "observations": 11,
+      "predicted": 11,
+      "prediction_coverage": 1.0,
       "rejection_reasons": {},
-      "sharp_available": 0,
-      "sharp_coverage": 0.0
+      "sharp_available": 11,
+      "sharp_coverage": 1.0
     },
     "raw": {
-      "eligible": 0,
-      "execution_available": 0,
-      "fully_market_observable": 0,
-      "market_fresh": 0,
-      "observations": 0,
-      "predicted": 0,
+      "eligible": 11,
+      "execution_available": 11,
+      "fully_market_observable": 11,
+      "market_fresh": 11,
+      "observations": 11,
+      "predicted": 11,
       "rejection_reasons": {},
-      "sharp_available": 0
+      "sharp_available": 11
     }
   },
   "schema": "pulsar-v14-coverage-report-v1",
@@ -196,6 +224,6 @@
     "legacy_missing_run_trigger": "LEGACY_UNSPECIFIED",
     "scheduled_final_trigger_is_not_exact_final_phase_cohort": true
   },
-  "sharp_available": 24,
+  "sharp_available": 35,
   "sharp_coverage": 1.0
 }
