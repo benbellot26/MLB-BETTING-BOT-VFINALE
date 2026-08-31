@@ -10,7 +10,7 @@ from typing import Any
 
 from . import MODEL_GENERATION
 from .acquisition import resolve_target_date
-from .certification_timing import ALLOWED_RUN_TRIGGERS, normalize_run_trigger
+from .certification_timing import ALLOWED_RUN_TRIGGERS, is_betting_strategy_snapshot, normalize_run_trigger
 from .discord import publication_gap_seconds, send_game
 from .native_candidate import build_candidate, persist_candidate
 from .native_payload import authorize_payload, build_native_discord_payload
@@ -73,6 +73,7 @@ def validate_production_payload(payload:dict[str,Any])->None:
         decision=result.get("decision") or {}
         for candidate in decision.get("candidates") or []:
             if candidate.get("status")!="BET": continue
+            if not is_betting_strategy_snapshot(result): raise ValueError(f"game {game_pk} emitted BET outside certified FINAL 10-60m strategy window")
             if certification.get("certified") is not True: raise ValueError(f"game {game_pk} emitted BET without global statistical certification")
             if not _candidate_market_certified(certification,candidate): raise ValueError(f"game {game_pk} emitted BET without market-specific statistical certification for {candidate.get('canonical_market')}")
             if candidate.get("edge_qualified") is not True or candidate.get("research_ready") is not True: raise ValueError(f"game {game_pk} emitted BET without qualified robust-edge evidence")
@@ -98,7 +99,7 @@ def _stamp_payload_trigger(payload:dict[str,Any],trigger:str)->None:
 
 
 def build_persisted(*,target_date:str|None=None,destination:Path|str=V14_PAYLOAD,candidate_destination:Path|str=V14_CANDIDATE,run_trigger:str="MANUAL")->dict[str,Any]:
-    trigger=normalize_run_trigger(run_trigger);date=target_date or resolve_target_date();candidate=build_candidate(date);_stamp_run_trigger(candidate,trigger);persist_candidate(candidate,candidate_destination);validate_candidate_coverage(candidate);unauthorized=build_native_discord_payload(candidate);payload=authorize_payload(unauthorized,production_authorized=True);_stamp_payload_trigger(payload,trigger);payload["authorization_basis"]={"type":"software-production-contract","model_generation":MODEL_GENERATION,"run_trigger":trigger,"priced_matched_coverage_gate":MIN_PRICED_MATCHED_COVERAGE,"matched_scheduled_coverage_gate":MIN_MATCHED_SCHEDULED_COVERAGE,"betting_certified":bool((payload.get("betting_certification") or {}).get("certified")),"note":"Publication is analytics/software authorization; betting requires the independent market-specific statistical certification gate."};validate_production_payload(payload);target=Path(destination);target.parent.mkdir(parents=True,exist_ok=True);target.write_text(json.dumps(payload,ensure_ascii=False,separators=(",",":")),encoding="utf-8");print(f"PULSAR_V14_NATIVE_PRODUCTION date={date} trigger={trigger} games={len(payload['results'])} path={target}");return payload
+    trigger=normalize_run_trigger(run_trigger);date=target_date or resolve_target_date();candidate=build_candidate(date);_stamp_run_trigger(candidate,trigger);persist_candidate(candidate,candidate_destination);validate_candidate_coverage(candidate);unauthorized=build_native_discord_payload(candidate);payload=authorize_payload(unauthorized,production_authorized=True);_stamp_payload_trigger(payload,trigger);payload["authorization_basis"]={"type":"software-production-contract","model_generation":MODEL_GENERATION,"run_trigger":trigger,"priced_matched_coverage_gate":MIN_PRICED_MATCHED_COVERAGE,"matched_scheduled_coverage_gate":MIN_MATCHED_SCHEDULED_COVERAGE,"betting_certified":bool((payload.get("betting_certification") or {}).get("certified")),"betting_strategy_timing":"FINAL, MLB game clock 10-60 minutes before first pitch","note":"Publication is analytics/software authorization; betting requires the independent market-specific statistical certification gate and the exact certified timing strategy."};validate_production_payload(payload);target=Path(destination);target.parent.mkdir(parents=True,exist_ok=True);target.write_text(json.dumps(payload,ensure_ascii=False,separators=(",",":")),encoding="utf-8");print(f"PULSAR_V14_NATIVE_PRODUCTION date={date} trigger={trigger} games={len(payload['results'])} path={target}");return payload
 
 
 def send_persisted(*,path:Path|str=V14_PAYLOAD)->None:
