@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-"""Prospective, fail-soft weather enrichment for native V14 shadow research.
+"""Prospective, fail-soft weather enrichment for native V14.6 production.
 
 Open-Meteo supplies the match forecast. MLB venue reference data supplies the
 actual venue coordinates and field azimuth, and NASA POWER supplies the
-venue/month climatological baseline. No value is imputed: any unavailable
-external reference remains explicitly diagnostic and can never alter the
-champion automatically.
+venue/month climatological baseline. No value is imputed: unavailable reference
+data stays neutral, and only strictly pregame evidence can enter V14.6.
 """
 
 from datetime import datetime, timezone
@@ -18,7 +17,7 @@ from .venue_geometry import fetch as fetch_venue, fetch_nearest as fetch_nearest
 from .weather_climatology import fetch as fetch_climatology
 
 URL="https://api.open-meteo.com/v1/forecast"
-ROLE="SHADOW_ONLY"
+ROLE="PRODUCTION_ADVANCED_INPUT"
 Getter=Callable[[str,dict[str,Any]],Any]
 
 
@@ -29,13 +28,13 @@ def _num(value:Any)->float|None:
 
 
 def _base(status:str,reason:str|None=None)->dict[str,Any]:
-    out={"schema":"pulsar-v14-live-weather-shadow-v2","role":ROLE,"status":status,"auto_activation":False,"champion_impact":False,"market_probability_used_as_feature":False,"point_in_time":True}
+    out={"schema":"pulsar-v14-live-weather-shadow-v2","role":ROLE,"status":status,"auto_activation":False,"champion_impact":True,"activation_contract":"fixed by pulsar-v14-context-v4-all-stats; incomplete reference data is neutral","market_probability_used_as_feature":False,"point_in_time":True}
     if reason:out["reason"]=reason
     return out
 
 
 def _reference_disabled(reason:str)->dict[str,Any]:
-    return {"status":"COLLECTING","role":ROLE,"champion_impact":False,"reason":reason}
+    return {"status":"COLLECTING","role":ROLE,"champion_impact":True,"reason":reason}
 
 
 def fetch(latitude:float|None,longitude:float|None,*,game_date:str,analyzed_at:str,venue_id:Any|None=None,getter:Getter=http_json,reference_getter:Getter|None=None)->dict[str,Any]:
