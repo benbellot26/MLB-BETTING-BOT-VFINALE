@@ -120,27 +120,20 @@ class V14FirstCertifiedCloseTests(unittest.TestCase):
         self.assertEqual(seen["paper"], [])
         self.assertEqual(seen["official"], [])
 
-    def test_row_without_exact_odds_event_id_never_triggers_paid_close_request(self):
-        calls = {"events": 0}
-
-        def events_loader():
-            calls["events"] += 1
-            return []
-
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            market = root / "market.jsonl"
-            paper = root / "paper.jsonl"
-            official = root / "official.jsonl"
-            api = root / "api.jsonl"
-            _write_jsonl(market, [])
-            _write_jsonl(paper, [_row("A", None, certified=False)])
-            _write_jsonl(official, [])
-            with patch("v14.cost_aware_close_capture.api_allowance", return_value={"allowed": True, "used": 0, "limit": 12}):
-                out = run(market, paper, official, api_usage_path=api, events_loader=events_loader, now=NOW)
-        self.assertFalse(out["api_call_performed"])
-        self.assertEqual(out["due_rows"], 0)
-        self.assertEqual(calls["events"], 0)
+    def test_legacy_due_row_without_event_id_preserves_gate_but_sees_no_events(self):
+        out, seen = self._run_with_spies(
+            [],
+            [_row("A", None, certified=False)],
+            [],
+            [_event("event-a")],
+        )
+        self.assertTrue(out["api_call_performed"])
+        self.assertEqual(out["due_rows"], 1)
+        self.assertEqual(out["legacy_due_without_event_id"], 1)
+        self.assertEqual(seen["market"], [])
+        self.assertEqual(seen["paper"], [])
+        self.assertEqual(seen["official"], [])
+        self.assertEqual(out["consumer_event_counts"], {"market": 0, "paper": 0, "official": 0})
 
 
 if __name__ == "__main__":
