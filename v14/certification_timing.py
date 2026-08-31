@@ -2,11 +2,11 @@ from __future__ import annotations
 
 """Shared timing/provenance contract for betting-certification evidence.
 
-Research and manual analytics may observe any strictly-pregame snapshot. Betting
-certification is narrower: it uses only automated ``SCHEDULED_FINAL`` snapshots
-that were actually observed 10-60 minutes before first pitch and whose native
-phase was FINAL. Missing observations stay missing; nothing is reconstructed
-retrospectively.
+Research and manual analytics may observe any strictly-pregame snapshot. The
+executable betting strategy is narrower: it is FINAL and 10-60 minutes before
+first pitch. Certification narrows that same timing contract further to the
+automated ``SCHEDULED_FINAL`` provenance. Missing observations stay missing;
+nothing is reconstructed retrospectively.
 """
 
 from datetime import datetime, timezone
@@ -52,13 +52,31 @@ def minutes_to_game(row: dict[str, Any]) -> float | None:
     return (game - analyzed).total_seconds() / 60.0
 
 
-def is_certification_snapshot(row: dict[str, Any]) -> bool:
+def in_final_betting_window(row: dict[str, Any]) -> bool:
     minutes = minutes_to_game(row)
     return bool(
-        row_run_trigger(row) == CERTIFICATION_RUN_TRIGGER
-        and str(row.get("phase") or "").upper() == CERTIFICATION_PHASE
-        and minutes is not None
+        minutes is not None
         and FINAL_MIN_MINUTES_TO_GAME <= minutes <= FINAL_MAX_MINUTES_TO_GAME
+    )
+
+
+def is_betting_strategy_snapshot(row: dict[str, Any]) -> bool:
+    """True when a row matches the timing of the strategy that may emit BET.
+
+    Provenance is intentionally not checked here: a user-facing MANUAL run may
+    execute the already-certified strategy, but only inside the exact FINAL
+    timing window on which certification is earned.
+    """
+    return bool(
+        str(row.get("phase") or "").upper() == CERTIFICATION_PHASE
+        and in_final_betting_window(row)
+    )
+
+
+def is_certification_snapshot(row: dict[str, Any]) -> bool:
+    return bool(
+        row_run_trigger(row) == CERTIFICATION_RUN_TRIGGER
+        and is_betting_strategy_snapshot(row)
     )
 
 
