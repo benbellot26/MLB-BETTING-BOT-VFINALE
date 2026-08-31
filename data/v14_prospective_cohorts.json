@@ -1,0 +1,149 @@
+{
+  "experiments": {
+    "V14-CALMETHOD-01": {
+      "code_commit_sha": "f13b4d81d0ffaa18fa5ae6a1cd1a0d2361ebb203",
+      "first_observation_at": null,
+      "latest_observation_at": null,
+      "phase_rows": {
+        "EARLY": 0,
+        "FINAL": 0,
+        "LATE": 0
+      },
+      "primary_metric": "paired Brier gain vs identity/current calibrator",
+      "promotion_evidence_rule": "only observations at/after registered_at may count",
+      "prospective_games": 0,
+      "prospective_rows": 0,
+      "registered_at": "2026-08-31T09:35:23.292948+00:00",
+      "settled_games": 0,
+      "success_rule": "primary bootstrap CI95 lower > 0 and LogLoss gain >= -0.001"
+    },
+    "V14-DISTRIBUTION-01": {
+      "code_commit_sha": "f13b4d81d0ffaa18fa5ae6a1cd1a0d2361ebb203",
+      "first_observation_at": null,
+      "latest_observation_at": null,
+      "phase_rows": {
+        "EARLY": 0,
+        "FINAL": 0,
+        "LATE": 0
+      },
+      "primary_metric": "paired final-score NLL gain vs champion",
+      "promotion_evidence_rule": "only observations at/after registered_at may count",
+      "prospective_games": 0,
+      "prospective_rows": 0,
+      "registered_at": "2026-08-31T09:35:23.292232+00:00",
+      "settled_games": 0,
+      "success_rule": "primary paired CI95 lower > 0 and every declared market non-regresses"
+    },
+    "V14-HETERO-01": {
+      "code_commit_sha": "f13b4d81d0ffaa18fa5ae6a1cd1a0d2361ebb203",
+      "first_observation_at": null,
+      "latest_observation_at": null,
+      "phase_rows": {
+        "EARLY": 0,
+        "FINAL": 0,
+        "LATE": 0
+      },
+      "primary_metric": "paired RL+Total Brier gain vs champion",
+      "promotion_evidence_rule": "only observations at/after registered_at may count",
+      "prospective_games": 0,
+      "prospective_rows": 0,
+      "registered_at": "2026-08-31T09:35:23.292465+00:00",
+      "settled_games": 0,
+      "success_rule": "primary bootstrap CI95 lower > 0 with ML non-regression"
+    },
+    "V14-MARKETPOST-01": {
+      "code_commit_sha": "f13b4d81d0ffaa18fa5ae6a1cd1a0d2361ebb203",
+      "first_observation_at": null,
+      "latest_observation_at": null,
+      "phase_rows": {
+        "EARLY": 0,
+        "FINAL": 0,
+        "LATE": 0
+      },
+      "primary_metric": "paired Brier gain vs champion",
+      "promotion_evidence_rule": "only observations at/after registered_at may count",
+      "prospective_games": 0,
+      "prospective_rows": 0,
+      "registered_at": "2026-08-31T09:35:23.293426+00:00",
+      "settled_games": 0,
+      "success_rule": "primary bootstrap CI95 lower > 0; remains a separate market-aware challenger, never a hidden champion feature"
+    },
+    "V14-RESIDUAL-01": {
+      "code_commit_sha": "f13b4d81d0ffaa18fa5ae6a1cd1a0d2361ebb203",
+      "first_observation_at": null,
+      "latest_observation_at": null,
+      "phase_rows": {
+        "EARLY": 0,
+        "FINAL": 0,
+        "LATE": 0
+      },
+      "primary_metric": "paired Brier gain vs champion",
+      "promotion_evidence_rule": "only observations at/after registered_at may count",
+      "prospective_games": 0,
+      "prospective_rows": 0,
+      "registered_at": "2026-08-31T09:35:23.292778+00:00",
+      "settled_games": 0,
+      "success_rule": "primary bootstrap CI95 lower > 0 and LogLoss non-regression"
+    },
+    "V14-RUNMEAN-01": {
+      "code_commit_sha": "f13b4d81d0ffaa18fa5ae6a1cd1a0d2361ebb203",
+      "first_observation_at": null,
+      "latest_observation_at": null,
+      "phase_rows": {
+        "EARLY": 0,
+        "FINAL": 0,
+        "LATE": 0
+      },
+      "primary_metric": "run-mean MSE gain vs champion",
+      "promotion_evidence_rule": "only observations at/after registered_at may count",
+      "prospective_games": 0,
+      "prospective_rows": 0,
+      "registered_at": "2026-08-31T09:35:23.292632+00:00",
+      "settled_games": 0,
+      "success_rule": "positive holdout MSE gain; nomination only until separate prospective probability validation"
+    },
+    "V14-SHARPWEIGHT-01": {
+      "code_commit_sha": "f13b4d81d0ffaa18fa5ae6a1cd1a0d2361ebb203",
+      "first_observation_at": null,
+      "latest_observation_at": null,
+      "phase_rows": {
+        "EARLY": 0,
+        "FINAL": 0,
+        "LATE": 0
+      },
+      "primary_metric": "sharp benchmark Brier improvement",
+      "promotion_evidence_rule": "only observations at/after registered_at may count",
+      "prospective_games": 0,
+      "prospective_rows": 0,
+      "registered_at": "2026-08-31T09:35:23.293265+00:00",
+      "settled_games": 0,
+      "success_rule": "bootstrap CI95 lower > 0 versus default consensus; Pinnacle primary benchmark remains separately reported"
+    },
+    "V14-UNCERTAINTY-01": {
+      "code_commit_sha": "f13b4d81d0ffaa18fa5ae6a1cd1a0d2361ebb203",
+      "first_observation_at": null,
+      "latest_observation_at": null,
+      "phase_rows": {
+        "EARLY": 0,
+        "FINAL": 0,
+        "LATE": 0
+      },
+      "primary_metric": "nominal interval coverage and decision calibration",
+      "promotion_evidence_rule": "only observations at/after registered_at may count",
+      "prospective_games": 0,
+      "prospective_rows": 0,
+      "registered_at": "2026-08-31T09:35:23.293111+00:00",
+      "settled_games": 0,
+      "success_rule": "coverage meets declared nominal target without materially widening decisions beyond baseline"
+    }
+  },
+  "generated_at": "2026-08-31T09:35:25.912059+00:00",
+  "historical_roles": {
+    "2021-2024": "DEVELOPMENT",
+    "2025": "VALIDATION_REUSED_NOT_BLIND",
+    "2026": "ROLLING_AUDIT_NOT_FROZEN",
+    "post_registration": "SEALED_PROSPECTIVE_PROMOTION_EVIDENCE"
+  },
+  "network_calls": 0,
+  "schema": "pulsar-v14-prospective-cohort-report-v1"
+}
