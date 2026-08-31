@@ -46,8 +46,9 @@ class V14UltraLowClusterPolicyTests(unittest.TestCase):
             root=Path(tmp)
             out=prediction_gate(predictions_path=root/"predictions.jsonl",api_usage_path=root/"usage.jsonl",target_date="2026-09-01",now=target,games_loader=lambda _day:games)
             self.assertTrue(out["run_required"])
-            self.assertEqual(out["reason"],"FINAL_SNAPSHOT_DUE_AT_BEST_CLUSTER")
+            self.assertEqual(out["reason"],"FINAL_SNAPSHOT_DUE")
             self.assertEqual(set(out["due_game_ids"]),{"2","3","4"})
+            self.assertEqual(out["best_daily_cluster"]["policy"],"MAX_GAMES_THEN_CLOSEST_TO_30M_THEN_LATEST")
 
     def test_close_waits_for_larger_pending_cluster_without_network_call(self) -> None:
         now=datetime(2026,9,1,18,0,tzinfo=timezone.utc)
