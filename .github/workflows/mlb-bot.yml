@@ -136,6 +136,43 @@ jobs:
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
 
+      - name: Capture immediate pregame closes fail-soft
+        continue-on-error: true
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: |
+          set -euo pipefail
+          ARCHIVE_RC=0
+          HYDRATE_RC=0
+          OFFICIAL_RC=0
+
+          python -m v14.market_close_ledger capture \
+            --ledger data/v14_market_close_ledger.jsonl \
+            --report data/v14_market_close_report.json || ARCHIVE_RC=$?
+          if [ "$ARCHIVE_RC" -eq 0 ]; then
+            python -m v14.market_close_ledger hydrate-paper \
+              --ledger data/v14_market_close_ledger.jsonl \
+              --paper-ledger data/v14_paper_bet_ledger.jsonl || HYDRATE_RC=$?
+          fi
+          python -m v14.official_close \
+            --ledger data/v14_bet_ledger.jsonl || OFFICIAL_RC=$?
+
+          git config user.name 'Pulsar V14'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          [ -f data/v14_market_close_ledger.jsonl ] && git add -f data/v14_market_close_ledger.jsonl
+          [ -f data/v14_market_close_report.json ] && git add -f data/v14_market_close_report.json
+          [ -f data/v14_paper_bet_ledger.jsonl ] && git add -f data/v14_paper_bet_ledger.jsonl
+          [ -f data/v14_bet_ledger.jsonl ] && git add -f data/v14_bet_ledger.jsonl
+          if ! git diff --cached --quiet; then
+            git commit -m 'data: capture V14 immediate prospective closes [skip ci]'
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
+
+          if [ "$ARCHIVE_RC" -ne 0 ] || [ "$HYDRATE_RC" -ne 0 ] || [ "$OFFICIAL_RC" -ne 0 ]; then
+            echo "::warning::PULSAR_V14_IMMEDIATE_CLOSE_PARTIAL archive=$ARCHIVE_RC hydrate=$HYDRATE_RC official=$OFFICIAL_RC; scheduled 10-minute close capture remains fallback"
+          fi
+
       - name: Publish Pulsar V14 Discord analytics
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
