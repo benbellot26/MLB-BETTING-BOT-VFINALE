@@ -14,6 +14,7 @@ import math
 from pathlib import Path
 from typing import Any
 
+from . import MODEL_GENERATION, PROBABILITY_POLICY_ID
 from .paired_inference import block_bootstrap_mean_ci, bootstrap_mean_ci, paired_score_differences
 from .snapshot_policy import select_canonical
 
@@ -43,6 +44,17 @@ def _read(path: Path | str = PREDICTIONS) -> list[dict[str, Any]]:
         except Exception: continue
         if isinstance(row, dict): out.append(row)
     return out
+
+
+def _row_policy(row: dict[str, Any]) -> str | None:
+    direct=row.get("probability_policy_id")
+    if direct: return str(direct)
+    nested=(row.get("calibration") or {}).get("probability_policy_id")
+    return str(nested) if nested else None
+
+
+def _current_row(row: dict[str, Any]) -> bool:
+    return row.get("model_generation")==MODEL_GENERATION and _row_policy(row)==PROBABILITY_POLICY_ID
 
 
 def pinnacle_probability(row: dict[str, Any], selection: str) -> float | None:
@@ -117,7 +129,8 @@ def _market_report(rows: list[dict[str, Any]], market: str) -> dict[str, Any]:
 
 
 def build(path: Path | str = PREDICTIONS) -> dict[str, Any]:
-    rows = [r for r in _read(path) if r.get("settled")]
+    all_rows=_read(path)
+    rows = [r for r in all_rows if r.get("settled") and _current_row(r)]
     selected = select_canonical(rows)
     phases: dict[str, Any] = {}
     for phase in ("EARLY", "LATE", "FINAL"):
@@ -126,11 +139,16 @@ def build(path: Path | str = PREDICTIONS) -> dict[str, Any]:
     return {
         "schema": "pulsar-v14-sharp-benchmark-report-v1",
         "generated_at": datetime.now(timezone.utc).isoformat(),
+        "model_generation": MODEL_GENERATION,
+        "probability_policy_id": PROBABILITY_POLICY_ID,
         "network_calls": 0,
+        "input_rows_total": len(all_rows),
+        "current_policy_settled_rows": len(rows),
         "primary_benchmark": "PINNACLE_NO_VIG",
         "secondary_benchmark": "WEIGHTED_SHARP_CONSENSUS",
         "exchange_policy": "exchange proxies remain secondary; no raw exchange price can serve as primary benchmark",
         "snapshot_policy": "canonical observed EARLY/LATE/FINAL windows; no cross-phase mixing",
+        "certification_phase": "FINAL",
         "bootstrap_policy": "deterministic paired nonparametric bootstrap; calendar-block diagnostic",
         "phases": phases,
     }
@@ -145,7 +163,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Build zero-API Pinnacle/consensus sharp benchmark report")
     parser.add_argument("--predictions", default=str(PREDICTIONS)); parser.add_argument("--output", default=str(OUTPUT)); args = parser.parse_args()
     report = write(args.predictions, args.output)
-    print(json.dumps({"schema": report["schema"], "primary": report["primary_benchmark"], "network_calls": 0}, sort_keys=True))
+    print(json.dumps({"schema": report["schema"], "primary": report["primary_benchmark"], "generation":report["model_generation"], "policy":report["probability_policy_id"], "network_calls": 0}, sort_keys=True))
 
 
 if __name__ == "__main__": main()
