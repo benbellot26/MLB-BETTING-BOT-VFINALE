@@ -1,0 +1,610 @@
+{
+  "activation_contract": "fixed by pulsar-v14-context-v4-all-stats; incomplete/stale teams are neutral",
+  "auto_activation": false,
+  "baserunning_source": {
+    "current_target_season_results_used": false,
+    "provider": "Baseball Savant Baserunning Run Value CSV",
+    "raw_columns": [
+      "﻿\"player_id\"",
+      "entity_name",
+      "team_name",
+      "start_year",
+      "end_year",
+      "runner_runs_tot",
+      "runner_runs_XB",
+      "runner_runs_SBX",
+      "N_runner_moved",
+      "runner_runs_XB_swipe",
+      "runner_runs_XB_snipe",
+      "runner_runs_XB_freeze",
+      "N_runner_moved_XB",
+      "runner_runs_SB2",
+      "runner_runs_SB3",
+      "simple_stolen_on_running_act_SB2",
+      "simple_stolen_on_running_act_SB3",
+      "N_runner_moved_SBX"
+    ],
+    "source_season": 2025,
+    "team_level": true
+  },
+  "champion_impact": true,
+  "coverage": {
+    "complete_team_ids": [
+      "108",
+      "109",
+      "110",
+      "111",
+      "112",
+      "113",
+      "114",
+      "115",
+      "116",
+      "117",
+      "118",
+      "119",
+      "120",
+      "121",
+      "133",
+      "134",
+      "135",
+      "136",
+      "137",
+      "138",
+      "139",
+      "140",
+      "141",
+      "142",
+      "143",
+      "144",
+      "145",
+      "146",
+      "147",
+      "158"
+    ],
+    "complete_teams": 30,
+    "mapped_teams": 30
+  },
+  "cutoff_day": "2026-08-30",
+  "failures": [],
+  "fielding_source": {
+    "effective_cutoff": "2026-08-30",
+    "provider": "Baseball Savant Fielding Run Value CSV",
+    "raw_columns": [
+      "﻿\"name\"",
+      "id",
+      "year",
+      "total_runs",
+      "inf_of_runs",
+      "range_runs",
+      "arm_runs",
+      "dp_runs",
+      "fielding_runs_prevented_on_rec1b",
+      "catching_runs",
+      "framing_runs",
+      "throwing_runs",
+      "blocking_runs",
+      "tot_plays"
+    ],
+    "same_day_excluded": true
+  },
+  "normalization": {
+    "baserunning": "completed prior-season Savant run value per 600 official MLB plate appearances",
+    "defense_catcher": "Savant run value scaled to 150 games using MLB byDateRange gamesPlayed through identical PIT cutoff"
+  },
+  "point_in_time": true,
+  "role": "PRODUCTION_ADVANCED_DATA",
+  "schema": "pulsar-v14-defense-baserunning-priors-v4",
+  "target_day": "2026-08-31",
+  "teams": {
+    "108": {
+      "baserunning_raw": {
+        "plate_appearances": 6000.0,
+        "runs": -2.2988969682551037,
+        "season": 2025
+      },
+      "baserunning_runs_per_600_pa": -0.22988969682551036,
+      "catcher_run_value_per_150": -17.15477442307603,
+      "fielding_raw": {
+        "catching_runs": -15.668027306409442,
+        "cutoff": "2026-08-30",
+        "games_played_through_cutoff": 137.0,
+        "inf_of_runs": -14.272044908713546
+      },
+      "fielding_run_value_per_150": -15.626326542387094,
+      "team_name": "Los Angeles Angels"
+    },
+    "109": {
+      "baserunning_raw": {
+        "plate_appearances": 6210.0,
+        "runs": 8.497745212330974,
+        "season": 2025
+      },
+      "baserunning_runs_per_600_pa": 0.8210381847662778,
+      "catcher_run_value_per_150": 0.9721417678952642,
+      "fielding_raw": {
+        "catching_runs": 0.8943704264636431,
+        "cutoff": "2026-08-30",
+        "games_played_through_cutoff": 138.0,
+        "inf_of_runs": 27.260202715414376
+      },
+      "fielding_run_value_per_150": 29.630655125450406,
+      "team_name": "Arizona Diamondbacks"
+    },
+    "110": {
+      "baserunning_raw": {
+        "plate_appearances": 6020.0,
+        "runs": -2.263375788835215,
+        "season": 2025
+      },
+      "baserunning_runs_per_600_pa": -0.22558562679420746,
+      "catcher_run_value_per_150": 5.641118918752877,
+      "fielding_raw": {
+        "catching_runs": 5.152221945794294,
+        "cutoff": "2026-08-30",
+        "games_played_through_cutoff": 137.0,
+        "inf_of_runs": -18.434402120236893
+      },
+      "fielding_run_value_per_150": -20.183651956463752,
+      "team_name": "Baltimore Orioles"
+    },
+    "111": {
+      "baserunning_raw": {
+        "plate_appearances": 6206.0,
+        "runs": 8.110382371748914,
+        "season": 2025
+      },
+      "baserunning_runs_per_600_pa": 0.7841168905977035,
+      "catcher_run_value_per_150": -4.552012610928732,
+      "fielding_raw": {
+        "catching_runs": -4.157504851314909,
+        "cutoff": "2026-08-30",
+        "games_played_through_cutoff": 137.0,
+        "inf_of_runs": 20.38749353772993
+      },
+      "fielding_run_value_per_150": 22.322073216492626,
+      "team_name": "Boston Red Sox"
+    },
+    "112": {
+      "baserunning_raw": {
+        "plate_appearances": 6162.0,
+        "runs": 8.368808691637073,
+        "season": 2025
+      },
+      "baserunning_runs_per_600_pa": 0.814879132583941,
+      "catcher_run_value_per_150": -0.6014845885517888,
+      "fielding_raw": {
+        "catching_runs": -0.5493559242106337,
+        "cutoff": "2026-08-30",
+        "games_played_through_cutoff": 137.0,
+        "inf_of_runs": 61.68051133769614
+      },
+      "fielding_run_value_per_150": 67.53340657411987,
+      "team_name": "Chicago Cubs"
+    },
+    "113": {
+      "baserunning_raw": {
+        "plate_appearances": 6082.0,
+        "runs": 4.689401630791941,
+        "season": 2025
+      },
+      "baserunning_runs_per_600_pa": 0.46261772089364755,
+      "catcher_run_value_per_150": -5.488980224758869,
+      "fielding_raw": {
+        "catching_runs": -5.013268605279767,
+        "cutoff": "2026-08-30",
+        "games_played_through_cutoff": 137.0,
+        "inf_of_runs": -8.674392908406508
+      },
+      "fielding_run_value_per_150": -9.497510483656761,
+      "team_name": "Cincinnati Reds"
+    },
+    "114": {
+      "baserunning_raw": {
+        "plate_appearances": 5943.0,
+        "runs": 3.136247357860781,
+        "season": 2025
+      },
+      "baserunning_runs_per_600_pa": 0.31663274688145193,
+      "catcher_run_value_per_150": -3.6817477589834717,
+      "fielding_raw": {
+        "catching_runs": -3.362662953204904,
+        "cutoff": "2026-08-30",
+        "games_played_through_cutoff": 137.0,
+        "inf_of_runs": 21.563308981893183
+      },
+      "fielding_run_value_per_150": 23.60946238893414,
+      "team_name": "Cleveland Guardians"
+    },
+    "115": {
+      "baserunning_raw": {
+        "plate_appearances": 5908.0,
+        "runs": -6.853626632066392,
+        "season": 2025
+      },
+      "baserunning_runs_per_600_pa": -0.6960352029857542,
+      "catcher_run_value_per_150": -9.672915504436187,
+      "fielding_raw": {
+        "catching_runs": -8.834596160718384,
+        "cutoff": "2026-08-30",
+        "games_played_through_cutoff": 137.0,
+        "inf_of_runs": -13.568391663416516
+      },
+      "fielding_run_value_per_150": -14.855903281112974,
+      "team_name": "Colorado Rockies"
+    },
+    "116": {
+      "baserunning_raw": {
+        "plate_appearances": 6093.0,
+        "runs": 6.928102818617831,
+        "season": 2025
+      },
+      "baserunning_runs_per_600_pa": 0.6822356296029375,
+      "catcher_run_value_per_150": 9.673765079768692,
+      "fielding_raw": {
+        "catching_runs": 8.770880338990281,
+        "cutoff": "2026-08-30",
+        "games_played_through_cutoff": 136.0,
+        "inf_of_runs": -17.53140431496771
+      },
+      "fielding_run_value_per_150": -19.336107700332033,
+      "team_name": "Detroit Tigers"
+    },
+    "117": {
+      "baserunning_raw": {
+        "plate_appearances": 6087.0,
+        "runs": -3.2145795454357184,
+        "season": 2025
+      },
+      "baserunning_runs_per_600_pa": -0.3168634347398441,
+      "catcher_run_value_per_150": 0.08924269616772891,
+      "fielding_raw": {
+        "catching_runs": 0.08150832916652574,
+        "cutoff": "2026-08-30",
+        "games_played_through_cutoff": 137.0,
+        "inf_of_runs": -4.62215706229385
+      },
+      "fielding_run_value_per_150": -5.060755907621004,
+      "team_name": "Houston Astros"
+    },
+    "118": {
+      "baserunning_raw": {
+        "plate_appearances": 6008.0,
+        "runs": -4.053030687674183,
+        "season": 2025
+      },
+      "baserunning_runs_per_600_pa": -0.4047633842550782,
+      "catcher_run_value_per_150": -2.9735388109814838,
+      "fielding_raw": {
+        "catching_runs": -2.7356557061029654,
+        "cutoff": "2026-08-30",
+        "games_played_through_cutoff": 138.0,
+        "inf_of_runs": 17.01601983720406
+      },
+      "fielding_run_value_per_150": 18.49567373609137,
+      "team_name": "Kansas City Royals"
+    },
+    "119": {
+      "baserunning_raw": {
+        "plate_appearances": 6187.0,
+        "runs": 4.21697565147516,
+        "season": 2025
+      },
+      "baserunning_runs_per_600_pa": 0.40895189767013024,
+      "catcher_run_value_per_150": -8.269321866467807,
+      "fielding_raw": {
+        "catching_runs": -7.552647304707264,
+        "cutoff": "2026-08-30",
+        "games_played_through_cutoff": 137.0,
+        "inf_of_runs": 21.90610052232879
+      },
+      "fielding_run_value_per_150": 23.984781593790643,
+      "team_name": "Los Angeles Dodgers"
+    },
+    "120": {
+      "baserunning_raw": {
+        "plate_appearances": 5982.0,
+        "runs": -0.20763784540873798,
+        "season": 2025
+      },
+      "baserunning_runs_per_600_pa": -0.020826263330866398,
+      "catcher_run_value_per_150": 2.3774788081419462,
+      "fielding_raw": {
+        "catching_runs": 2.203130362211537,
+        "cutoff": "2026-08-30",
+        "games_played_through_cutoff": 139.0,
+        "inf_of_runs": -4.345373171656073
+      },
+      "fielding_run_value_per_150": -4.689251624089287,
+      "team_name": "Washington Nationals"
+    },
+    "121": {
+      "baserunning_raw": {
+        "plate_appearances": 6178.0,
+        "runs": 12.15623981516233,
+        "season": 2025
+      },
+      "baserunning_runs_per_600_pa": 1.1805995288276785,
+      "catcher_run_value_per_150": 8.955440235792446,
+      "fielding_raw": {
+        "catching_runs": 8.179302082023767,
+        "cutoff": "2026-08-30",
+        "games_played_through_cutoff": 137.0,
+        "inf_of_runs": -9.634408128113988
+      },
+      "fielding_run_value_per_150": -10.548622038081009,
+      "team_name": "New York Mets"
+    },
+    "133": {
+      "baserunning_raw": {
+        "plate_appearances": 6151.0,
+        "runs": -3.661271524972894,
+        "season": 2025
+      },
+      "baserunning_runs_per_600_pa": -0.3571391505419828,
+      "catcher_run_value_per_150": -6.457550714732358,
+      "fielding_raw": {
+        "catching_runs": -5.897896319455554,
+        "cutoff": "2026-08-30",
+        "games_played_through_cutoff": 137.0,
+        "inf_of_runs": -32.19633596005205
+      },
+      "fielding_run_value_per_150": -35.251462729984,
+      "team_name": "Athletics"
+    },
+    "134": {
+      "baserunning_raw": {
+        "plate_appearances": 6008.0,
+        "runs": -5.237506162804616,
+        "season": 2025
+      },
+      "baserunning_runs_per_600_pa": -0.5230532119977979,
+      "catcher_run_value_per_150": -1.3995994046342317,
+      "fielding_raw": {
+        "catching_runs": -1.2876314522634933,
+        "cutoff": "2026-08-30",
+        "games_played_through_cutoff": 138.0,
+        "inf_of_runs": -19.889204164080738
+      },
+      "fielding_run_value_per_150": -21.618700178348625,
+      "team_name": "Pittsburgh Pirates"
+    },
+    "135": {
+      "baserunning_raw": {
+        "plate_appearances": 6087.0,
+        "runs": -1.150036285142173,
+        "season": 2025
+      },
+      "baserunning_runs_per_600_pa": -0.11335990982180119,
+      "catcher_run_value_per_150": 2.373966983779884,
+      "fielding_raw": {
+        "catching_runs": 2.1682231785189607,
+        "cutoff": "2026-08-30",
+        "games_played_through_cutoff": 137.0,
+        "inf_of_runs": 20.768651632898447
+      },
+      "fielding_run_value_per_150": 22.739399598063994,
+      "team_name": "San Diego Padres"
+    },
+    "136": {
+      "baserunning_raw": {
+        "plate_appearances": 6200.0,
+        "runs": -4.102170671943475,
+        "season": 2025
+      },
+      "baserunning_runs_per_600_pa": -0.396984258575175,
+      "catcher_run_value_per_150": -6.462188202783578,
+      "fielding_raw": {
+        "catching_runs": -5.902131891875667,
+        "cutoff": "2026-08-30",
+        "games_played_through_cutoff": 137.0,
+        "inf_of_runs": -38.24887977220401
+      },
+      "fielding_run_value_per_150": -41.87833551701169,
+      "team_name": "Seattle Mariners"
+    },
+    "137": {
+      "baserunning_raw": {
+        "plate_appearances": 6072.0,
+        "runs": -5.27178910681139,
+        "season": 2025
+      },
+      "baserunning_runs_per_600_pa": -0.5209277773529042,
+      "catcher_run_value_per_150": 5.34983151567024,
+      "fielding_raw": {
+        "catching_runs": 4.886179450978819,
+        "cutoff": "2026-08-30",
+        "games_played_through_cutoff": 137.0,
+        "inf_of_runs": -19.076517076324407
+      },
+      "fielding_run_value_per_150": -20.886697528822342,
+      "team_name": "San Francisco Giants"
+    },
+    "138": {
+      "baserunning_raw": {
+        "plate_appearances": 6069.0,
+        "runs": 1.11901329201618,
+        "season": 2025
+      },
+      "baserunning_runs_per_600_pa": 0.11062909461356203,
+      "catcher_run_value_per_150": 4.0004358138249225,
+      "fielding_raw": {
+        "catching_runs": 3.6804009487189293,
+        "cutoff": "2026-08-30",
+        "games_played_through_cutoff": 138.0,
+        "inf_of_runs": 35.43487783047469
+      },
+      "fielding_run_value_per_150": 38.51617155486379,
+      "team_name": "St. Louis Cardinals"
+    },
+    "139": {
+      "baserunning_raw": {
+        "plate_appearances": 6045.0,
+        "runs": 9.614735925082254,
+        "season": 2025
+      },
+      "baserunning_runs_per_600_pa": 0.9543162208518366,
+      "catcher_run_value_per_150": 2.1689954071164035,
+      "fielding_raw": {
+        "catching_runs": 1.966555835785539,
+        "cutoff": "2026-08-30",
+        "games_played_through_cutoff": 136.0,
+        "inf_of_runs": -1.0527221589619253
+      },
+      "fielding_run_value_per_150": -1.1610906165021235,
+      "team_name": "Tampa Bay Rays"
+    },
+    "140": {
+      "baserunning_raw": {
+        "plate_appearances": 6046.0,
+        "runs": 0.373173074028758,
+        "season": 2025
+      },
+      "baserunning_runs_per_600_pa": 0.03703338478618173,
+      "catcher_run_value_per_150": -7.43033173626705,
+      "fielding_raw": {
+        "catching_runs": -6.786369652457239,
+        "cutoff": "2026-08-30",
+        "games_played_through_cutoff": 137.0,
+        "inf_of_runs": 5.884852564683172
+      },
+      "fielding_run_value_per_150": 6.4432692314049325,
+      "team_name": "Texas Rangers"
+    },
+    "141": {
+      "baserunning_raw": {
+        "plate_appearances": 6180.0,
+        "runs": -3.7663712477641162,
+        "season": 2025
+      },
+      "baserunning_runs_per_600_pa": -0.3656671114334093,
+      "catcher_run_value_per_150": 29.519973783807448,
+      "fielding_raw": {
+        "catching_runs": 27.158375881102852,
+        "cutoff": "2026-08-30",
+        "games_played_through_cutoff": 138.0,
+        "inf_of_runs": 9.862965741981688
+      },
+      "fielding_run_value_per_150": 10.720614936936617,
+      "team_name": "Toronto Blue Jays"
+    },
+    "142": {
+      "baserunning_raw": {
+        "plate_appearances": 6059.0,
+        "runs": -0.5963203067386399,
+        "season": 2025
+      },
+      "baserunning_runs_per_600_pa": -0.059051358977254324,
+      "catcher_run_value_per_150": -6.912519025083488,
+      "fielding_raw": {
+        "catching_runs": -6.313434042909585,
+        "cutoff": "2026-08-30",
+        "games_played_through_cutoff": 137.0,
+        "inf_of_runs": -21.414973430075026
+      },
+      "fielding_run_value_per_150": -23.447051200812073,
+      "team_name": "Minnesota Twins"
+    },
+    "143": {
+      "baserunning_raw": {
+        "plate_appearances": 6166.0,
+        "runs": 6.544500359213994,
+        "season": 2025
+      },
+      "baserunning_runs_per_600_pa": 0.6368310437120333,
+      "catcher_run_value_per_150": 10.577206625470383,
+      "fielding_raw": {
+        "catching_runs": 9.660515384596284,
+        "cutoff": "2026-08-30",
+        "games_played_through_cutoff": 137.0,
+        "inf_of_runs": -18.942130660826635
+      },
+      "fielding_run_value_per_150": -20.739559117693396,
+      "team_name": "Philadelphia Phillies"
+    },
+    "144": {
+      "baserunning_raw": {
+        "plate_appearances": 6186.0,
+        "runs": -4.249147366934258,
+        "season": 2025
+      },
+      "baserunning_runs_per_600_pa": -0.4121384449014799,
+      "catcher_run_value_per_150": -2.436449905664034,
+      "fielding_raw": {
+        "catching_runs": -2.225290913839818,
+        "cutoff": "2026-08-30",
+        "games_played_through_cutoff": 137.0,
+        "inf_of_runs": 15.638823694489139
+      },
+      "fielding_run_value_per_150": 17.122799665499056,
+      "team_name": "Atlanta Braves"
+    },
+    "145": {
+      "baserunning_raw": {
+        "plate_appearances": 5987.0,
+        "runs": -5.9017609879108,
+        "season": 2025
+      },
+      "baserunning_runs_per_600_pa": -0.5914575902365925,
+      "catcher_run_value_per_150": -8.2014590772394,
+      "fielding_raw": {
+        "catching_runs": -7.435989563363722,
+        "cutoff": "2026-08-30",
+        "games_played_through_cutoff": 136.0,
+        "inf_of_runs": 10.516611778439218
+      },
+      "fielding_run_value_per_150": 11.599204167396197,
+      "team_name": "Chicago White Sox"
+    },
+    "146": {
+      "baserunning_raw": {
+        "plate_appearances": 6142.0,
+        "runs": 1.5665997587997098,
+        "season": 2025
+      },
+      "baserunning_runs_per_600_pa": 0.15303807477691725,
+      "catcher_run_value_per_150": 8.406017714686053,
+      "fielding_raw": {
+        "catching_runs": 7.677496179413262,
+        "cutoff": "2026-08-30",
+        "games_played_through_cutoff": 137.0,
+        "inf_of_runs": -0.8271497781297947
+      },
+      "fielding_run_value_per_150": -0.9056384432078044,
+      "team_name": "Miami Marlins"
+    },
+    "147": {
+      "baserunning_raw": {
+        "plate_appearances": 6235.0,
+        "runs": -2.355999686353323,
+        "season": 2025
+      },
+      "baserunning_runs_per_600_pa": -0.22672009812542,
+      "catcher_run_value_per_150": 11.86088514437378,
+      "fielding_raw": {
+        "catching_runs": 10.83294176519472,
+        "cutoff": "2026-08-30",
+        "games_played_through_cutoff": 137.0,
+        "inf_of_runs": -0.9723182030511246
+      },
+      "fielding_run_value_per_150": -1.0645819741435671,
+      "team_name": "New York Yankees"
+    },
+    "158": {
+      "baserunning_raw": {
+        "plate_appearances": 6227.0,
+        "runs": 15.272502516603522,
+        "season": 2025
+      },
+      "baserunning_runs_per_600_pa": 1.4715756399489504,
+      "catcher_run_value_per_150": -7.182776082354048,
+      "fielding_raw": {
+        "catching_runs": -6.560268821883364,
+        "cutoff": "2026-08-30",
+        "games_played_through_cutoff": 137.0,
+        "inf_of_runs": 5.268632445863286
+      },
+      "fielding_run_value_per_150": 5.768575670653233,
+      "team_name": "Milwaukee Brewers"
+    }
+  }
+}
