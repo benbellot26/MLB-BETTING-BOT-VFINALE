@@ -45,6 +45,7 @@ CRITICAL_TEST_MODULES=(
     "tests.test_v14_savant_run_value_builder",
     "tests.test_v14_savant_run_value_pit",
     "tests.test_v14_scheduled_prediction_gate",
+    "tests.test_v14_scheduled_workflow_contract",
     "tests.test_v14_statcast_daily",
     "tests.test_v14_statcast_enrichment",
     "tests.test_v14_statcast_pit_backfill",
