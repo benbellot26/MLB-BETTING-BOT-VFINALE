@@ -15,9 +15,11 @@ from v14.scheduled_prediction_gate import build as scheduled_prediction_gate
 
 
 class V14AuditHardeningV2Tests(unittest.TestCase):
-    def _decision_inputs(self, *, phase="FINAL", consensus=.60, pinnacle=.60):
+    def _decision_inputs(self, *, phase="FINAL", consensus=.60, pinnacle=.60, analyzed_at="2026-08-31T19:30:00Z"):
         prediction={
             "phase":phase,
+            "game_date":"2026-08-31T20:00:00Z",
+            "analyzed_at":analyzed_at,
             "probabilities":{"home_ml":.70,"away_ml":.30},
             "probability_intervals":{"selections":{"home_ml":{"lower":.66,"half_width_pp":4.0}}},
             "calibration":{"markets":{"ML":{"accepted":True}}},
@@ -40,10 +42,23 @@ class V14AuditHardeningV2Tests(unittest.TestCase):
         out=decision_status(prediction=prediction,market_snapshot=market,sharp_market=sharp,certification=certification)
         best=out["best"]
         self.assertEqual(best["status"],"BET")
+        self.assertTrue(best["betting_timing_ok"])
+        self.assertAlmostEqual(best["minutes_to_game"],30.0)
         self.assertEqual(best["primary_sharp_benchmark"],"PINNACLE_NO_VIG")
         self.assertAlmostEqual(best["pinnacle_probability"],.60)
         self.assertGreater(best["robust_primary_sharp_edge_pp"],0)
         self.assertTrue(best["primary_edge_qualified"])
+
+    def test_final_outside_certified_timing_window_is_research_only(self):
+        prediction,market,sharp,certification=self._decision_inputs(analyzed_at="2026-08-31T18:30:00Z")
+        out=decision_status(prediction=prediction,market_snapshot=market,sharp_market=sharp,certification=certification)
+        best=out["best"]
+        self.assertTrue(best["research_ready"])
+        self.assertFalse(best["betting_timing_ok"])
+        self.assertAlmostEqual(best["minutes_to_game"],90.0)
+        self.assertEqual(best["status"],"RESEARCH_ONLY")
+        self.assertIn("betting_timing_outside_certified_window",best["blockers"])
+        self.assertFalse(out["recommendations_authorized"])
 
     def test_consensus_edge_cannot_override_negative_pinnacle_edge(self):
         prediction,market,sharp,certification=self._decision_inputs(consensus=.55,pinnacle=.68)
