@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
 from v14.coverage_ledger import rows_from_candidate
-from v14.cost_aware_close_capture import run as cost_aware_run
+from v14.cost_aware_close_capture import CERTIFIED_DUE_WINDOW_MINUTES, due_games, run as cost_aware_run
 from v14.paired_inference import bootstrap_mean_ci
 from v14.research_registry import register, verify
 from v14.sharp_benchmark import pinnacle_probability
@@ -65,6 +66,27 @@ class AuditHardeningTests(unittest.TestCase):
             self.assertFalse(out["api_call_performed"])
             self.assertEqual(out["paid_api_snapshots"],0)
             self.assertEqual(called["n"],0)
+
+    def test_paid_gate_starts_only_inside_certified_close_window(self) -> None:
+        self.assertEqual(CERTIFIED_DUE_WINDOW_MINUTES,15.0)
+        with TemporaryDirectory() as tmp:
+            root=Path(tmp); market=root/"market.jsonl"; paper=root/"paper.jsonl"; bet=root/"bet.jsonl"
+            now=datetime(2026,9,1,12,0,tzinfo=timezone.utc)
+            row={
+                "schema":"pulsar-v14-market-close-v1",
+                "game_pk":"1",
+                "game_date":(now+timedelta(minutes=16)).isoformat(),
+                "odds_event_time_verified":True,
+                "close_history":[],
+                "best_close":None,
+            }
+            market.write_text(json.dumps(row)+"\n",encoding="utf-8")
+            self.assertEqual(due_games(market,paper,bet,now=now),[])
+            row["game_date"]=(now+timedelta(minutes=15)).isoformat()
+            market.write_text(json.dumps(row)+"\n",encoding="utf-8")
+            due=due_games(market,paper,bet,now=now)
+            self.assertEqual(len(due),1)
+            self.assertEqual(due[0]["source"],"MARKET")
 
 
 if __name__=="__main__": unittest.main()
