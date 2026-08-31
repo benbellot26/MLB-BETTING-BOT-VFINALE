@@ -2,6 +2,9 @@ name: Pulsar V14 Close Capture
 
 on:
   schedule:
+    # Frequent wake-up is cheap: the local due-check performs zero paid API calls.
+    # At most one Odds snapshot is fetched in a run, only when a first certified
+    # close is actually due, and that snapshot is shared by all three ledgers.
     - cron: '*/10 * * * *'
   workflow_dispatch:
 
@@ -14,7 +17,7 @@ concurrency:
 
 jobs:
   capture:
-    name: Capture prospective verified closes
+    name: Cost-aware prospective verified closes
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -29,36 +32,80 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Validate close-capture modules
+      - name: Validate cost-aware close modules
         run: |
-          python -m py_compile v14/market_close_bootstrap.py v14/market_close_ledger.py v14/paper_ledger.py v14/official_close.py v14/sharp_market.py
+          python -m py_compile \
+            v14/market_close_bootstrap.py \
+            v14/market_close_ledger.py \
+            v14/paper_ledger.py \
+            v14/official_close.py \
+            v14/sharp_market.py \
+            v14/api_budget.py \
+            v14/cost_aware_close_capture.py
 
-      - name: Bootstrap future games and capture verified closes
-        env:
-          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+      - name: Bootstrap tracked games from persisted predictions
         run: |
           python -m v14.market_close_bootstrap \
             --predictions data/v14_predictions.jsonl \
             --ledger data/v14_market_close_ledger.jsonl
-          python -m v14.market_close_ledger capture \
-            --ledger data/v14_market_close_ledger.jsonl \
-            --report data/v14_market_close_report.json
-          python -m v14.paper_ledger capture-close --ledger data/v14_paper_bet_ledger.jsonl
+
+      - name: Capture closes with one shared paid snapshot only when due
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          V14_MAX_PAID_CLOSE_SNAPSHOTS_PER_DAY: '12'
+        run: |
+          python -m v14.cost_aware_close_capture \
+            --market-ledger data/v14_market_close_ledger.jsonl \
+            --paper-ledger data/v14_paper_bet_ledger.jsonl \
+            --bet-ledger data/v14_bet_ledger.jsonl \
+            --api-usage-ledger data/v14_api_usage.jsonl
+          # Hydration/reporting below is purely local.
           python -m v14.market_close_ledger hydrate-paper \
             --ledger data/v14_market_close_ledger.jsonl \
             --paper-ledger data/v14_paper_bet_ledger.jsonl
-          python -m v14.official_close --ledger data/v14_bet_ledger.jsonl
+          python -m v14.market_close_ledger report \
+            --ledger data/v14_market_close_ledger.jsonl \
+            --output data/v14_market_close_report.json
+          python -m v14.api_budget report \
+            --ledger data/v14_api_usage.jsonl \
+            --output data/v14_api_usage_report.json
 
-      - name: Persist prospective close evidence
+      - name: Persist only substantive close evidence changes
         run: |
           git config user.name 'Pulsar V14'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          [ -f data/v14_market_close_ledger.jsonl ] && git add -f data/v14_market_close_ledger.jsonl
-          [ -f data/v14_market_close_report.json ] && git add -f data/v14_market_close_report.json
-          [ -f data/v14_paper_bet_ledger.jsonl ] && git add -f data/v14_paper_bet_ledger.jsonl
-          [ -f data/v14_bet_ledger.jsonl ] && git add -f data/v14_bet_ledger.jsonl
+
+          MARKET_CHANGED=0
+          API_CHANGED=0
+          if [ -f data/v14_market_close_ledger.jsonl ] && ! git diff --quiet -- data/v14_market_close_ledger.jsonl; then
+            git add -f data/v14_market_close_ledger.jsonl
+            MARKET_CHANGED=1
+          fi
+          if [ -f data/v14_paper_bet_ledger.jsonl ] && ! git diff --quiet -- data/v14_paper_bet_ledger.jsonl; then
+            git add -f data/v14_paper_bet_ledger.jsonl
+          fi
+          if [ -f data/v14_bet_ledger.jsonl ] && ! git diff --quiet -- data/v14_bet_ledger.jsonl; then
+            git add -f data/v14_bet_ledger.jsonl
+          fi
+          if [ -f data/v14_api_usage.jsonl ] && ! git diff --quiet -- data/v14_api_usage.jsonl; then
+            git add -f data/v14_api_usage.jsonl
+            API_CHANGED=1
+          fi
+
+          # Reports carry generated_at. Stage them only when the evidence they
+          # summarize actually changed, preventing timestamp-only commits every
+          # ten minutes.
+          if [ "$MARKET_CHANGED" -eq 1 ] && [ -f data/v14_market_close_report.json ]; then
+            git add -f data/v14_market_close_report.json
+          fi
+          if [ "$API_CHANGED" -eq 1 ] && [ -f data/v14_api_usage_report.json ]; then
+            git add -f data/v14_api_usage_report.json
+          fi
+
           if ! git diff --cached --quiet; then
-            git commit -m 'data: capture V14 prospective closes [skip ci]'
+            git commit -m 'data: capture cost-aware V14 prospective closes [skip ci]'
             git pull --rebase origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
+          else
+            echo 'PULSAR_V14_CLOSE_NO_SUBSTANTIVE_CHANGE no commit created'
           fi

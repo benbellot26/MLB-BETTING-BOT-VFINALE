@@ -32,6 +32,13 @@ def paper(primary=None,execution=None,close_at=FRESH):
     return {"schema":"pulsar-v14-paper-bet-performance-v7","model_generation":MODEL_GENERATION,"probability_policy_id":PROBABILITY_POLICY_ID,"generated_at":FRESH,"by_market":({"ML":scoped} if scoped else {})}
 
 
+def primary_sharp(*,brier_lower=.002,logloss_lower=0.0,paired_n=500):
+    markets={}
+    for market in MARKETS:
+        markets[market]={"model_vs_primary":{"paired_n":paired_n,"brier_gain":{"n":paired_n,"mean":.01,"ci95_lower":brier_lower,"ci95_upper":.02,"method":"paired nonparametric bootstrap mean","reps":5000},"logloss_gain":{"n":paired_n,"mean":.01,"ci95_lower":logloss_lower,"ci95_upper":.02,"method":"paired nonparametric bootstrap mean","reps":5000},"calendar_block_brier_gain":{"n":paired_n,"blocks":100,"mean":.01,"ci95_lower":.001,"ci95_upper":.02,"method":"calendar-block nonparametric bootstrap mean","reps":5000}}}
+    return {"schema":"pulsar-v14-sharp-benchmark-report-v1","generated_at":FRESH,"model_generation":MODEL_GENERATION,"probability_policy_id":PROBABILITY_POLICY_ID,"primary_benchmark":"PINNACLE_NO_VIG","certification_phase":"FINAL","phases":{"FINAL":{"games":700,"markets":markets}}}
+
+
 class V14StrictCertificationTests(unittest.TestCase):
     def test_one_markets_clv_cannot_certify_another_market(self):
         performance,calibration=probability_ready(); out=evaluate(performance,calibration,paper(clv(),clv(n=80)),now=NOW)
@@ -84,6 +91,22 @@ class V14StrictCertificationTests(unittest.TestCase):
     def test_stale_paper_close_blocks_betting_even_if_report_is_fresh(self):
         performance,calibration=probability_ready(); out=evaluate(performance,calibration,paper(clv(),clv(n=80),close_at="2026-08-20T00:00:00+00:00"),now=NOW)
         self.assertTrue(out["markets"]["ML"]["probability_certified"]); self.assertFalse(out["markets"]["ML"]["betting_certified"]); self.assertTrue(any("latest_certified_close_stale" in reason for reason in out["markets"]["ML"]["betting_failures"]))
+
+    def test_production_primary_benchmark_missing_fails_closed(self):
+        performance,calibration=probability_ready(); out=evaluate(performance,calibration,paper(clv(),clv(n=80)),now=NOW,sharp_benchmark_report={},require_primary_benchmark=True)
+        self.assertFalse(out["markets"]["ML"]["probability_certified"])
+        self.assertIn("strict_primary_sharp_benchmark_schema_required",out["markets"]["ML"]["failures"])
+
+    def test_canonical_final_pinnacle_bootstrap_can_satisfy_extra_gate(self):
+        performance,calibration=probability_ready(); out=evaluate(performance,calibration,paper(clv(),clv(n=80)),now=NOW,sharp_benchmark_report=primary_sharp(),require_primary_benchmark=True)
+        self.assertTrue(out["markets"]["ML"]["probability_certified"])
+        self.assertEqual((out["policy"] or {}).get("primary_sharp_benchmark"),"PINNACLE_NO_VIG")
+        self.assertEqual((out["policy"] or {}).get("primary_sharp_phase"),"FINAL")
+
+    def test_primary_pinnacle_bootstrap_negative_ci_blocks(self):
+        performance,calibration=probability_ready(); out=evaluate(performance,calibration,paper(clv(),clv(n=80)),now=NOW,sharp_benchmark_report=primary_sharp(brier_lower=-.001),require_primary_benchmark=True)
+        self.assertFalse(out["markets"]["ML"]["probability_certified"])
+        self.assertIn("pinnacle_final_brier_bootstrap_ci95_not_positive",out["markets"]["ML"]["failures"])
 
 
 if __name__=="__main__": unittest.main()
