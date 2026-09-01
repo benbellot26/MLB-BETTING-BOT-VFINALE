@@ -9,15 +9,16 @@ has a 500-credit/month plan. Pulsar therefore enforces complementary ceilings:
 - automated collection: at most 180 locally budgeted credits per UTC month;
 - all locally budgeted snapshots (automatic + manual): at most 450 credits per
   UTC month, preserving a 50-credit reserve;
-- provider-reported remaining quota: after an attestation exists, no new paid
-  snapshot may be reserved if its conservative expected cost would reduce the
-  provider balance below the same 50-credit reserve.
+- fresh provider-reported remaining quota: no new paid snapshot may be reserved
+  if its conservative expected cost would reduce the provider balance below the
+  same 50-credit reserve.
 
 Per-slate limits are keyed by the MLB target date rather than UTC midnight.
 Reservations happen before the paid request. A failed request therefore remains
 counted and cannot create an unbounded retry loop. Provider quota attestations
-are recorded after paid responses from The Odds API response headers and remain
-valid across local UTC-month boundaries, covering provider reset-cycle drift.
+are recorded from response headers. Old attestations become advisory-only and
+must be refreshed through the provider's zero-credit /sports endpoint before a
+production paid reservation.
 """
 
 import argparse
@@ -48,6 +49,7 @@ DEFAULT_MAX_AUTOMATED_PROVIDER_CREDITS_PER_UTC_MONTH=180
 DEFAULT_MAX_ALL_PROVIDER_CREDITS_PER_UTC_MONTH=450
 TARGET_PLAN_PROVIDER_CREDITS_PER_MONTH=500
 DEFAULT_EMERGENCY_RESERVE_CREDITS=TARGET_PLAN_PROVIDER_CREDITS_PER_MONTH-DEFAULT_MAX_ALL_PROVIDER_CREDITS_PER_UTC_MONTH
+DEFAULT_PROVIDER_QUOTA_MAX_AGE_MINUTES=360
 
 
 def _env_int(name:str,default:int,*,low:int=1,high:int=100000)->int:
@@ -60,6 +62,7 @@ def daily_close_limit()->int:return _env_int("V14_MAX_PAID_CLOSE_SNAPSHOTS_PER_S
 def daily_prediction_limit()->int:return _env_int("V14_MAX_PAID_PREDICTION_SNAPSHOTS_PER_SLATE",_env_int("V14_MAX_PAID_PREDICTION_SNAPSHOTS_PER_DAY",DEFAULT_MAX_PREDICTION_PER_SLATE,high=48),high=48)
 def provider_credits_per_snapshot()->int:return _env_int("V14_ODDS_PROVIDER_CREDITS_PER_SNAPSHOT",DEFAULT_PROVIDER_CREDITS_PER_SNAPSHOT,high=100)
 def provider_reserve_credits()->int:return _env_int("V14_ODDS_PROVIDER_EMERGENCY_RESERVE_CREDITS",DEFAULT_EMERGENCY_RESERVE_CREDITS,low=0,high=TARGET_PLAN_PROVIDER_CREDITS_PER_MONTH)
+def provider_quota_max_age_minutes()->int:return _env_int("V14_ODDS_PROVIDER_QUOTA_MAX_AGE_MINUTES",DEFAULT_PROVIDER_QUOTA_MAX_AGE_MINUTES,high=1440)
 def monthly_automated_credit_limit()->int:return _env_int("V14_MAX_AUTOMATED_ODDS_CREDITS_PER_UTC_MONTH",DEFAULT_MAX_AUTOMATED_PROVIDER_CREDITS_PER_UTC_MONTH,high=100000)
 def monthly_all_credit_limit()->int:return _env_int("V14_MAX_ALL_ODDS_CREDITS_PER_UTC_MONTH",DEFAULT_MAX_ALL_PROVIDER_CREDITS_PER_UTC_MONTH,high=TARGET_PLAN_PROVIDER_CREDITS_PER_MONTH)
 
@@ -68,6 +71,14 @@ def _now(now:datetime|None=None)->datetime:
     out=now or datetime.now(timezone.utc)
     if out.tzinfo is None:out=out.replace(tzinfo=timezone.utc)
     return out.astimezone(timezone.utc)
+
+
+def _parse_dt(value:Any)->datetime|None:
+    try:
+        out=datetime.fromisoformat(str(value or "").replace("Z","+00:00"))
+        if out.tzinfo is None:out=out.replace(tzinfo=timezone.utc)
+        return out.astimezone(timezone.utc)
+    except Exception:return None
 
 
 def _read(path:Path|str=LEDGER)->list[dict[str,Any]]:
@@ -139,16 +150,20 @@ def latest_provider_quota(path:Path|str=LEDGER)->dict[str,Any]|None:
     return max(rows,key=key)
 
 
-def provider_guard(path:Path|str=LEDGER)->dict[str,Any]:
-    attestation=latest_provider_quota(path);reserve=provider_reserve_credits();configured=provider_credits_per_snapshot()
+def provider_guard(path:Path|str=LEDGER,*,now:datetime|None=None)->dict[str,Any]:
+    current=_now(now);attestation=latest_provider_quota(path);reserve=provider_reserve_credits();configured=provider_credits_per_snapshot();max_age=provider_quota_max_age_minutes()
     if not attestation:
-        return {"status":"UNKNOWN_LOCAL_GUARD_ONLY","attested":False,"allowed":True,"reserve_credits":reserve,"configured_next_credit_cost":configured,"conservative_next_credit_cost":configured,"credits_remaining_until_provider_reset":None,"credits_after_next_snapshot":None}
-    remaining=_int_or_none(attestation.get("provider_credits_remaining"));last=_int_or_none(attestation.get("provider_last_request_credit_cost"));used_credits=_int_or_none(attestation.get("provider_credits_used"));next_cost=max(configured,last or 0);after=(remaining-next_cost) if remaining is not None else None;allowed=True if remaining is None else after>=reserve
-    return {"status":"ATTESTED_SAFE" if allowed else "PROVIDER_RESERVE_REACHED","attested":True,"allowed":allowed,"reserve_credits":reserve,"configured_next_credit_cost":configured,"conservative_next_credit_cost":next_cost,"credits_remaining_until_provider_reset":remaining,"credits_used_since_provider_reset":used_credits,"last_request_credit_cost":last,"credits_after_next_snapshot":after,"provider_captured_at":attestation.get("provider_captured_at"),"recorded_at":attestation.get("recorded_at"),"provider_reset_cycle_independent_of_local_utc_month":True}
+        return {"status":"UNKNOWN_REFRESH_REQUIRED","attested":False,"fresh":False,"allowed":True,"requires_zero_credit_refresh_before_paid_reservation":True,"reserve_credits":reserve,"configured_next_credit_cost":configured,"conservative_next_credit_cost":configured,"credits_remaining_until_provider_reset":None,"credits_after_next_snapshot":None,"max_age_minutes":max_age}
+    remaining=_int_or_none(attestation.get("provider_credits_remaining"));last=_int_or_none(attestation.get("provider_last_request_credit_cost"));used_credits=_int_or_none(attestation.get("provider_credits_used"));next_cost=max(configured,last or 0);after=(remaining-next_cost) if remaining is not None else None;captured=_parse_dt(attestation.get("provider_captured_at") or attestation.get("recorded_at"));age=((current-captured).total_seconds()/60.0) if captured is not None else None;same_month=bool(captured and captured.strftime("%Y-%m")==current.strftime("%Y-%m"));fresh=bool(age is not None and 0<=age<=max_age and same_month)
+    if not fresh:
+        allowed=True;status="STALE_REFRESH_REQUIRED"
+    else:
+        allowed=True if remaining is None else after>=reserve;status="ATTESTED_SAFE" if allowed else "PROVIDER_RESERVE_REACHED"
+    return {"status":status,"attested":True,"fresh":fresh,"allowed":allowed,"requires_zero_credit_refresh_before_paid_reservation":not fresh,"reserve_credits":reserve,"configured_next_credit_cost":configured,"conservative_next_credit_cost":next_cost,"credits_remaining_until_provider_reset":remaining,"credits_used_since_provider_reset":used_credits,"last_request_credit_cost":last,"credits_after_next_snapshot":after,"provider_captured_at":attestation.get("provider_captured_at"),"recorded_at":attestation.get("recorded_at"),"age_minutes":age,"same_utc_month":same_month,"max_age_minutes":max_age,"provider_reset_cycle_guard":True}
 
 
 def _allowance(kind:str,limit:int,path:Path|str=LEDGER,*,now:datetime|None=None,slate_date:str|None=None)->dict[str,Any]:
-    slate=slate_key(slate_date,now=now);count=used(kind,path,now=now,slate_date=slate);automated=automated_monthly_usage(path,now=now);all_paid=all_paid_monthly_usage(path,now=now);provider=provider_guard(path);daily_allowed=count<limit
+    slate=slate_key(slate_date,now=now);count=used(kind,path,now=now,slate_date=slate);automated=automated_monthly_usage(path,now=now);all_paid=all_paid_monthly_usage(path,now=now);provider=provider_guard(path,now=now);daily_allowed=count<limit
     return {"kind":kind,"slate_date":slate,"used":count,"limit":limit,"remaining":max(0,limit-count),"slate_allowed":daily_allowed,"daily_allowed":daily_allowed,"automated_month":automated,"all_paid_month":all_paid,"provider_guard":provider,"monthly":automated,"allowed":daily_allowed and automated["allowed"] and all_paid["allowed"] and provider["allowed"]}
 
 
@@ -161,7 +176,7 @@ def prediction_allowance(path:Path|str=LEDGER,*,now:datetime|None=None,slate_dat
 
 
 def manual_allowance(path:Path|str=LEDGER,*,now:datetime|None=None,slate_date:str|None=None)->dict[str,Any]:
-    all_paid=all_paid_monthly_usage(path,now=now);provider=provider_guard(path);slate=slate_key(slate_date,now=now);used_on_slate=used(KIND_MANUAL,path,now=now,slate_date=slate)
+    all_paid=all_paid_monthly_usage(path,now=now);provider=provider_guard(path,now=now);slate=slate_key(slate_date,now=now);used_on_slate=used(KIND_MANUAL,path,now=now,slate_date=slate)
     return {"kind":KIND_MANUAL,"slate_date":slate,"used":used_on_slate,"limit":None,"remaining":None,"all_paid_month":all_paid,"provider_guard":provider,"allowed":all_paid["allowed"] and provider["allowed"]}
 
 
@@ -169,11 +184,8 @@ def latest_recorded_at(kind:str,path:Path|str=LEDGER)->datetime|None:
     candidates=[]
     for row in _read(path):
         if str(row.get("kind") or "")!=kind:continue
-        try:
-            value=datetime.fromisoformat(str(row.get("recorded_at") or "").replace("Z","+00:00"))
-            if value.tzinfo is None:value=value.replace(tzinfo=timezone.utc)
-            candidates.append(value.astimezone(timezone.utc))
-        except Exception:continue
+        value=_parse_dt(row.get("recorded_at"))
+        if value is not None:candidates.append(value)
     return max(candidates) if candidates else None
 
 
@@ -223,12 +235,12 @@ def record_provider_quota(path:Path|str=LEDGER,*,state_path:Path|str=PROVIDER_ST
     if not captured or (remaining is None and used_credits is None and last is None):raise ValueError("provider quota sidecar contains no usable quota attestation")
     latest=latest_provider_quota(path)
     if latest and str(latest.get("provider_captured_at") or "")==captured and _int_or_none(latest.get("provider_credits_remaining"))==remaining and _int_or_none(latest.get("provider_credits_used"))==used_credits and _int_or_none(latest.get("provider_last_request_credit_cost"))==last:return {"recorded":False,"reason":"duplicate provider quota attestation","provider_captured_at":captured}
-    current=_now(now);row={"schema":SCHEMA,"recorded_at":current.isoformat(),"utc_day":current.date().isoformat(),"utc_month":current.strftime("%Y-%m"),"kind":KIND_PROVIDER,"request_equivalents":0,"provider_credit_cost":0,"provider":"THE_ODDS_API","provider_captured_at":captured,"provider_credits_remaining":remaining,"provider_credits_used":used_credits,"provider_last_request_credit_cost":last,"credentials_persisted":False,"note":"provider-reported quota headers captured after paid response; zero additional API cost"};_append(row,path);return {"recorded":True,"row":row,"provider_guard":provider_guard(path)}
+    current=_now(now);row={"schema":SCHEMA,"recorded_at":current.isoformat(),"utc_day":current.date().isoformat(),"utc_month":current.strftime("%Y-%m"),"kind":KIND_PROVIDER,"request_equivalents":0,"provider_credit_cost":0,"provider":"THE_ODDS_API","provider_captured_at":captured,"provider_credits_remaining":remaining,"provider_credits_used":used_credits,"provider_last_request_credit_cost":last,"credentials_persisted":False,"note":"provider-reported quota headers captured from zero-credit probe or paid response; attestation itself costs zero"};_append(row,path);return {"recorded":True,"row":row,"provider_guard":provider_guard(path,now=current)}
 
 
 def build_report(path:Path|str=LEDGER,*,now:datetime|None=None,slate_date:str|None=None)->dict[str,Any]:
-    rows=_read(path);counts=Counter(str(r.get("kind") or "UNKNOWN") for r in rows);close_today=allowance(path,now=now,slate_date=slate_date);prediction_today=prediction_allowance(path,now=now,slate_date=slate_date);manual=manual_allowance(path,now=now,slate_date=slate_date);automated=automated_monthly_usage(path,now=now);all_paid=all_paid_monthly_usage(path,now=now);provider=provider_guard(path);known_credits=sum(_row_cost(r) for r in rows if str(r.get("kind") or "") in PAID_KINDS)
-    return {"schema":"pulsar-v14-api-usage-report-v5","generated_at":_now(now).isoformat(),"request_equivalents_total":sum(int(r.get("request_equivalents") or 0) for r in rows if str(r.get("kind") or "") in PAID_KINDS),"known_provider_credits_total":known_credits,"by_kind":dict(sorted(counts.items())),"automated_close_slate":close_today,"automated_prediction_slate":prediction_today,"manual_slate":manual,"automated_month":automated,"all_paid_month":all_paid,"provider_guard":provider,"policy":{"default_max_paid_close_snapshots_per_mlb_slate":DEFAULT_MAX_CLOSE_PER_SLATE,"close_config_env":"V14_MAX_PAID_CLOSE_SNAPSHOTS_PER_SLATE","default_max_paid_prediction_snapshots_per_mlb_slate":DEFAULT_MAX_PREDICTION_PER_SLATE,"prediction_config_env":"V14_MAX_PAID_PREDICTION_SNAPSHOTS_PER_SLATE","default_provider_credits_per_snapshot":DEFAULT_PROVIDER_CREDITS_PER_SNAPSHOT,"provider_credit_cost_env":"V14_ODDS_PROVIDER_CREDITS_PER_SNAPSHOT","default_max_automated_provider_credits_per_utc_month":DEFAULT_MAX_AUTOMATED_PROVIDER_CREDITS_PER_UTC_MONTH,"monthly_automated_credit_config_env":"V14_MAX_AUTOMATED_ODDS_CREDITS_PER_UTC_MONTH","default_max_all_provider_credits_per_utc_month":DEFAULT_MAX_ALL_PROVIDER_CREDITS_PER_UTC_MONTH,"monthly_all_credit_config_env":"V14_MAX_ALL_ODDS_CREDITS_PER_UTC_MONTH","provider_emergency_reserve_config_env":"V14_ODDS_PROVIDER_EMERGENCY_RESERVE_CREDITS","provider_headers_attested_when_available":True,"provider_reset_cycle_guard":True,"manual_prediction_runs_budgeted":True,"target_plan_provider_credits_per_month":TARGET_PLAN_PROVIDER_CREDITS_PER_MONTH,"hard_reserved_emergency_credits_at_default_policy":DEFAULT_EMERGENCY_RESERVE_CREDITS,"mlb_slate_keyed_limits":True,"policy_mode":"ULTRA_LOW_SLATEDATE_LOCAL_CAP_PLUS_PROVIDER_REMAINING_GUARD"}}
+    rows=_read(path);counts=Counter(str(r.get("kind") or "UNKNOWN") for r in rows);close_today=allowance(path,now=now,slate_date=slate_date);prediction_today=prediction_allowance(path,now=now,slate_date=slate_date);manual=manual_allowance(path,now=now,slate_date=slate_date);automated=automated_monthly_usage(path,now=now);all_paid=all_paid_monthly_usage(path,now=now);provider=provider_guard(path,now=now);known_credits=sum(_row_cost(r) for r in rows if str(r.get("kind") or "") in PAID_KINDS)
+    return {"schema":"pulsar-v14-api-usage-report-v5","generated_at":_now(now).isoformat(),"request_equivalents_total":sum(int(r.get("request_equivalents") or 0) for r in rows if str(r.get("kind") or "") in PAID_KINDS),"known_provider_credits_total":known_credits,"by_kind":dict(sorted(counts.items())),"automated_close_slate":close_today,"automated_prediction_slate":prediction_today,"manual_slate":manual,"automated_month":automated,"all_paid_month":all_paid,"provider_guard":provider,"policy":{"default_max_paid_close_snapshots_per_mlb_slate":DEFAULT_MAX_CLOSE_PER_SLATE,"close_config_env":"V14_MAX_PAID_CLOSE_SNAPSHOTS_PER_SLATE","default_max_paid_prediction_snapshots_per_mlb_slate":DEFAULT_MAX_PREDICTION_PER_SLATE,"prediction_config_env":"V14_MAX_PAID_PREDICTION_SNAPSHOTS_PER_SLATE","default_provider_credits_per_snapshot":DEFAULT_PROVIDER_CREDITS_PER_SNAPSHOT,"provider_credit_cost_env":"V14_ODDS_PROVIDER_CREDITS_PER_SNAPSHOT","default_max_automated_provider_credits_per_utc_month":DEFAULT_MAX_AUTOMATED_PROVIDER_CREDITS_PER_UTC_MONTH,"monthly_automated_credit_config_env":"V14_MAX_AUTOMATED_ODDS_CREDITS_PER_UTC_MONTH","default_max_all_provider_credits_per_utc_month":DEFAULT_MAX_ALL_PROVIDER_CREDITS_PER_UTC_MONTH,"monthly_all_credit_config_env":"V14_MAX_ALL_ODDS_CREDITS_PER_UTC_MONTH","provider_emergency_reserve_config_env":"V14_ODDS_PROVIDER_EMERGENCY_RESERVE_CREDITS","provider_quota_max_age_config_env":"V14_ODDS_PROVIDER_QUOTA_MAX_AGE_MINUTES","default_provider_quota_max_age_minutes":DEFAULT_PROVIDER_QUOTA_MAX_AGE_MINUTES,"provider_headers_attested_when_available":True,"zero_credit_provider_refresh_required_before_production_paid_reservation":True,"provider_reset_cycle_guard":True,"manual_prediction_runs_budgeted":True,"target_plan_provider_credits_per_month":TARGET_PLAN_PROVIDER_CREDITS_PER_MONTH,"hard_reserved_emergency_credits_at_default_policy":DEFAULT_EMERGENCY_RESERVE_CREDITS,"mlb_slate_keyed_limits":True,"policy_mode":"ULTRA_LOW_SLATEDATE_LOCAL_CAP_PLUS_FRESH_PROVIDER_GUARD"}}
 
 
 def write_report(path:Path|str=LEDGER,output:Path|str=REPORT,*,now:datetime|None=None,slate_date:str|None=None)->dict[str,Any]:
