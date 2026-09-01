@@ -31,8 +31,9 @@ class V14ScheduledWorkflowContractTests(unittest.TestCase):
         self.assertIn("record-manual",block)
         self.assertIn('--slate-date "$TARGET_DATE"',block)
         self.assertIn("V14_MAX_ALL_ODDS_CREDITS_PER_UTC_MONTH: '450'",block)
-        self.assertIn("git commit -m 'data: reserve V14 paid Odds request [skip ci]'",block)
-        self.assertIn("git push origin",block)
+        self.assertIn("python -m v14.state_branch persist",block)
+        self.assertIn("data: reserve V14 paid Odds request [skip ci]",block)
+        self.assertNotIn("git push origin",block)
 
     def test_scheduled_trigger_is_stamped_into_same_production_runtime(self):
         start=self.text.index("- name: Build native Pulsar V14 production payload")
