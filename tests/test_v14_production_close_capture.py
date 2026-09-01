@@ -31,14 +31,23 @@ class V14ProductionCloseCaptureWorkflowTests(unittest.TestCase):
     def test_scheduled_final_gate_is_free_and_precedes_paid_prediction(self):
         self.assertIn("- cron: '*/10 * * * *'", self.text)
         gate = self.text.index("- name: Resolve manual or objective scheduled FINAL gate")
+        quota = self.text.index("- name: Refresh provider quota with zero-credit endpoint")
         reserve = self.text.index("- name: Reserve and persist every paid Odds snapshot before request")
         paid = self.text.index("- name: Build native Pulsar V14 production payload")
-        self.assertLess(gate, reserve)
+        self.assertLess(gate, quota)
+        self.assertLess(quota, reserve)
         self.assertLess(reserve, paid)
-        gate_block = self.text[gate:reserve]
+        gate_block = self.text[gate:quota]
+        quota_block = self.text[quota:reserve]
         reserve_block = self.text[reserve:paid]
         self.assertIn("python -m v14.scheduled_prediction_gate", gate_block)
         self.assertNotIn("ODDS_API_KEY", gate_block)
+        # The quota probe authenticates with the same key but uses the provider's
+        # zero-credit endpoint. It must not be confused with a paid odds snapshot.
+        self.assertIn("ODDS_API_KEY", quota_block)
+        self.assertIn("python -m v14.odds_quota_probe", quota_block)
+        self.assertIn("record-provider-state", quota_block)
+        self.assertNotIn("production_runtime", quota_block)
         self.assertNotIn("ODDS_API_KEY", reserve_block)
         self.assertIn("python -m v14.api_budget record-prediction", reserve_block)
         self.assertIn("python -m v14.api_budget record-manual", reserve_block)
