@@ -5,6 +5,8 @@ import unittest
 
 CRITICAL_TEST_MODULES=(
     "tests.test_v14_acquisition",
+    "tests.test_v14_all_stats_context",
+    "tests.test_v14_api_budget_ultra_low",
     "tests.test_v14_artifacts",
     "tests.test_v14_audit_hardening",
     "tests.test_v14_audit_hardening_v2",
@@ -14,6 +16,7 @@ CRITICAL_TEST_MODULES=(
     "tests.test_v14_discord",
     "tests.test_v14_distribution_extra_innings",
     "tests.test_v14_end_to_end_tracking",
+    "tests.test_v14_feature_ownership",
     "tests.test_v14_feature_row",
     "tests.test_v14_historical_distribution_isolation",
     "tests.test_v14_historical_distribution_live_validation",
@@ -56,6 +59,7 @@ CRITICAL_TEST_MODULES=(
     "tests.test_v14_structural_parity",
     "tests.test_v14_team_history_shadow",
     "tests.test_v14_tracking",
+    "tests.test_v14_ultra_low_cluster_policy",
     "tests.test_v14_venue_park_builder",
     "tests.test_v14_weather_live_shadow",
     "tests.test_v14_weather_pit_backfill",
