@@ -13,14 +13,21 @@ class V14ScheduledWorkflowContractTests(unittest.TestCase):
     def test_schedule_wakes_frequently_but_gate_precedes_paid_odds(self):
         self.assertIn("- cron: '*/10 * * * *'",self.text)
         gate=self.text.index("- name: Resolve manual or objective scheduled FINAL gate")
+        quota=self.text.index("- name: Refresh provider quota with zero-credit endpoint")
         reserve=self.text.index("- name: Reserve and persist every paid Odds snapshot before request")
         paid=self.text.index("- name: Build native Pulsar V14 production payload")
-        self.assertLess(gate,reserve);self.assertLess(reserve,paid)
-        pre_paid=self.text[gate:paid]
-        self.assertIn("python -m v14.scheduled_prediction_gate",pre_paid)
-        self.assertIn("python -m v14.api_budget record-prediction",pre_paid)
-        self.assertIn("python -m v14.api_budget record-manual",pre_paid)
-        self.assertNotIn("ODDS_API_KEY",pre_paid)
+        self.assertLess(gate,quota);self.assertLess(quota,reserve);self.assertLess(reserve,paid)
+        gate_block=self.text[gate:quota]
+        quota_block=self.text[quota:reserve]
+        reserve_block=self.text[reserve:paid]
+        self.assertIn("python -m v14.scheduled_prediction_gate",gate_block)
+        self.assertNotIn("ODDS_API_KEY",gate_block)
+        self.assertIn("python -m v14.odds_quota_probe",quota_block)
+        self.assertIn("ODDS_API_KEY",quota_block)
+        self.assertNotIn("production_runtime",quota_block)
+        self.assertIn("python -m v14.api_budget record-prediction",reserve_block)
+        self.assertIn("python -m v14.api_budget record-manual",reserve_block)
+        self.assertNotIn("ODDS_API_KEY",reserve_block)
 
     def test_every_paid_production_run_is_reserved_before_request(self):
         start=self.text.index("- name: Reserve and persist every paid Odds snapshot before request")
