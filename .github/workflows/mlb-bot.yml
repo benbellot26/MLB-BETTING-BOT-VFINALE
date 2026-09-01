@@ -134,6 +134,28 @@ jobs:
           fi
           exit 0
 
+      - name: Refresh provider quota with zero-credit endpoint
+        if: steps.gate.outputs.run_required == 'true'
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          V14_ODDS_PROVIDER_CREDITS_PER_SNAPSHOT: '3'
+          V14_ODDS_PROVIDER_EMERGENCY_RESERVE_CREDITS: '50'
+        run: |
+          set -euo pipefail
+          python -m v14.odds_quota_probe --state runtime/v14/odds_provider_quota.json
+          python -m v14.api_budget record-provider-state \
+            --ledger data/v14_api_usage.jsonl \
+            --state runtime/v14/odds_provider_quota.json
+          python -m v14.api_budget report \
+            --ledger data/v14_api_usage.jsonl \
+            --slate-date "${{ steps.gate.outputs.target_date }}" \
+            --output data/v14_api_usage_report.json
+          python -m v14.state_branch persist \
+            --path data/v14_api_usage.jsonl \
+            --path data/v14_api_usage_report.json \
+            --message 'data: refresh zero-credit Odds quota guard [skip ci]'
+          python -m v14.api_budget provider-guard --ledger data/v14_api_usage.jsonl
+
       - name: Reserve and persist every paid Odds snapshot before request
         if: steps.gate.outputs.run_required == 'true'
         env:
