@@ -147,7 +147,11 @@ jobs:
         if: steps.gate.outputs.run_required == 'true'
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          V14_MAX_PAID_PREDICTION_SNAPSHOTS_PER_SLATE: '4'
+          V14_MAX_PAID_CLOSE_SNAPSHOTS_PER_SLATE: '1'
           V14_ODDS_PROVIDER_CREDITS_PER_SNAPSHOT: '3'
+          V14_MAX_AUTOMATED_ODDS_CREDITS_PER_UTC_MONTH: '420'
+          V14_MAX_ALL_ODDS_CREDITS_PER_UTC_MONTH: '450'
           V14_ODDS_PROVIDER_EMERGENCY_RESERVE_CREDITS: '50'
         run: |
           set -euo pipefail
@@ -214,7 +218,10 @@ jobs:
       - name: Reconcile provider-reported quota after paid snapshot
         if: always() && steps.gate.outputs.run_required == 'true'
         env:
+          V14_MAX_PAID_PREDICTION_SNAPSHOTS_PER_SLATE: '4'
+          V14_MAX_PAID_CLOSE_SNAPSHOTS_PER_SLATE: '1'
           V14_ODDS_PROVIDER_CREDITS_PER_SNAPSHOT: '3'
+          V14_MAX_AUTOMATED_ODDS_CREDITS_PER_UTC_MONTH: '420'
           V14_MAX_ALL_ODDS_CREDITS_PER_UTC_MONTH: '450'
           V14_ODDS_PROVIDER_EMERGENCY_RESERVE_CREDITS: '50'
         run: |
