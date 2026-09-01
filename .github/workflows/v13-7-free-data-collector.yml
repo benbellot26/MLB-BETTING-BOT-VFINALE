@@ -7,6 +7,8 @@ on:
       - '.github/workflows/v13-7-free-data-collector.yml'
       - 'v11/v137_*.py'
       - 'v14/historical_dataset.py'
+      - 'v14/state_branch.py'
+      - 'research/v14_runtime_legacy_paths.txt'
   schedule:
     # Free-only collector: no Odds API secret and no paid provider.
     - cron: '11 11 * * *'
@@ -41,7 +43,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Checkout production code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: true
@@ -49,6 +52,10 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
+
+      - name: Hydrate legacy research state from runtime-data
+        run: |
+          python -m v14.state_branch hydrate --manifest research/v14_runtime_legacy_paths.txt
 
       - name: Resolve free-data windows
         id: dates
@@ -108,7 +115,7 @@ jobs:
 
       - name: V13.10 free-data preflight
         run: |
-          python -m py_compile v11/*.py tests/*.py
+          python -m py_compile v11/*.py tests/*.py v14/state_branch.py
           python -m v11.v13_preflight
 
       - name: Collect stable-ID Statcast priors
@@ -210,25 +217,8 @@ jobs:
           print(json.dumps(payload,indent=2,sort_keys=True))
           PY
 
-      - name: Persist free-data foundation
+      - name: Persist legacy free-data foundation on runtime-data
         run: |
-          git config user.name 'MLB Betting Bot V13.10 Free Data'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-          [ -d data/v137 ] && git add -f data/v137
-          [ -f data/v138_dataset_manifest.json ] && git add -f data/v138_dataset_manifest.json
-          [ -f data/v137_statcast_priors_latest.json.gz ] && git add -f data/v137_statcast_priors_latest.json.gz
-          [ -f data/v137_statcast_priors_report.json ] && git add -f data/v137_statcast_priors_report.json
-          [ -f data/v137_park_factors.json ] && git add -f data/v137_park_factors.json
-          [ -f data/v137_park_factors_report.json ] && git add -f data/v137_park_factors_report.json
-          [ -f data/v137_mlb_state_latest.json.gz ] && git add -f data/v137_mlb_state_latest.json.gz
-          [ -f data/v137_mlb_state_report.json ] && git add -f data/v137_mlb_state_report.json
-          [ -f data/v137_free_team_history_report.json ] && git add -f data/v137_free_team_history_report.json
-          [ -f data/v137_weather_backfill_report.json ] && git add -f data/v137_weather_backfill_report.json
-          [ -f data/v137_weather_cursor.json ] && git add -f data/v137_weather_cursor.json
-          [ -f data/v137_free_data_health.json ] && git add -f data/v137_free_data_health.json
-          [ -f data/v13_model_health.json ] && git add -f data/v13_model_health.json
-          if ! git diff --cached --quiet; then
-            git commit -m 'data: refresh V13.10 free data foundation [skip ci]'
-            git pull --rebase origin "$GITHUB_REF_NAME"
-            git push origin "HEAD:$GITHUB_REF_NAME"
-          fi
+          python -m v14.state_branch persist \
+            --manifest research/v14_runtime_legacy_paths.txt \
+            --message 'data: refresh V13.10 free research foundation [skip ci]'

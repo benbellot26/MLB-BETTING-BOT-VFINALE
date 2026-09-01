@@ -54,6 +54,58 @@
       "multiplicity_family": "RUN_MEANS"
     },
     {
+      "experiment_id": "V14-RESIDUAL-WEIGHTS-01",
+      "hypothesis": "Strongly regularized learned multipliers for persisted PIT advanced residual components improve team-run MSE versus fixed all-ones component weighting.",
+      "model": "v14.residual_weight_challenger",
+      "features": ["offense_delta", "prevention_delta", "fielding_delta", "timezone_delta", "physics_delta"],
+      "training_period": "chronological first 70% of post-registration FINAL cohort after minimum sample",
+      "validation_period": "chronological final 30% of same sealed cohort",
+      "primary_metric": "team-run MSE gain vs champion",
+      "secondary_metrics": ["team-run MAE"],
+      "success_rule": "positive holdout MSE gain followed by separate fresh prospective probability validation",
+      "code_commit_sha": "AUTO",
+      "multiplicity_family": "RUN_MEANS"
+    },
+    {
+      "experiment_id": "V14-STATCAST-WINDOW-01",
+      "hypothesis": "Adaptive shortest-reliable 14/30/45/60-day Statcast horizons improve recency without sacrificing sample reliability versus fixed 45-day priors.",
+      "model": "v14.statcast_multiwindow_challenger",
+      "features": ["entity_pa", "xwoba", "hard_hit_rate", "barrel_rate", "k_minus_bb_rate", "window_days"],
+      "training_period": "PIT rolling artifacts only",
+      "validation_period": "post-registration prospective cohort",
+      "primary_metric": "team-run MSE gain when adaptive priors are applied in a sealed challenger",
+      "secondary_metrics": ["ML Brier", "Total Brier", "coverage"],
+      "success_rule": "paired prospective improvement with no coverage or calibration regression",
+      "code_commit_sha": "AUTO",
+      "multiplicity_family": "RUN_MEANS"
+    },
+    {
+      "experiment_id": "V14-OPENER-BULK-01",
+      "hypothesis": "Explicit opener/bulk/bullpen innings allocation improves games where the nominal starter has opener-like depth.",
+      "model": "v14.opener_bulk_challenger",
+      "features": ["season_innings_per_start", "recent_innings", "bulk_pitcher_identity", "bullpen_depth"],
+      "training_period": "prospective opener candidates after registration",
+      "validation_period": "future opener candidates with explicit bulk identity",
+      "primary_metric": "team-run MSE gain in opener cohort",
+      "secondary_metrics": ["ML Brier", "Total Brier", "coverage"],
+      "success_rule": "bulk identity coverage sufficient and paired prospective MSE/Brier non-regression before any production use",
+      "code_commit_sha": "AUTO",
+      "multiplicity_family": "RUN_MEANS"
+    },
+    {
+      "experiment_id": "V14-INTEGER-TOTALS-01",
+      "hypothesis": "Explicit push-aware integer total probabilities can safely extend total-market coverage without distorting the existing half-run distribution contract.",
+      "model": "v14.integer_totals_challenger",
+      "features": ["home_mu", "away_mu", "integer_total_line", "score_distribution"],
+      "training_period": "development capability only",
+      "validation_period": "future persisted integer total market cohort",
+      "primary_metric": "three-way over/push/under calibration",
+      "secondary_metrics": ["conditional no-push Brier", "coverage"],
+      "success_rule": "calibrated push probability and no-push Brier non-regression on a prospective integer-line cohort",
+      "code_commit_sha": "AUTO",
+      "multiplicity_family": "DISTRIBUTION"
+    },
+    {
       "experiment_id": "V14-CALMETHOD-01",
       "hypothesis": "An alternative leakage-safe calibration transform improves OOS Brier while preserving LogLoss.",
       "model": "v14.calibration_methods_challenger",

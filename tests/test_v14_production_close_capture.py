@@ -24,27 +24,54 @@ class V14ProductionCloseCaptureWorkflowTests(unittest.TestCase):
         block = self.text[start:end]
         self.assertNotIn("ODDS_API_KEY", block)
         self.assertNotIn("cost_aware_close_capture", block)
-        self.assertIn("git push origin", block)
+        self.assertIn("python -m v14.state_branch persist", block)
+        self.assertIn("research/v14_runtime_operational_paths.txt", block)
+        self.assertNotIn("git push origin", block)
 
     def test_scheduled_final_gate_is_free_and_precedes_paid_prediction(self):
         self.assertIn("- cron: '*/10 * * * *'", self.text)
         gate = self.text.index("- name: Resolve manual or objective scheduled FINAL gate")
-        reserve = self.text.index("- name: Reserve and persist automated FINAL prediction budget")
+        quota = self.text.index("- name: Refresh provider quota with zero-credit endpoint")
+        reserve = self.text.index("- name: Reserve and persist every paid Odds snapshot before request")
         paid = self.text.index("- name: Build native Pulsar V14 production payload")
-        self.assertLess(gate, reserve)
+        self.assertLess(gate, quota)
+        self.assertLess(quota, reserve)
         self.assertLess(reserve, paid)
-        gate_block = self.text[gate:reserve]
+        gate_block = self.text[gate:quota]
+        quota_block = self.text[quota:reserve]
         reserve_block = self.text[reserve:paid]
         self.assertIn("python -m v14.scheduled_prediction_gate", gate_block)
         self.assertNotIn("ODDS_API_KEY", gate_block)
+        # The quota probe authenticates with the same key but uses the provider's
+        # zero-credit endpoint. It must not be confused with a paid odds snapshot.
+        self.assertIn("ODDS_API_KEY", quota_block)
+        self.assertIn("python -m v14.odds_quota_probe", quota_block)
+        self.assertIn("record-provider-state", quota_block)
+        self.assertNotIn("production_runtime", quota_block)
         self.assertNotIn("ODDS_API_KEY", reserve_block)
         self.assertIn("python -m v14.api_budget record-prediction", reserve_block)
-        self.assertIn("git push origin", reserve_block)
-        self.assertIn("Persist the reservation before the paid request", reserve_block)
+        self.assertIn("python -m v14.api_budget record-manual", reserve_block)
+        self.assertIn("python -m v14.state_branch persist", reserve_block)
+        self.assertIn("V14_ODDS_PROVIDER_EMERGENCY_RESERVE_CREDITS: '50'", reserve_block)
+        self.assertIn("Persist before the paid request", reserve_block)
+
+    def test_provider_quota_is_reconciled_even_if_payload_step_fails(self):
+        paid = self.text.index("- name: Build native Pulsar V14 production payload")
+        reconcile = self.text.index("- name: Reconcile provider-reported quota after paid snapshot")
+        coverage = self.text.index("- name: Record zero-API slate coverage and rejection reasons")
+        self.assertLess(paid, reconcile)
+        self.assertLess(reconcile, coverage)
+        block = self.text[reconcile:coverage]
+        self.assertIn("if: always() && steps.gate.outputs.run_required == 'true'", block)
+        self.assertIn("record-provider-state", block)
+        self.assertIn("runtime/v14/odds_provider_quota.json", block)
+        self.assertIn("v14.state_branch persist", block)
+        self.assertIn("provider-guard", block)
+        self.assertIn("V14_ODDS_PROVIDER_EMERGENCY_RESERVE_CREDITS: '50'", block)
 
     def test_paid_prediction_is_stamped_with_objective_run_trigger(self):
         start = self.text.index("- name: Build native Pulsar V14 production payload")
-        end = self.text.index("- name: Record zero-API slate coverage and rejection reasons")
+        end = self.text.index("- name: Reconcile provider-reported quota after paid snapshot")
         block = self.text[start:end]
         self.assertIn("ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}", block)
         self.assertIn('--run-trigger "${{ steps.gate.outputs.run_trigger }}"', block)

@@ -4,9 +4,9 @@ from __future__ import annotations
 
 The workflow may wake frequently, but this module performs only a free MLB
 schedule read plus local ledger reads. With the 500-credit/month user plan,
-automation is limited to one paid SCHEDULED_FINAL snapshot per UTC day. The gate
-therefore waits for the best daily cluster instead of spending that snapshot on
-the first isolated game that happens to enter the FINAL window.
+automation is limited to one paid SCHEDULED_FINAL snapshot per MLB target slate.
+The gate therefore waits for the best cluster on that slate instead of spending
+its snapshot on the first isolated game entering the FINAL window.
 
 Cluster policy:
 - maximize uncovered games simultaneously inside the canonical 10-60m window;
@@ -137,7 +137,7 @@ def build(
     now:datetime|None=None,
     games_loader:Callable[[str],list[dict[str,Any]]]|None=None,
 )->dict[str,Any]:
-    current=_now(now);day=target_date or resolve_target_date(now=current);loader=games_loader or (lambda value:mlb_schedule(value,hydrate=""));games=loader(day);predictions=_read_predictions(predictions_path);due=due_games(games,predictions,now=current);plan=best_cluster(games,predictions,now=current);budget=prediction_allowance(api_usage_path,now=current);last=latest_recorded_at(KIND_PREDICTION,api_usage_path);cooldown_remaining=0.0
+    current=_now(now);day=target_date or resolve_target_date(now=current);loader=games_loader or (lambda value:mlb_schedule(value,hydrate=""));games=loader(day);predictions=_read_predictions(predictions_path);due=due_games(games,predictions,now=current);plan=best_cluster(games,predictions,now=current);budget=prediction_allowance(api_usage_path,now=current,slate_date=day);last=latest_recorded_at(KIND_PREDICTION,api_usage_path);cooldown_remaining=0.0
     if last is not None:
         elapsed=(current-last).total_seconds()/60.0
         cooldown_remaining=max(0.0,RETRY_COOLDOWN_MINUTES-elapsed)
@@ -146,13 +146,14 @@ def build(
     if not due:reason="NO_FINAL_SNAPSHOT_DUE"
     elif cooldown_remaining>0:reason="PREDICTION_RETRY_COOLDOWN"
     elif not budget.get("allowed"):reason="AUTOMATED_PREDICTION_BUDGET_EXHAUSTED"
-    elif waiting_for_cluster:reason="WAITING_FOR_BEST_DAILY_CLUSTER"
+    elif waiting_for_cluster:reason="WAITING_FOR_BEST_SLATE_CLUSTER"
     else:reason="FINAL_SNAPSHOT_DUE"
     run_required=bool(due and budget.get("allowed") and cooldown_remaining<=0 and not waiting_for_cluster)
     return {
-        "schema":"pulsar-v14-scheduled-prediction-gate-v2",
+        "schema":"pulsar-v14-scheduled-prediction-gate-v3",
         "checked_at":current.isoformat(),
         "target_date":day,
+        "slate_date":day,
         "run_trigger":CERTIFICATION_RUN_TRIGGER,
         "run_required":run_required,
         "reason":reason,
@@ -163,10 +164,11 @@ def build(
         "cooldown_remaining_minutes":cooldown_remaining,
         "due_games":due,
         "due_game_ids":[row["game_pk"] for row in due],
+        "best_slate_cluster":plan,
         "best_daily_cluster":plan,
         "already_covered_scheduled_final_games":len(covered_game_ids(predictions)),
         "prediction_budget":budget,
-        "cost_policy":"one automated FINAL snapshot/day; wait for maximum-coverage cluster near frozen 30m target",
+        "cost_policy":"one automated FINAL snapshot/MLB slate; wait for maximum-coverage cluster near frozen 30m target",
     }
 
 

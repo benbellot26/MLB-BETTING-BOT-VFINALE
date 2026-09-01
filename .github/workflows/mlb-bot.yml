@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - name: Checkout
+      - name: Checkout production code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
@@ -31,6 +31,12 @@ jobs:
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
+
+      - name: Hydrate mutable state from runtime-data
+        run: |
+          python -m v14.state_branch hydrate --manifest research/v14_runtime_operational_paths.txt
+          python -m v14.state_branch hydrate --manifest research/v14_runtime_performance_paths.txt
+          python -m v14.state_branch hydrate --manifest research/v14_runtime_reference_paths.txt
 
       - name: Resolve manual or objective scheduled FINAL gate
         id: gate
@@ -128,30 +134,61 @@ jobs:
           fi
           exit 0
 
-      - name: Reserve and persist automated FINAL prediction budget
-        if: steps.gate.outputs.run_required == 'true' && steps.gate.outputs.run_trigger == 'SCHEDULED_FINAL'
+      - name: Refresh provider quota with zero-credit endpoint
+        if: steps.gate.outputs.run_required == 'true'
         env:
-          V14_MAX_PAID_PREDICTION_SNAPSHOTS_PER_DAY: '1'
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           V14_ODDS_PROVIDER_CREDITS_PER_SNAPSHOT: '3'
-          V14_MAX_AUTOMATED_ODDS_CREDITS_PER_UTC_MONTH: '180'
+          V14_ODDS_PROVIDER_EMERGENCY_RESERVE_CREDITS: '50'
         run: |
           set -euo pipefail
-          python -m v14.api_budget record-prediction \
+          python -m v14.odds_quota_probe --state runtime/v14/odds_provider_quota.json
+          python -m v14.api_budget record-provider-state \
             --ledger data/v14_api_usage.jsonl \
-            --due-games "${{ steps.gate.outputs.due_game_ids }}"
+            --state runtime/v14/odds_provider_quota.json
           python -m v14.api_budget report \
             --ledger data/v14_api_usage.jsonl \
+            --slate-date "${{ steps.gate.outputs.target_date }}" \
             --output data/v14_api_usage_report.json
-          git config user.name 'Pulsar V14'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add -f data/v14_api_usage.jsonl data/v14_api_usage_report.json
-          if ! git diff --cached --quiet; then
-            # Persist the reservation before the paid request. A later failure
-            # therefore cannot create an uncounted retry loop.
-            git commit -m 'data: reserve V14 scheduled FINAL prediction request [skip ci]'
-            git pull --rebase origin "$GITHUB_REF_NAME"
-            git push origin "HEAD:$GITHUB_REF_NAME"
+          python -m v14.state_branch persist \
+            --path data/v14_api_usage.jsonl \
+            --path data/v14_api_usage_report.json \
+            --message 'data: refresh zero-credit Odds quota guard [skip ci]'
+          python -m v14.api_budget provider-guard --ledger data/v14_api_usage.jsonl
+
+      - name: Reserve and persist every paid Odds snapshot before request
+        if: steps.gate.outputs.run_required == 'true'
+        env:
+          V14_MAX_PAID_PREDICTION_SNAPSHOTS_PER_SLATE: '1'
+          V14_MAX_PAID_CLOSE_SNAPSHOTS_PER_SLATE: '1'
+          V14_ODDS_PROVIDER_CREDITS_PER_SNAPSHOT: '3'
+          V14_MAX_AUTOMATED_ODDS_CREDITS_PER_UTC_MONTH: '180'
+          V14_MAX_ALL_ODDS_CREDITS_PER_UTC_MONTH: '450'
+          V14_ODDS_PROVIDER_EMERGENCY_RESERVE_CREDITS: '50'
+        run: |
+          set -euo pipefail
+          TARGET_DATE="${{ steps.gate.outputs.target_date }}"
+          TRIGGER="${{ steps.gate.outputs.run_trigger }}"
+          if [ "$TRIGGER" = "SCHEDULED_FINAL" ]; then
+            python -m v14.api_budget record-prediction \
+              --ledger data/v14_api_usage.jsonl \
+              --slate-date "$TARGET_DATE" \
+              --due-games "${{ steps.gate.outputs.due_game_ids }}"
+          else
+            python -m v14.api_budget record-manual \
+              --ledger data/v14_api_usage.jsonl \
+              --slate-date "$TARGET_DATE"
           fi
+          python -m v14.api_budget report \
+            --ledger data/v14_api_usage.jsonl \
+            --slate-date "$TARGET_DATE" \
+            --output data/v14_api_usage_report.json
+          # Persist before the paid request. Failures remain counted and cannot
+          # create an unbudgeted retry loop, including MANUAL runs.
+          python -m v14.state_branch persist \
+            --path data/v14_api_usage.jsonl \
+            --path data/v14_api_usage_report.json \
+            --message 'data: reserve V14 paid Odds request [skip ci]'
 
       - name: Build native Pulsar V14 production payload
         if: steps.gate.outputs.run_required == 'true'
@@ -164,6 +201,31 @@ jobs:
             --run-trigger "${{ steps.gate.outputs.run_trigger }}" \
             --destination runtime/v14/discord_payload.json \
             --candidate-destination runtime/v14/native_candidate.json
+
+      - name: Reconcile provider-reported quota after paid snapshot
+        if: always() && steps.gate.outputs.run_required == 'true'
+        env:
+          V14_ODDS_PROVIDER_CREDITS_PER_SNAPSHOT: '3'
+          V14_MAX_ALL_ODDS_CREDITS_PER_UTC_MONTH: '450'
+          V14_ODDS_PROVIDER_EMERGENCY_RESERVE_CREDITS: '50'
+        run: |
+          set -euo pipefail
+          if [ -f runtime/v14/odds_provider_quota.json ]; then
+            python -m v14.api_budget record-provider-state \
+              --ledger data/v14_api_usage.jsonl \
+              --state runtime/v14/odds_provider_quota.json
+            python -m v14.api_budget report \
+              --ledger data/v14_api_usage.jsonl \
+              --slate-date "${{ steps.gate.outputs.target_date }}" \
+              --output data/v14_api_usage_report.json
+            python -m v14.state_branch persist \
+              --path data/v14_api_usage.jsonl \
+              --path data/v14_api_usage_report.json \
+              --message 'data: attest V14 provider-reported Odds quota [skip ci]'
+            python -m v14.api_budget provider-guard --ledger data/v14_api_usage.jsonl
+          else
+            echo 'PULSAR_V14_PROVIDER_QUOTA_ATTESTATION_MISSING paid response did not yield a quota sidecar; local hard caps remain active'
+          fi
 
       - name: Record zero-API slate coverage and rejection reasons
         if: steps.gate.outputs.run_required == 'true'
@@ -191,7 +253,7 @@ jobs:
           print('PULSAR_V14_BETTING_CERTIFICATION=', json.dumps(payload.get('betting_certification'), sort_keys=True))
           PY
 
-      - name: Persist PIT predictions and decision evidence
+      - name: Persist PIT predictions and decision evidence on runtime-data
         if: steps.gate.outputs.run_required == 'true'
         run: |
           python -m v14.tracking snapshot \
@@ -210,21 +272,9 @@ jobs:
               --payload runtime/v14/discord_payload.json \
               --ledger data/v14_bet_ledger.jsonl
           fi
-          git config user.name 'Pulsar V14'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add -f data/v14_predictions.jsonl
-          [ -f data/v14_market_close_ledger.jsonl ] && git add -f data/v14_market_close_ledger.jsonl
-          [ -f data/v14_paper_bet_ledger.jsonl ] && git add -f data/v14_paper_bet_ledger.jsonl
-          [ -f data/v14_bet_ledger.jsonl ] && git add -f data/v14_bet_ledger.jsonl
-          [ -f data/v14_coverage_ledger.jsonl ] && git add -f data/v14_coverage_ledger.jsonl
-          [ -f data/v14_coverage_report.json ] && git add -f data/v14_coverage_report.json
-          [ -f data/v14_api_usage.jsonl ] && git add -f data/v14_api_usage.jsonl
-          [ -f data/v14_api_usage_report.json ] && git add -f data/v14_api_usage_report.json
-          if ! git diff --cached --quiet; then
-            git commit -m 'data: persist V14 pregame predictions, decisions and coverage [skip ci]'
-            git pull --rebase origin "$GITHUB_REF_NAME"
-            git push origin "HEAD:$GITHUB_REF_NAME"
-          fi
+          python -m v14.state_branch persist \
+            --manifest research/v14_runtime_operational_paths.txt \
+            --message 'data: persist V14 pregame predictions, decisions and coverage [skip ci]'
 
       - name: Close collection policy
         if: steps.gate.outputs.run_required == 'true'
@@ -247,6 +297,7 @@ jobs:
             runtime/v14/native_candidate.json
             runtime/v14/scheduled_prediction_gate.json
             runtime/v14/v14_defense_baserunning_priors.json
+            runtime/v14/odds_provider_quota.json
             data/v14_venue_park_factors.json
             data/v14_defense_baserunning_priors.json
             data/v14_coverage_report.json

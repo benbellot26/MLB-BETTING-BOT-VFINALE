@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 import json
 import math
 import os
+from pathlib import Path
 import time
 from typing import Any, Callable
 from urllib.error import HTTPError
@@ -16,6 +17,7 @@ from zoneinfo import ZoneInfo
 
 MLB_SCHEDULE_URL = "https://statsapi.mlb.com/api/v1/schedule"
 ODDS_URL = "https://api.the-odds-api.com/v4/sports/baseball_mlb/odds"
+ODDS_QUOTA_STATE = Path("runtime/v14/odds_provider_quota.json")
 PARIS = ZoneInfo("Europe/Paris")
 DEFAULT_TIMEOUT = int(os.getenv("HTTP_TIMEOUT", "25") or 25)
 DEFAULT_BOOKMAKERS = tuple(
@@ -38,6 +40,50 @@ _HTTP_CACHE: dict[str, Any] = {}
 
 def clear_http_cache() -> None:
     _HTTP_CACHE.clear()
+
+
+def _header_int(headers: Any, name: str) -> int | None:
+    try:
+        items = headers.items()
+    except Exception:
+        return None
+    wanted = name.lower()
+    for key, value in items:
+        if str(key).lower() != wanted:
+            continue
+        try:
+            return max(0, int(float(str(value).strip())))
+        except Exception:
+            return None
+    return None
+
+
+def write_odds_quota_state(headers: Any, *, path: Path | str = ODDS_QUOTA_STATE, captured_at: str | None = None) -> dict[str, Any]:
+    """Persist provider-reported quota headers without credentials or request params.
+
+    The Odds API documents x-requests-remaining, x-requests-used and
+    x-requests-last on every response. This sidecar lets the budget ledger use the
+    provider's own reset-cycle counters in addition to Pulsar's local UTC-month
+    accounting. Failure to write the sidecar must never change the market payload.
+    """
+    remaining = _header_int(headers, "x-requests-remaining")
+    used = _header_int(headers, "x-requests-used")
+    last = _header_int(headers, "x-requests-last")
+    if remaining is None and used is None and last is None:
+        return {}
+    payload = {
+        "schema": "pulsar-v14-odds-provider-quota-v1",
+        "captured_at": captured_at or datetime.now(timezone.utc).isoformat(),
+        "provider": "THE_ODDS_API",
+        "credits_remaining_until_provider_reset": remaining,
+        "credits_used_since_provider_reset": used,
+        "last_request_credit_cost": last,
+        "credentials_persisted": False,
+    }
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return payload
 
 
 def resolve_target_date(*, now: datetime | None = None, override: str | None = None) -> str:
@@ -85,6 +131,13 @@ def http_json(url: str, params: dict[str, Any], *, timeout: int = DEFAULT_TIMEOU
             with urlopen(request, timeout=timeout) as response:
                 body = response.read().decode("utf-8", "replace")
                 payload = json.loads(body) if body else None
+                if url == ODDS_URL:
+                    try:
+                        write_odds_quota_state(response.headers)
+                    except Exception:
+                        # Quota attestation is safety telemetry. The paid response
+                        # itself remains usable if the local sidecar cannot be written.
+                        pass
                 if use_cache:
                     _HTTP_CACHE[key] = payload
                 return payload

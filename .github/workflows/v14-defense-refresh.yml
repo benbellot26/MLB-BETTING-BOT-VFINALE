@@ -34,11 +34,16 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
+
+      - name: Hydrate refreshed reference state from runtime-data
+        run: python -m v14.state_branch hydrate --manifest research/v14_runtime_reference_paths.txt
+
       - name: Compile and test PIT run-value contract
         run: |
           set -euo pipefail
-          python -m py_compile v14/savant_run_value_pit.py v14/savant_run_value_builder.py v14/defense_baserunning_challenger.py v14/all_stats_context.py
+          python -m py_compile v14/savant_run_value_pit.py v14/savant_run_value_builder.py v14/defense_baserunning_challenger.py v14/all_stats_context.py v14/state_branch.py
           python -m unittest tests.test_v14_savant_run_value_pit tests.test_v14_savant_run_value_builder tests.test_v14_defense_baserunning_production -v
+
       - name: Refresh defense catcher and baserunning production priors
         run: |
           set -euo pipefail
@@ -60,16 +65,13 @@ jobs:
           if cutoff>=target:raise SystemExit('defense/catcher cutoff is not strictly pregame')
           if int((x.get('coverage') or {}).get('complete_teams') or 0)<25:raise SystemExit('insufficient complete team coverage')
           PY
-      - name: Persist defense catcher baserunning priors
+
+      - name: Persist defense catcher baserunning priors on runtime-data
         run: |
-          git config user.name 'Pulsar V14 Defense Data'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add -f data/v14_defense_baserunning_priors.json
-          if ! git diff --cached --quiet; then
-            git commit -m 'data: refresh V14.6 defense catcher baserunning priors [skip ci]'
-            git pull --rebase origin "$GITHUB_REF_NAME"
-            git push origin "HEAD:$GITHUB_REF_NAME"
-          fi
+          python -m v14.state_branch persist \
+            --path data/v14_defense_baserunning_priors.json \
+            --message 'data: refresh V14.6 defense catcher baserunning priors [skip ci]'
+
       - name: Archive refresh evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
