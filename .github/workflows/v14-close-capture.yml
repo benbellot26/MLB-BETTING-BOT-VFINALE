@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Checkout
+      - name: Checkout production code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
@@ -31,6 +31,17 @@ jobs:
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
+
+      - name: Hydrate mutable close state from runtime-data
+        run: python -m v14.state_branch hydrate --manifest research/v14_runtime_operational_paths.txt
+
+      - name: Snapshot substantive ledger hashes
+        run: |
+          mkdir -p runtime/v14
+          for file in data/v14_market_close_ledger.jsonl data/v14_paper_bet_ledger.jsonl data/v14_bet_ledger.jsonl data/v14_api_usage.jsonl; do
+            key=$(basename "$file")
+            if [ -f "$file" ]; then sha256sum "$file" | awk '{print $1}' > "runtime/v14/before-$key.sha"; else echo MISSING > "runtime/v14/before-$key.sha"; fi
+          done
 
       - name: Validate cost-aware close modules
         run: |
@@ -42,7 +53,8 @@ jobs:
             v14/component_close_capture.py \
             v14/sharp_market.py \
             v14/api_budget.py \
-            v14/cost_aware_close_capture.py
+            v14/cost_aware_close_capture.py \
+            v14/state_branch.py
 
       - name: Bootstrap tracked games from persisted predictions
         run: |
@@ -58,9 +70,6 @@ jobs:
           V14_MAX_AUTOMATED_ODDS_CREDITS_PER_UTC_MONTH: '180'
           V14_MAX_ALL_ODDS_CREDITS_PER_UTC_MONTH: '450'
         run: |
-          # Local archive hydration runs first. PRIMARY (Pinnacle no-vig) and
-          # EXECUTION (fresh same-book close) remain independently retryable,
-          # but the budget permits only the first paid close opportunity per slate.
           python -m v14.cost_aware_close_capture \
             --market-ledger data/v14_market_close_ledger.jsonl \
             --paper-ledger data/v14_paper_bet_ledger.jsonl \
@@ -73,42 +82,28 @@ jobs:
             --ledger data/v14_api_usage.jsonl \
             --output data/v14_api_usage_report.json
 
-      - name: Persist only substantive close evidence changes
+      - name: Persist only substantive close evidence changes on runtime-data
         run: |
-          git config user.name 'Pulsar V14'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-
+          set -euo pipefail
+          ARGS=""
           MARKET_CHANGED=0
           API_CHANGED=0
-          if [ -f data/v14_market_close_ledger.jsonl ] && ! git diff --quiet -- data/v14_market_close_ledger.jsonl; then
-            git add -f data/v14_market_close_ledger.jsonl
-            MARKET_CHANGED=1
-          fi
-          if [ -f data/v14_paper_bet_ledger.jsonl ] && ! git diff --quiet -- data/v14_paper_bet_ledger.jsonl; then
-            git add -f data/v14_paper_bet_ledger.jsonl
-          fi
-          if [ -f data/v14_bet_ledger.jsonl ] && ! git diff --quiet -- data/v14_bet_ledger.jsonl; then
-            git add -f data/v14_bet_ledger.jsonl
-          fi
-          if [ -f data/v14_api_usage.jsonl ] && ! git diff --quiet -- data/v14_api_usage.jsonl; then
-            git add -f data/v14_api_usage.jsonl
-            API_CHANGED=1
-          fi
-
-          # Reports carry generated_at. Stage them only when the evidence they
-          # summarize actually changed, preventing timestamp-only commits every
-          # ten minutes.
-          if [ "$MARKET_CHANGED" -eq 1 ] && [ -f data/v14_market_close_report.json ]; then
-            git add -f data/v14_market_close_report.json
-          fi
-          if [ "$API_CHANGED" -eq 1 ] && [ -f data/v14_api_usage_report.json ]; then
-            git add -f data/v14_api_usage_report.json
-          fi
-
-          if ! git diff --cached --quiet; then
-            git commit -m 'data: capture cost-aware V14 prospective closes [skip ci]'
-            git pull --rebase origin "$GITHUB_REF_NAME"
-            git push origin "HEAD:$GITHUB_REF_NAME"
+          for file in data/v14_market_close_ledger.jsonl data/v14_paper_bet_ledger.jsonl data/v14_bet_ledger.jsonl data/v14_api_usage.jsonl; do
+            key=$(basename "$file")
+            before=$(cat "runtime/v14/before-$key.sha")
+            after=MISSING
+            [ -f "$file" ] && after=$(sha256sum "$file" | awk '{print $1}')
+            if [ "$before" != "$after" ]; then
+              ARGS="$ARGS --path $file"
+              [ "$file" = "data/v14_market_close_ledger.jsonl" ] && MARKET_CHANGED=1
+              [ "$file" = "data/v14_api_usage.jsonl" ] && API_CHANGED=1
+            fi
+          done
+          [ "$MARKET_CHANGED" -eq 1 ] && ARGS="$ARGS --path data/v14_market_close_report.json"
+          [ "$API_CHANGED" -eq 1 ] && ARGS="$ARGS --path data/v14_api_usage_report.json"
+          if [ -n "$ARGS" ]; then
+            # shellcheck disable=SC2086
+            python -m v14.state_branch persist $ARGS --message 'data: capture cost-aware V14 prospective closes [skip ci]'
           else
-            echo 'PULSAR_V14_CLOSE_NO_SUBSTANTIVE_CHANGE no commit created'
+            echo 'PULSAR_V14_CLOSE_NO_SUBSTANTIVE_CHANGE no runtime-data commit created'
           fi
