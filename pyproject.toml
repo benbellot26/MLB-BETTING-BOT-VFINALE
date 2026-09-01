@@ -1,0 +1,11 @@
+[project]
+name = "pulsar-mlb-v14"
+version = "14.6.0"
+description = "Pulsar V14 MLB probability, research and decision engine"
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[tool.pulsar]
+model-generation = "pulsar-v14-context-v4-all-stats"
+probability-policy = "pulsar-v14-probability-policy-v1"
+runtime-dependency-policy = "stdlib-only"

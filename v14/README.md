@@ -1,46 +1,58 @@
 # Pulsar V14
 
-V14 is the active production engine.
+Current software identity:
+
+- V14.6.0
+- `pulsar-v14-context-v4-all-stats`
+- `pulsar-v14-probability-policy-v1`
+
+`v14/__init__.py` and the champion manifest are the source of truth.
 
 ## Runtime
 
-`acquisition -> mlb_inputs -> structural/run_stack -> context_overlay -> distribution -> validation -> production_runtime -> Discord`
+`acquisition -> mlb_inputs -> structural/run_stack -> context_overlay/all_stats -> distribution -> calibration policy -> uncertainty -> market separation -> decision/certification -> production_runtime`
 
-There is no V11/V13 import in the native production path.
+Market probability is not a baseball predictive feature.
 
-## Main files
+## Production vs research
 
-- `acquisition.py`: MLB/Odds point-in-time acquisition.
-- `mlb_inputs.py`: native baseball inputs.
-- `structural.py`: structural run means.
-- `run_stack.py`: V14 run stack.
-- `park.py`: park factor handling.
-- `context_overlay.py`: starter, confirmed lineup/matchup and bullpen residual context.
-- `distribution.py`: coherent ML/RL/total probability surface.
-- `pipeline.py`: model orchestration.
-- `production_runtime.py`: production payload and publication.
-- `market_edge.py`: post-model fair odds/no-vig/edge/EV diagnostics.
-- `tracking.py`: pregame prediction ledger, settlement and performance.
-- `preflight.py`: production tests.
+Production probability files are frozen under the current generation. Challengers and
+diagnostics are shadow-only unless an explicit future generation/policy promotion is
+accepted.
 
-## Rules
+Research-only modules include:
 
-- market probabilities are never predictive features;
-- only point-in-time information is eligible in production;
-- missing context is a no-op, not a synthetic neutral score;
-- contextual moves are capped;
-- predictions are persisted before games and scored only after final results exist;
-- V13.10 is rollback/history only.
+- `structural_sensitivity.py`
+- `ablation_shadow.py`
+- `ablation_report.py`
+- `research_diagnostics.py`
+- challenger modules
+- `research_registry.py`
+
+`champion_dashboard.py` is read-only and cannot authorize a bet.
 
 ## Validation
 
 ```bash
 python -m py_compile v14/*.py
+python -m v14.reproducibility_guard --fail-on-external
 python -m v14.preflight
+python -m unittest discover -s tests -p 'test_v14_*.py' -v
 ```
 
-## Production
+## Reproducibility
 
-Use the GitHub Actions workflow `Pulsar V14 Production`.
+The V14 core is standard-library only on Python 3.12. See `../REPRODUCIBILITY.md`.
 
-Live predictions are persisted to `data/v14_predictions.jsonl`. The daily `Pulsar V14 Performance` workflow settles finished games and writes `data/v14_performance.json`.
+## Research protocol
+
+See `../research/V14_EXPERIMENT_PROTOCOL.md`.
+
+## Architecture
+
+See `../ARCHITECTURE.md`.
+
+## Betting status
+
+Do not infer betting readiness from this README. The authoritative runtime state is
+`data/v14_betting_certification.json`.

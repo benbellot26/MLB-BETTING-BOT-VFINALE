@@ -1,101 +1,133 @@
 # Pulsar V14 professionalization contract
 
-This document describes the current V14 production/research boundary. Earlier V12/V13 implementation notes remain available in Git history and the pre-cleanup archive branch; they are no longer the operational contract for `main`.
+This document describes the active production/research boundary for **V14.6.0**.
 
-## 1. Champion probability isolation
+Source-of-truth identity:
 
-The production champion is `pulsar-v14-context-v3`. Governance, tracking, certification, market and data-pipeline hardening must not silently mutate champion probability code. `v14/champion_manifest.py` fingerprints the champion source set and the preflight fails on unauthorized mutation.
+- `MODEL_GENERATION = pulsar-v14-context-v4-all-stats`
+- `PROBABILITY_POLICY_ID = pulsar-v14-probability-policy-v1`
+- `SCHEMA = pulsar-v14-probability-v2`
+
+`v14/__init__.py` and the champion manifest are authoritative; documentation is not.
+
+## 1. Champion isolation
+
+Governance, tracking, certification, dashboards and research tooling must not silently
+mutate champion probability behavior. Predictive changes require an explicit new
+generation/policy decision and new validation.
 
 ## 2. Exact evidence identity
 
-Certification-facing evidence is accepted only when it matches both:
-
-- `MODEL_GENERATION = pulsar-v14-context-v3`
-- `PROBABILITY_POLICY_ID = pulsar-v14-probability-policy-v1`
-
-Calibration, performance and paper-CLV evidence are all bound to this identity. Missing/old policy rows are excluded rather than relabeled.
+Certification-facing evidence must match the exact generation and probability policy.
+Missing, historical or stale-policy observations are excluded rather than relabeled.
 
 ## 3. Strict point-in-time discipline
 
-Every prediction used for evaluation is strictly pregame. Historical reconstructed data declares its reconstruction mode and cannot masquerade as native-live evidence. Provider timestamps, cutoffs and dataset hashes are retained where applicable.
-
-For market execution, a real `BET` requires a verifiable Odds event start time; unverified timestamp states remain research-only.
+Every scored prediction is strictly pregame. Historical reconstruction declares its mode
+and cannot masquerade as native-live evidence. Provider timestamps, cutoffs, stable
+identity and provenance are retained where available.
 
 ## 4. Probability quality before ROI
 
-Model quality is judged with proper scoring rules first:
+Model quality is judged first with proper scoring and calibration:
 
-- Brier Score;
-- Log Loss;
-- calibration/ECE;
-- paired model-vs-sharp score differences;
-- run MAE diagnostics;
-- rolling drift slices.
+- Brier;
+- LogLoss;
+- ECE/reliability;
+- paired model-vs-sharp differences;
+- confidence intervals;
+- run-error diagnostics;
+- temporal/regime stability.
 
-Short-term win/loss streaks are diagnostic context, not model-selection evidence.
+Short-term W/L and ROI are never sufficient model-selection evidence.
 
-## 5. Calibration and uncertainty
+## 5. Sample size is not certification
 
-Calibration uses chronological train/holdout separation. A transform can activate only after paired OOS improvement; raw identity can be accepted when the untouched holdout is already calibrated.
+Minimum sample thresholds are necessary context, not a pass button. Betting/promotion
+claims must combine sample size with calibration, proper scores, paired sharp comparison,
+prospective CLV where relevant, drift/regime stability and execution quality.
 
-Probability intervals are empirical decision-safety bands, not fabricated Bayesian credible intervals. Their provenance and any fallback penalty are explicit.
+## 6. Calibration and uncertainty
 
-## 6. Market separation
+Calibration uses chronological/OOS separation and explicit policy identity. Uncertainty
+bands are decision-safety intervals with explicit provenance, not invented certainty.
 
-Bookmaker/market probabilities never enter the baseball champion as predictive features. Market data is used after prediction for:
+## 7. Market separation
 
-- canonical line selection;
-- line shopping;
-- no-vig sharp consensus;
-- model/sharp divergence diagnostics;
-- executable breakeven probability;
-- CLV capture;
-- decision thresholds.
+Market probability never enters the baseball champion as a predictive feature. Market
+data is post-model and may be used for line selection, line shopping, no-vig sharp
+benchmarking, divergence, breakeven, CLV and decision thresholds.
 
-Sharp consensus and execution prices are separate concepts.
+## 8. Certification is market-specific
 
-## 7. Certification is market-specific
+Software production readiness and betting certification are separate. The authoritative
+betting state is `data/v14_betting_certification.json`; dashboards cannot override it.
 
-Software can be production-ready while betting remains `RESEARCH_ONLY`. Betting certification requires current-policy probability evidence, calibration acceptance, paired sharp evidence, drift control, fresh prospective paper CLV and same-book close evidence.
+## 9. Ledger boundaries
 
-No historical artifact alone can authorize a real betting market.
+Prediction tracking, paper/system-authorized hypothetical execution and real external
+execution remain separate. Hypothetical system ROI must never be reported as realized
+user ROI.
 
-## 8. Ledger boundaries
+## 10. Research preregistration
 
-Three ledgers/roles are intentionally separate:
+The registry is append-only. Existing registrations are preserved exactly. New
+strict-governance experiments can additionally seal:
 
-1. **Prediction tracking** — evaluates the probability engine.
-2. **Paper/system-authorized evidence** — records prospective immutable research/authorization decisions and closes.
-3. **Real execution** — requires explicit execution facts and is never inferred from a model recommendation.
+- minimum independent games;
+- analysis plan;
+- stopping rule;
+- promotion scope;
+- multiplicity/research-budget family;
+- immutable spec fingerprint.
 
-This prevents theoretical system ROI from being reported as realized user ROI.
+A change after looking at prospective outcomes requires a new experiment id.
 
-## 9. Data-enrichment policy
+## 11. Ablation and simplification
 
-V14 aggressively collects candidate data while keeping it shadow-only until validated. Current research layers include:
+`V14-ABLATION-01` prospectively asks whether starter residuals, lineup residuals, bullpen
+residuals, weather, advanced Statcast, defense, timezone and environment physics actually
+add information. Counterfactuals use only persisted pregame PIT components and no market
+probability.
 
-- stable-ID Statcast priors;
-- hitter pitch-type splits;
-- hitter splits by opposing pitcher hand;
-- pitcher splits by batter side;
-- pitch mix and velocity;
-- starter recent workload;
-- bullpen availability/fatigue;
-- defense/baserunning;
-- venue/park physics;
-- point-in-time weather;
-- historical team-run and distribution challengers.
+Only post-registration predictions count toward promotion/simplification evidence.
 
-No batter-vs-pitcher head-to-head feature is promoted simply because it is available; noisy dimensions must demonstrate OOS value.
+## 12. Structural sensitivity
 
-## 10. Statcast V14-native boundary
+`v14/structural_sensitivity.py` reproduces the default structural champion in a shadow
+parameterization and perturbs hand-authored weights ±10/20%. Its purpose is robustness
+diagnosis, not automatic retuning.
 
-The current Statcast research path uses V14-native provider, deduplication and aggregation primitives. Raw pitch rows are stable-ID keyed, deduplicated and constrained to `game_date < cutoff`. Enriched artifacts remain `champion_impact = false` and `auto_activation = false`.
+## 13. Baselines and regimes
 
-## 11. Repository governance
+`v14/research_diagnostics.py` permanently reports simple 50/50 and available sharp
+baselines on identical games, plus descriptive temporal/favorite/run-environment slices.
+Regime slices generate hypotheses; they do not become post-hoc production rules.
 
-V14 has its own regression/PIT/provider CI. Frozen V11/V13 regression work is path-scoped and should run only when the legacy data foundation is touched. Obsolete workflows and docs should be removed from the active tree rather than kept as misleading operational guidance; Git history and the archive branch preserve reproducibility.
+## 14. Reproducibility
 
-## 12. Promotion rule
+The V14 Python core is standard-library only under Python 3.12. `pyproject.toml` declares
+the runtime contract and `v14.reproducibility_guard` fails on undeclared third-party
+imports. If a third-party package is introduced, a deterministic lock/constraints policy
+must be added in the same change.
 
-A challenger may be considered for a future probability generation only after strict paired OOS evidence on identical games, with untouched chronological validation and no target leakage. A candidate must improve probability quality without unacceptable market-specific regression. Promotion is explicit and never automatic.
+## 15. Longitudinal dashboard
+
+`v14/champion_dashboard.py` aggregates performance, certification, sharp, coverage,
+data-quality, paper/authorization and research evidence, then stores one canonical daily
+history snapshot. It is read-only and non-authoritative for betting.
+
+## 16. Architecture boundary
+
+V14 production, V14 research/shadow and historical compatibility are distinct logical
+zones. Historical code remains only where needed for frozen reference/parity/rollback
+work; destructive file moves are avoided when they would increase risk.
+
+See `ARCHITECTURE.md`.
+
+## 17. Promotion rule
+
+A challenger can be nominated only after its declared OOS/prospective evidence is
+satisfied on identical games. Promotion is explicit, generation-bound and never
+automatic. Lowering thresholds merely to manufacture more bets is not a valid
+professionalization step.

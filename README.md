@@ -1,203 +1,185 @@
 # Pulsar V14 — MLB Probability & Decision Engine
 
-Pulsar **V14.5.4** is the current production software line. The champion probability generation remains **`pulsar-v14-context-v3`** with probability policy **`pulsar-v14-probability-policy-v1`**. The recent audit-hardening work changed evidence collection, certification, close capture, promotion governance and reporting; it did **not** retune champion probability coefficients or promote a challenger.
+Pulsar **V14.6.0** is the active software line.
 
-## Current production contract
+- Champion generation: **`pulsar-v14-context-v4-all-stats`**
+- Probability policy: **`pulsar-v14-probability-policy-v1`**
+- Probability schema: **`pulsar-v14-probability-v2`**
+- Python contract: **3.12**, standard-library-only V14 core
 
-The certifiable production chain is intentionally narrow:
+The source of truth for software/model identity is `v14/__init__.py` plus the champion
+manifest. Documentation is not an identity authority.
 
-`scheduled FINAL acquisition -> frozen champion probability policy -> executable market -> Pinnacle no-vig primary benchmark -> immutable paper entry -> independent PRIMARY and EXECUTION closes <=15 min -> certification -> authorization/staking`
+The betting state is deliberately **not hard-coded in this README**. The authoritative
+runtime gate is `data/v14_betting_certification.json`; if certification has not been
+earned, candidates remain research-only.
 
-The live workflow is `.github/workflows/mlb-bot.yml` (`Pulsar V14 Production`). It wakes frequently, but scheduled runs are locally gated before paid Odds acquisition. Manual runs remain available for analysis, but they do not substitute for the objective `SCHEDULED_FINAL` certification cohort.
+## Production contract
 
-Market prices are post-model data: they can select executable lines, benchmark probabilities, calculate edge/CLV and drive decision thresholds, but they are never baseball predictive features.
+The certifiable chain is intentionally narrow:
 
-## Probability contract
+`scheduled FINAL acquisition -> frozen baseball probability policy -> executable market -> Pinnacle no-vig benchmark -> immutable paper entry -> PRIMARY/EXECUTION close -> certification -> authorization/staking`
 
-- Champion generation: `pulsar-v14-context-v3`.
-- Probability policy: `pulsar-v14-probability-policy-v1`.
-- Probability schema: `pulsar-v14-probability-v2`.
-- Production probability transformation is **frozen** under the current probability policy. Calibration artifacts may learn in shadow, but they cannot activate and change published probabilities without an explicit new probability policy.
-- Certification evidence must match the exact model generation **and** probability policy.
-- Integer-total pushes are excluded from binary Brier/LogLoss/calibration evidence.
-- No recent winning streak, challenger result or historical holdout result is sufficient reason to retune the champion.
+Market prices are post-model data. They may select an executable line, benchmark the
+model, calculate edge/CLV and affect decision thresholds, but they are never baseball
+predictive features.
 
-## Data and point-in-time rules
+## What is frozen
 
-- MLB and Odds events are matched by canonical team identity and start time; doubleheaders must be unambiguous.
-- A real `BET` path requires a verifiable Odds event timestamp.
-- Every scored prediction satisfies `analyzed_at < game_date`.
-- Betting authorization is FINAL-only under the current certification contract.
-- The certifiable prospective cohort uses `SCHEDULED_FINAL`, not human-selected manual timing.
-- Historical reconstruction is explicitly separated from native-live evidence and cannot satisfy native-live promotion thresholds.
-- V14 Statcast enrichment is stable-ID-only and strict `game_date < cutoff`.
-- Weather reconstruction uses point-in-time forecast provenance; post-event observed weather is not substituted for a pregame forecast.
-- Research challengers remain shadow-only unless a preregistered prospective promotion guard accepts their exact generation/policy/timing evidence.
+The active champion probability generation is frozen while prospective evidence
+accumulates. Research, governance, provenance, dashboards and shadow challengers can
+improve without silently retuning production coefficients.
 
-## Decision and market separation
+A predictive production change requires:
 
-`v14/decision.py` evaluates executable prices only after the baseball probability surface exists. A real `BET` must clear the production gates, including:
+1. a new explicit generation/policy decision;
+2. point-in-time-safe implementation;
+3. preregistered evaluation where appropriate;
+4. untouched chronological/prospective evidence;
+5. comparison on identical games;
+6. successful regression, calibration, sharp-benchmark and execution-quality review.
 
-1. FINAL phase;
-2. model edge versus executable breakeven;
-3. lower-bound/robust edge versus executable breakeven;
-4. positive primary edge versus **Pinnacle no-vig**;
-5. verified market freshness;
-6. at least one real sportsbook contributor;
-7. market-specific betting certification.
+A larger sample is not a magic pass button.
 
-The multi-book sharp consensus remains useful as a robustness/disagreement diagnostic, but it is not the primary certification benchmark.
+## Evidence model
 
-Until the certification requirements are earned, qualifying candidates remain `RESEARCH_ONLY`.
+Pulsar keeps separate concepts separate:
 
-## Prospective evidence and close contract
+- **prediction quality** — Brier, LogLoss, calibration and run-error diagnostics;
+- **sharp benchmark quality** — paired Pinnacle/no-vig evidence;
+- **paper/system-authorized evidence** — hypothetical execution under the system contract;
+- **real execution** — explicitly recorded external/user execution facts;
+- **coverage** — what portion of the actual MLB slate was observable/eligible;
+- **research evidence** — challengers, ablations, sensitivity and regime diagnostics.
 
-Pulsar intentionally separates entry, primary market evidence and execution-quality evidence.
+System-authorized hypothetical ROI must never be presented as realized user ROI.
 
-### Paper entry
+## Research governance
 
-A certifiable paper entry must come from the current generation/policy and the objective `SCHEDULED_FINAL` cohort. Manual observations remain auditable, but cannot replace the scheduled certification entry.
+Experiments are append-only preregistrations. New strict-governance experiments can seal:
 
-### PRIMARY close
+- hypothesis and exact feature/model definition;
+- train/validation period;
+- primary/secondary metrics;
+- success rule;
+- minimum independent sample;
+- analysis plan;
+- stopping rule;
+- promotion scope;
+- code commit;
+- multiplicity/research-budget family.
 
-- First usable **Pinnacle sportsbook no-vig** close observed at `<=15 min` before first pitch.
-- Captured prospectively.
-- Immutable once acquired.
-- Used for primary certification CLV.
+Changing the question after seeing outcomes requires a new experiment id.
 
-### EXECUTION close
+See `research/V14_EXPERIMENT_PROTOCOL.md`.
 
-- First verified-fresh same-book executable close observed at `<=15 min`.
-- Captured independently from PRIMARY.
-- Immutable once acquired.
-- Used as the secondary execution-quality CLV measure.
+## Sensitivity, baselines, ablations and regimes
 
-PRIMARY and EXECUTION can arrive in different snapshots. One must never overwrite or refresh the other. Certification freshness is checked independently for both evidence components.
+The professionalization layer adds read-only research tooling:
 
-## Evidence ledgers
+- `v14/structural_sensitivity.py` — ±10/20% one-at-a-time coefficient perturbations with
+  default parity to the frozen structural champion;
+- `v14/research_diagnostics.py` — champion vs 50/50 and sharp baselines, paired bootstrap
+  inference, and descriptive regime slices;
+- `v14/ablation_shadow.py` — probability counterfactuals with selected information layers
+  removed, using only persisted PIT pregame components;
+- `v14/ablation_report.py` — only post-registration predictions count toward the sealed
+  ablation experiment;
+- `v14/champion_dashboard.py` — one read-only dashboard plus daily longitudinal history.
 
-Pulsar separates four concepts:
+These modules cannot authorize a wager.
 
-- **Prediction performance** — Brier, LogLoss, calibration, run-error diagnostics and research dashboard metrics in `data/v14_performance.json`.
-- **Primary sharp benchmark** — Pinnacle no-vig paired evidence in `data/v14_sharp_benchmark_report.json`.
-- **System-authorized/paper evidence** — prospective immutable game×market entries and independent PRIMARY/EXECUTION close components.
-- **Real execution** — explicit user/external execution facts in `v14/executed_bet_ledger.py`; production prediction code does not fabricate or auto-populate real wagers.
+## Reproducibility
 
-`data/v14_betting_certification.json` generated through `v14.certification.load_status()` is the authoritative persisted betting-certification artifact. Any certification-like block embedded in a general performance/dashboard artifact is diagnostic only and must not be used to authorize a bet.
+The V14 Python core currently has **zero third-party runtime dependencies**. A meaningless
+empty lockfile is therefore avoided. Instead:
 
-## Betting certification
+```bash
+python -m v14.reproducibility_guard --fail-on-external
+```
 
-Software production readiness and betting certification are separate.
+fails if a third-party import appears. If an external dependency is ever introduced, it
+must be declared and deterministically pinned in the same change.
 
-Current strict gates include, per market where applicable:
+See `REPRODUCIBILITY.md`.
 
-- at least 600 settled current-policy games globally;
-- at least 400 observations per market;
-- ECE <= 0.05 on the certifiable cohort;
-- at least 400 paired Pinnacle observations with positive paired Brier evidence;
-- at least 100 paper PRIMARY certification-CLV observations;
-- at least 50 same-book EXECUTION-CLV observations;
-- positive CLV confidence bounds;
-- market-specific freshness/drift checks;
-- fresh PRIMARY and EXECUTION evidence independently.
+## Architecture boundaries
 
-Historical, manual, stale or wrong-policy evidence cannot silently certify the current policy.
+Production, research/shadow and historical compatibility are separate contracts.
+Historical `v11/` code remains where needed for frozen reference construction and rollback
+reproducibility; it is not part of the native V14 production prediction path.
 
-## Coverage / selection-bias reporting
+See `ARCHITECTURE.md`.
 
-`v14/coverage_ledger.py` is audit-only. It cannot authorize a bet.
+## Point-in-time rules
 
-The coverage report distinguishes:
+- predictions must be strictly pregame;
+- certifiable betting authorization is FINAL-only under the current timing contract;
+- the certifiable entry cohort uses objective `SCHEDULED_FINAL` acquisition;
+- historical reconstruction cannot silently become native-live evidence;
+- Statcast uses stable identity and strict pre-target cutoff;
+- weather uses forecast provenance, never observed post-event conditions;
+- missing context fails closed or becomes a documented no-op;
+- manual timing cannot replace the scheduled certification cohort.
 
-- raw snapshot observations versus first observation per unique game;
-- `MANUAL`, `SCHEDULED_FINAL` and legacy/unknown provenance;
-- current model generation versus excluded legacy generations;
-- prediction availability;
-- verified-fresh canonical market availability;
-- verified-fresh sharp availability;
-- verified-fresh execution availability;
-- fully market-observable games;
-- rejection reasons.
+## Betting / execution rules
 
-Later successful snapshots do not erase an earlier failure from the first-observation coverage view. Coverage must be inspected before assuming that performance on the analyzable universe generalizes to the full MLB slate.
+A real `BET` path must clear the production gates, including market-specific
+certification, executable price, verified freshness, robust lower-bound edge and positive
+primary edge against Pinnacle no-vig.
 
-## Experiment / challenger governance
-
-Research challengers can be evaluated aggressively, but promotion claims are constrained.
-
-- Experiments are preregistered in an append-only registry.
-- Promotion evidence must be post-registration.
-- Promotion evidence must match the current generation and probability policy.
-- Certifiable prospective promotion evidence must identify `SCHEDULED_FINAL`, FINAL timing and first snapshot per game.
-- Historical results can nominate a challenger but cannot automatically promote it.
-- No challenger can silently overwrite the champion.
-- A predictive promotion requires an explicit new generation/policy decision.
-
-## API-cost controls
-
-The frequent scheduled workflows are designed to wake cheaply.
-
-- Paid Odds acquisition is gated locally before network calls whenever possible.
-- Scheduled FINAL entry capture has a persistent daily budget and cooldown.
-- Close capture has a separate persistent daily budget.
-- Budget is reserved before the paid endpoint is called, so a crash cannot create uncounted paid retries.
-- One due Odds snapshot is shared across close consumers.
-- PRIMARY and EXECUTION missing components may be completed independently without rewriting already-acquired components.
-
-The code tracks request-equivalent snapshots rather than guessing a vendor credit price that may change externally.
+Staking remains independent from prediction research and uses conservative portfolio
+caps. Research dashboards do not alter staking.
 
 ## Main V14 modules
 
-- `v14/acquisition.py` — MLB/Odds acquisition, aliases and time-aware event matching.
+- `v14/acquisition.py` — MLB/Odds acquisition and event matching.
 - `v14/mlb_inputs.py` — native team/starter/lineup/bullpen/environment inputs.
-- `v14/structural.py`, `v14/run_stack.py`, `v14/context_overlay.py` — champion run construction.
-- `v14/distribution.py` — regulation scoring plus explicit extra-inning settlement.
-- `v14/probability_calibration.py` — shadow calibration research; production activation requires a new policy.
-- `v14/uncertainty.py`, `v14/uncertainty_fit.py` — empirical decision-safety bands.
-- `v14/market_lines.py`, `v14/sharp_market.py`, `v14/execution_market.py` — post-model market state.
+- `v14/structural.py`, `v14/run_stack.py` — structural run construction.
+- `v14/context_overlay.py`, `v14/all_stats_context.py` — bounded residual context.
+- `v14/distribution.py` — coherent ML/RL/total score distribution.
+- `v14/probability_calibration.py` — calibration research under explicit policy control.
+- `v14/uncertainty.py` — decision-safety intervals.
+- `v14/sharp_market.py`, `v14/execution_market.py` — post-model market state.
 - `v14/decision.py` — fail-closed candidate decision diagnostics.
-- `v14/tracking.py` — exact-policy prediction tracking, settlement and performance dashboards.
-- `v14/paper_ledger.py`, `v14/bet_ledger.py`, `v14/executed_bet_ledger.py` — research, authorization and real-execution boundaries.
-- `v14/close_components.py`, `v14/cost_aware_close_capture.py` — independent close evidence and paid-call orchestration.
-- `v14/certification.py` — authoritative market-specific statistical certification.
-- `v14/certification_timing.py` — shared FINAL/SCHEDULED_FINAL timing contract.
-- `v14/coverage_ledger.py` — selection/coverage audit reporting.
-- `v14/research_registry.py`, `v14/promotion_guard.py` — preregistration and fail-closed promotion governance.
-- `v14/statcast_base.py`, `v14/statcast_enrichment.py`, `v14/statcast_pit_backfill.py` — V14-native Statcast research pipeline.
-- `v14/champion_manifest.py` — source fingerprint guard for champion probability files.
-- `v14/preflight.py` — production-critical regression gate.
+- `v14/staking.py` — bankroll/exposure controls.
+- `v14/tracking.py` — prediction ledger, settlement and performance.
+- `v14/certification.py` — authoritative betting certification.
+- `v14/research_registry.py`, `v14/promotion_guard.py` — research governance.
+- `v14/data_quality_dashboard.py` — source/coverage health.
+- `v14/champion_dashboard.py` — longitudinal read-only champion dashboard.
+- `v14/preflight.py` — production/governance regression gate.
 
-## Workflows
+## Active workflows
 
-Active V14 workflows:
+- `mlb-bot.yml` — native V14 production/scheduled acquisition.
+- `v14-performance.yml` — settlement, evidence refresh and shadow research.
+- `v14-close-capture.yml` — PRIMARY/EXECUTION close capture.
+- `v14-statcast-refresh.yml` — PIT Statcast refresh.
+- `v14-reference-data-smoke.yml` — provider/reference checks.
+- `v14-ci.yml` — V14 regression and PIT/provider smoke suite.
+- `v14-production-workflow-guard.yml` — production workflow change guard.
 
-- `mlb-bot.yml` — manual analysis plus gated scheduled FINAL acquisition.
-- `v14-performance.yml` — settlement, performance, strict evidence refresh and challenger research.
-- `v14-close-capture.yml` — prospective cost-aware PRIMARY/EXECUTION close capture.
-- `v14-statcast-refresh.yml` — enriched PIT Statcast shadow data refresh.
-- `v14-reference-data-smoke.yml` — reference-data provider checks.
-- `v14-ci.yml` — complete V14 regression + historical/PIT/provider smoke suite.
-- `v14-production-workflow-guard.yml` — guard for production workflow changes.
-
-Legacy V11/V13 code remains only where still needed for frozen reference-data construction or rollback reproducibility. Its regression CI is path-scoped so ordinary V14 work does not rerun the entire historical stack.
+Mutable runtime evidence is isolated through the runtime-data state branch rather than
+being treated as normal source code.
 
 ## Common commands
 
 ```bash
 python -m py_compile v14/*.py
+python -m v14.reproducibility_guard --fail-on-external
 python -m v14.preflight
 python -m unittest discover -s tests -p 'test_v14_*.py' -v
+
 python -m v14.production_runtime --target-date YYYY-MM-DD
-python -m v14.tracking snapshot --payload runtime/v14/discord_payload.json
 python -m v14.tracking settle
-python -m v14.paper_ledger settle
-python -m v14.coverage_ledger report
+python -m v14.research_diagnostics
+python -m v14.ablation_report
+python -m v14.champion_dashboard
 ```
 
 ## Change policy
 
-The current champion should remain frozen while prospective evidence accumulates.
-
-A predictive change must be point-in-time safe, preregistered where appropriate, evaluated on untouched chronological/prospective evidence and compared on identical games. Shadow/challenger features can be collected aggressively, but champion probability changes require a new explicit generation/policy decision after out-of-sample evidence.
-
-Governance/data-hardening patches must not be presented as predictive improvements unless scoring evidence actually demonstrates one.
+Do not modify the champion merely to create more bets or to chase a recent result.
+Collect prospective evidence under the frozen policy, improve measurement and research
+in shadow, and promote only changes that earn it on untouched data.
