@@ -12,10 +12,12 @@ repository fetch/push performed by git itself and never accesses Odds/MLB APIs.
 """
 
 import argparse
+from io import BytesIO
 import os
 from pathlib import Path
 import shutil
 import subprocess
+import tarfile
 import tempfile
 from typing import Iterable
 
@@ -30,7 +32,7 @@ def _run(args:list[str],*,cwd:Path|str|None=None,check:bool=True,capture:bool=Fa
 def _paths(values:Iterable[str])->list[str]:
     out=[]
     for value in values:
-        item=str(value).strip().replace("\\","/")
+        item=str(value).strip().replace("\\","/").rstrip("/")
         if not item or item.startswith("/") or item.startswith("../") or "/../" in item:continue
         if item not in out:out.append(item)
     return out
@@ -50,13 +52,25 @@ def fetch_state(*,branch:str=DEFAULT_BRANCH,remote:str=DEFAULT_REMOTE)->None:
     _run(["git","fetch",remote,f"+refs/heads/{branch}:refs/remotes/{remote}/{branch}"])
 
 
+def _remote_object_type(ref:str,rel:str)->str|None:
+    result=_run(["git","cat-file","-t",f"{ref}:{rel}"],check=False,capture=True)
+    return result.stdout.decode().strip() if result.returncode==0 else None
+
+
 def hydrate(paths:list[str],*,branch:str=DEFAULT_BRANCH,remote:str=DEFAULT_REMOTE)->dict[str,int]:
-    selected=_paths(paths);fetch_state(branch=branch,remote=remote);copied=missing=0
+    selected=_paths(paths);fetch_state(branch=branch,remote=remote);copied=missing=0;ref=f"{remote}/{branch}"
     for rel in selected:
-        result=_run(["git","show",f"{remote}/{branch}:{rel}"],check=False,capture=True)
-        if result.returncode!=0:
-            missing+=1;continue
-        target=Path(rel);target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(result.stdout);copied+=1
+        kind=_remote_object_type(ref,rel)
+        if kind=="blob":
+            result=_run(["git","show",f"{ref}:{rel}"],capture=True);target=Path(rel);target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(result.stdout);copied+=1
+        elif kind=="tree":
+            archive=_run(["git","archive","--format=tar",ref,rel],capture=True).stdout
+            # Paths come from the trusted repository tree and the caller can only
+            # request relative paths. Python's data filter adds a second traversal guard.
+            with tarfile.open(fileobj=BytesIO(archive),mode="r:") as tf:tf.extractall(path=".",filter="data")
+            copied+=1
+        else:
+            missing+=1
     return {"requested":len(selected),"hydrated":copied,"missing":missing}
 
 
