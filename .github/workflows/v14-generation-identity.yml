@@ -1,0 +1,112 @@
+name: Pulsar V14 Generation Identity
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'v14/**'
+      - 'research/v14_experiments.json'
+      - '.github/workflows/v14-generation-identity.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mlb-betting-bot-state
+  cancel-in-progress: false
+
+jobs:
+  identity:
+    name: Zero-API current-generation artifact reset
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout production code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Hydrate mutable runtime evidence
+        run: |
+          python -m v14.state_branch hydrate --manifest research/v14_runtime_operational_paths.txt
+          python -m v14.state_branch hydrate --manifest research/v14_runtime_performance_paths.txt
+
+      - name: Detect stale generation identity
+        id: identity
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+          from v14 import MODEL_GENERATION
+          files=['data/v14_performance.json','data/v14_betting_certification.json','data/v14_calibration.json']
+          stale=[]
+          for name in files:
+              p=Path(name)
+              try: generation=json.loads(p.read_text(encoding='utf-8')).get('model_generation') if p.exists() else None
+              except Exception: generation=None
+              if generation != MODEL_GENERATION: stale.append(name)
+          print('rebuild=' + ('true' if stale else 'false'))
+          print('stale_count=' + str(len(stale)))
+          print('model_generation=' + MODEL_GENERATION)
+          PY
+
+      - name: Validate governance before reset
+        if: steps.identity.outputs.rebuild == 'true'
+        run: |
+          python -m py_compile v14/*.py
+          python -m v14.preflight
+
+      - name: Rebuild current-generation zero-API summaries
+        if: steps.identity.outputs.rebuild == 'true'
+        run: |
+          # No settlement and no provider calls: only persisted current-generation
+          # rows are used. Old-generation evidence stays in the ledgers but cannot
+          # leak into the rebuilt summaries.
+          python -m v14.tracking report \
+            --predictions data/v14_predictions.jsonl \
+            --report data/v14_performance.json
+          python -m v14.probability_calibration fit \
+            --predictions data/v14_predictions.jsonl \
+            --output data/v14_calibration.json
+          python -m v14.uncertainty_fit \
+            --predictions data/v14_predictions.jsonl \
+            --output data/v14_uncertainty.json
+          python -m v14.snapshot_policy \
+            --predictions data/v14_predictions.jsonl \
+            --output data/v14_snapshot_policy_report.json
+          python -m v14.sharp_benchmark \
+            --predictions data/v14_predictions.jsonl \
+            --output data/v14_sharp_benchmark_report.json
+          python -m v14.coverage_ledger report \
+            --ledger data/v14_coverage_ledger.jsonl \
+            --output data/v14_coverage_report.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from v14 import MODEL_GENERATION
+          from v14.certification import load_status
+          status=load_status()
+          if status.get('model_generation') != MODEL_GENERATION:
+              raise SystemExit('certification did not reset to current generation')
+          Path('data/v14_betting_certification.json').write_text(json.dumps(status,ensure_ascii=False,indent=2,sort_keys=True)+'\n',encoding='utf-8')
+          print('PULSAR_V14_GENERATION_RESET',MODEL_GENERATION,status.get('betting_status'))
+          PY
+
+      - name: Persist reset summaries on runtime-data
+        if: steps.identity.outputs.rebuild == 'true'
+        run: |
+          python -m v14.state_branch persist \
+            --manifest research/v14_runtime_performance_paths.txt \
+            --path data/v14_coverage_report.json \
+            --message 'data: reset V14 summaries to current model generation [skip ci]'
+
+      - name: Confirm current identity
+        if: steps.identity.outputs.rebuild != 'true'
+        run: echo "PULSAR_V14_GENERATION_IDENTITY_CURRENT ${{ steps.identity.outputs.model_generation }}"
