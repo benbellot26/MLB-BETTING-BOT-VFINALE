@@ -20,6 +20,7 @@ CRITICAL_TEST_MODULES=(
     "tests.test_v14_end_to_end_tracking",
     "tests.test_v14_feature_ownership",
     "tests.test_v14_feature_row",
+    "tests.test_v14_generation_identity_workflow",
     "tests.test_v14_historical_distribution_isolation",
     "tests.test_v14_historical_distribution_live_validation",
     "tests.test_v14_historical_distribution_shadow",
