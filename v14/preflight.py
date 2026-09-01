@@ -38,6 +38,7 @@ CRITICAL_TEST_MODULES=(
     "tests.test_v14_mlb_operational",
     "tests.test_v14_native_candidate",
     "tests.test_v14_native_payload",
+    "tests.test_v14_odds_provider_quota",
     "tests.test_v14_opener_bulk_challenger",
     "tests.test_v14_parity_gate",
     "tests.test_v14_parity_workflow",
