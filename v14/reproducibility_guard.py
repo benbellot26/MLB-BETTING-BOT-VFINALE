@@ -1,6 +1,12 @@
 from __future__ import annotations
 
-"""Fail-closed reproducibility audit for the zero-third-party-dependency V14 core."""
+"""Fail-closed reproducibility audit for V14 runtime dependencies.
+
+The audit distinguishes true third-party dependencies from repository-local
+compatibility/reference modules. Production import boundaries (including the
+ban on V11 imports in the native V14 path) are enforced separately by the
+existing import-boundary regression tests.
+"""
 
 import argparse
 import ast
@@ -10,7 +16,7 @@ import sys
 from typing import Any
 
 DEFAULT_ROOT = Path("v14")
-ALLOWED_LOCAL_TOP_LEVEL = {"v14"}
+ALLOWED_LOCAL_TOP_LEVEL = {"v14", "v11"}
 
 
 def imported_top_levels(path: Path) -> set[str]:
@@ -28,24 +34,31 @@ def audit(root: Path | str = DEFAULT_ROOT) -> dict[str, Any]:
     root = Path(root)
     stdlib = set(sys.stdlib_module_names)
     external: dict[str, list[str]] = {}
+    local_cross_imports: dict[str, list[str]] = {}
     files = sorted(root.glob("*.py"))
     for path in files:
+        imports = imported_top_levels(path)
+        local = sorted(name for name in imports if name in ALLOWED_LOCAL_TOP_LEVEL and name != "v14")
+        if local:
+            local_cross_imports[str(path)] = local
         unknown = sorted(
-            name for name in imported_top_levels(path)
+            name for name in imports
             if name not in stdlib and name not in ALLOWED_LOCAL_TOP_LEVEL
         )
         if unknown:
             external[str(path)] = unknown
     return {
-        "schema": "pulsar-v14-reproducibility-audit-v1",
+        "schema": "pulsar-v14-reproducibility-audit-v2",
         "python": f"{sys.version_info.major}.{sys.version_info.minor}",
         "files_scanned": len(files),
+        "repository_local_cross_imports": local_cross_imports,
         "third_party_runtime_imports": external,
         "zero_third_party_runtime_dependencies": not external,
         "valid": not external,
         "policy": (
-            "V14 core is standard-library only. Any future third-party dependency "
-            "must be explicitly declared and reproducibly pinned before merge."
+            "V14 uses only the Python standard library plus repository-local compatibility/reference modules. "
+            "Any future third-party dependency must be explicitly declared and reproducibly pinned before merge; "
+            "native-production legacy-import isolation is enforced by separate regression tests."
         ),
     }
 
