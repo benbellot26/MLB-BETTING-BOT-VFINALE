@@ -13,6 +13,7 @@ CRITICAL_TEST_MODULES=(
     "tests.test_v14_bullpen_quality_availability",
     "tests.test_v14_certification_strict",
     "tests.test_v14_champion_manifest",
+    "tests.test_v14_close_reservation_persistence",
     "tests.test_v14_context_overlay",
     "tests.test_v14_data_quality_dashboard",
     "tests.test_v14_discord",
