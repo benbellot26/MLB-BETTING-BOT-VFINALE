@@ -128,27 +128,39 @@ jobs:
           fi
           exit 0
 
-      - name: Reserve and persist automated FINAL prediction budget
-        if: steps.gate.outputs.run_required == 'true' && steps.gate.outputs.run_trigger == 'SCHEDULED_FINAL'
+      - name: Reserve and persist every paid Odds snapshot before request
+        if: steps.gate.outputs.run_required == 'true'
         env:
-          V14_MAX_PAID_PREDICTION_SNAPSHOTS_PER_DAY: '1'
+          V14_MAX_PAID_PREDICTION_SNAPSHOTS_PER_SLATE: '1'
+          V14_MAX_PAID_CLOSE_SNAPSHOTS_PER_SLATE: '1'
           V14_ODDS_PROVIDER_CREDITS_PER_SNAPSHOT: '3'
           V14_MAX_AUTOMATED_ODDS_CREDITS_PER_UTC_MONTH: '180'
+          V14_MAX_ALL_ODDS_CREDITS_PER_UTC_MONTH: '450'
         run: |
           set -euo pipefail
-          python -m v14.api_budget record-prediction \
-            --ledger data/v14_api_usage.jsonl \
-            --due-games "${{ steps.gate.outputs.due_game_ids }}"
+          TARGET_DATE="${{ steps.gate.outputs.target_date }}"
+          TRIGGER="${{ steps.gate.outputs.run_trigger }}"
+          if [ "$TRIGGER" = "SCHEDULED_FINAL" ]; then
+            python -m v14.api_budget record-prediction \
+              --ledger data/v14_api_usage.jsonl \
+              --slate-date "$TARGET_DATE" \
+              --due-games "${{ steps.gate.outputs.due_game_ids }}"
+          else
+            python -m v14.api_budget record-manual \
+              --ledger data/v14_api_usage.jsonl \
+              --slate-date "$TARGET_DATE"
+          fi
           python -m v14.api_budget report \
             --ledger data/v14_api_usage.jsonl \
+            --slate-date "$TARGET_DATE" \
             --output data/v14_api_usage_report.json
           git config user.name 'Pulsar V14'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           git add -f data/v14_api_usage.jsonl data/v14_api_usage_report.json
           if ! git diff --cached --quiet; then
-            # Persist the reservation before the paid request. A later failure
-            # therefore cannot create an uncounted retry loop.
-            git commit -m 'data: reserve V14 scheduled FINAL prediction request [skip ci]'
+            # Persist every reservation before the paid request. A later failure
+            # therefore cannot create an uncounted retry loop, including MANUAL.
+            git commit -m 'data: reserve V14 paid Odds request [skip ci]'
             git pull --rebase origin "$GITHUB_REF_NAME"
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
