@@ -24,12 +24,14 @@ class V14ProductionCloseCaptureWorkflowTests(unittest.TestCase):
         block = self.text[start:end]
         self.assertNotIn("ODDS_API_KEY", block)
         self.assertNotIn("cost_aware_close_capture", block)
-        self.assertIn("git push origin", block)
+        self.assertIn("python -m v14.state_branch persist", block)
+        self.assertIn("research/v14_runtime_operational_paths.txt", block)
+        self.assertNotIn("git push origin", block)
 
     def test_scheduled_final_gate_is_free_and_precedes_paid_prediction(self):
         self.assertIn("- cron: '*/10 * * * *'", self.text)
         gate = self.text.index("- name: Resolve manual or objective scheduled FINAL gate")
-        reserve = self.text.index("- name: Reserve and persist automated FINAL prediction budget")
+        reserve = self.text.index("- name: Reserve and persist every paid Odds snapshot before request")
         paid = self.text.index("- name: Build native Pulsar V14 production payload")
         self.assertLess(gate, reserve)
         self.assertLess(reserve, paid)
@@ -39,8 +41,9 @@ class V14ProductionCloseCaptureWorkflowTests(unittest.TestCase):
         self.assertNotIn("ODDS_API_KEY", gate_block)
         self.assertNotIn("ODDS_API_KEY", reserve_block)
         self.assertIn("python -m v14.api_budget record-prediction", reserve_block)
-        self.assertIn("git push origin", reserve_block)
-        self.assertIn("Persist the reservation before the paid request", reserve_block)
+        self.assertIn("python -m v14.api_budget record-manual", reserve_block)
+        self.assertIn("python -m v14.state_branch persist", reserve_block)
+        self.assertIn("Persist before the paid request", reserve_block)
 
     def test_paid_prediction_is_stamped_with_objective_run_trigger(self):
         start = self.text.index("- name: Build native Pulsar V14 production payload")
