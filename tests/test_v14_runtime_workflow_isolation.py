@@ -24,8 +24,8 @@ class V14RuntimeWorkflowIsolationTests(unittest.TestCase):
     def test_paid_workflows_hydrate_before_budget_or_close_gate(self) -> None:
         production = Path('.github/workflows/mlb-bot.yml').read_text(encoding='utf-8')
         close = Path('.github/workflows/v14-close-capture.yml').read_text(encoding='utf-8')
-        self.assertLess(production.index('Hydrate mutable state from runtime-data'), production.index('Resolve manual or objective scheduled FINAL gate'))
-        self.assertLess(close.index('Hydrate mutable state from runtime-data'), close.index('Bootstrap tracked games from persisted predictions'))
+        self.assertLess(production.index('v14.state_branch hydrate'), production.index('Resolve manual or objective scheduled FINAL gate'))
+        self.assertLess(close.index('v14.state_branch hydrate'), close.index('Bootstrap tracked games from persisted predictions'))
 
     def test_legacy_collector_state_is_explicitly_research_only(self) -> None:
         manifest = Path('research/v14_runtime_legacy_paths.txt').read_text(encoding='utf-8')
