@@ -1,33 +1,49 @@
 from __future__ import annotations
 
-"""Prospective probability ablations for the frozen V14 champion.
+"""Prospective raw-probability ablations for the frozen V14 champion.
 
 Ablations are shadow-only counterfactuals generated from already-computed
 point-in-time champion components. They never feed production decisions and
 never use market probabilities.
 
-Layer-level ablations are exact with respect to the persisted multiplicative
-run deltas. Component ablations hold all other persisted deltas fixed; this is a
-counterfactual diagnostic, not a retrained model.
+The scorer intentionally works on the uncalibrated probability surface. That
+keeps reconstruction independent from any calibrator learned after the original
+pregame snapshot. Before an ablation is accepted, the module reconstructs the
+FULL raw champion surface and requires numerical parity with the raw surface
+persisted at prediction time. If any frozen distribution input has drifted, the
+row fails closed instead of being retrospectively rewritten.
 """
 
-from dataclasses import asdict
 from typing import Any
 
 from .all_stats_context import MAX_TEAM_DELTA as MAX_ADVANCED_TEAM_DELTA
-from .champion_contract import CHAMPION_DISPERSION, CHAMPION_ENVIRONMENT_SIGMA, validated_extra_innings_home_probability
+from .champion_contract import (
+    CHAMPION_DISPERSION,
+    CHAMPION_ENVIRONMENT_SIGMA,
+    validated_extra_innings_home_probability,
+)
 from .context_overlay import MAX_TEAM_DELTA as MAX_CONTEXT_TEAM_DELTA
 from .distribution import probability_surface
 from .model import RunProjection
-from .probability_calibration import calibrate_surface
+
+RAW_PARITY_TOLERANCE = 1e-9
+PROBABILITY_KEYS = (
+    "home_ml",
+    "away_ml",
+    "home_minus_1_5",
+    "away_plus_1_5",
+    "away_minus_1_5",
+    "home_plus_1_5",
+    "over",
+    "under",
+)
 
 
 def _num(value: Any, default: float = 0.0) -> float:
     try:
-        out = float(value)
+        return float(value)
     except Exception:
         return float(default)
-    return out
 
 
 def _clip(value: float, limit: float) -> float:
@@ -43,7 +59,7 @@ def _component_delta(component: Any, *keys: str) -> float:
     return 0.0
 
 
-def _surface(prediction: dict[str, Any], home_mu: float, away_mu: float) -> dict[str, Any]:
+def _surface_raw(prediction: dict[str, Any], home_mu: float, away_mu: float) -> dict[str, Any]:
     run = prediction.get("run_projection") or {}
     projection = RunProjection(
         game_pk=str(prediction.get("game_pk") or ""),
@@ -61,16 +77,21 @@ def _surface(prediction: dict[str, Any], home_mu: float, away_mu: float) -> dict
         source_generation=str(prediction.get("model_generation") or ""),
     ).validated()
     raw, tail = probability_surface(projection)
-    raw_probs = raw.as_dict()
-    probs, calibration = calibrate_surface(raw_probs, phase=projection.phase)
     return {
         "home_mu": projection.home_mu,
         "away_mu": projection.away_mu,
-        "raw_probabilities": raw_probs,
-        "probabilities": probs,
+        "raw_probabilities": raw.as_dict(),
         "tail_mass": tail,
-        "calibration": calibration,
     }
+
+
+def _max_probability_delta(left: dict[str, Any], right: dict[str, Any]) -> float | None:
+    deltas: list[float] = []
+    for key in PROBABILITY_KEYS:
+        if left.get(key) is None or right.get(key) is None:
+            return None
+        deltas.append(abs(float(left[key]) - float(right[key])))
+    return max(deltas) if deltas else None
 
 
 def _context_components(prediction: dict[str, Any]) -> dict[str, Any]:
@@ -141,7 +162,7 @@ def build(prediction: dict[str, Any]) -> dict[str, Any]:
     base_away = _num(base.get("away_mu"), -1.0)
     if base_home <= 0 or base_away <= 0:
         return {
-            "schema": "pulsar-v14-ablation-shadow-v1",
+            "schema": "pulsar-v14-ablation-shadow-v2",
             "role": "SHADOW_ONLY",
             "champion_impact": False,
             "status": "UNAVAILABLE",
@@ -153,6 +174,29 @@ def build(prediction: dict[str, Any]) -> dict[str, Any]:
     advanced = prediction.get("advanced_stats_adjustment") or {}
     full_context = (_num(context.get("home_delta")), _num(context.get("away_delta")))
     full_advanced = (_num(advanced.get("home_delta")), _num(advanced.get("away_delta")))
+
+    full_home, full_away = _means(base_home, base_away, full_context, full_advanced)
+    reconstructed = _surface_raw(prediction, full_home, full_away)
+    persisted_raw = prediction.get("raw_probabilities") or {}
+    parity_delta = _max_probability_delta(
+        reconstructed.get("raw_probabilities") or {},
+        persisted_raw if isinstance(persisted_raw, dict) else {},
+    )
+    if parity_delta is None or parity_delta > RAW_PARITY_TOLERANCE:
+        return {
+            "schema": "pulsar-v14-ablation-shadow-v2",
+            "role": "SHADOW_ONLY",
+            "champion_impact": False,
+            "status": "UNAVAILABLE",
+            "reason": "full_raw_reconstruction_mismatch",
+            "raw_reconstruction_max_abs_delta": parity_delta,
+            "raw_parity_tolerance": RAW_PARITY_TOLERANCE,
+            "variants": {},
+            "interpretation": (
+                "The historical row cannot be reconstructed under today's frozen distribution inputs "
+                "with exact raw-probability parity, so it is excluded rather than backfilled."
+            ),
+        }
 
     configs: dict[str, tuple[tuple[float, float], tuple[float, float], str]] = {
         "STRUCTURAL_ONLY": ((0.0, 0.0), (0.0, 0.0), "remove context and advanced residual layers"),
@@ -188,7 +232,7 @@ def build(prediction: dict[str, Any]) -> dict[str, Any]:
     for name, (ctx_delta, adv_delta, note) in configs.items():
         home_mu, away_mu = _means(base_home, base_away, ctx_delta, adv_delta)
         variants[name] = {
-            **_surface(prediction, home_mu, away_mu),
+            **_surface_raw(prediction, home_mu, away_mu),
             "role": "SHADOW_ONLY",
             "champion_impact": False,
             "market_probability_used_as_feature": False,
@@ -198,25 +242,30 @@ def build(prediction: dict[str, Any]) -> dict[str, Any]:
         }
 
     return {
-        "schema": "pulsar-v14-ablation-shadow-v1",
+        "schema": "pulsar-v14-ablation-shadow-v2",
         "role": "SHADOW_ONLY",
         "champion_impact": False,
         "status": "READY",
         "market_probability_used_as_feature": False,
-        "reference_probabilities": dict(prediction.get("probabilities") or {}),
+        "score_contract": "RAW_UNCALIBRATED_PROBABILITY_SURFACE",
+        "raw_reconstruction_max_abs_delta": parity_delta,
+        "raw_parity_tolerance": RAW_PARITY_TOLERANCE,
+        "reference_raw_probabilities": dict(persisted_raw),
         "variants": variants,
         "method": (
-            "prospective component-freeze counterfactuals from persisted PIT champion "
-            "run deltas; no market data and no production activation"
+            "prospective component-freeze counterfactuals from persisted PIT champion run deltas; "
+            "full raw champion parity required before scoring; no market data, no post-hoc calibrator, "
+            "and no production activation"
         ),
     }
 
 
 def build_from_tracking_row(row: dict[str, Any]) -> dict[str, Any]:
-    """Reconstruct shadow ablations from immutable pregame tracking features.
+    """Reconstruct fail-closed raw ablations from immutable pregame tracking features.
 
-    This is safe to run after settlement because outcomes are not inputs. Promotion
-    evidence must still be filtered by preregistration timestamp.
+    Outcome fields are never read. The current frozen distribution inputs are used
+    only as a reconstruction candidate; exact parity against the persisted raw
+    champion surface is mandatory, so drift causes exclusion instead of leakage.
     """
     training = row.get("training_features") or {}
     extra, _meta = validated_extra_innings_home_probability()
@@ -239,6 +288,6 @@ def build_from_tracking_row(row: dict[str, Any]) -> dict[str, Any]:
         "base_run_projection": training.get("base_run_projection") or {},
         "context_adjustment": training.get("context_adjustment") or {},
         "advanced_stats_adjustment": training.get("advanced_stats_adjustment") or {},
-        "probabilities": row.get("probabilities") or {},
+        "raw_probabilities": row.get("raw_probabilities") or {},
     }
     return build(prediction)
