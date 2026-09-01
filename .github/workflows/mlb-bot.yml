@@ -142,6 +142,7 @@ jobs:
           V14_ODDS_PROVIDER_CREDITS_PER_SNAPSHOT: '3'
           V14_MAX_AUTOMATED_ODDS_CREDITS_PER_UTC_MONTH: '180'
           V14_MAX_ALL_ODDS_CREDITS_PER_UTC_MONTH: '450'
+          V14_ODDS_PROVIDER_EMERGENCY_RESERVE_CREDITS: '50'
         run: |
           set -euo pipefail
           TARGET_DATE="${{ steps.gate.outputs.target_date }}"
@@ -178,6 +179,31 @@ jobs:
             --run-trigger "${{ steps.gate.outputs.run_trigger }}" \
             --destination runtime/v14/discord_payload.json \
             --candidate-destination runtime/v14/native_candidate.json
+
+      - name: Reconcile provider-reported quota after paid snapshot
+        if: always() && steps.gate.outputs.run_required == 'true'
+        env:
+          V14_ODDS_PROVIDER_CREDITS_PER_SNAPSHOT: '3'
+          V14_MAX_ALL_ODDS_CREDITS_PER_UTC_MONTH: '450'
+          V14_ODDS_PROVIDER_EMERGENCY_RESERVE_CREDITS: '50'
+        run: |
+          set -euo pipefail
+          if [ -f runtime/v14/odds_provider_quota.json ]; then
+            python -m v14.api_budget record-provider-state \
+              --ledger data/v14_api_usage.jsonl \
+              --state runtime/v14/odds_provider_quota.json
+            python -m v14.api_budget report \
+              --ledger data/v14_api_usage.jsonl \
+              --slate-date "${{ steps.gate.outputs.target_date }}" \
+              --output data/v14_api_usage_report.json
+            python -m v14.state_branch persist \
+              --path data/v14_api_usage.jsonl \
+              --path data/v14_api_usage_report.json \
+              --message 'data: attest V14 provider-reported Odds quota [skip ci]'
+            python -m v14.api_budget provider-guard --ledger data/v14_api_usage.jsonl
+          else
+            echo 'PULSAR_V14_PROVIDER_QUOTA_ATTESTATION_MISSING paid response did not yield a quota sidecar; local hard caps remain active'
+          fi
 
       - name: Record zero-API slate coverage and rejection reasons
         if: steps.gate.outputs.run_required == 'true'
@@ -249,6 +275,7 @@ jobs:
             runtime/v14/native_candidate.json
             runtime/v14/scheduled_prediction_gate.json
             runtime/v14/v14_defense_baserunning_priors.json
+            runtime/v14/odds_provider_quota.json
             data/v14_venue_park_factors.json
             data/v14_defense_baserunning_priors.json
             data/v14_coverage_report.json
