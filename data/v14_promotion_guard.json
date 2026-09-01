@@ -1,0 +1,115 @@
+{
+  "artifacts": {
+    "data/v14_bootstrap_uncertainty_candidate.json": {
+      "experiment_id": "V14-UNCERTAINTY-01",
+      "failures": [],
+      "promotion_authorized": false,
+      "promotion_claims": [],
+      "registered": true,
+      "registered_at": "2026-08-31T09:35:23.293111+00:00",
+      "registered_code_commit_sha": "f13b4d81d0ffaa18fa5ae6a1cd1a0d2361ebb203"
+    },
+    "data/v14_calibration_methods_candidate.json": {
+      "experiment_id": "V14-CALMETHOD-01",
+      "failures": [],
+      "promotion_authorized": false,
+      "promotion_claims": [],
+      "registered": true,
+      "registered_at": "2026-08-31T09:35:23.292948+00:00",
+      "registered_code_commit_sha": "f13b4d81d0ffaa18fa5ae6a1cd1a0d2361ebb203"
+    },
+    "data/v14_distribution_candidate.json": {
+      "experiment_id": "V14-DISTRIBUTION-01",
+      "failures": [],
+      "promotion_authorized": false,
+      "promotion_claims": [],
+      "registered": true,
+      "registered_at": "2026-08-31T09:35:23.292232+00:00",
+      "registered_code_commit_sha": "f13b4d81d0ffaa18fa5ae6a1cd1a0d2361ebb203"
+    },
+    "data/v14_distribution_live_validation.json": {
+      "experiment_id": "V14-HISTDIST-LIVE-UNREGISTERED",
+      "failures": [
+        "experiment_not_preregistered"
+      ],
+      "promotion_authorized": false,
+      "promotion_claims": [],
+      "registered": false,
+      "registered_at": null,
+      "registered_code_commit_sha": null
+    },
+    "data/v14_heteroskedastic_candidate.json": {
+      "experiment_id": "V14-HETERO-01",
+      "failures": [],
+      "promotion_authorized": false,
+      "promotion_claims": [],
+      "registered": true,
+      "registered_at": "2026-08-31T09:35:23.292465+00:00",
+      "registered_code_commit_sha": "f13b4d81d0ffaa18fa5ae6a1cd1a0d2361ebb203"
+    },
+    "data/v14_learned_run_mean_candidate.json": {
+      "experiment_id": "V14-RUNMEAN-01",
+      "failures": [],
+      "promotion_authorized": false,
+      "promotion_claims": [],
+      "registered": true,
+      "registered_at": "2026-08-31T09:35:23.292632+00:00",
+      "registered_code_commit_sha": "f13b4d81d0ffaa18fa5ae6a1cd1a0d2361ebb203"
+    },
+    "data/v14_market_posterior_candidate.json": {
+      "experiment_id": "V14-MARKETPOST-01",
+      "failures": [],
+      "promotion_authorized": false,
+      "promotion_claims": [],
+      "registered": true,
+      "registered_at": "2026-08-31T09:35:23.293426+00:00",
+      "registered_code_commit_sha": "f13b4d81d0ffaa18fa5ae6a1cd1a0d2361ebb203"
+    },
+    "data/v14_residual_challenger.json": {
+      "experiment_id": "V14-RESIDUAL-01",
+      "failures": [],
+      "promotion_authorized": false,
+      "promotion_claims": [],
+      "registered": true,
+      "registered_at": "2026-08-31T09:35:23.292778+00:00",
+      "registered_code_commit_sha": "f13b4d81d0ffaa18fa5ae6a1cd1a0d2361ebb203"
+    },
+    "data/v14_sharp_book_weights_candidate.json": {
+      "experiment_id": "V14-SHARPWEIGHT-01",
+      "failures": [],
+      "promotion_authorized": false,
+      "promotion_claims": [],
+      "registered": true,
+      "registered_at": "2026-08-31T09:35:23.293265+00:00",
+      "registered_code_commit_sha": "f13b4d81d0ffaa18fa5ae6a1cd1a0d2361ebb203"
+    },
+    "data/v14_team_run_live_validation.json": {
+      "experiment_id": "V14-HISTTEAM-LIVE-UNREGISTERED",
+      "failures": [
+        "experiment_not_preregistered"
+      ],
+      "promotion_authorized": false,
+      "promotion_claims": [],
+      "registered": false,
+      "registered_at": null,
+      "registered_code_commit_sha": null
+    }
+  },
+  "fail_closed": true,
+  "generated_at": "2026-09-01T09:40:24.287211+00:00",
+  "model_generation": "pulsar-v14-context-v4-all-stats",
+  "policy": "historical/reused evidence may rank or nominate challengers; every persisted promotion-capable claim, including legacy PROMOTION_REVIEW artifacts, requires exact preregistration provenance plus post-registration first-SCHEDULED_FINAL current-generation/current-policy evidence",
+  "probability_policy_id": "pulsar-v14-probability-policy-v1",
+  "promotion_cohort_policy": "FIRST_SCHEDULED_FINAL_CURRENT_POLICY_PER_GAME",
+  "promotion_phase": "FINAL",
+  "promotion_run_trigger": "SCHEDULED_FINAL",
+  "promotion_statuses": [
+    "PROMOTION_CANDIDATE",
+    "PROMOTION_ELIGIBLE",
+    "PROMOTION_REVIEW",
+    "PROSPECTIVE_PROMOTION_ELIGIBLE"
+  ],
+  "schema": "pulsar-v14-promotion-guard-v2",
+  "unsafe_promotion_claims": [],
+  "valid": true
+}
