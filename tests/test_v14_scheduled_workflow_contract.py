@@ -13,21 +13,25 @@ class V14ScheduledWorkflowContractTests(unittest.TestCase):
     def test_schedule_wakes_frequently_but_gate_precedes_paid_odds(self):
         self.assertIn("- cron: '*/10 * * * *'",self.text)
         gate=self.text.index("- name: Resolve manual or objective scheduled FINAL gate")
-        reserve=self.text.index("- name: Reserve and persist automated FINAL prediction budget")
+        reserve=self.text.index("- name: Reserve and persist every paid Odds snapshot before request")
         paid=self.text.index("- name: Build native Pulsar V14 production payload")
-        self.assertLess(gate,reserve)
-        self.assertLess(reserve,paid)
+        self.assertLess(gate,reserve);self.assertLess(reserve,paid)
         pre_paid=self.text[gate:paid]
         self.assertIn("python -m v14.scheduled_prediction_gate",pre_paid)
         self.assertIn("python -m v14.api_budget record-prediction",pre_paid)
+        self.assertIn("python -m v14.api_budget record-manual",pre_paid)
         self.assertNotIn("ODDS_API_KEY",pre_paid)
 
-    def test_budget_reservation_is_persisted_before_paid_request(self):
-        start=self.text.index("- name: Reserve and persist automated FINAL prediction budget")
+    def test_every_paid_production_run_is_reserved_before_request(self):
+        start=self.text.index("- name: Reserve and persist every paid Odds snapshot before request")
         end=self.text.index("- name: Build native Pulsar V14 production payload")
         block=self.text[start:end]
         self.assertIn("SCHEDULED_FINAL",block)
-        self.assertIn("git commit -m 'data: reserve V14 scheduled FINAL prediction request [skip ci]'",block)
+        self.assertIn("record-prediction",block)
+        self.assertIn("record-manual",block)
+        self.assertIn('--slate-date "$TARGET_DATE"',block)
+        self.assertIn("V14_MAX_ALL_ODDS_CREDITS_PER_UTC_MONTH: '450'",block)
+        self.assertIn("git commit -m 'data: reserve V14 paid Odds request [skip ci]'",block)
         self.assertIn("git push origin",block)
 
     def test_scheduled_trigger_is_stamped_into_same_production_runtime(self):
