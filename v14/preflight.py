@@ -48,6 +48,7 @@ CRITICAL_TEST_MODULES=(
     "tests.test_v14_professional_hardening",
     "tests.test_v14_research_extensions",
     "tests.test_v14_residual_weight_challenger",
+    "tests.test_v14_runtime_workflow_isolation",
     "tests.test_v14_4_professional_data_model",
     "tests.test_v14_run_stack_parity",
     "tests.test_v14_savant_run_value_builder",
