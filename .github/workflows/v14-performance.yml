@@ -35,8 +35,13 @@ jobs:
         run: |
           python -m py_compile v14/*.py
           python -m v14.preflight
+          python -m v14.reproducibility_guard --fail-on-external
           python -m v14.research_registry bootstrap \
             --specs research/v14_experiments.json \
+            --registry data/v14_experiment_registry.jsonl \
+            --commit-sha "$GITHUB_SHA"
+          python -m v14.research_registry bootstrap \
+            --specs research/v14_professionalization_experiments.json \
             --registry data/v14_experiment_registry.jsonl \
             --commit-sha "$GITHUB_SHA"
           python -m v14.research_registry verify --registry data/v14_experiment_registry.jsonl
@@ -131,6 +136,16 @@ jobs:
             --predictions data/v14_predictions.jsonl \
             --output data/v14_learned_run_mean_candidate.json
 
+      - name: Build paired baselines, regimes and preregistered ablations
+        run: |
+          python -m v14.research_diagnostics \
+            --predictions data/v14_predictions.jsonl \
+            --output data/v14_research_diagnostics.json
+          python -m v14.ablation_report \
+            --predictions data/v14_predictions.jsonl \
+            --registry data/v14_experiment_registry.jsonl \
+            --output data/v14_ablation_report.json
+
       - name: Fail closed on non-preregistered promotion claims
         run: |
           python -m v14.promotion_guard \
@@ -146,6 +161,24 @@ jobs:
           from pathlib import Path
           x=json.loads(Path('data/v14_data_quality_dashboard.json').read_text(encoding='utf-8'))
           print('PULSAR_V14_DATA_QUALITY',json.dumps({'operational_status':x.get('operational_status'),'betting_status':x.get('betting_status'),'scheduled_final_unique_games':x.get('current_generation_scheduled_final_unique_games'),'warnings':x.get('warnings'),'critical':x.get('critical')},sort_keys=True))
+          PY
+
+      - name: Build longitudinal read-only champion dashboard
+        run: |
+          python -m v14.champion_dashboard \
+            --json data/v14_champion_dashboard.json \
+            --markdown data/v14_champion_dashboard.md \
+            --history data/v14_champion_dashboard_history.jsonl
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          x=json.loads(Path('data/v14_champion_dashboard.json').read_text(encoding='utf-8'))
+          status=x.get('authoritative_status') or {}
+          print('PULSAR_V14_CHAMPION_DASHBOARD',json.dumps({
+              'betting_status':status.get('betting_status'),
+              'certified':status.get('certified'),
+              'independent_games':(x.get('sample_maturity') or {}).get('independent_games'),
+          },sort_keys=True))
           PY
 
       - name: Persist settled state and research artifacts on runtime-data

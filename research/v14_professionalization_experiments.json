@@ -1,0 +1,35 @@
+{
+  "schema": "pulsar-v14-experiment-spec-bundle-v2",
+  "governance_policy": "pulsar-v14-research-governance-v2",
+  "experiments": [
+    {
+      "governance_policy": "pulsar-v14-research-governance-v2",
+      "experiment_id": "V14-ABLATION-01",
+      "hypothesis": "Removing a truly useful champion information layer should prospectively worsen paired proper scores; layers that do not worsen scores are candidates for simplification.",
+      "model": "v14.ablation_shadow",
+      "features": [
+        "base_run_projection",
+        "context_adjustment",
+        "advanced_stats_adjustment",
+        "frozen_distribution"
+      ],
+      "training_period": "none; deterministic counterfactual from persisted PIT pregame components",
+      "validation_period": "first post-registration SCHEDULED_FINAL FINAL 10-60m certification snapshot per settled game",
+      "primary_metric": "paired Brier gain of champion vs each declared ablation",
+      "secondary_metrics": [
+        "LogLoss gain",
+        "ECE",
+        "run-environment stability",
+        "market-specific coverage"
+      ],
+      "success_rule": "A component is supported only if champion-minus-ablation paired Brier CI95 lower > 0 with LogLoss non-regression; lack of evidence triggers simplification research, not automatic removal.",
+      "minimum_independent_games": 250,
+      "analysis_plan": "Generate fixed no-X counterfactual probabilities from immutable pregame component deltas and score each against the champion on identical first SCHEDULED_FINAL FINAL 10-60m post-registration games.",
+      "stopping_rule": "No component-removal decision before 250 independent games; no adding/removing ablation definitions after scoring begins without a new experiment id.",
+      "promotion_scope": "Diagnostic/simplification nomination only; removing any champion component requires explicit new generation validation.",
+      "code_commit_sha": "AUTO",
+      "multiplicity_family": "ABLATION",
+      "research_budget_family": "ABLATION"
+    }
+  ]
+}
