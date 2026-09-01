@@ -3,7 +3,7 @@ name: Pulsar V14 Close Capture
 on:
   schedule:
     # Frequent wake-up is cheap: the local due-check performs zero paid API calls.
-    # Ultra-low policy: at most one paid close snapshot per UTC day; that single
+    # Ultra-low policy: at most one paid close snapshot per MLB target slate; that
     # snapshot is shared across every due game/component visible at that moment.
     - cron: '*/10 * * * *'
   workflow_dispatch:
@@ -53,13 +53,14 @@ jobs:
       - name: Capture closes with one shared paid snapshot only when due
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
-          V14_MAX_PAID_CLOSE_SNAPSHOTS_PER_DAY: '1'
+          V14_MAX_PAID_CLOSE_SNAPSHOTS_PER_SLATE: '1'
           V14_ODDS_PROVIDER_CREDITS_PER_SNAPSHOT: '3'
           V14_MAX_AUTOMATED_ODDS_CREDITS_PER_UTC_MONTH: '180'
+          V14_MAX_ALL_ODDS_CREDITS_PER_UTC_MONTH: '450'
         run: |
           # Local archive hydration runs first. PRIMARY (Pinnacle no-vig) and
           # EXECUTION (fresh same-book close) remain independently retryable,
-          # but the budget permits only the first paid close opportunity today.
+          # but the budget permits only the first paid close opportunity per slate.
           python -m v14.cost_aware_close_capture \
             --market-ledger data/v14_market_close_ledger.jsonl \
             --paper-ledger data/v14_paper_bet_ledger.jsonl \
