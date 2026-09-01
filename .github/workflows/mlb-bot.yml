@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - name: Checkout
+      - name: Checkout production code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
@@ -31,6 +31,12 @@ jobs:
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
+
+      - name: Hydrate mutable state from runtime-data
+        run: |
+          python -m v14.state_branch hydrate --manifest research/v14_runtime_operational_paths.txt
+          python -m v14.state_branch hydrate --manifest research/v14_runtime_performance_paths.txt
+          python -m v14.state_branch hydrate --manifest research/v14_runtime_reference_paths.txt
 
       - name: Resolve manual or objective scheduled FINAL gate
         id: gate
@@ -154,16 +160,12 @@ jobs:
             --ledger data/v14_api_usage.jsonl \
             --slate-date "$TARGET_DATE" \
             --output data/v14_api_usage_report.json
-          git config user.name 'Pulsar V14'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add -f data/v14_api_usage.jsonl data/v14_api_usage_report.json
-          if ! git diff --cached --quiet; then
-            # Persist every reservation before the paid request. A later failure
-            # therefore cannot create an uncounted retry loop, including MANUAL.
-            git commit -m 'data: reserve V14 paid Odds request [skip ci]'
-            git pull --rebase origin "$GITHUB_REF_NAME"
-            git push origin "HEAD:$GITHUB_REF_NAME"
-          fi
+          # Persist before the paid request. Failures remain counted and cannot
+          # create an unbudgeted retry loop, including MANUAL runs.
+          python -m v14.state_branch persist \
+            --path data/v14_api_usage.jsonl \
+            --path data/v14_api_usage_report.json \
+            --message 'data: reserve V14 paid Odds request [skip ci]'
 
       - name: Build native Pulsar V14 production payload
         if: steps.gate.outputs.run_required == 'true'
@@ -203,7 +205,7 @@ jobs:
           print('PULSAR_V14_BETTING_CERTIFICATION=', json.dumps(payload.get('betting_certification'), sort_keys=True))
           PY
 
-      - name: Persist PIT predictions and decision evidence
+      - name: Persist PIT predictions and decision evidence on runtime-data
         if: steps.gate.outputs.run_required == 'true'
         run: |
           python -m v14.tracking snapshot \
@@ -222,21 +224,9 @@ jobs:
               --payload runtime/v14/discord_payload.json \
               --ledger data/v14_bet_ledger.jsonl
           fi
-          git config user.name 'Pulsar V14'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add -f data/v14_predictions.jsonl
-          [ -f data/v14_market_close_ledger.jsonl ] && git add -f data/v14_market_close_ledger.jsonl
-          [ -f data/v14_paper_bet_ledger.jsonl ] && git add -f data/v14_paper_bet_ledger.jsonl
-          [ -f data/v14_bet_ledger.jsonl ] && git add -f data/v14_bet_ledger.jsonl
-          [ -f data/v14_coverage_ledger.jsonl ] && git add -f data/v14_coverage_ledger.jsonl
-          [ -f data/v14_coverage_report.json ] && git add -f data/v14_coverage_report.json
-          [ -f data/v14_api_usage.jsonl ] && git add -f data/v14_api_usage.jsonl
-          [ -f data/v14_api_usage_report.json ] && git add -f data/v14_api_usage_report.json
-          if ! git diff --cached --quiet; then
-            git commit -m 'data: persist V14 pregame predictions, decisions and coverage [skip ci]'
-            git pull --rebase origin "$GITHUB_REF_NAME"
-            git push origin "HEAD:$GITHUB_REF_NAME"
-          fi
+          python -m v14.state_branch persist \
+            --manifest research/v14_runtime_operational_paths.txt \
+            --message 'data: persist V14 pregame predictions, decisions and coverage [skip ci]'
 
       - name: Close collection policy
         if: steps.gate.outputs.run_required == 'true'
