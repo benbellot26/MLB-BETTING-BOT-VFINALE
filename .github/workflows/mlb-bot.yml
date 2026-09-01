@@ -40,6 +40,15 @@ jobs:
 
       - name: Resolve manual or objective scheduled FINAL gate
         id: gate
+        env:
+          # Coverage mode is explicitly opted in by production. Code defaults
+          # remain the one-snapshot ultra-low fail-safe outside this workflow.
+          V14_MAX_PAID_PREDICTION_SNAPSHOTS_PER_SLATE: '4'
+          V14_MAX_PAID_CLOSE_SNAPSHOTS_PER_SLATE: '1'
+          V14_ODDS_PROVIDER_CREDITS_PER_SNAPSHOT: '3'
+          V14_MAX_AUTOMATED_ODDS_CREDITS_PER_UTC_MONTH: '420'
+          V14_MAX_ALL_ODDS_CREDITS_PER_UTC_MONTH: '450'
+          V14_ODDS_PROVIDER_EMERGENCY_RESERVE_CREDITS: '50'
         run: |
           set -euo pipefail
           mkdir -p runtime/v14
@@ -159,10 +168,10 @@ jobs:
       - name: Reserve and persist every paid Odds snapshot before request
         if: steps.gate.outputs.run_required == 'true'
         env:
-          V14_MAX_PAID_PREDICTION_SNAPSHOTS_PER_SLATE: '1'
+          V14_MAX_PAID_PREDICTION_SNAPSHOTS_PER_SLATE: '4'
           V14_MAX_PAID_CLOSE_SNAPSHOTS_PER_SLATE: '1'
           V14_ODDS_PROVIDER_CREDITS_PER_SNAPSHOT: '3'
-          V14_MAX_AUTOMATED_ODDS_CREDITS_PER_UTC_MONTH: '180'
+          V14_MAX_AUTOMATED_ODDS_CREDITS_PER_UTC_MONTH: '420'
           V14_MAX_ALL_ODDS_CREDITS_PER_UTC_MONTH: '450'
           V14_ODDS_PROVIDER_EMERGENCY_RESERVE_CREDITS: '50'
         run: |
