@@ -22,20 +22,15 @@ def game(game_pk:str,at:datetime)->dict:
 class V14UltraLowClusterPolicyTests(unittest.TestCase):
     def test_prediction_waits_for_larger_cluster_and_targets_30_minutes(self) -> None:
         now=datetime(2026,9,1,18,0,tzinfo=timezone.utc)
-        games=[
-            game("1",now+timedelta(minutes=30)),
-            game("2",now+timedelta(hours=2)),
-            game("3",now+timedelta(hours=2)),
-            game("4",now+timedelta(hours=2)),
-        ]
+        games=[game("1",now+timedelta(minutes=30)),game("2",now+timedelta(hours=2)),game("3",now+timedelta(hours=2)),game("4",now+timedelta(hours=2))]
         with TemporaryDirectory() as tmp:
             root=Path(tmp);predictions=root/"predictions.jsonl";usage=root/"usage.jsonl"
             out=prediction_gate(predictions_path=predictions,api_usage_path=usage,target_date="2026-09-01",now=now,games_loader=lambda _day:games)
             self.assertFalse(out["run_required"])
-            self.assertEqual(out["reason"],"WAITING_FOR_BEST_DAILY_CLUSTER")
-            plan=out["best_daily_cluster"]
-            self.assertEqual(plan["games"],3)
-            self.assertEqual(set(plan["game_ids"]),{"2","3","4"})
+            self.assertEqual(out["reason"],"WAITING_FOR_BEST_SLATE_CLUSTER")
+            self.assertEqual(out["slate_date"],"2026-09-01")
+            plan=out["best_slate_cluster"]
+            self.assertEqual(plan["games"],3);self.assertEqual(set(plan["game_ids"]),{"2","3","4"})
             self.assertEqual(plan["target_at"],(now+timedelta(hours=1,minutes=30)).isoformat())
             self.assertAlmostEqual(plan["mean_target_error_minutes"],0.0)
 
@@ -45,10 +40,9 @@ class V14UltraLowClusterPolicyTests(unittest.TestCase):
         with TemporaryDirectory() as tmp:
             root=Path(tmp)
             out=prediction_gate(predictions_path=root/"predictions.jsonl",api_usage_path=root/"usage.jsonl",target_date="2026-09-01",now=target,games_loader=lambda _day:games)
-            self.assertTrue(out["run_required"])
-            self.assertEqual(out["reason"],"FINAL_SNAPSHOT_DUE")
+            self.assertTrue(out["run_required"]);self.assertEqual(out["reason"],"FINAL_SNAPSHOT_DUE")
             self.assertEqual(set(out["due_game_ids"]),{"2","3","4"})
-            self.assertEqual(out["best_daily_cluster"]["policy"],"MAX_GAMES_THEN_CLOSEST_TO_30M_THEN_LATEST")
+            self.assertEqual(out["best_slate_cluster"]["policy"],"MAX_GAMES_THEN_CLOSEST_TO_30M_THEN_LATEST")
 
     def test_close_waits_for_larger_pending_cluster_without_network_call(self) -> None:
         now=datetime(2026,9,1,18,0,tzinfo=timezone.utc)
@@ -56,19 +50,19 @@ class V14UltraLowClusterPolicyTests(unittest.TestCase):
             root=Path(tmp);market=root/"market.jsonl";paper=root/"paper.jsonl";bet=root/"bet.jsonl";usage=root/"usage.jsonl"
             rows=[]
             for game_pk,minutes in (("1",10),("2",60),("3",60),("4",60)):
-                rows.append({"schema":"pulsar-v14-market-close-v1","game_pk":game_pk,"game_date":(now+timedelta(minutes=minutes)).isoformat(),"odds_event_id":f"event-{game_pk}","odds_event_time_verified":True,"close_history":[],"best_close":None})
+                rows.append({"schema":"pulsar-v14-market-close-v1","game_pk":game_pk,"target_date":"2026-09-01","game_date":(now+timedelta(minutes=minutes)).isoformat(),"odds_event_id":f"event-{game_pk}","odds_event_time_verified":True,"close_history":[],"best_close":None})
             market.write_text("".join(json.dumps(row)+"\n" for row in rows),encoding="utf-8")
             plan=best_close_cluster(market,paper,bet,now=now)
-            self.assertEqual(plan["games"],3)
-            self.assertEqual(set(plan["game_keys"]),{"event:event-2","event:event-3","event:event-4"})
+            self.assertEqual(plan["games"],3);self.assertEqual(set(plan["game_keys"]),{"event:event-2","event:event-3","event:event-4"})
             self.assertEqual(plan["target_at"],(now+timedelta(minutes=45)).isoformat())
+            self.assertEqual(plan["target_dates"],["2026-09-01"])
             called={"n":0}
             def loader():
                 called["n"]+=1
                 return []
             out=close_run(market,paper,bet,api_usage_path=usage,events_loader=loader,now=now)
-            self.assertFalse(out["api_call_performed"])
-            self.assertEqual(called["n"],0)
+            self.assertFalse(out["api_call_performed"]);self.assertEqual(called["n"],0)
+            self.assertEqual(out["slate_date"],"2026-09-01")
             self.assertIn("waiting for larger close cluster",out["reason"])
 
 
