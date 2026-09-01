@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Preregistered prospective ablation scoreboard for V14."""
+"""Preregistered prospective raw-probability ablation scoreboard for V14."""
 
 import argparse
 import json
@@ -47,13 +47,15 @@ def build_report(
         row for row in rows
         if row.get("settled")
         and row.get("model_generation") == MODEL_GENERATION
-        and (row.get("probability_policy_id") or (row.get("calibration") or {}).get("probability_policy_id")) == PROBABILITY_POLICY_ID
+        and (row.get("probability_policy_id") or (row.get("calibration") or {}).get("probability_policy_id"))
+        == PROBABILITY_POLICY_ID
     ]
     certification_cohort = first_certification_snapshots(current_policy_raw)
     registration = registrations(registry_path).get(experiment_id)
     eligible = [
         row for row in certification_cohort
-        if registration and eligible_observation(experiment_id, str(row.get("analyzed_at") or ""), registry_path)
+        if registration
+        and eligible_observation(experiment_id, str(row.get("analyzed_at") or ""), registry_path)
     ]
 
     scores: dict[str, dict[str, dict[str, Any]]] = {}
@@ -67,8 +69,8 @@ def build_report(
             variant_scores = scores.setdefault(str(variant), {})
             for market, selection in MARKETS.items():
                 y = _outcome(row, market)
-                champion = _num((row.get("probabilities") or {}).get(selection))
-                candidate = _num((payload.get("probabilities") or {}).get(selection))
+                champion = _num((row.get("raw_probabilities") or {}).get(selection))
+                candidate = _num((payload.get("raw_probabilities") or {}).get(selection))
                 if y is None or champion is None or candidate is None:
                     continue
                 bucket = variant_scores.setdefault(market, {"items": [], "pairs": []})
@@ -80,20 +82,21 @@ def build_report(
         rendered[variant] = {}
         for market, payload in markets.items():
             rendered[variant][market] = {
-                "variant": binary_metrics(payload["items"]),
-                "paired_vs_champion": _paired_summary(
-                    payload["pairs"], f"{experiment_id}|{variant}|{market}"
+                "variant_raw": binary_metrics(payload["items"]),
+                "paired_raw_vs_champion": _paired_summary(
+                    payload["pairs"], f"{experiment_id}|raw|{variant}|{market}"
                 ),
             }
 
     return {
-        "schema": "pulsar-v14-ablation-report-v1",
+        "schema": "pulsar-v14-ablation-report-v2",
         "role": "RESEARCH_ONLY",
         "champion_impact": False,
         "experiment_id": experiment_id,
         "registered": registration is not None,
         "registration_timestamp": registration.get("registered_at") if registration else None,
         "prospective_only_for_promotion": True,
+        "score_contract": "RAW_UNCALIBRATED_PROBABILITY_SURFACE",
         "settled_current_policy_games": len(settled),
         "scheduled_final_certification_games": len(certification_cohort),
         "prospective_eligible_rows": len(eligible),
@@ -102,13 +105,15 @@ def build_report(
         "interpretation": (
             "Only the first objective SCHEDULED_FINAL certification snapshot per game whose "
             "analyzed_at is on/after the sealed experiment registration enters paired ablation "
-            "evidence. Earlier/manual rows are excluded even when their pregame features are reconstructible."
+            "evidence. Candidate and champion are compared on persisted/reconstructed RAW probability "
+            "surfaces; exact full-surface parity is required, preventing later calibration or "
+            "distribution-state changes from leaking into the experiment."
         ),
     }
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Score preregistered V14 probability ablations")
+    parser = argparse.ArgumentParser(description="Score preregistered V14 raw-probability ablations")
     parser.add_argument("--predictions", default=str(DEFAULT_PREDICTIONS))
     parser.add_argument("--registry", default=str(DEFAULT_REGISTRY))
     parser.add_argument("--output", default=str(DEFAULT_OUTPUT))
@@ -116,11 +121,15 @@ def main() -> None:
     report = build_report(_read_jsonl(args.predictions), registry_path=args.registry)
     target = Path(args.output)
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    target.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
     print(json.dumps({
         "output": str(target),
         "registered": report["registered"],
         "prospective_eligible_rows": report["prospective_eligible_rows"],
+        "skipped_unavailable_rows": report["skipped_unavailable_rows"],
     }, sort_keys=True))
 
 
