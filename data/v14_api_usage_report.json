@@ -2,18 +2,18 @@
   "all_paid_month": {
     "allowed": true,
     "provider_credit_limit": 450,
-    "provider_credits_remaining": 432,
-    "provider_credits_used": 18,
-    "snapshots": 6,
+    "provider_credits_remaining": 429,
+    "provider_credits_used": 21,
+    "snapshots": 7,
     "utc_month": "2026-09"
   },
   "automated_close_slate": {
     "all_paid_month": {
       "allowed": true,
       "provider_credit_limit": 450,
-      "provider_credits_remaining": 432,
-      "provider_credits_used": 18,
-      "snapshots": 6,
+      "provider_credits_remaining": 429,
+      "provider_credits_used": 21,
+      "snapshots": 7,
       "utc_month": "2026-09"
     },
     "allowed": true,
@@ -37,7 +37,7 @@
       "utc_month": "2026-09"
     },
     "provider_guard": {
-      "age_minutes": 0.0010761833333333335,
+      "age_minutes": 0.040309750000000005,
       "allowed": true,
       "attested": true,
       "configured_next_credit_cost": 3,
@@ -73,9 +73,9 @@
     "all_paid_month": {
       "allowed": true,
       "provider_credit_limit": 450,
-      "provider_credits_remaining": 432,
-      "provider_credits_used": 18,
-      "snapshots": 6,
+      "provider_credits_remaining": 429,
+      "provider_credits_used": 21,
+      "snapshots": 7,
       "utc_month": "2026-09"
     },
     "allowed": true,
@@ -99,7 +99,7 @@
       "utc_month": "2026-09"
     },
     "provider_guard": {
-      "age_minutes": 0.0010814,
+      "age_minutes": 0.040315166666666666,
       "allowed": true,
       "attested": true,
       "configured_next_credit_cost": 3,
@@ -125,26 +125,26 @@
   },
   "by_kind": {
     "ODDS_CLOSE_SNAPSHOT": 2,
-    "ODDS_MANUAL_PRODUCTION_SNAPSHOT": 1,
+    "ODDS_MANUAL_PRODUCTION_SNAPSHOT": 2,
     "ODDS_PROVIDER_QUOTA_ATTESTATION": 9,
     "ODDS_SCHEDULED_FINAL_PREDICTION_SNAPSHOT": 5
   },
-  "generated_at": "2026-09-02T16:15:25.339536+00:00",
-  "known_provider_credits_total": 24,
+  "generated_at": "2026-09-02T16:15:27.693586+00:00",
+  "known_provider_credits_total": 27,
   "manual_slate": {
     "all_paid_month": {
       "allowed": true,
       "provider_credit_limit": 450,
-      "provider_credits_remaining": 432,
-      "provider_credits_used": 18,
-      "snapshots": 6,
+      "provider_credits_remaining": 429,
+      "provider_credits_used": 21,
+      "snapshots": 7,
       "utc_month": "2026-09"
     },
     "allowed": true,
     "kind": "ODDS_MANUAL_PRODUCTION_SNAPSHOT",
     "limit": null,
     "provider_guard": {
-      "age_minutes": 0.0010839833333333333,
+      "age_minutes": 0.04031786666666667,
       "allowed": true,
       "attested": true,
       "configured_next_credit_cost": 3,
@@ -165,7 +165,7 @@
     },
     "remaining": null,
     "slate_date": "2026-09-02",
-    "used": 0
+    "used": 1
   },
   "policy": {
     "close_config_env": "V14_MAX_PAID_CLOSE_SNAPSHOTS_PER_SLATE",
@@ -191,7 +191,7 @@
     "zero_credit_provider_refresh_required_before_production_paid_reservation": true
   },
   "provider_guard": {
-    "age_minutes": 0.0010892166666666666,
+    "age_minutes": 0.04032335,
     "allowed": true,
     "attested": true,
     "configured_next_credit_cost": 3,
@@ -210,6 +210,6 @@
     "same_utc_month": true,
     "status": "ATTESTED_SAFE"
   },
-  "request_equivalents_total": 8,
+  "request_equivalents_total": 9,
   "schema": "pulsar-v14-api-usage-report-v5"
 }
