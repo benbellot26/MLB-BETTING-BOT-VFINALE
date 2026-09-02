@@ -189,3 +189,13 @@ jobs:
           python -m v14.state_branch persist \
             --manifest research/v14_runtime_performance_paths.txt \
             --message 'data: settle V14 performance and preregistered research evidence [skip ci]'
+
+      - name: Send simple daily Discord recap
+        if: github.event_name == 'schedule'
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          python -m v14.daily_summary \
+            --predictions data/v14_predictions.jsonl \
+            --performance data/v14_performance.json \
+            --certification data/v14_betting_certification.json
