@@ -14,7 +14,7 @@ from typing import Any
 
 from . import MODEL_GENERATION, PROBABILITY_POLICY_ID, VERSION
 from .acquisition import parse_time
-from .discord import send_embed
+from .discord import _post_webhook
 
 PREDICTIONS = Path("data/v14_predictions.jsonl")
 PERFORMANCE = Path("data/v14_performance.json")
@@ -192,7 +192,7 @@ def build_summary_embed(
             "title": "📊 PULSAR V14 — BILAN QUOTIDIEN",
             "description": "Aucun nouveau match réglé.",
             "color": 0x5865F2,
-            "footer": {"text": f"Pulsar V14.{VERSION} • bilan automatique"},
+            "footer": {"text": f"Pulsar {VERSION} • bilan automatique"},
         }
 
     canonical = _canonical_rows(rows, day)
@@ -222,7 +222,8 @@ def build_summary_embed(
 
 
 def send_daily_summary(**kwargs: Any) -> bool:
-    return send_embed(build_summary_embed(**kwargs), username="Pulsar V14 • Daily")
+    embed = build_summary_embed(**kwargs)
+    return _post_webhook({"username": "Pulsar V14 • Daily", "embeds": [embed]})
 
 
 def main() -> None:
@@ -243,7 +244,7 @@ def main() -> None:
     if args.print_only:
         print(json.dumps(embed, ensure_ascii=False, indent=2, sort_keys=True))
         return
-    if not send_embed(embed, username="Pulsar V14 • Daily"):
+    if not _post_webhook({"username": "Pulsar V14 • Daily", "embeds": [embed]}):
         raise SystemExit("Pulsar V14 daily Discord summary publication incomplete")
     print("PULSAR_V14_DAILY_DISCORD sent=true")
 
