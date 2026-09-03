@@ -2,15 +2,830 @@
   "champion_impact": false,
   "experiment_id": "V14-ABLATION-01",
   "interpretation": "Only the first objective SCHEDULED_FINAL certification snapshot per game whose analyzed_at is on/after the sealed experiment registration enters paired ablation evidence. Candidate and champion are compared on persisted/reconstructed RAW probability surfaces; exact full-surface parity is required, preventing later calibration or distribution-state changes from leaking into the experiment.",
-  "prospective_eligible_rows": 0,
+  "prospective_eligible_rows": 8,
   "prospective_only_for_promotion": true,
   "registered": true,
   "registration_timestamp": "2026-09-02T09:39:37.532630+00:00",
   "role": "RESEARCH_ONLY",
-  "scheduled_final_certification_games": 18,
+  "scheduled_final_certification_games": 26,
   "schema": "pulsar-v14-ablation-report-v2",
   "score_contract": "RAW_UNCALIBRATED_PROBABILITY_SURFACE",
-  "settled_current_policy_games": 27,
+  "settled_current_policy_games": 42,
   "skipped_unavailable_rows": 0,
-  "variants": {}
+  "variants": {
+    "NO_ADVANCED_DEFENSE": {
+      "ML_HOME": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 0.0027408076722787236,
+          "brier_gain_ci95_lower": -0.00011096465050330997,
+          "brier_gain_ci95_upper": 0.006623032537498407,
+          "logloss_gain": 0.005543753189178449,
+          "logloss_gain_ci95_lower": -0.0001995964397565747,
+          "logloss_gain_ci95_upper": 0.013574514762571474,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.2717935594734759,
+          "ece": 0.3914929519740772,
+          "log_loss": 0.7385003569566161,
+          "n": 8
+        }
+      },
+      "RL_AWAY_-1.5": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 0.0031239000201838986,
+          "brier_gain_ci95_lower": 0.0006579580105198976,
+          "brier_gain_ci95_upper": 0.006022692432706399,
+          "logloss_gain": 0.007381463101223312,
+          "logloss_gain_ci95_lower": 0.001691255003201993,
+          "logloss_gain_ci95_upper": 0.014347122294142998,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.3580933674321596,
+          "ece": 0.41085230487204916,
+          "log_loss": 0.9311034113101557,
+          "n": 8
+        }
+      },
+      "RL_HOME_-1.5": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 0.0024447818000232525,
+          "brier_gain_ci95_lower": -0.0006519614955427502,
+          "brier_gain_ci95_upper": 0.006373910565743039,
+          "logloss_gain": 0.005197962962610818,
+          "logloss_gain_ci95_lower": -0.001449061113405614,
+          "logloss_gain_ci95_upper": 0.013763572687911086,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.17718059029328168,
+          "ece": 0.2457668745039612,
+          "log_loss": 0.5407017043646125,
+          "n": 8
+        }
+      },
+      "TOTAL_OVER": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 0.002780425012631647,
+          "brier_gain_ci95_lower": -0.0028656569702548602,
+          "brier_gain_ci95_upper": 0.007896849709573956,
+          "logloss_gain": 0.005473640508758225,
+          "logloss_gain_ci95_lower": -0.005999620672605432,
+          "logloss_gain_ci95_upper": 0.016304491537250013,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.2309272900524794,
+          "ece": 0.3285335152618193,
+          "log_loss": 0.6536132910816025,
+          "n": 8
+        }
+      }
+    },
+    "NO_ADVANCED_PHYSICS": {
+      "ML_HOME": {
+        "paired_raw_vs_champion": {
+          "brier_gain": -8.78377501187938e-06,
+          "brier_gain_ci95_lower": -2.249076686455121e-05,
+          "brier_gain_ci95_upper": 3.6490758771059846e-06,
+          "logloss_gain": -1.9197456721603556e-05,
+          "logloss_gain_ci95_lower": -5.1270022267319026e-05,
+          "logloss_gain_ci95_upper": 6.239430154653114e-06,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.2745431509207665,
+          "ece": 0.39125313496521386,
+          "log_loss": 0.7440633076025162,
+          "n": 8
+        }
+      },
+      "RL_AWAY_-1.5": {
+        "paired_raw_vs_champion": {
+          "brier_gain": -3.026580357596599e-05,
+          "brier_gain_ci95_lower": -9.752442227938664e-05,
+          "brier_gain_ci95_upper": 3.277196150693572e-05,
+          "logloss_gain": -5.39679861296799e-05,
+          "logloss_gain_ci95_lower": -0.0001982635636003897,
+          "logloss_gain_ci95_upper": 8.11768136413045e-05,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.36124753325591946,
+          "ece": 0.41093051225746746,
+          "log_loss": 0.9385388423975087,
+          "n": 8
+        }
+      },
+      "RL_HOME_-1.5": {
+        "paired_raw_vs_champion": {
+          "brier_gain": -2.367985991562349e-06,
+          "brier_gain_ci95_lower": -6.984230874236678e-05,
+          "brier_gain_ci95_upper": 5.710523296519313e-05,
+          "logloss_gain": -7.904877100256558e-07,
+          "logloss_gain_ci95_lower": -0.00014672076440130894,
+          "logloss_gain_ci95_upper": 0.00013010090515966474,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.1796277400792965,
+          "ece": 0.24521255983757123,
+          "log_loss": 0.5459004578149333,
+          "n": 8
+        }
+      },
+      "TOTAL_OVER": {
+        "paired_raw_vs_champion": {
+          "brier_gain": -0.00018735839944719786,
+          "brier_gain_ci95_lower": -0.0006483886016580908,
+          "brier_gain_ci95_upper": 0.00032481720265837384,
+          "logloss_gain": -0.00038148701363174137,
+          "logloss_gain_ci95_lower": -0.0013118189926998106,
+          "logloss_gain_ci95_upper": 0.0006658701221279818,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.23389507346455823,
+          "ece": 0.3313863344612912,
+          "log_loss": 0.6594684186039924,
+          "n": 8
+        }
+      }
+    },
+    "NO_ADVANCED_STATCAST": {
+      "ML_HOME": {
+        "paired_raw_vs_champion": {
+          "brier_gain": -0.00048574542152346814,
+          "brier_gain_ci95_lower": -0.0020555129678781303,
+          "brier_gain_ci95_upper": 0.0011137459604546873,
+          "logloss_gain": -0.0009424267324117941,
+          "logloss_gain_ci95_lower": -0.004043744172922297,
+          "logloss_gain_ci95_upper": 0.002292717063815441,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.2750201125672781,
+          "ece": 0.3917230112557938,
+          "log_loss": 0.7449865368782064,
+          "n": 8
+        }
+      },
+      "RL_AWAY_-1.5": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 9.753684347266894e-05,
+          "brier_gain_ci95_lower": -0.0018399258791946722,
+          "brier_gain_ci95_upper": 0.0023045345327816266,
+          "logloss_gain": 0.0007973560452920608,
+          "logloss_gain_ci95_lower": -0.003855783615378915,
+          "logloss_gain_ci95_upper": 0.005895986323863969,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.3611197306088708,
+          "ece": 0.41029694178506304,
+          "log_loss": 0.937687518366087,
+          "n": 8
+        }
+      },
+      "RL_HOME_-1.5": {
+        "paired_raw_vs_champion": {
+          "brier_gain": -0.0007468045808373402,
+          "brier_gain_ci95_lower": -0.0018452159772210047,
+          "brier_gain_ci95_upper": 0.00027841808631552857,
+          "logloss_gain": -0.0017494239104924314,
+          "logloss_gain_ci95_lower": -0.004169369083911603,
+          "logloss_gain_ci95_upper": 0.000623230708164354,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.18037217667414226,
+          "ece": 0.246778328990863,
+          "log_loss": 0.5476490912377158,
+          "n": 8
+        }
+      },
+      "TOTAL_OVER": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 0.004696942190204544,
+          "brier_gain_ci95_lower": -0.0019922903609386395,
+          "brier_gain_ci95_upper": 0.009381589369252041,
+          "logloss_gain": 0.009547142450790955,
+          "logloss_gain_ci95_lower": -0.004177951021959304,
+          "logloss_gain_ci95_upper": 0.019008052318861754,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.22901077287490648,
+          "ece": 0.3218332471979645,
+          "log_loss": 0.6495397891395697,
+          "n": 8
+        }
+      }
+    },
+    "NO_ADVANCED_STATS": {
+      "ML_HOME": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 0.0022244264726110075,
+          "brier_gain_ci95_lower": -0.0012477070679195248,
+          "brier_gain_ci95_upper": 0.006152491500829452,
+          "logloss_gain": 0.004537000728903548,
+          "logloss_gain_ci95_lower": -0.0022710453439355573,
+          "logloss_gain_ci95_upper": 0.012619582536203496,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.2723099406731436,
+          "ece": 0.3919683637779138,
+          "log_loss": 0.739507109416891,
+          "n": 8
+        }
+      },
+      "RL_AWAY_-1.5": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 0.0031677446276620093,
+          "brier_gain_ci95_lower": -0.0003405144517923719,
+          "brier_gain_ci95_upper": 0.006753407155951462,
+          "logloss_gain": 0.008046285608763075,
+          "logloss_gain_ci95_lower": -4.303910739991957e-05,
+          "logloss_gain_ci95_upper": 0.017301796497419752,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.3580495228246815,
+          "ece": 0.41035090236147376,
+          "log_loss": 0.9304385888026159,
+          "n": 8
+        }
+      },
+      "RL_HOME_-1.5": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 0.0016757336298306707,
+          "brier_gain_ci95_lower": -0.0017713492119716104,
+          "brier_gain_ci95_upper": 0.006116567866655652,
+          "logloss_gain": 0.0034017331195213135,
+          "logloss_gain_ci95_lower": -0.00411495529908453,
+          "logloss_gain_ci95_upper": 0.012986561269121179,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.17794963846347425,
+          "ece": 0.2472226619820238,
+          "log_loss": 0.5424979342077021,
+          "n": 8
+        }
+      },
+      "TOTAL_OVER": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 0.007238924695587694,
+          "brier_gain_ci95_lower": -0.0015920641816004884,
+          "brier_gain_ci95_upper": 0.015539165079433858,
+          "logloss_gain": 0.014522845648129959,
+          "logloss_gain_ci95_lower": -0.003355518087743677,
+          "logloss_gain_ci95_upper": 0.030989112241475422,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.22646879036952333,
+          "ece": 0.3199573967602499,
+          "log_loss": 0.6445640859422307,
+          "n": 8
+        }
+      }
+    },
+    "NO_ADVANCED_TIMEZONE": {
+      "ML_HOME": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 0.0,
+          "brier_gain_ci95_lower": 0.0,
+          "brier_gain_ci95_upper": 0.0,
+          "logloss_gain": 0.0,
+          "logloss_gain_ci95_lower": 0.0,
+          "logloss_gain_ci95_upper": 0.0,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.27453436714575463,
+          "ece": 0.39124733219209856,
+          "log_loss": 0.7440441101457945,
+          "n": 8
+        }
+      },
+      "RL_AWAY_-1.5": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 0.0,
+          "brier_gain_ci95_lower": 0.0,
+          "brier_gain_ci95_upper": 0.0,
+          "logloss_gain": 0.0,
+          "logloss_gain_ci95_lower": 0.0,
+          "logloss_gain_ci95_upper": 0.0,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.3612172674523435,
+          "ece": 0.41086348101015907,
+          "log_loss": 0.938484874411379,
+          "n": 8
+        }
+      },
+      "RL_HOME_-1.5": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 0.0,
+          "brier_gain_ci95_lower": 0.0,
+          "brier_gain_ci95_upper": 0.0,
+          "logloss_gain": 0.0,
+          "logloss_gain_ci95_lower": 0.0,
+          "logloss_gain_ci95_upper": 0.0,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.17962537209330492,
+          "ece": 0.2452632719086831,
+          "log_loss": 0.5458996673272234,
+          "n": 8
+        }
+      },
+      "TOTAL_OVER": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 0.0,
+          "brier_gain_ci95_lower": 0.0,
+          "brier_gain_ci95_upper": 0.0,
+          "logloss_gain": 0.0,
+          "logloss_gain_ci95_lower": 0.0,
+          "logloss_gain_ci95_upper": 0.0,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.23370771506511104,
+          "ece": 0.33090178343904586,
+          "log_loss": 0.6590869315903607,
+          "n": 8
+        }
+      }
+    },
+    "NO_BULLPEN_RESIDUAL": {
+      "ML_HOME": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 0.0002204821365009331,
+          "brier_gain_ci95_lower": -0.0012686533523483395,
+          "brier_gain_ci95_upper": 0.0017653021013998606,
+          "logloss_gain": 0.0003720708068050138,
+          "logloss_gain_ci95_lower": -0.002724463452518283,
+          "logloss_gain_ci95_upper": 0.003552402414960015,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.2743138850092537,
+          "ece": 0.3913112607394196,
+          "log_loss": 0.7436720393389895,
+          "n": 8
+        }
+      },
+      "RL_AWAY_-1.5": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 0.0008900019847631162,
+          "brier_gain_ci95_lower": -0.0006424412090057489,
+          "brier_gain_ci95_upper": 0.0024726494010864457,
+          "logloss_gain": 0.0015588343182387776,
+          "logloss_gain_ci95_lower": -0.002199779395917152,
+          "logloss_gain_ci95_upper": 0.005160229493110541,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.36032726546758037,
+          "ece": 0.4109387675438606,
+          "log_loss": 0.9369260400931402,
+          "n": 8
+        }
+      },
+      "RL_HOME_-1.5": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 0.00012288560968071963,
+          "brier_gain_ci95_lower": -0.0009437825501311891,
+          "brier_gain_ci95_upper": 0.0012025468800157474,
+          "logloss_gain": 0.0004534229834682463,
+          "logloss_gain_ci95_lower": -0.0018694770018668919,
+          "logloss_gain_ci95_upper": 0.0027633294294207465,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.1795024864836242,
+          "ece": 0.2453225730861298,
+          "log_loss": 0.5454462443437551,
+          "n": 8
+        }
+      },
+      "TOTAL_OVER": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 0.00013153997109694934,
+          "brier_gain_ci95_lower": -0.0009435006072288192,
+          "brier_gain_ci95_upper": 0.0013721169436135632,
+          "logloss_gain": 0.0002301957844818986,
+          "logloss_gain_ci95_lower": -0.001957086595038355,
+          "logloss_gain_ci95_upper": 0.0027895061649626826,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.23357617509401407,
+          "ece": 0.3317299199503798,
+          "log_loss": 0.6588567358058788,
+          "n": 8
+        }
+      }
+    },
+    "NO_CONTEXT_RESIDUAL": {
+      "ML_HOME": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 9.140468874270849e-05,
+          "brier_gain_ci95_lower": -0.0010369797536267482,
+          "brier_gain_ci95_upper": 0.00131889782385268,
+          "logloss_gain": 0.0001400671146076643,
+          "logloss_gain_ci95_lower": -0.0021418230800920868,
+          "logloss_gain_ci95_upper": 0.002636821169187098,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.2744429624570119,
+          "ece": 0.39156406356893403,
+          "log_loss": 0.7439040430311868,
+          "n": 8
+        }
+      },
+      "RL_AWAY_-1.5": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 0.00034625989756896167,
+          "brier_gain_ci95_lower": -0.0008710421156736189,
+          "brier_gain_ci95_upper": 0.0015506571987076098,
+          "logloss_gain": 0.0006235426928027019,
+          "logloss_gain_ci95_lower": -0.002156009734245211,
+          "logloss_gain_ci95_upper": 0.0033990130324369275,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.3608710075547745,
+          "ece": 0.41177555833625457,
+          "log_loss": 0.9378613317185763,
+          "n": 8
+        }
+      },
+      "RL_HOME_-1.5": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 0.00026568226770760407,
+          "brier_gain_ci95_lower": -0.00047258570131468236,
+          "brier_gain_ci95_upper": 0.001105484935574646,
+          "logloss_gain": 0.0006823736813594897,
+          "logloss_gain_ci95_lower": -0.0008769875936859434,
+          "logloss_gain_ci95_upper": 0.002534217231926814,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.17935968982559733,
+          "ece": 0.24497077678522722,
+          "log_loss": 0.5452172936458639,
+          "n": 8
+        }
+      },
+      "TOTAL_OVER": {
+        "paired_raw_vs_champion": {
+          "brier_gain": -0.002088184490448463,
+          "brier_gain_ci95_lower": -0.0059534418416213744,
+          "brier_gain_ci95_upper": 0.0025798499922649494,
+          "logloss_gain": -0.004294635031840507,
+          "logloss_gain_ci95_lower": -0.012308230702522635,
+          "logloss_gain_ci95_upper": 0.005468084095480082,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.2357958995555595,
+          "ece": 0.33620556755118297,
+          "log_loss": 0.6633815666222012,
+          "n": 8
+        }
+      }
+    },
+    "NO_LINEUP_RESIDUAL": {
+      "ML_HOME": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 0.0,
+          "brier_gain_ci95_lower": 0.0,
+          "brier_gain_ci95_upper": 0.0,
+          "logloss_gain": 0.0,
+          "logloss_gain_ci95_lower": 0.0,
+          "logloss_gain_ci95_upper": 0.0,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.27453436714575463,
+          "ece": 0.39124733219209856,
+          "log_loss": 0.7440441101457945,
+          "n": 8
+        }
+      },
+      "RL_AWAY_-1.5": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 0.0,
+          "brier_gain_ci95_lower": 0.0,
+          "brier_gain_ci95_upper": 0.0,
+          "logloss_gain": 0.0,
+          "logloss_gain_ci95_lower": 0.0,
+          "logloss_gain_ci95_upper": 0.0,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.3612172674523435,
+          "ece": 0.41086348101015907,
+          "log_loss": 0.938484874411379,
+          "n": 8
+        }
+      },
+      "RL_HOME_-1.5": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 0.0,
+          "brier_gain_ci95_lower": 0.0,
+          "brier_gain_ci95_upper": 0.0,
+          "logloss_gain": 0.0,
+          "logloss_gain_ci95_lower": 0.0,
+          "logloss_gain_ci95_upper": 0.0,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.17962537209330492,
+          "ece": 0.2452632719086831,
+          "log_loss": 0.5458996673272234,
+          "n": 8
+        }
+      },
+      "TOTAL_OVER": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 0.0,
+          "brier_gain_ci95_lower": 0.0,
+          "brier_gain_ci95_upper": 0.0,
+          "logloss_gain": 0.0,
+          "logloss_gain_ci95_lower": 0.0,
+          "logloss_gain_ci95_upper": 0.0,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.23370771506511104,
+          "ece": 0.33090178343904586,
+          "log_loss": 0.6590869315903607,
+          "n": 8
+        }
+      }
+    },
+    "NO_STARTER_RESIDUAL": {
+      "ML_HOME": {
+        "paired_raw_vs_champion": {
+          "brier_gain": -0.00012953128787037207,
+          "brier_gain_ci95_lower": -0.0007059081304470095,
+          "brier_gain_ci95_upper": 0.0004573834429198957,
+          "logloss_gain": -0.00023235526514246707,
+          "logloss_gain_ci95_lower": -0.0014607382189859987,
+          "logloss_gain_ci95_upper": 0.0010043230292485262,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.274663898433625,
+          "ece": 0.39148571898104767,
+          "log_loss": 0.7442764654109371,
+          "n": 8
+        }
+      },
+      "RL_AWAY_-1.5": {
+        "paired_raw_vs_champion": {
+          "brier_gain": -0.00020120405517583956,
+          "brier_gain_ci95_lower": -0.0008611441457348088,
+          "brier_gain_ci95_upper": 0.0004854991039303542,
+          "logloss_gain": -0.00023398866017739633,
+          "logloss_gain_ci95_lower": -0.0018138448797799087,
+          "logloss_gain_ci95_upper": 0.0014982892762026162,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.3614184715075193,
+          "ece": 0.41103816475076993,
+          "log_loss": 0.9387188630715564,
+          "n": 8
+        }
+      },
+      "RL_HOME_-1.5": {
+        "paired_raw_vs_champion": {
+          "brier_gain": -8.669241990448724e-05,
+          "brier_gain_ci95_lower": -0.0004817418213978776,
+          "brier_gain_ci95_upper": 0.00032128962592743883,
+          "logloss_gain": -0.00027479833022596434,
+          "logloss_gain_ci95_lower": -0.0011929968843924158,
+          "logloss_gain_ci95_upper": 0.0005730290330827534,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.1797120645132094,
+          "ece": 0.24553340413676783,
+          "log_loss": 0.5461744656574493,
+          "n": 8
+        }
+      },
+      "TOTAL_OVER": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 0.0007068859316477858,
+          "brier_gain_ci95_lower": 0.0002778381323548427,
+          "brier_gain_ci95_upper": 0.0011355207904975746,
+          "logloss_gain": 0.0014269097117860646,
+          "logloss_gain_ci95_lower": 0.0005698400454105801,
+          "logloss_gain_ci95_upper": 0.0023239745381881532,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.23300082913346323,
+          "ece": 0.33020541963650296,
+          "log_loss": 0.6576600218785746,
+          "n": 8
+        }
+      }
+    },
+    "NO_WEATHER_CONTEXT": {
+      "ML_HOME": {
+        "paired_raw_vs_champion": {
+          "brier_gain": -3.918490091302934e-06,
+          "brier_gain_ci95_lower": -7.882748056334898e-05,
+          "brier_gain_ci95_upper": 8.670774408828317e-05,
+          "logloss_gain": -8.933139396524736e-06,
+          "logloss_gain_ci95_lower": -0.00016089362491510106,
+          "logloss_gain_ci95_upper": 0.0001831520768176692,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.2745382856358459,
+          "ece": 0.39126117859282483,
+          "log_loss": 0.7440530432851911,
+          "n": 8
+        }
+      },
+      "RL_AWAY_-1.5": {
+        "paired_raw_vs_champion": {
+          "brier_gain": -0.0003502744805657116,
+          "brier_gain_ci95_lower": -0.0009142856624525374,
+          "brier_gain_ci95_upper": 0.00016909505535259335,
+          "logloss_gain": -0.000724965644009784,
+          "logloss_gain_ci95_lower": -0.0019405037663109935,
+          "logloss_gain_ci95_upper": 0.0004062395972855848,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.3615675419329092,
+          "ece": 0.411524231537319,
+          "log_loss": 0.9392098400553888,
+          "n": 8
+        }
+      },
+      "RL_HOME_-1.5": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 0.00022598566239145738,
+          "brier_gain_ci95_lower": -0.00022770395285926455,
+          "brier_gain_ci95_upper": 0.000666979252687442,
+          "logloss_gain": 0.000496667756285131,
+          "logloss_gain_ci95_lower": -0.0005068151373729818,
+          "logloss_gain_ci95_upper": 0.0014297182133857986,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.17939938643091347,
+          "ece": 0.24464170767084756,
+          "log_loss": 0.5454029995709383,
+          "n": 8
+        }
+      },
+      "TOTAL_OVER": {
+        "paired_raw_vs_champion": {
+          "brier_gain": -0.002931822373431347,
+          "brier_gain_ci95_lower": -0.0065550392079118044,
+          "brier_gain_ci95_upper": 0.0011022248130358246,
+          "logloss_gain": -0.005961324151479576,
+          "logloss_gain_ci95_lower": -0.013132234949222252,
+          "logloss_gain_ci95_upper": 0.002303250194455979,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.23663953743854238,
+          "ece": 0.3360696648425753,
+          "log_loss": 0.6650482557418402,
+          "n": 8
+        }
+      }
+    },
+    "STRUCTURAL_ONLY": {
+      "ML_HOME": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 0.002313953572712045,
+          "brier_gain_ci95_lower": -0.0012854913748901451,
+          "brier_gain_ci95_upper": 0.006629514158053777,
+          "logloss_gain": 0.004672715440150327,
+          "logloss_gain_ci95_lower": -0.002667685059169825,
+          "logloss_gain_ci95_upper": 0.01321820241337189,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.27222041357304255,
+          "ece": 0.39227651745349373,
+          "log_loss": 0.7393713947056442,
+          "n": 8
+        }
+      },
+      "RL_AWAY_-1.5": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 0.003508322333929838,
+          "brier_gain_ci95_lower": -0.00026842093762574973,
+          "brier_gain_ci95_upper": 0.007118324056272385,
+          "logloss_gain": 0.008669119822908966,
+          "logloss_gain_ci95_lower": 1.8337067203048425e-05,
+          "logloss_gain_ci95_upper": 0.01742186808929536,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.35770894511841367,
+          "ece": 0.4112489548041509,
+          "log_loss": 0.92981575458847,
+          "n": 8
+        }
+      },
+      "RL_HOME_-1.5": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 0.0019471924412618503,
+          "brier_gain_ci95_lower": -0.001522434081256796,
+          "brier_gain_ci95_upper": 0.006465107321153918,
+          "logloss_gain": 0.004086884874053655,
+          "logloss_gain_ci95_lower": -0.0033088224232862493,
+          "logloss_gain_ci95_upper": 0.013759146359154692,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.17767817965204308,
+          "ece": 0.24692335387339573,
+          "log_loss": 0.5418127824531698,
+          "n": 8
+        }
+      },
+      "TOTAL_OVER": {
+        "paired_raw_vs_champion": {
+          "brier_gain": 0.005227661344389199,
+          "brier_gain_ci95_lower": -0.0019226876137125267,
+          "brier_gain_ci95_upper": 0.012130057675452938,
+          "logloss_gain": 0.010419033946257893,
+          "logloss_gain_ci95_lower": -0.004041008240858374,
+          "logloss_gain_ci95_upper": 0.025120211359725492,
+          "method": "paired nonparametric bootstrap mean",
+          "n": 8
+        },
+        "variant_raw": {
+          "brier": 0.22848005372072183,
+          "ece": 0.32526283600726297,
+          "log_loss": 0.6486678976441028,
+          "n": 8
+        }
+      }
+    }
+  }
 }
