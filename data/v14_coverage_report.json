@@ -18,70 +18,102 @@
         "sharp_coverage": 1.0
       },
       "raw": {
-        "eligible": 49,
-        "execution_available": 49,
-        "fully_market_observable": 49,
-        "market_fresh": 49,
-        "observations": 49,
-        "predicted": 49,
+        "eligible": 51,
+        "execution_available": 51,
+        "fully_market_observable": 51,
+        "market_fresh": 51,
+        "observations": 51,
+        "predicted": 51,
         "rejection_reasons": {},
-        "sharp_available": 49
+        "sharp_available": 51
       }
     },
     "FINAL": {
       "first_observation_unique_games": {
-        "eligible": 45,
+        "eligible": 50,
         "eligible_coverage": 1.0,
-        "execution_available": 45,
+        "execution_available": 50,
         "execution_coverage": 1.0,
-        "fully_market_observable": 45,
+        "fully_market_observable": 50,
         "fully_market_observable_coverage": 1.0,
-        "market_fresh": 45,
+        "market_fresh": 50,
         "market_fresh_coverage": 1.0,
-        "observations": 45,
-        "predicted": 45,
+        "observations": 50,
+        "predicted": 50,
         "prediction_coverage": 1.0,
         "rejection_reasons": {},
-        "sharp_available": 45,
+        "sharp_available": 50,
         "sharp_coverage": 1.0
       },
       "raw": {
-        "eligible": 63,
-        "execution_available": 63,
-        "fully_market_observable": 63,
-        "market_fresh": 63,
-        "observations": 63,
-        "predicted": 63,
+        "eligible": 69,
+        "execution_available": 69,
+        "fully_market_observable": 69,
+        "market_fresh": 69,
+        "observations": 69,
+        "predicted": 69,
         "rejection_reasons": {},
-        "sharp_available": 63
+        "sharp_available": 69
       }
     },
     "LATE": {
       "first_observation_unique_games": {
-        "eligible": 42,
+        "eligible": 43,
         "eligible_coverage": 1.0,
-        "execution_available": 42,
+        "execution_available": 43,
         "execution_coverage": 1.0,
-        "fully_market_observable": 42,
+        "fully_market_observable": 43,
         "fully_market_observable_coverage": 1.0,
-        "market_fresh": 42,
+        "market_fresh": 43,
         "market_fresh_coverage": 1.0,
-        "observations": 42,
-        "predicted": 42,
+        "observations": 43,
+        "predicted": 43,
         "prediction_coverage": 1.0,
         "rejection_reasons": {},
-        "sharp_available": 42,
+        "sharp_available": 43,
         "sharp_coverage": 1.0
       },
       "raw": {
-        "eligible": 49,
-        "execution_available": 49,
-        "fully_market_observable": 49,
-        "market_fresh": 49,
-        "observations": 49,
-        "predicted": 49,
+        "eligible": 55,
+        "execution_available": 55,
+        "fully_market_observable": 55,
+        "market_fresh": 55,
+        "observations": 55,
+        "predicted": 55,
         "rejection_reasons": {},
-        "sharp_available": 49
+        "sharp_available": 55
+      }
+    },
+    "UNKNOWN": {
+      "first_observation_unique_games": {
+        "eligible": 0,
+        "eligible_coverage": 0.0,
+        "execution_available": 0,
+        "execution_coverage": 0.0,
+        "fully_market_observable": 0,
+        "fully_market_observable_coverage": 0.0,
+        "market_fresh": 0,
+        "market_fresh_coverage": 0.0,
+        "observations": 1,
+        "predicted": 0,
+        "prediction_coverage": 0.0,
+        "rejection_reasons": {
+          "odds_event_unmatched": 1
+        },
+        "sharp_available": 0,
+        "sharp_coverage": 0.0
+      },
+      "raw": {
+        "eligible": 0,
+        "execution_available": 0,
+        "fully_market_observable": 0,
+        "market_fresh": 0,
+        "observations": 1,
+        "predicted": 0,
+        "rejection_reasons": {
+          "odds_event_unmatched": 1
+        },
+        "sharp_available": 0
       }
     }
   },
@@ -116,38 +148,42 @@
     },
     "SCHEDULED_FINAL": {
       "first_observation_unique_games": {
-        "eligible": 39,
-        "eligible_coverage": 1.0,
-        "execution_available": 39,
-        "execution_coverage": 1.0,
-        "fully_market_observable": 39,
-        "fully_market_observable_coverage": 1.0,
-        "market_fresh": 39,
-        "market_fresh_coverage": 1.0,
-        "observations": 39,
-        "predicted": 39,
-        "prediction_coverage": 1.0,
-        "rejection_reasons": {},
-        "sharp_available": 39,
-        "sharp_coverage": 1.0
+        "eligible": 53,
+        "eligible_coverage": 0.9814814814814815,
+        "execution_available": 53,
+        "execution_coverage": 0.9814814814814815,
+        "fully_market_observable": 53,
+        "fully_market_observable_coverage": 0.9814814814814815,
+        "market_fresh": 53,
+        "market_fresh_coverage": 0.9814814814814815,
+        "observations": 54,
+        "predicted": 53,
+        "prediction_coverage": 0.9814814814814815,
+        "rejection_reasons": {
+          "odds_event_unmatched": 1
+        },
+        "sharp_available": 53,
+        "sharp_coverage": 0.9814814814814815
       },
       "raw": {
-        "eligible": 58,
-        "execution_available": 58,
-        "fully_market_observable": 58,
-        "market_fresh": 58,
-        "observations": 58,
-        "predicted": 58,
-        "rejection_reasons": {},
-        "sharp_available": 58
+        "eligible": 72,
+        "execution_available": 72,
+        "fully_market_observable": 72,
+        "market_fresh": 72,
+        "observations": 73,
+        "predicted": 72,
+        "rejection_reasons": {
+          "odds_event_unmatched": 1
+        },
+        "sharp_available": 72
       }
     }
   },
   "canonical_policy": "within each current-generation reported cohort, first observed row per target_date x game_pk; later successful snapshots cannot replace an earlier failure",
-  "eligible": 161,
+  "eligible": 175,
   "excluded_other_generation_observations": 0,
-  "execution_available": 161,
-  "execution_coverage": 1.0,
+  "execution_available": 175,
+  "execution_coverage": 0.9943181818181818,
   "first_observation_unique_games": {
     "eligible": 67,
     "eligible_coverage": 1.0,
@@ -167,49 +203,57 @@
   "interpretation": "performance describes a selected analyzable universe; inspect current-generation first-observation unique-game and trigger/phase slices before assuming rejection missingness is random",
   "model_generation": "pulsar-v14-context-v4-all-stats",
   "network_calls": 0,
-  "observations": 161,
-  "predicted": 161,
-  "prediction_coverage": 1.0,
+  "observations": 176,
+  "predicted": 175,
+  "prediction_coverage": 0.9943181818181818,
   "raw_observations_by_model_generation": {
-    "pulsar-v14-context-v4-all-stats": 161
+    "pulsar-v14-context-v4-all-stats": 176
   },
   "raw_snapshot_observations": {
-    "eligible": 161,
-    "execution_available": 161,
-    "fully_market_observable": 161,
-    "market_fresh": 161,
-    "observations": 161,
-    "predicted": 161,
-    "rejection_reasons": {},
-    "sharp_available": 161
+    "eligible": 175,
+    "execution_available": 175,
+    "fully_market_observable": 175,
+    "market_fresh": 175,
+    "observations": 176,
+    "predicted": 175,
+    "rejection_reasons": {
+      "odds_event_unmatched": 1
+    },
+    "sharp_available": 175
   },
-  "rejection_reasons": {},
+  "rejection_reasons": {
+    "odds_event_unmatched": 1
+  },
   "scheduled_final_trigger": {
     "first_observation_unique_games": {
-      "eligible": 39,
-      "eligible_coverage": 1.0,
-      "execution_available": 39,
-      "execution_coverage": 1.0,
-      "fully_market_observable": 39,
-      "fully_market_observable_coverage": 1.0,
-      "market_fresh": 39,
-      "market_fresh_coverage": 1.0,
-      "observations": 39,
-      "predicted": 39,
-      "prediction_coverage": 1.0,
-      "rejection_reasons": {},
-      "sharp_available": 39,
-      "sharp_coverage": 1.0
+      "eligible": 53,
+      "eligible_coverage": 0.9814814814814815,
+      "execution_available": 53,
+      "execution_coverage": 0.9814814814814815,
+      "fully_market_observable": 53,
+      "fully_market_observable_coverage": 0.9814814814814815,
+      "market_fresh": 53,
+      "market_fresh_coverage": 0.9814814814814815,
+      "observations": 54,
+      "predicted": 53,
+      "prediction_coverage": 0.9814814814814815,
+      "rejection_reasons": {
+        "odds_event_unmatched": 1
+      },
+      "sharp_available": 53,
+      "sharp_coverage": 0.9814814814814815
     },
     "raw": {
-      "eligible": 58,
-      "execution_available": 58,
-      "fully_market_observable": 58,
-      "market_fresh": 58,
-      "observations": 58,
-      "predicted": 58,
-      "rejection_reasons": {},
-      "sharp_available": 58
+      "eligible": 72,
+      "execution_available": 72,
+      "fully_market_observable": 72,
+      "market_fresh": 72,
+      "observations": 73,
+      "predicted": 72,
+      "rejection_reasons": {
+        "odds_event_unmatched": 1
+      },
+      "sharp_available": 72
     }
   },
   "schema": "pulsar-v14-coverage-report-v1",
@@ -224,6 +268,6 @@
     "legacy_missing_run_trigger": "LEGACY_UNSPECIFIED",
     "scheduled_final_trigger_is_not_exact_final_phase_cohort": true
   },
-  "sharp_available": 161,
-  "sharp_coverage": 1.0
+  "sharp_available": 175,
+  "sharp_coverage": 0.9943181818181818
 }
