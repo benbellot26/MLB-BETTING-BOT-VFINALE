@@ -2,14 +2,14 @@
   "betting_status": "RESEARCH_ONLY",
   "certified": false,
   "evidence_age_hours": {
-    "calibration_observation": 7.4990707525,
-    "calibration_report": 0.001242436388888889,
-    "paper_report": 0.0013479819444444444,
-    "performance_observation": 7.4990707525,
-    "performance_report": 2.4511944444444444e-05,
-    "primary_sharp_benchmark_report": 0.00023023166666666665
+    "calibration_observation": 7.456664151666667,
+    "calibration_report": 0.001527518888888889,
+    "paper_report": 0.0016583577777777776,
+    "performance_observation": 9.956664151666667,
+    "performance_report": 2.7943611111111114e-05,
+    "primary_sharp_benchmark_report": 0.0002727363888888889
   },
-  "generated_at": "2026-09-04T09:39:56.654709+00:00",
+  "generated_at": "2026-09-05T09:37:23.990946+00:00",
   "legacy_evidence_can_certify": false,
   "markets": {
     "ML": {
@@ -17,15 +17,11 @@
       "betting_failures": [
         "scheduled_final_games<600",
         "n<400",
-        "ece>0.05_or_missing",
         "sharp_paired_n<400",
         "pinnacle_final_paired_n<400",
         "pinnacle_final_model_n<400",
-        "pinnacle_final_model_ece>0.05_or_missing",
         "pinnacle_final_brier_bootstrap_ci95_not_positive",
         "pinnacle_final_logloss_bootstrap_ci95_regression",
-        "ML_latest_primary_close_missing_or_invalid",
-        "ML_latest_execution_close_missing_or_invalid",
         "paper_certification_clv_paired_bootstrap_required",
         "paper_certification_clv_n<100",
         "paper_certification_clv_mean_not_positive",
@@ -33,90 +29,87 @@
         "paper_certification_clv_ci95_missing",
         "paper_execution_clv_paired_bootstrap_required",
         "paper_execution_clv_n<50",
-        "paper_execution_clv_mean_not_positive",
         "paper_execution_clv_ci95_missing"
       ],
       "betting_status": "RESEARCH_ONLY",
       "calibration_evidence_source": "SCHEDULED_FINAL_PUBLISHED_PROBABILITY",
       "calibration_key": "SCHEDULED_FINAL_PUBLISHED_PROBABILITY",
       "calibration_status": "DIRECT_PROSPECTIVE_ECE",
-      "ece": 0.1161602146267375,
+      "ece": 0.045717507047172874,
       "failures": [
         "scheduled_final_games<600",
         "n<400",
-        "ece>0.05_or_missing",
         "sharp_paired_n<400",
         "pinnacle_final_paired_n<400",
         "pinnacle_final_model_n<400",
-        "pinnacle_final_model_ece>0.05_or_missing",
         "pinnacle_final_brier_bootstrap_ci95_not_positive",
         "pinnacle_final_logloss_bootstrap_ci95_regression"
       ],
-      "n": 28,
+      "n": 35,
       "paper_certification_clv": {
         "benchmark": "PINNACLE_NO_VIG",
         "bootstrap_reps": 0,
         "definition": "SCHEDULED_FINAL executable entry implied probability to verified <=15m Pinnacle no-vig fair close",
-        "inference_method": "paired bootstrap mean",
-        "mean_clv": null,
+        "inference_method": "paired bootstrap mean; insufficient n",
+        "mean_clv": -0.778808898887634,
         "mean_clv_ci95_lower": null,
         "mean_clv_ci95_upper": null,
-        "n": 0,
-        "positive_rate": null,
+        "n": 1,
+        "positive_rate": 0.0,
         "role": "PRIMARY_BETTING_CERTIFICATION",
-        "status": "UNAVAILABLE"
+        "status": "AVAILABLE"
       },
       "paper_execution_clv": {
         "bootstrap_reps": 0,
         "definition": "SCHEDULED_FINAL executable entry implied probability to same-book fresh <=15m close",
-        "inference_method": "paired bootstrap mean",
-        "mean_clv": null,
+        "inference_method": "paired bootstrap mean; insufficient n",
+        "mean_clv": 0.31246094238220334,
         "mean_clv_ci95_lower": null,
         "mean_clv_ci95_upper": null,
-        "n": 0,
-        "positive_rate": null,
+        "n": 1,
+        "positive_rate": 1.0,
         "role": "SECONDARY_EXECUTION_CERTIFICATION",
-        "status": "UNAVAILABLE"
+        "status": "AVAILABLE"
       },
-      "paper_latest_certified_close_at": null,
-      "paper_latest_execution_close_at": null,
-      "paper_latest_primary_close_at": null,
+      "paper_latest_certified_close_at": "2026-09-04T23:09:10.674389+00:00",
+      "paper_latest_execution_close_at": "2026-09-04T23:09:10.674389+00:00",
+      "paper_latest_primary_close_at": "2026-09-04T23:09:10.674389+00:00",
       "primary_sharp_bootstrap": {
         "brier_gain": {
-          "ci95_lower": -0.018435128038244864,
-          "ci95_upper": 0.015842843755753434,
+          "ci95_lower": -0.017121769497890377,
+          "ci95_upper": 0.013953841742472895,
           "deterministic_seed": true,
-          "mean": -0.0017583561686809548,
+          "mean": -0.0019191664305966635,
           "method": "paired nonparametric bootstrap mean",
-          "n": 28,
+          "n": 35,
           "reps": 5000
         },
         "calendar_block_brier_gain": {
-          "blocks": 4,
-          "ci95_lower": -0.014183624607477265,
-          "ci95_upper": 0.016522116322470057,
+          "blocks": 5,
+          "ci95_lower": -0.01202053682640779,
+          "ci95_upper": 0.01293112789401286,
           "deterministic_seed": true,
-          "mean": -0.0017583561686809548,
+          "mean": -0.0019191664305966635,
           "method": "calendar-block nonparametric bootstrap mean",
-          "n": 28,
+          "n": 35,
           "reps": 5000
         },
         "logloss_gain": {
-          "ci95_lower": -0.03708958948684126,
-          "ci95_upper": 0.033793660801847675,
+          "ci95_lower": -0.03574647611772832,
+          "ci95_upper": 0.028816014972731317,
           "deterministic_seed": true,
-          "mean": -0.0028090170271976578,
+          "mean": -0.003551496694445117,
           "method": "paired nonparametric bootstrap mean",
-          "n": 28,
+          "n": 35,
           "reps": 5000
         },
         "model_metrics": {
-          "brier": 0.2573596822711039,
-          "ece": 0.1161602146267375,
-          "logloss": 0.7083178112824401,
-          "n": 28
+          "brier": 0.24435566089119085,
+          "ece": 0.045717507047172874,
+          "logloss": 0.6819993230330997,
+          "n": 35
         },
-        "paired_n": 28
+        "paired_n": 35
       },
       "probability_certified": false,
       "probability_status": "PROBABILITY_RESEARCH",
@@ -131,6 +124,7 @@
         "sharp_paired_n<400",
         "pinnacle_final_paired_n<400",
         "pinnacle_final_model_n<400",
+        "pinnacle_final_model_ece>0.05_or_missing",
         "pinnacle_final_brier_bootstrap_ci95_not_positive",
         "pinnacle_final_logloss_bootstrap_ci95_regression",
         "RL_AWAY_-1.5_latest_primary_close_missing_or_invalid",
@@ -150,7 +144,7 @@
       "calibration_evidence_source": "SCHEDULED_FINAL_PUBLISHED_PROBABILITY",
       "calibration_key": "SCHEDULED_FINAL_PUBLISHED_PROBABILITY",
       "calibration_status": "DIRECT_PROSPECTIVE_ECE",
-      "ece": 0.08795922222973607,
+      "ece": 0.06755677231103321,
       "failures": [
         "scheduled_final_games<600",
         "n<400",
@@ -158,10 +152,11 @@
         "sharp_paired_n<400",
         "pinnacle_final_paired_n<400",
         "pinnacle_final_model_n<400",
+        "pinnacle_final_model_ece>0.05_or_missing",
         "pinnacle_final_brier_bootstrap_ci95_not_positive",
         "pinnacle_final_logloss_bootstrap_ci95_regression"
       ],
-      "n": 28,
+      "n": 35,
       "paper_certification_clv": {},
       "paper_execution_clv": {},
       "paper_latest_certified_close_at": null,
@@ -169,40 +164,40 @@
       "paper_latest_primary_close_at": null,
       "primary_sharp_bootstrap": {
         "brier_gain": {
-          "ci95_lower": -0.03899444545850214,
-          "ci95_upper": 0.014429770177676186,
+          "ci95_lower": -0.0478498752130443,
+          "ci95_upper": 0.007371678610779242,
           "deterministic_seed": true,
-          "mean": -0.00984254516073567,
+          "mean": -0.018634105081046702,
           "method": "paired nonparametric bootstrap mean",
-          "n": 12,
+          "n": 14,
           "reps": 5000
         },
         "calendar_block_brier_gain": {
-          "blocks": 4,
-          "ci95_lower": -0.042628013265100254,
-          "ci95_upper": 0.019067357375027315,
+          "blocks": 5,
+          "ci95_lower": -0.057979482808611996,
+          "ci95_upper": 0.007994752771785138,
           "deterministic_seed": true,
-          "mean": -0.00984254516073567,
+          "mean": -0.018634105081046702,
           "method": "calendar-block nonparametric bootstrap mean",
-          "n": 12,
+          "n": 14,
           "reps": 5000
         },
         "logloss_gain": {
-          "ci95_lower": -0.08359907138553355,
-          "ci95_upper": 0.032180842867054166,
+          "ci95_lower": -0.10357927320492957,
+          "ci95_upper": 0.018320584731224734,
           "deterministic_seed": true,
-          "mean": -0.021049478336645958,
+          "mean": -0.03912983257792444,
           "method": "paired nonparametric bootstrap mean",
-          "n": 12,
+          "n": 14,
           "reps": 5000
         },
         "model_metrics": {
-          "brier": 0.2450441621032272,
-          "ece": 0.0276771198181735,
-          "logloss": 0.6840556212027707,
-          "n": 12
+          "brier": 0.2504033077071474,
+          "ece": 0.05036724201637788,
+          "logloss": 0.6950930694335848,
+          "n": 14
         },
-        "paired_n": 12
+        "paired_n": 14
       },
       "probability_certified": false,
       "probability_status": "PROBABILITY_RESEARCH",
@@ -237,7 +232,7 @@
       "calibration_evidence_source": "SCHEDULED_FINAL_PUBLISHED_PROBABILITY",
       "calibration_key": "SCHEDULED_FINAL_PUBLISHED_PROBABILITY",
       "calibration_status": "DIRECT_PROSPECTIVE_ECE",
-      "ece": 0.1637107583204025,
+      "ece": 0.11365195109690307,
       "failures": [
         "scheduled_final_games<600",
         "n<400",
@@ -249,7 +244,7 @@
         "pinnacle_final_brier_bootstrap_ci95_not_positive",
         "pinnacle_final_logloss_bootstrap_ci95_regression"
       ],
-      "n": 28,
+      "n": 35,
       "paper_certification_clv": {},
       "paper_execution_clv": {},
       "paper_latest_certified_close_at": null,
@@ -257,40 +252,40 @@
       "paper_latest_primary_close_at": null,
       "primary_sharp_bootstrap": {
         "brier_gain": {
-          "ci95_lower": -0.02208542993182721,
-          "ci95_upper": 0.012225530703555414,
+          "ci95_lower": -0.01751265383588094,
+          "ci95_upper": 0.014125614253542423,
           "deterministic_seed": true,
-          "mean": -0.00429579427346806,
+          "mean": -0.0015652808373700677,
           "method": "paired nonparametric bootstrap mean",
-          "n": 16,
+          "n": 21,
           "reps": 5000
         },
         "calendar_block_brier_gain": {
-          "blocks": 4,
-          "ci95_lower": -0.021447285627735124,
-          "ci95_upper": 0.008811659559431079,
+          "blocks": 5,
+          "ci95_lower": -0.013456371532770909,
+          "ci95_upper": 0.00955129006685853,
           "deterministic_seed": true,
-          "mean": -0.00429579427346806,
+          "mean": -0.0015652808373700677,
           "method": "calendar-block nonparametric bootstrap mean",
-          "n": 16,
+          "n": 21,
           "reps": 5000
         },
         "logloss_gain": {
-          "ci95_lower": -0.04695647934635555,
-          "ci95_upper": 0.025319408747980828,
+          "ci95_lower": -0.03593720119091996,
+          "ci95_upper": 0.029365585321151938,
           "deterministic_seed": true,
-          "mean": -0.008965823318648643,
+          "mean": -0.0032152660350782177,
           "method": "paired nonparametric bootstrap mean",
-          "n": 16,
+          "n": 21,
           "reps": 5000
         },
         "model_metrics": {
-          "brier": 0.22509110385849374,
-          "ece": 0.1596823199321602,
-          "logloss": 0.6417720134377939,
-          "n": 16
+          "brier": 0.22370275162401956,
+          "ece": 0.12570879299646337,
+          "logloss": 0.6387494703332786,
+          "n": 21
         },
-        "paired_n": 16
+        "paired_n": 21
       },
       "probability_certified": false,
       "probability_status": "PROBABILITY_RESEARCH",
@@ -324,7 +319,7 @@
       "calibration_evidence_source": "SCHEDULED_FINAL_PUBLISHED_PROBABILITY",
       "calibration_key": "SCHEDULED_FINAL_PUBLISHED_PROBABILITY",
       "calibration_status": "DIRECT_PROSPECTIVE_ECE",
-      "ece": 0.1271485350107583,
+      "ece": 0.11846964411958377,
       "failures": [
         "scheduled_final_games<600",
         "n<400",
@@ -336,7 +331,7 @@
         "pinnacle_final_brier_bootstrap_ci95_not_positive",
         "pinnacle_final_logloss_bootstrap_ci95_regression"
       ],
-      "n": 28,
+      "n": 35,
       "paper_certification_clv": {
         "benchmark": "PINNACLE_NO_VIG",
         "bootstrap_reps": 0,
@@ -367,40 +362,40 @@
       "paper_latest_primary_close_at": null,
       "primary_sharp_bootstrap": {
         "brier_gain": {
-          "ci95_lower": -0.018987696942641682,
-          "ci95_upper": 0.08651659937163829,
+          "ci95_lower": -0.02071303130374625,
+          "ci95_upper": 0.07850674842618426,
           "deterministic_seed": true,
-          "mean": 0.03536529029722886,
+          "mean": 0.028803565369072866,
           "method": "paired nonparametric bootstrap mean",
-          "n": 12,
+          "n": 13,
           "reps": 5000
         },
         "calendar_block_brier_gain": {
-          "blocks": 4,
-          "ci95_lower": -0.03136363408717614,
-          "ci95_upper": 0.08302880771466101,
+          "blocks": 5,
+          "ci95_lower": -0.046314982144821305,
+          "ci95_upper": 0.07416441161576366,
           "deterministic_seed": true,
-          "mean": 0.03536529029722886,
+          "mean": 0.028803565369072866,
           "method": "calendar-block nonparametric bootstrap mean",
-          "n": 12,
+          "n": 13,
           "reps": 5000
         },
         "logloss_gain": {
-          "ci95_lower": -0.037747769777316725,
-          "ci95_upper": 0.17511039274677878,
+          "ci95_lower": -0.044600922670919904,
+          "ci95_upper": 0.15956275829844002,
           "deterministic_seed": true,
-          "mean": 0.07331034049455827,
+          "mean": 0.05998036311770017,
           "method": "paired nonparametric bootstrap mean",
-          "n": 12,
+          "n": 13,
           "reps": 5000
         },
         "model_metrics": {
-          "brier": 0.21725685927156313,
-          "ece": 0.3147407337650153,
-          "logloss": 0.6250878531436829,
-          "n": 12
+          "brier": 0.2223164691819916,
+          "ece": 0.33145354805995325,
+          "logloss": 0.6354120662369416,
+          "n": 13
         },
-        "paired_n": 12
+        "paired_n": 13
       },
       "probability_certified": false,
       "probability_status": "PROBABILITY_RESEARCH",
@@ -414,26 +409,26 @@
     "benchmark": "PINNACLE_NO_VIG",
     "bootstrap_reps": 0,
     "definition": "SCHEDULED_FINAL executable entry implied probability to verified <=15m Pinnacle no-vig fair close",
-    "inference_method": "paired bootstrap mean",
-    "mean_clv": null,
+    "inference_method": "paired bootstrap mean; insufficient n",
+    "mean_clv": -0.778808898887634,
     "mean_clv_ci95_lower": null,
     "mean_clv_ci95_upper": null,
-    "n": 0,
-    "positive_rate": null,
+    "n": 1,
+    "positive_rate": 0.0,
     "role": "PRIMARY_BETTING_CERTIFICATION",
-    "status": "UNAVAILABLE"
+    "status": "AVAILABLE"
   },
   "paper_execution_clv": {
     "bootstrap_reps": 0,
     "definition": "SCHEDULED_FINAL executable entry implied probability to same-book fresh <=15m close",
-    "inference_method": "paired bootstrap mean",
-    "mean_clv": null,
+    "inference_method": "paired bootstrap mean; insufficient n",
+    "mean_clv": 0.31246094238220334,
     "mean_clv_ci95_lower": null,
     "mean_clv_ci95_upper": null,
-    "n": 0,
-    "positive_rate": null,
+    "n": 1,
+    "positive_rate": 1.0,
     "role": "SECONDARY_EXECUTION_CERTIFICATION",
-    "status": "UNAVAILABLE"
+    "status": "AVAILABLE"
   },
   "policy": {
     "exact_model_generation_required": true,
@@ -490,8 +485,6 @@
   ],
   "probability_status": "PROBABILITY_RESEARCH",
   "reasons": [
-    "ML_latest_execution_close_missing_or_invalid",
-    "ML_latest_primary_close_missing_or_invalid",
     "RL_AWAY_-1.5_latest_execution_close_missing_or_invalid",
     "RL_AWAY_-1.5_latest_primary_close_missing_or_invalid",
     "RL_HOME_-1.5_latest_execution_close_missing_or_invalid",
