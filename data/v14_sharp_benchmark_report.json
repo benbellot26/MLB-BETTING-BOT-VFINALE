@@ -362,102 +362,102 @@
   },
   "certification_phase": "FINAL",
   "certification_run_trigger": "SCHEDULED_FINAL",
-  "current_policy_settled_rows": 188,
+  "current_policy_settled_rows": 203,
   "exchange_policy": "exchange proxies remain secondary; no raw exchange price can serve as primary benchmark",
-  "generated_at": "2026-09-05T09:37:23.009095+00:00",
-  "input_rows_total": 361,
+  "generated_at": "2026-09-06T09:38:40.047866+00:00",
+  "input_rows_total": 376,
   "model_generation": "pulsar-v14-context-v4-all-stats",
   "network_calls": 0,
   "phases": {
     "EARLY": {
-      "games": 25,
+      "games": 27,
       "markets": {
         "ML": {
           "model_vs_primary": {
             "brier_gain": {
-              "ci95_lower": -0.020643608158595794,
-              "ci95_upper": 0.023707950877068378,
+              "ci95_lower": -0.017308385469113258,
+              "ci95_upper": 0.024747843673952274,
               "deterministic_seed": true,
-              "mean": 0.0016616321143879636,
+              "mean": 0.004021417470507383,
               "method": "paired nonparametric bootstrap mean",
-              "n": 25,
+              "n": 27,
               "reps": 5000
             },
             "calendar_block_brier_gain": {
-              "blocks": 4,
-              "ci95_lower": -0.01659121972919966,
-              "ci95_upper": 0.01255148918395248,
+              "blocks": 5,
+              "ci95_lower": -0.010639092175238578,
+              "ci95_upper": 0.01626549012482927,
               "deterministic_seed": true,
-              "mean": 0.0016616321143879636,
+              "mean": 0.004021417470507383,
               "method": "calendar-block nonparametric bootstrap mean",
-              "n": 25,
+              "n": 27,
               "reps": 5000
             },
             "logloss_gain": {
-              "ci95_lower": -0.04260480954727566,
-              "ci95_upper": 0.047756960925934414,
+              "ci95_lower": -0.03737010780959712,
+              "ci95_upper": 0.053756766740478204,
               "deterministic_seed": true,
-              "mean": 0.003875598645049274,
+              "mean": 0.009090831618391358,
               "method": "paired nonparametric bootstrap mean",
-              "n": 25,
+              "n": 27,
               "reps": 5000
             },
             "model_metrics": {
-              "brier": 0.2565341258604052,
-              "ece": 0.17660778226570692,
-              "logloss": 0.7062869381342749,
-              "n": 25
+              "brier": 0.2566442095380383,
+              "ece": 0.17233721728869436,
+              "logloss": 0.7065096409639482,
+              "n": 27
             },
-            "paired_n": 25
+            "paired_n": 27
           },
           "model_vs_secondary": {
             "brier_gain": {
-              "ci95_lower": -0.020327458953086065,
-              "ci95_upper": 0.023609619923041347,
+              "ci95_lower": -0.018188252027589166,
+              "ci95_upper": 0.0249176666369908,
               "deterministic_seed": true,
-              "mean": 0.0018246363498284873,
+              "mean": 0.0042019756298086065,
               "method": "paired nonparametric bootstrap mean",
-              "n": 25,
+              "n": 27,
               "reps": 5000
             },
             "calendar_block_brier_gain": {
-              "blocks": 4,
-              "ci95_lower": -0.01695666701437129,
-              "ci95_upper": 0.012137723104274191,
+              "blocks": 5,
+              "ci95_lower": -0.009715375466256728,
+              "ci95_upper": 0.016140366356013236,
               "deterministic_seed": true,
-              "mean": 0.0018246363498284873,
+              "mean": 0.0042019756298086065,
               "method": "calendar-block nonparametric bootstrap mean",
-              "n": 25,
+              "n": 27,
               "reps": 5000
             },
             "logloss_gain": {
-              "ci95_lower": -0.04241545162155066,
-              "ci95_upper": 0.04808200464678837,
+              "ci95_lower": -0.03535350004845965,
+              "ci95_upper": 0.05402909820524872,
               "deterministic_seed": true,
-              "mean": 0.004186957370405118,
+              "mean": 0.00944100755150158,
               "method": "paired nonparametric bootstrap mean",
-              "n": 25,
+              "n": 27,
               "reps": 5000
             },
             "model_metrics": {
-              "brier": 0.2565341258604052,
-              "ece": 0.17660778226570692,
-              "logloss": 0.7062869381342749,
-              "n": 25
+              "brier": 0.2566442095380383,
+              "ece": 0.17233721728869436,
+              "logloss": 0.7065096409639482,
+              "n": 27
             },
-            "paired_n": 25
+            "paired_n": 27
           },
           "primary_pinnacle_no_vig": {
-            "brier": 0.25819575797479316,
-            "ece": 0.1811353251614646,
-            "logloss": 0.7101625367793243,
-            "n": 25
+            "brier": 0.2606656270085457,
+            "ece": 0.18097150912460244,
+            "logloss": 0.7156004725823395,
+            "n": 27
           },
           "secondary_consensus": {
-            "brier": 0.2583587622102337,
-            "ece": 0.18124688097922947,
-            "logloss": 0.7104738955046801,
-            "n": 25
+            "brier": 0.2608461851678469,
+            "ece": 0.18088549069466234,
+            "logloss": 0.7159506485154498,
+            "n": 27
           }
         },
         "RL_AWAY_-1.5": {
@@ -551,177 +551,177 @@
         "RL_HOME_-1.5": {
           "model_vs_primary": {
             "brier_gain": {
-              "ci95_lower": -0.01317050830666013,
-              "ci95_upper": 0.02704763516123962,
+              "ci95_lower": -0.010436719935699017,
+              "ci95_upper": 0.025240204055565124,
               "deterministic_seed": true,
-              "mean": 0.004741434841396691,
+              "mean": 0.006103249360671934,
               "method": "paired nonparametric bootstrap mean",
-              "n": 13,
+              "n": 15,
               "reps": 5000
             },
             "calendar_block_brier_gain": {
-              "blocks": 3,
-              "ci95_lower": -0.0018556921823386454,
-              "ci95_upper": 0.03080900184337071,
+              "blocks": 4,
+              "ci95_lower": -0.00017461859050867944,
+              "ci95_upper": 0.022882022789665862,
               "deterministic_seed": true,
-              "mean": 0.004741434841396691,
+              "mean": 0.006103249360671934,
               "method": "calendar-block nonparametric bootstrap mean",
-              "n": 13,
+              "n": 15,
               "reps": 5000
             },
             "logloss_gain": {
-              "ci95_lower": -0.029246797347409082,
-              "ci95_upper": 0.05406553267471022,
+              "ci95_lower": -0.022206576524735473,
+              "ci95_upper": 0.051846221318351024,
               "deterministic_seed": true,
-              "mean": 0.009436567793655093,
+              "mean": 0.012174159393182877,
               "method": "paired nonparametric bootstrap mean",
-              "n": 13,
+              "n": 15,
               "reps": 5000
             },
             "model_metrics": {
-              "brier": 0.23387565871292268,
-              "ece": 0.21823559530435038,
-              "logloss": 0.6604789356996821,
-              "n": 13
+              "brier": 0.23207051690913602,
+              "ece": 0.25171683128498595,
+              "logloss": 0.6569132305560248,
+              "n": 15
             },
-            "paired_n": 13
+            "paired_n": 15
           },
           "model_vs_secondary": {
             "brier_gain": {
-              "ci95_lower": -0.012288563704690652,
-              "ci95_upper": 0.027240611916553817,
+              "ci95_lower": -0.009010584031961453,
+              "ci95_upper": 0.025622306753225677,
               "deterministic_seed": true,
-              "mean": 0.005843403174811663,
+              "mean": 0.00708867811794746,
               "method": "paired nonparametric bootstrap mean",
-              "n": 13,
+              "n": 15,
               "reps": 5000
             },
             "calendar_block_brier_gain": {
-              "blocks": 3,
-              "ci95_lower": -0.0007946611301793902,
-              "ci95_upper": 0.032824576471127506,
+              "blocks": 4,
+              "ci95_lower": 0.000803101507671563,
+              "ci95_upper": 0.024003770859728824,
               "deterministic_seed": true,
-              "mean": 0.005843403174811663,
+              "mean": 0.00708867811794746,
               "method": "calendar-block nonparametric bootstrap mean",
-              "n": 13,
+              "n": 15,
               "reps": 5000
             },
             "logloss_gain": {
-              "ci95_lower": -0.026362588323674503,
-              "ci95_upper": 0.056300262013079624,
+              "ci95_lower": -0.02100070838746267,
+              "ci95_upper": 0.054215365986096116,
               "deterministic_seed": true,
-              "mean": 0.011676117672323063,
+              "mean": 0.014175613529247103,
               "method": "paired nonparametric bootstrap mean",
-              "n": 13,
+              "n": 15,
               "reps": 5000
             },
             "model_metrics": {
-              "brier": 0.23387565871292268,
-              "ece": 0.21823559530435038,
-              "logloss": 0.6604789356996821,
-              "n": 13
+              "brier": 0.23207051690913602,
+              "ece": 0.25171683128498595,
+              "logloss": 0.6569132305560248,
+              "n": 15
             },
-            "paired_n": 13
+            "paired_n": 15
           },
           "primary_pinnacle_no_vig": {
-            "brier": 0.23861709355431934,
-            "ece": 0.1856472481536197,
-            "logloss": 0.6699155034933372,
-            "n": 13
+            "brier": 0.23817376626980793,
+            "ece": 0.22554883229214445,
+            "logloss": 0.6690873899492077,
+            "n": 15
           },
           "secondary_consensus": {
-            "brier": 0.23971906188773434,
-            "ece": 0.24798052682211777,
-            "logloss": 0.6721550533720051,
-            "n": 13
+            "brier": 0.23915919502708347,
+            "ece": 0.27959914214552767,
+            "logloss": 0.6710888440852718,
+            "n": 15
           }
         },
         "TOTAL_OVER": {
           "model_vs_primary": {
             "brier_gain": {
-              "ci95_lower": -0.05054388384751492,
-              "ci95_upper": 0.044807633670183686,
+              "ci95_lower": -0.040375803295951015,
+              "ci95_upper": 0.05121512795195052,
               "deterministic_seed": true,
-              "mean": -0.002590868294488756,
+              "mean": 0.004076438984096884,
               "method": "paired nonparametric bootstrap mean",
-              "n": 12,
+              "n": 13,
               "reps": 5000
             },
             "calendar_block_brier_gain": {
-              "blocks": 4,
-              "ci95_lower": -0.08092034355147602,
-              "ci95_upper": 0.025531394962704113,
+              "blocks": 5,
+              "ci95_lower": -0.06230852586086242,
+              "ci95_upper": 0.035902676229476994,
               "deterministic_seed": true,
-              "mean": -0.002590868294488756,
+              "mean": 0.004076438984096884,
               "method": "calendar-block nonparametric bootstrap mean",
-              "n": 12,
+              "n": 13,
               "reps": 5000
             },
             "logloss_gain": {
-              "ci95_lower": -0.10598697024071758,
-              "ci95_upper": 0.08923360299072995,
+              "ci95_lower": -0.08922215848416921,
+              "ci95_upper": 0.10033522668478075,
               "deterministic_seed": true,
-              "mean": -0.004607196977810858,
+              "mean": 0.008849505423888276,
               "method": "paired nonparametric bootstrap mean",
-              "n": 12,
+              "n": 13,
               "reps": 5000
             },
             "model_metrics": {
-              "brier": 0.2506542660280568,
-              "ece": 0.11442425234910193,
-              "logloss": 0.6938738973865363,
-              "n": 12
+              "brier": 0.24383211331149499,
+              "ece": 0.13658010567983978,
+              "logloss": 0.6801080510577678,
+              "n": 13
             },
-            "paired_n": 12
+            "paired_n": 13
           },
           "model_vs_secondary": {
             "brier_gain": {
-              "ci95_lower": -0.035808671636209544,
-              "ci95_upper": 0.02824662386046261,
+              "ci95_lower": -0.027535011743451382,
+              "ci95_upper": 0.038282638109612514,
               "deterministic_seed": true,
-              "mean": -0.0035949810228760523,
+              "mean": 0.0055618397644172975,
               "method": "paired nonparametric bootstrap mean",
-              "n": 24,
+              "n": 26,
               "reps": 5000
             },
             "calendar_block_brier_gain": {
-              "blocks": 4,
-              "ci95_lower": -0.03666232638374024,
-              "ci95_upper": 0.019036545875935902,
+              "blocks": 5,
+              "ci95_lower": -0.026206787432585883,
+              "ci95_upper": 0.03863459376012312,
               "deterministic_seed": true,
-              "mean": -0.0035949810228760523,
+              "mean": 0.0055618397644172975,
               "method": "calendar-block nonparametric bootstrap mean",
-              "n": 24,
+              "n": 26,
               "reps": 5000
             },
             "logloss_gain": {
-              "ci95_lower": -0.07523269808170613,
-              "ci95_upper": 0.06006606557825786,
+              "ci95_lower": -0.05439712817349533,
+              "ci95_upper": 0.07487753843927951,
               "deterministic_seed": true,
-              "mean": -0.007312013734963152,
+              "mean": 0.011220969916324763,
               "method": "paired nonparametric bootstrap mean",
-              "n": 24,
+              "n": 26,
               "reps": 5000
             },
             "model_metrics": {
-              "brier": 0.25972005157695094,
-              "ece": 0.1439920187018871,
-              "logloss": 0.7127410141452888,
-              "n": 24
+              "brier": 0.25183560546304173,
+              "ece": 0.14862632469261677,
+              "logloss": 0.696761280758344,
+              "n": 26
             },
-            "paired_n": 24
+            "paired_n": 26
           },
           "primary_pinnacle_no_vig": {
-            "brier": 0.24806339773356803,
-            "ece": 0.17229983938476862,
-            "logloss": 0.6892667004087255,
-            "n": 12
+            "brier": 0.24790855229559186,
+            "ece": 0.19720251968619973,
+            "logloss": 0.6889575564816561,
+            "n": 13
           },
           "secondary_consensus": {
-            "brier": 0.2561250705540749,
-            "ece": 0.17227674645212288,
-            "logloss": 0.7054290004103256,
-            "n": 24
+            "brier": 0.25739744522745905,
+            "ece": 0.1991469512207103,
+            "logloss": 0.7079822506746688,
+            "n": 26
           }
         }
       }
@@ -1084,358 +1084,358 @@
       }
     },
     "LATE": {
-      "games": 44,
+      "games": 48,
       "markets": {
         "ML": {
           "model_vs_primary": {
             "brier_gain": {
-              "ci95_lower": -0.019482037130616484,
-              "ci95_upper": 0.013019319780995863,
+              "ci95_lower": -0.017356308454713316,
+              "ci95_upper": 0.013115916088283424,
               "deterministic_seed": true,
-              "mean": -0.0034585374519098457,
+              "mean": -0.0023715347654758552,
               "method": "paired nonparametric bootstrap mean",
-              "n": 44,
+              "n": 48,
               "reps": 5000
             },
             "calendar_block_brier_gain": {
-              "blocks": 5,
-              "ci95_lower": -0.013822586806941779,
-              "ci95_upper": 0.015281604344146597,
+              "blocks": 6,
+              "ci95_lower": -0.012294978962422303,
+              "ci95_upper": 0.016098408579636608,
               "deterministic_seed": true,
-              "mean": -0.0034585374519098457,
+              "mean": -0.0023715347654758552,
               "method": "calendar-block nonparametric bootstrap mean",
-              "n": 44,
+              "n": 48,
               "reps": 5000
             },
             "logloss_gain": {
-              "ci95_lower": -0.03977640680489618,
-              "ci95_upper": 0.027570964926093493,
+              "ci95_lower": -0.0360170434509834,
+              "ci95_upper": 0.02826202685517601,
               "deterministic_seed": true,
-              "mean": -0.006769451381247674,
+              "mean": -0.0045034375130627,
               "method": "paired nonparametric bootstrap mean",
-              "n": 44,
+              "n": 48,
               "reps": 5000
             },
             "model_metrics": {
-              "brier": 0.2522607671358453,
-              "ece": 0.10401249320708629,
-              "logloss": 0.6980806481666391,
-              "n": 44
+              "brier": 0.2564849972788187,
+              "ece": 0.12090078134340787,
+              "logloss": 0.7065931577503038,
+              "n": 48
             },
-            "paired_n": 44
+            "paired_n": 48
           },
           "model_vs_secondary": {
             "brier_gain": {
-              "ci95_lower": -0.01985040961429633,
-              "ci95_upper": 0.012771060695440014,
+              "ci95_lower": -0.01758639597516957,
+              "ci95_upper": 0.01332939327846882,
               "deterministic_seed": true,
-              "mean": -0.0034903853968828408,
+              "mean": -0.0023761869114077034,
               "method": "paired nonparametric bootstrap mean",
-              "n": 44,
+              "n": 48,
               "reps": 5000
             },
             "calendar_block_brier_gain": {
-              "blocks": 5,
-              "ci95_lower": -0.014097013189203766,
-              "ci95_upper": 0.015904490661741634,
+              "blocks": 6,
+              "ci95_lower": -0.012292068142903552,
+              "ci95_upper": 0.016010408995884278,
               "deterministic_seed": true,
-              "mean": -0.0034903853968828408,
+              "mean": -0.0023761869114077034,
               "method": "calendar-block nonparametric bootstrap mean",
-              "n": 44,
+              "n": 48,
               "reps": 5000
             },
             "logloss_gain": {
-              "ci95_lower": -0.03926241976605378,
-              "ci95_upper": 0.02709799751202234,
+              "ci95_lower": -0.035979494806685525,
+              "ci95_upper": 0.028107307297177794,
               "deterministic_seed": true,
-              "mean": -0.006830033436151788,
+              "mean": -0.004512172173287947,
               "method": "paired nonparametric bootstrap mean",
-              "n": 44,
+              "n": 48,
               "reps": 5000
             },
             "model_metrics": {
-              "brier": 0.2522607671358453,
-              "ece": 0.10401249320708629,
-              "logloss": 0.6980806481666391,
-              "n": 44
+              "brier": 0.2564849972788187,
+              "ece": 0.12090078134340787,
+              "logloss": 0.7065931577503038,
+              "n": 48
             },
-            "paired_n": 44
+            "paired_n": 48
           },
           "primary_pinnacle_no_vig": {
-            "brier": 0.24880222968393542,
-            "ece": 0.07953303273515619,
-            "logloss": 0.6913111967853914,
-            "n": 44
+            "brier": 0.2541134625133428,
+            "ece": 0.07000278804784087,
+            "logloss": 0.7020897202372413,
+            "n": 48
           },
           "secondary_consensus": {
-            "brier": 0.24877038173896243,
-            "ece": 0.06449907316716554,
-            "logloss": 0.6912506147304873,
-            "n": 44
+            "brier": 0.254108810367411,
+            "ece": 0.064005826287565,
+            "logloss": 0.7020809855770159,
+            "n": 48
           }
         },
         "RL_AWAY_-1.5": {
           "model_vs_primary": {
             "brier_gain": {
-              "ci95_lower": -0.04086511542097975,
-              "ci95_upper": 0.011343816330013924,
+              "ci95_lower": -0.036812635753452866,
+              "ci95_upper": 0.014728460233633785,
               "deterministic_seed": true,
-              "mean": -0.01556631400787268,
+              "mean": -0.011355287435284467,
               "method": "paired nonparametric bootstrap mean",
-              "n": 17,
-              "reps": 5000
-            },
-            "calendar_block_brier_gain": {
-              "blocks": 4,
-              "ci95_lower": -0.051342743017885537,
-              "ci95_upper": 0.024682168628391787,
-              "deterministic_seed": true,
-              "mean": -0.01556631400787268,
-              "method": "calendar-block nonparametric bootstrap mean",
-              "n": 17,
-              "reps": 5000
-            },
-            "logloss_gain": {
-              "ci95_lower": -0.08497739523596218,
-              "ci95_upper": 0.028181569151861756,
-              "deterministic_seed": true,
-              "mean": -0.03051292785324975,
-              "method": "paired nonparametric bootstrap mean",
-              "n": 17,
-              "reps": 5000
-            },
-            "model_metrics": {
-              "brier": 0.22431823485492366,
-              "ece": 0.1472229163166335,
-              "logloss": 0.6397378418101749,
-              "n": 17
-            },
-            "paired_n": 17
-          },
-          "model_vs_secondary": {
-            "brier_gain": {
-              "ci95_lower": -0.0422009774336377,
-              "ci95_upper": 0.005009186054040994,
-              "deterministic_seed": true,
-              "mean": -0.018560710279320096,
-              "method": "paired nonparametric bootstrap mean",
-              "n": 22,
+              "n": 18,
               "reps": 5000
             },
             "calendar_block_brier_gain": {
               "blocks": 5,
-              "ci95_lower": -0.054316603476455415,
-              "ci95_upper": 0.019014209831233527,
+              "ci95_lower": -0.043447964569446135,
+              "ci95_upper": 0.03437762199302543,
               "deterministic_seed": true,
-              "mean": -0.018560710279320096,
+              "mean": -0.011355287435284467,
               "method": "calendar-block nonparametric bootstrap mean",
-              "n": 22,
+              "n": 18,
               "reps": 5000
             },
             "logloss_gain": {
-              "ci95_lower": -0.0876268748531708,
-              "ci95_upper": 0.015255505224097453,
+              "ci95_lower": -0.07716145567841208,
+              "ci95_upper": 0.03295403626695479,
               "deterministic_seed": true,
-              "mean": -0.03857179348791682,
+              "mean": -0.02200813613336896,
               "method": "paired nonparametric bootstrap mean",
-              "n": 22,
+              "n": 18,
               "reps": 5000
             },
             "model_metrics": {
-              "brier": 0.2575039763750323,
-              "ece": 0.14339121298659302,
-              "logloss": 0.7095363312937978,
-              "n": 22
+              "brier": 0.2208488078607076,
+              "ece": 0.16139547132361343,
+              "logloss": 0.6327921109938288,
+              "n": 18
             },
-            "paired_n": 22
+            "paired_n": 18
+          },
+          "model_vs_secondary": {
+            "brier_gain": {
+              "ci95_lower": -0.038217497674862336,
+              "ci95_upper": 0.008460869607993088,
+              "deterministic_seed": true,
+              "mean": -0.015128378818036003,
+              "method": "paired nonparametric bootstrap mean",
+              "n": 23,
+              "reps": 5000
+            },
+            "calendar_block_brier_gain": {
+              "blocks": 6,
+              "ci95_lower": -0.04838408092387144,
+              "ci95_upper": 0.02362760441534931,
+              "deterministic_seed": true,
+              "mean": -0.015128378818036003,
+              "method": "calendar-block nonparametric bootstrap mean",
+              "n": 23,
+              "reps": 5000
+            },
+            "logloss_gain": {
+              "ci95_lower": -0.0831016613345103,
+              "ci95_upper": 0.020150821980105853,
+              "deterministic_seed": true,
+              "mean": -0.03155233229503614,
+              "method": "paired nonparametric bootstrap mean",
+              "n": 23,
+              "reps": 5000
+            },
+            "model_metrics": {
+              "brier": 0.25334591431346715,
+              "ece": 0.1546493735716225,
+              "logloss": 0.7010658250251955,
+              "n": 23
+            },
+            "paired_n": 23
           },
           "primary_pinnacle_no_vig": {
-            "brier": 0.208751920847051,
-            "ece": 0.1970975636404389,
-            "logloss": 0.6092249139569251,
-            "n": 17
+            "brier": 0.20949352042542313,
+            "ece": 0.15996571991321798,
+            "logloss": 0.6107839748604599,
+            "n": 18
           },
           "secondary_consensus": {
-            "brier": 0.23894326609571223,
-            "ece": 0.010229624210580074,
-            "logloss": 0.6709645378058811,
-            "n": 22
+            "brier": 0.23821753549543118,
+            "ece": 0.026118912573587102,
+            "logloss": 0.6695134927301594,
+            "n": 23
           }
         },
         "RL_HOME_-1.5": {
           "model_vs_primary": {
             "brier_gain": {
-              "ci95_lower": -0.01921657176790319,
-              "ci95_upper": 0.010248137144065264,
+              "ci95_lower": -0.0215446956160197,
+              "ci95_upper": 0.00579770439365984,
               "deterministic_seed": true,
-              "mean": -0.00523100503420016,
+              "mean": -0.007937590334554368,
               "method": "paired nonparametric bootstrap mean",
-              "n": 27,
+              "n": 30,
               "reps": 5000
             },
             "calendar_block_brier_gain": {
-              "blocks": 5,
-              "ci95_lower": -0.019602991748704807,
-              "ci95_upper": 0.010667949312899537,
+              "blocks": 6,
+              "ci95_lower": -0.02155467234789301,
+              "ci95_upper": 0.007490570671759107,
               "deterministic_seed": true,
-              "mean": -0.00523100503420016,
+              "mean": -0.007937590334554368,
               "method": "calendar-block nonparametric bootstrap mean",
-              "n": 27,
+              "n": 30,
               "reps": 5000
             },
             "logloss_gain": {
-              "ci95_lower": -0.040419162156776,
-              "ci95_upper": 0.020683392073359366,
+              "ci95_lower": -0.04489105033264069,
+              "ci95_upper": 0.013447395839078452,
               "deterministic_seed": true,
-              "mean": -0.01120252917430099,
+              "mean": -0.016853989791766423,
               "method": "paired nonparametric bootstrap mean",
-              "n": 27,
+              "n": 30,
               "reps": 5000
             },
             "model_metrics": {
-              "brier": 0.25168497158397735,
-              "ece": 0.11497168009771017,
-              "logloss": 0.6970875724401234,
-              "n": 27
+              "brier": 0.25260502723873157,
+              "ece": 0.1535069483533098,
+              "logloss": 0.6991228137227617,
+              "n": 30
             },
-            "paired_n": 27
+            "paired_n": 30
           },
           "model_vs_secondary": {
             "brier_gain": {
-              "ci95_lower": -0.01940470079141143,
-              "ci95_upper": 0.009389656300057232,
+              "ci95_lower": -0.021154612522365474,
+              "ci95_upper": 0.005318815472626983,
               "deterministic_seed": true,
-              "mean": -0.005463995823595414,
+              "mean": -0.008079466923538831,
               "method": "paired nonparametric bootstrap mean",
-              "n": 27,
+              "n": 30,
               "reps": 5000
             },
             "calendar_block_brier_gain": {
-              "blocks": 5,
-              "ci95_lower": -0.01978679989678905,
-              "ci95_upper": 0.008858808249598222,
+              "blocks": 6,
+              "ci95_lower": -0.0214113618356271,
+              "ci95_upper": 0.006516615973686017,
               "deterministic_seed": true,
-              "mean": -0.005463995823595414,
+              "mean": -0.008079466923538831,
               "method": "calendar-block nonparametric bootstrap mean",
-              "n": 27,
+              "n": 30,
               "reps": 5000
             },
             "logloss_gain": {
-              "ci95_lower": -0.040134716138693134,
-              "ci95_upper": 0.017908357356766515,
+              "ci95_lower": -0.04493797134684212,
+              "ci95_upper": 0.010606000698409203,
               "deterministic_seed": true,
-              "mean": -0.011724282223267981,
+              "mean": -0.017181168844711943,
               "method": "paired nonparametric bootstrap mean",
-              "n": 27,
+              "n": 30,
               "reps": 5000
             },
             "model_metrics": {
-              "brier": 0.25168497158397735,
-              "ece": 0.11497168009771017,
-              "logloss": 0.6970875724401234,
-              "n": 27
+              "brier": 0.25260502723873157,
+              "ece": 0.1535069483533098,
+              "logloss": 0.6991228137227617,
+              "n": 30
             },
-            "paired_n": 27
+            "paired_n": 30
           },
           "primary_pinnacle_no_vig": {
-            "brier": 0.24645396654977722,
-            "ece": 0.06131492791430336,
-            "logloss": 0.6858850432658224,
-            "n": 27
+            "brier": 0.2446674369041772,
+            "ece": 0.037247450849149814,
+            "logloss": 0.6822688239309953,
+            "n": 30
           },
           "secondary_consensus": {
-            "brier": 0.24622097576038196,
-            "ece": 0.062130413476046725,
-            "logloss": 0.6853632902168555,
-            "n": 27
+            "brier": 0.24452556031519276,
+            "ece": 0.037939472591135115,
+            "logloss": 0.6819416448780498,
+            "n": 30
           }
         },
         "TOTAL_OVER": {
           "model_vs_primary": {
             "brier_gain": {
-              "ci95_lower": -0.029539826039102348,
-              "ci95_upper": 0.06470612935553838,
+              "ci95_lower": -0.031302645105214036,
+              "ci95_upper": 0.05871102919889871,
               "deterministic_seed": true,
-              "mean": 0.019899685374851966,
+              "mean": 0.014765649742423394,
               "method": "paired nonparametric bootstrap mean",
-              "n": 21,
+              "n": 23,
               "reps": 5000
             },
             "calendar_block_brier_gain": {
-              "blocks": 5,
-              "ci95_lower": -0.01974745775541397,
-              "ci95_upper": 0.053522290692175054,
+              "blocks": 6,
+              "ci95_lower": -0.022536120634105525,
+              "ci95_upper": 0.04671667474918152,
               "deterministic_seed": true,
-              "mean": 0.019899685374851966,
+              "mean": 0.014765649742423394,
               "method": "calendar-block nonparametric bootstrap mean",
-              "n": 21,
+              "n": 23,
               "reps": 5000
             },
             "logloss_gain": {
-              "ci95_lower": -0.06813051611767647,
-              "ci95_upper": 0.13544239794180182,
+              "ci95_lower": -0.07067043304140153,
+              "ci95_upper": 0.12049123730361791,
               "deterministic_seed": true,
-              "mean": 0.039908867486656424,
+              "mean": 0.029428032955001193,
               "method": "paired nonparametric bootstrap mean",
-              "n": 21,
+              "n": 23,
               "reps": 5000
             },
             "model_metrics": {
-              "brier": 0.22567456863077848,
-              "ece": 0.1953029931821275,
-              "logloss": 0.6443813822077039,
-              "n": 21
+              "brier": 0.23098205678741282,
+              "ece": 0.165647829311587,
+              "logloss": 0.6552092184777769,
+              "n": 23
             },
-            "paired_n": 21
+            "paired_n": 23
           },
           "model_vs_secondary": {
             "brier_gain": {
-              "ci95_lower": -0.026990631313722386,
-              "ci95_upper": 0.03563960109446487,
+              "ci95_lower": -0.031480309373337664,
+              "ci95_upper": 0.02728350955887236,
               "deterministic_seed": true,
-              "mean": 0.004830230798404012,
+              "mean": -0.0012154608815610223,
               "method": "paired nonparametric bootstrap mean",
-              "n": 43,
+              "n": 47,
               "reps": 5000
             },
             "calendar_block_brier_gain": {
-              "blocks": 5,
-              "ci95_lower": -0.011487974552552365,
-              "ci95_upper": 0.02337015867746987,
+              "blocks": 6,
+              "ci95_lower": -0.023693817776488515,
+              "ci95_upper": 0.017387548139458666,
               "deterministic_seed": true,
-              "mean": 0.004830230798404012,
+              "mean": -0.0012154608815610223,
               "method": "calendar-block nonparametric bootstrap mean",
-              "n": 43,
+              "n": 47,
               "reps": 5000
             },
             "logloss_gain": {
-              "ci95_lower": -0.053693647689113784,
-              "ci95_upper": 0.07073952278460759,
+              "ci95_lower": -0.06270118481706674,
+              "ci95_upper": 0.056997052300981,
               "deterministic_seed": true,
-              "mean": 0.009771465666345975,
+              "mean": -0.0025320303385797005,
               "method": "paired nonparametric bootstrap mean",
-              "n": 43,
+              "n": 47,
               "reps": 5000
             },
             "model_metrics": {
-              "brier": 0.23893986984030052,
-              "ece": 0.16256869930715848,
-              "logloss": 0.6709079308064971,
-              "n": 43
+              "brier": 0.24514973047808203,
+              "ece": 0.14359054592391154,
+              "logloss": 0.6835380773189322,
+              "n": 47
             },
-            "paired_n": 43
+            "paired_n": 47
           },
           "primary_pinnacle_no_vig": {
-            "brier": 0.24557425400563043,
-            "ece": 0.1715196678011573,
-            "logloss": 0.6842902496943604,
-            "n": 21
+            "brier": 0.2457477065298362,
+            "ece": 0.11335707123467537,
+            "logloss": 0.6846372514327781,
+            "n": 23
           },
           "secondary_consensus": {
-            "brier": 0.24377010063870452,
-            "ece": 0.10265905425616302,
-            "logloss": 0.680679396472843,
-            "n": 43
+            "brier": 0.24393426959652104,
+            "ece": 0.09144733716309766,
+            "logloss": 0.6810060469803524,
+            "n": 47
           }
         }
       }
