@@ -16,7 +16,7 @@
       "snapshots": 24,
       "utc_month": "2026-09"
     },
-    "allowed": false,
+    "allowed": true,
     "automated_month": {
       "allowed": true,
       "provider_credit_limit": 420,
@@ -25,7 +25,7 @@
       "snapshots": 16,
       "utc_month": "2026-09"
     },
-    "daily_allowed": false,
+    "daily_allowed": true,
     "kind": "ODDS_CLOSE_SNAPSHOT",
     "limit": 1,
     "monthly": {
@@ -37,7 +37,7 @@
       "utc_month": "2026-09"
     },
     "provider_guard": {
-      "age_minutes": 0.0022385833333333333,
+      "age_minutes": 0.0012414,
       "allowed": true,
       "attested": true,
       "configured_next_credit_cost": 3,
@@ -46,20 +46,20 @@
       "credits_remaining_until_provider_reset": 428,
       "credits_used_since_provider_reset": 72,
       "fresh": true,
-      "last_request_credit_cost": 3,
+      "last_request_credit_cost": 0,
       "max_age_minutes": 360,
-      "provider_captured_at": "2026-09-06T17:38:41.480954+00:00",
+      "provider_captured_at": "2026-09-07T14:08:41.148374+00:00",
       "provider_reset_cycle_guard": true,
-      "recorded_at": "2026-09-06T17:38:41.569302+00:00",
+      "recorded_at": "2026-09-07T14:08:41.188472+00:00",
       "requires_zero_credit_refresh_before_paid_reservation": false,
       "reserve_credits": 50,
       "same_utc_month": true,
       "status": "ATTESTED_SAFE"
     },
-    "remaining": 0,
-    "slate_allowed": false,
-    "slate_date": "2026-09-06",
-    "used": 1
+    "remaining": 1,
+    "slate_allowed": true,
+    "slate_date": "2026-09-07",
+    "used": 0
   },
   "automated_month": {
     "allowed": true,
@@ -99,7 +99,7 @@
       "utc_month": "2026-09"
     },
     "provider_guard": {
-      "age_minutes": 0.0022660833333333335,
+      "age_minutes": 0.0012628833333333332,
       "allowed": true,
       "attested": true,
       "configured_next_credit_cost": 3,
@@ -108,11 +108,11 @@
       "credits_remaining_until_provider_reset": 428,
       "credits_used_since_provider_reset": 72,
       "fresh": true,
-      "last_request_credit_cost": 3,
+      "last_request_credit_cost": 0,
       "max_age_minutes": 360,
-      "provider_captured_at": "2026-09-06T17:38:41.480954+00:00",
+      "provider_captured_at": "2026-09-07T14:08:41.148374+00:00",
       "provider_reset_cycle_guard": true,
-      "recorded_at": "2026-09-06T17:38:41.569302+00:00",
+      "recorded_at": "2026-09-07T14:08:41.188472+00:00",
       "requires_zero_credit_refresh_before_paid_reservation": false,
       "reserve_credits": 50,
       "same_utc_month": true,
@@ -120,16 +120,16 @@
     },
     "remaining": 4,
     "slate_allowed": true,
-    "slate_date": "2026-09-06",
+    "slate_date": "2026-09-07",
     "used": 0
   },
   "by_kind": {
     "ODDS_CLOSE_SNAPSHOT": 6,
     "ODDS_MANUAL_PRODUCTION_SNAPSHOT": 8,
-    "ODDS_PROVIDER_QUOTA_ATTESTATION": 40,
+    "ODDS_PROVIDER_QUOTA_ATTESTATION": 41,
     "ODDS_SCHEDULED_FINAL_PREDICTION_SNAPSHOT": 12
   },
-  "generated_at": "2026-09-06T17:38:41.619834+00:00",
+  "generated_at": "2026-09-07T14:08:41.226413+00:00",
   "known_provider_credits_total": 78,
   "manual_slate": {
     "all_paid_month": {
@@ -144,7 +144,7 @@
     "kind": "ODDS_MANUAL_PRODUCTION_SNAPSHOT",
     "limit": null,
     "provider_guard": {
-      "age_minutes": 0.002280183333333333,
+      "age_minutes": 0.00127385,
       "allowed": true,
       "attested": true,
       "configured_next_credit_cost": 3,
@@ -153,19 +153,19 @@
       "credits_remaining_until_provider_reset": 428,
       "credits_used_since_provider_reset": 72,
       "fresh": true,
-      "last_request_credit_cost": 3,
+      "last_request_credit_cost": 0,
       "max_age_minutes": 360,
-      "provider_captured_at": "2026-09-06T17:38:41.480954+00:00",
+      "provider_captured_at": "2026-09-07T14:08:41.148374+00:00",
       "provider_reset_cycle_guard": true,
-      "recorded_at": "2026-09-06T17:38:41.569302+00:00",
+      "recorded_at": "2026-09-07T14:08:41.188472+00:00",
       "requires_zero_credit_refresh_before_paid_reservation": false,
       "reserve_credits": 50,
       "same_utc_month": true,
       "status": "ATTESTED_SAFE"
     },
     "remaining": null,
-    "slate_date": "2026-09-06",
-    "used": 1
+    "slate_date": "2026-09-07",
+    "used": 0
   },
   "policy": {
     "close_config_env": "V14_MAX_PAID_CLOSE_SNAPSHOTS_PER_SLATE",
@@ -191,7 +191,7 @@
     "zero_credit_provider_refresh_required_before_production_paid_reservation": true
   },
   "provider_guard": {
-    "age_minutes": 0.0023072333333333333,
+    "age_minutes": 0.0012947999999999998,
     "allowed": true,
     "attested": true,
     "configured_next_credit_cost": 3,
@@ -200,11 +200,11 @@
     "credits_remaining_until_provider_reset": 428,
     "credits_used_since_provider_reset": 72,
     "fresh": true,
-    "last_request_credit_cost": 3,
+    "last_request_credit_cost": 0,
     "max_age_minutes": 360,
-    "provider_captured_at": "2026-09-06T17:38:41.480954+00:00",
+    "provider_captured_at": "2026-09-07T14:08:41.148374+00:00",
     "provider_reset_cycle_guard": true,
-    "recorded_at": "2026-09-06T17:38:41.569302+00:00",
+    "recorded_at": "2026-09-07T14:08:41.188472+00:00",
     "requires_zero_credit_refresh_before_paid_reservation": false,
     "reserve_credits": 50,
     "same_utc_month": true,
