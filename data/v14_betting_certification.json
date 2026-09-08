@@ -2,19 +2,20 @@
   "betting_status": "RESEARCH_ONLY",
   "certified": false,
   "evidence_age_hours": {
-    "calibration_observation": 12.983435074444444,
-    "calibration_report": 0.0017744855555555557,
-    "paper_report": 0.0019192322222222223,
-    "performance_observation": 63.48343507444445,
-    "performance_report": 2.9464166666666665e-05,
-    "primary_sharp_benchmark_report": 0.00030710666666666666
+    "calibration_observation": 11.694766291666665,
+    "calibration_report": 0.001769465,
+    "paper_report": 0.001915613888888889,
+    "performance_observation": 86.11143295833334,
+    "performance_report": 3.220166666666667e-05,
+    "primary_sharp_benchmark_report": 0.00031405305555555555
   },
-  "generated_at": "2026-09-07T15:09:00.366268+00:00",
+  "generated_at": "2026-09-08T13:46:41.158650+00:00",
   "legacy_evidence_can_certify": false,
   "markets": {
     "ML": {
       "betting_certified": false,
       "betting_failures": [
+        "latest_scheduled_final_performance_observation_stale>72h",
         "scheduled_final_games<600",
         "n<400",
         "sharp_paired_n<400",
@@ -22,6 +23,8 @@
         "pinnacle_final_model_n<400",
         "pinnacle_final_brier_bootstrap_ci95_not_positive",
         "pinnacle_final_logloss_bootstrap_ci95_regression",
+        "ML_latest_primary_close_stale>72h",
+        "ML_latest_execution_close_stale>72h",
         "paper_certification_clv_paired_bootstrap_required",
         "paper_certification_clv_n<100",
         "paper_certification_clv_mean_not_positive",
@@ -37,6 +40,7 @@
       "calibration_status": "DIRECT_PROSPECTIVE_ECE",
       "ece": 0.045717507047172874,
       "failures": [
+        "latest_scheduled_final_performance_observation_stale>72h",
         "scheduled_final_games<600",
         "n<400",
         "sharp_paired_n<400",
@@ -118,6 +122,7 @@
     "RL_AWAY_-1.5": {
       "betting_certified": false,
       "betting_failures": [
+        "latest_scheduled_final_performance_observation_stale>72h",
         "scheduled_final_games<600",
         "n<400",
         "ece>0.05_or_missing",
@@ -146,6 +151,7 @@
       "calibration_status": "DIRECT_PROSPECTIVE_ECE",
       "ece": 0.06755677231103321,
       "failures": [
+        "latest_scheduled_final_performance_observation_stale>72h",
         "scheduled_final_games<600",
         "n<400",
         "ece>0.05_or_missing",
@@ -206,6 +212,7 @@
     "RL_HOME_-1.5": {
       "betting_certified": false,
       "betting_failures": [
+        "latest_scheduled_final_performance_observation_stale>72h",
         "scheduled_final_games<600",
         "n<400",
         "ece>0.05_or_missing",
@@ -234,6 +241,7 @@
       "calibration_status": "DIRECT_PROSPECTIVE_ECE",
       "ece": 0.11365195109690307,
       "failures": [
+        "latest_scheduled_final_performance_observation_stale>72h",
         "scheduled_final_games<600",
         "n<400",
         "ece>0.05_or_missing",
@@ -294,6 +302,7 @@
     "TOTAL_OVER": {
       "betting_certified": false,
       "betting_failures": [
+        "latest_scheduled_final_performance_observation_stale>72h",
         "scheduled_final_games<600",
         "n<400",
         "ece>0.05_or_missing",
@@ -321,6 +330,7 @@
       "calibration_status": "DIRECT_PROSPECTIVE_ECE",
       "ece": 0.11846964411958377,
       "failures": [
+        "latest_scheduled_final_performance_observation_stale>72h",
         "scheduled_final_games<600",
         "n<400",
         "ece>0.05_or_missing",
@@ -474,6 +484,7 @@
   "probability_policy_id": "pulsar-v14-probability-policy-v1",
   "probability_reasons": [
     "ece>0.05_or_missing",
+    "latest_scheduled_final_performance_observation_stale>72h",
     "n<400",
     "pinnacle_final_brier_bootstrap_ci95_not_positive",
     "pinnacle_final_logloss_bootstrap_ci95_regression",
@@ -485,6 +496,8 @@
   ],
   "probability_status": "PROBABILITY_RESEARCH",
   "reasons": [
+    "ML_latest_execution_close_stale>72h",
+    "ML_latest_primary_close_stale>72h",
     "RL_AWAY_-1.5_latest_execution_close_missing_or_invalid",
     "RL_AWAY_-1.5_latest_primary_close_missing_or_invalid",
     "RL_HOME_-1.5_latest_execution_close_missing_or_invalid",
@@ -492,6 +505,7 @@
     "TOTAL_OVER_latest_execution_close_missing_or_invalid",
     "TOTAL_OVER_latest_primary_close_missing_or_invalid",
     "ece>0.05_or_missing",
+    "latest_scheduled_final_performance_observation_stale>72h",
     "n<400",
     "paper_certification_clv_benchmark_mismatch",
     "paper_certification_clv_ci95_missing",
