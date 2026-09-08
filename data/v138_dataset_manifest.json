@@ -1,10 +1,10 @@
 {
   "code_sha": "35d4206b593fba64305a83f74d8ed2ccbfd38a67",
-  "dataset_content_sha256": "14825f6067a0b711ed838746c840a74c09ee06fb4ce40931d60f023e89c24c83",
+  "dataset_content_sha256": "d97522a7eb37f4ba223653e412ec9b99d546b5f6306b143437c1ab47d0fa83d4",
   "dataset_fingerprint_policy": "SHA256 over path + SHA256 of every compressed source feature/label file; any feature or label byte changes the fingerprint",
   "dataset_version": "35d4206b593fba64305a83f74d8ed2ccbfd38a67",
   "feature_contract_sha256": "08b35bb22ea34adb3113de13d335975ca00e401b9c1d80deada2473a9b661a61",
-  "feature_rows": 14302,
+  "feature_rows": 14313,
   "files": [
     {
       "bytes": 361219,
@@ -32,9 +32,9 @@
       "sha256": "f64bf53fdf40e946bcf9eea1235c5a4d684d719015c3fe416fec5d1716fbe5dd"
     },
     {
-      "bytes": 451645,
+      "bytes": 454156,
       "path": "data/v137/team_features_2026.jsonl.gz",
-      "sha256": "aff5df43cb7c9a23d8f944a210f7725918809e184a33289ba85da76de7711d77"
+      "sha256": "5c6146bb1cb824a5f33eaf7f3d66e922e02bfb2ccc368a97bc1e55213bdc60cc"
     },
     {
       "bytes": 42643,
@@ -62,9 +62,9 @@
       "sha256": "e9fea7ac9d410b3b1de224afada02452add916ce07ee0c85ca5d84302d8bd2c9"
     },
     {
-      "bytes": 39126,
+      "bytes": 39326,
       "path": "data/v137/team_labels_2026.jsonl.gz",
-      "sha256": "ecc255823bfdc6c66c56e31c95a77f2375b862088062bba1baddff3286252c7a"
+      "sha256": "cd8850d6ab8b9ba5cbe2894afccb706d6d4953a6d2f5f2bef00880d7f65c4cc9"
     },
     {
       "bytes": 2895872,
@@ -82,11 +82,11 @@
       "sha256": "59a876c2a5ef9a3c381e54d43618bbd0fb444cbed475052a9518ccc77becca4a"
     }
   ],
-  "label_rows": 14302,
+  "label_rows": 14313,
   "schema": "v13-10-versioned-dataset-store-v2",
   "separation_policy": "features and labels remain separate physical tables",
   "source_manifest_refresh_policy": "after intentional team-history rebuild and successful full PIT audit",
-  "source_manifest_refreshed_at": "2026-09-07T16:30:30.836568+00:00",
+  "source_manifest_refreshed_at": "2026-09-08T15:07:45.872449+00:00",
   "split_policy": "strict temporal / walk-forward",
   "storage": {
     "duckdb": "data/v138/v138.duckdb",
