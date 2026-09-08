@@ -18,31 +18,59 @@
         "sharp_coverage": 1.0
       },
       "raw": {
-        "eligible": 82,
-        "execution_available": 82,
-        "fully_market_observable": 82,
-        "market_fresh": 82,
-        "observations": 82,
-        "predicted": 82,
+        "eligible": 87,
+        "execution_available": 87,
+        "fully_market_observable": 87,
+        "market_fresh": 87,
+        "observations": 87,
+        "predicted": 87,
         "rejection_reasons": {},
-        "sharp_available": 82
+        "sharp_available": 87
       }
     },
     "FINAL": {
       "first_observation_unique_games": {
-        "eligible": 59,
+        "eligible": 65,
         "eligible_coverage": 1.0,
-        "execution_available": 59,
+        "execution_available": 65,
         "execution_coverage": 1.0,
-        "fully_market_observable": 59,
+        "fully_market_observable": 65,
         "fully_market_observable_coverage": 1.0,
-        "market_fresh": 59,
+        "market_fresh": 65,
         "market_fresh_coverage": 1.0,
-        "observations": 59,
-        "predicted": 59,
+        "observations": 65,
+        "predicted": 65,
         "prediction_coverage": 1.0,
         "rejection_reasons": {},
-        "sharp_available": 59,
+        "sharp_available": 65,
+        "sharp_coverage": 1.0
+      },
+      "raw": {
+        "eligible": 89,
+        "execution_available": 89,
+        "fully_market_observable": 89,
+        "market_fresh": 89,
+        "observations": 89,
+        "predicted": 89,
+        "rejection_reasons": {},
+        "sharp_available": 89
+      }
+    },
+    "LATE": {
+      "first_observation_unique_games": {
+        "eligible": 70,
+        "eligible_coverage": 1.0,
+        "execution_available": 70,
+        "execution_coverage": 1.0,
+        "fully_market_observable": 70,
+        "fully_market_observable_coverage": 1.0,
+        "market_fresh": 70,
+        "market_fresh_coverage": 1.0,
+        "observations": 70,
+        "predicted": 70,
+        "prediction_coverage": 1.0,
+        "rejection_reasons": {},
+        "sharp_available": 70,
         "sharp_coverage": 1.0
       },
       "raw": {
@@ -54,34 +82,6 @@
         "predicted": 83,
         "rejection_reasons": {},
         "sharp_available": 83
-      }
-    },
-    "LATE": {
-      "first_observation_unique_games": {
-        "eligible": 66,
-        "eligible_coverage": 1.0,
-        "execution_available": 66,
-        "execution_coverage": 1.0,
-        "fully_market_observable": 66,
-        "fully_market_observable_coverage": 1.0,
-        "market_fresh": 66,
-        "market_fresh_coverage": 1.0,
-        "observations": 66,
-        "predicted": 66,
-        "prediction_coverage": 1.0,
-        "rejection_reasons": {},
-        "sharp_available": 66,
-        "sharp_coverage": 1.0
-      },
-      "raw": {
-        "eligible": 79,
-        "execution_available": 79,
-        "fully_market_observable": 79,
-        "market_fresh": 79,
-        "observations": 79,
-        "predicted": 79,
-        "rejection_reasons": {},
-        "sharp_available": 79
       }
     },
     "UNKNOWN": {
@@ -136,14 +136,14 @@
         "sharp_coverage": 1.0
       },
       "raw": {
-        "eligible": 159,
-        "execution_available": 159,
-        "fully_market_observable": 159,
-        "market_fresh": 159,
-        "observations": 159,
-        "predicted": 159,
+        "eligible": 174,
+        "execution_available": 174,
+        "fully_market_observable": 174,
+        "market_fresh": 174,
+        "observations": 174,
+        "predicted": 174,
         "rejection_reasons": {},
-        "sharp_available": 159
+        "sharp_available": 174
       }
     },
     "SCHEDULED_FINAL": {
@@ -180,10 +180,10 @@
     }
   },
   "canonical_policy": "within each current-generation reported cohort, first observed row per target_date x game_pk; later successful snapshots cannot replace an earlier failure",
-  "eligible": 244,
+  "eligible": 259,
   "excluded_other_generation_observations": 0,
-  "execution_available": 244,
-  "execution_coverage": 0.9959183673469387,
+  "execution_available": 259,
+  "execution_coverage": 0.9961538461538462,
   "first_observation_unique_games": {
     "eligible": 123,
     "eligible_coverage": 1.0,
@@ -203,23 +203,23 @@
   "interpretation": "performance describes a selected analyzable universe; inspect current-generation first-observation unique-game and trigger/phase slices before assuming rejection missingness is random",
   "model_generation": "pulsar-v14-context-v4-all-stats",
   "network_calls": 0,
-  "observations": 245,
-  "predicted": 244,
-  "prediction_coverage": 0.9959183673469387,
+  "observations": 260,
+  "predicted": 259,
+  "prediction_coverage": 0.9961538461538462,
   "raw_observations_by_model_generation": {
-    "pulsar-v14-context-v4-all-stats": 245
+    "pulsar-v14-context-v4-all-stats": 260
   },
   "raw_snapshot_observations": {
-    "eligible": 244,
-    "execution_available": 244,
-    "fully_market_observable": 244,
-    "market_fresh": 244,
-    "observations": 245,
-    "predicted": 244,
+    "eligible": 259,
+    "execution_available": 259,
+    "fully_market_observable": 259,
+    "market_fresh": 259,
+    "observations": 260,
+    "predicted": 259,
     "rejection_reasons": {
       "odds_event_unmatched": 1
     },
-    "sharp_available": 244
+    "sharp_available": 259
   },
   "rejection_reasons": {
     "odds_event_unmatched": 1
@@ -268,6 +268,6 @@
     "legacy_missing_run_trigger": "LEGACY_UNSPECIFIED",
     "scheduled_final_trigger_is_not_exact_final_phase_cohort": true
   },
-  "sharp_available": 244,
-  "sharp_coverage": 0.9959183673469387
+  "sharp_available": 259,
+  "sharp_coverage": 0.9961538461538462
 }
