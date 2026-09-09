@@ -2,186 +2,49 @@
   "auto_activation": false,
   "champion_impact": false,
   "claim": "bootstrap confidence interval for bucket-level calibration bias; not an event-level Bayesian credible interval",
-  "generated_at": "2026-09-08T13:46:47.982276+00:00",
+  "generated_at": "2026-09-09T13:50:06.342967+00:00",
   "network_calls": 0,
   "phases": {
     "EARLY": {
       "ML": {
         "cells": [
           {
-            "bias_ci95_lower": -0.1916230677445353,
-            "bias_ci95_upper": 0.6161374017961947,
+            "bias_ci95_lower": -0.2242681808989471,
+            "bias_ci95_upper": 0.4524656630674855,
             "bootstrap_reps": 5000,
             "lower": 0.30000000000000004,
-            "mean_calibration_bias": 0.2127417160531883,
-            "n": 5,
+            "mean_calibration_bias": 0.11270247226582257,
+            "n": 6,
             "ready": false,
             "upper": 0.4
           },
           {
-            "bias_ci95_lower": -0.1846754235995325,
-            "bias_ci95_upper": 0.1932333614360846,
+            "bias_ci95_lower": -0.2192019422262781,
+            "bias_ci95_upper": 0.1259413555918102,
             "bootstrap_reps": 5000,
             "lower": 0.4,
-            "mean_calibration_bias": 0.003440627746450514,
-            "n": 26,
-            "ready": false,
-            "upper": 0.5
-          },
-          {
-            "bias_ci95_lower": -0.2434074083553441,
-            "bias_ci95_upper": 0.11082333912518758,
-            "bootstrap_reps": 5000,
-            "lower": 0.5,
-            "mean_calibration_bias": -0.06684810764835976,
+            "mean_calibration_bias": -0.0473506107029074,
             "n": 29,
             "ready": false,
-            "upper": 0.6
-          },
-          {
-            "bias_ci95_lower": -0.3174302890748455,
-            "bias_ci95_upper": 0.21269671480091382,
-            "bootstrap_reps": 5000,
-            "lower": 0.6000000000000001,
-            "mean_calibration_bias": -0.022783770711979526,
-            "n": 13,
-            "ready": false,
-            "upper": 0.7000000000000001
-          }
-        ],
-        "min_bucket_n": 80,
-        "min_market_n": 400,
-        "n": 73,
-        "ready_cells": 0,
-        "status": "COLLECTING"
-      },
-      "RL_AWAY_-1.5": {
-        "cells": [
-          {
-            "bias_ci95_lower": -0.09717490213108039,
-            "bias_ci95_upper": 0.26646898090457916,
-            "bootstrap_reps": 5000,
-            "lower": 0.2,
-            "mean_calibration_bias": 0.06989586741642828,
-            "n": 25,
-            "ready": false,
-            "upper": 0.30000000000000004
-          },
-          {
-            "bias_ci95_lower": -0.1363329814172807,
-            "bias_ci95_upper": 0.20899416960584188,
-            "bootstrap_reps": 5000,
-            "lower": 0.30000000000000004,
-            "mean_calibration_bias": 0.03394807657779174,
-            "n": 34,
-            "ready": false,
-            "upper": 0.4
-          },
-          {
-            "bias_ci95_lower": -0.28776947368430567,
-            "bias_ci95_upper": 0.2634931690968207,
-            "bootstrap_reps": 5000,
-            "lower": 0.4,
-            "mean_calibration_bias": -0.01572694540560938,
-            "n": 14,
-            "ready": false,
-            "upper": 0.5
-          }
-        ],
-        "min_bucket_n": 80,
-        "min_market_n": 400,
-        "n": 73,
-        "ready_cells": 0,
-        "status": "COLLECTING"
-      },
-      "RL_HOME_-1.5": {
-        "cells": [
-          {
-            "bias_ci95_lower": -0.276509200407183,
-            "bias_ci95_upper": -0.0500978323507938,
-            "bootstrap_reps": 5000,
-            "lower": 0.2,
-            "mean_calibration_bias": -0.19677371791533838,
-            "n": 14,
-            "ready": false,
-            "upper": 0.30000000000000004
-          },
-          {
-            "bias_ci95_lower": -0.07499133239899458,
-            "bias_ci95_upper": 0.263455714459713,
-            "bootstrap_reps": 5000,
-            "lower": 0.30000000000000004,
-            "mean_calibration_bias": 0.08626925495475617,
-            "n": 32,
-            "ready": false,
-            "upper": 0.4
-          },
-          {
-            "bias_ci95_lower": -0.28273670230601805,
-            "bias_ci95_upper": 0.11614225465291539,
-            "bootstrap_reps": 5000,
-            "lower": 0.4,
-            "mean_calibration_bias": -0.09796976598145868,
-            "n": 23,
-            "ready": false,
             "upper": 0.5
           },
           {
-            "bias_ci95_lower": -0.5093761594040573,
-            "bias_ci95_upper": 0.46658824315644487,
+            "bias_ci95_lower": -0.27985309822480997,
+            "bias_ci95_upper": 0.04779623476658458,
             "bootstrap_reps": 5000,
             "lower": 0.5,
-            "mean_calibration_bias": -0.021393958123806206,
-            "n": 4,
-            "ready": false,
-            "upper": 0.6
-          }
-        ],
-        "min_bucket_n": 80,
-        "min_market_n": 400,
-        "n": 73,
-        "ready_cells": 0,
-        "status": "COLLECTING"
-      },
-      "TOTAL_OVER": {
-        "cells": [
-          {
-            "bias_ci95_lower": null,
-            "bias_ci95_upper": null,
-            "bootstrap_reps": 0,
-            "lower": 0.30000000000000004,
-            "mean_calibration_bias": 0.6353666311618311,
-            "n": 1,
-            "ready": false,
-            "upper": 0.4
-          },
-          {
-            "bias_ci95_lower": -0.19123231728766382,
-            "bias_ci95_upper": 0.3330409785883641,
-            "bootstrap_reps": 5000,
-            "lower": 0.4,
-            "mean_calibration_bias": 0.07169892549344474,
-            "n": 15,
-            "ready": false,
-            "upper": 0.5
-          },
-          {
-            "bias_ci95_lower": -0.1563179698687694,
-            "bias_ci95_upper": 0.18136661354948944,
-            "bootstrap_reps": 5000,
-            "lower": 0.5,
-            "mean_calibration_bias": 0.01356550289586291,
+            "mean_calibration_bias": -0.11867001758474272,
             "n": 35,
             "ready": false,
             "upper": 0.6
           },
           {
-            "bias_ci95_lower": -0.31532049921951266,
-            "bias_ci95_upper": 0.0886547413467486,
+            "bias_ci95_lower": -0.2243278355501923,
+            "bias_ci95_upper": 0.2403756315647005,
             "bootstrap_reps": 5000,
             "lower": 0.6000000000000001,
-            "mean_calibration_bias": -0.11320006263292844,
-            "n": 21,
+            "mean_calibration_bias": 0.009872547608147727,
+            "n": 17,
             "ready": false,
             "upper": 0.7000000000000001
           },
@@ -190,7 +53,7 @@
             "bias_ci95_upper": null,
             "bootstrap_reps": 0,
             "lower": 0.7000000000000001,
-            "mean_calibration_bias": 0.2981776397275776,
+            "mean_calibration_bias": 0.26460447487904615,
             "n": 1,
             "ready": false,
             "upper": 0.8
@@ -198,7 +61,174 @@
         ],
         "min_bucket_n": 80,
         "min_market_n": 400,
-        "n": 73,
+        "n": 88,
+        "ready_cells": 0,
+        "status": "COLLECTING"
+      },
+      "RL_AWAY_-1.5": {
+        "cells": [
+          {
+            "bias_ci95_lower": -0.19182056932535507,
+            "bias_ci95_upper": -0.15439000732779384,
+            "bootstrap_reps": 5000,
+            "lower": 0.1,
+            "mean_calibration_bias": -0.17310528832657446,
+            "n": 2,
+            "ready": false,
+            "upper": 0.2
+          },
+          {
+            "bias_ci95_lower": -0.11549901049794825,
+            "bias_ci95_upper": 0.21437080573877512,
+            "bootstrap_reps": 5000,
+            "lower": 0.2,
+            "mean_calibration_bias": 0.03557817893456568,
+            "n": 28,
+            "ready": false,
+            "upper": 0.30000000000000004
+          },
+          {
+            "bias_ci95_lower": -0.040289764613425226,
+            "bias_ci95_upper": 0.26903710006545223,
+            "bootstrap_reps": 5000,
+            "lower": 0.30000000000000004,
+            "mean_calibration_bias": 0.11951280076272719,
+            "n": 43,
+            "ready": false,
+            "upper": 0.4
+          },
+          {
+            "bias_ci95_lower": -0.24126540146702175,
+            "bias_ci95_upper": 0.2836588574512035,
+            "bootstrap_reps": 5000,
+            "lower": 0.4,
+            "mean_calibration_bias": 0.01992225302666643,
+            "n": 15,
+            "ready": false,
+            "upper": 0.5
+          }
+        ],
+        "min_bucket_n": 80,
+        "min_market_n": 400,
+        "n": 88,
+        "ready_cells": 0,
+        "status": "COLLECTING"
+      },
+      "RL_HOME_-1.5": {
+        "cells": [
+          {
+            "bias_ci95_lower": -0.2754768787018925,
+            "bias_ci95_upper": -0.06425801703680192,
+            "bootstrap_reps": 5000,
+            "lower": 0.2,
+            "mean_calibration_bias": -0.2014049006584984,
+            "n": 15,
+            "ready": false,
+            "upper": 0.30000000000000004
+          },
+          {
+            "bias_ci95_lower": -0.14588768746286593,
+            "bias_ci95_upper": 0.15895039916068815,
+            "bootstrap_reps": 5000,
+            "lower": 0.30000000000000004,
+            "mean_calibration_bias": 0.005809356868828079,
+            "n": 39,
+            "ready": false,
+            "upper": 0.4
+          },
+          {
+            "bias_ci95_lower": -0.3183613965272535,
+            "bias_ci95_upper": 0.019150140242464895,
+            "bootstrap_reps": 5000,
+            "lower": 0.4,
+            "mean_calibration_bias": -0.1600744863003412,
+            "n": 28,
+            "ready": false,
+            "upper": 0.5
+          },
+          {
+            "bias_ci95_lower": -0.527970838900181,
+            "bias_ci95_upper": 0.27340023964215615,
+            "bootstrap_reps": 5000,
+            "lower": 0.5,
+            "mean_calibration_bias": -0.12741247961934674,
+            "n": 5,
+            "ready": false,
+            "upper": 0.6
+          },
+          {
+            "bias_ci95_lower": null,
+            "bias_ci95_upper": null,
+            "bootstrap_reps": 0,
+            "lower": 0.6000000000000001,
+            "mean_calibration_bias": 0.3983015193689784,
+            "n": 1,
+            "ready": false,
+            "upper": 0.7000000000000001
+          }
+        ],
+        "min_bucket_n": 80,
+        "min_market_n": 400,
+        "n": 88,
+        "ready_cells": 0,
+        "status": "COLLECTING"
+      },
+      "TOTAL_OVER": {
+        "cells": [
+          {
+            "bias_ci95_lower": 0.60810246892489,
+            "bias_ci95_upper": 0.6353666311618311,
+            "bootstrap_reps": 5000,
+            "lower": 0.30000000000000004,
+            "mean_calibration_bias": 0.6217345500433605,
+            "n": 2,
+            "ready": false,
+            "upper": 0.4
+          },
+          {
+            "bias_ci95_lower": -0.20746774144313687,
+            "bias_ci95_upper": 0.2918197819292841,
+            "bootstrap_reps": 5000,
+            "lower": 0.4,
+            "mean_calibration_bias": 0.04213128496398247,
+            "n": 16,
+            "ready": false,
+            "upper": 0.5
+          },
+          {
+            "bias_ci95_lower": -0.1312569570697729,
+            "bias_ci95_upper": 0.15997633250669896,
+            "bootstrap_reps": 5000,
+            "lower": 0.5,
+            "mean_calibration_bias": 0.015187646069157562,
+            "n": 42,
+            "ready": false,
+            "upper": 0.6
+          },
+          {
+            "bias_ci95_lower": -0.3284103744534364,
+            "bias_ci95_upper": 0.05725217842580649,
+            "bootstrap_reps": 5000,
+            "lower": 0.6000000000000001,
+            "mean_calibration_bias": -0.1354671864879653,
+            "n": 26,
+            "ready": false,
+            "upper": 0.7000000000000001
+          },
+          {
+            "bias_ci95_lower": -0.700417883177128,
+            "bias_ci95_upper": 0.2981776397275776,
+            "bootstrap_reps": 5000,
+            "lower": 0.7000000000000001,
+            "mean_calibration_bias": -0.20112012172477522,
+            "n": 2,
+            "ready": false,
+            "upper": 0.8
+          }
+        ],
+        "min_bucket_n": 80,
+        "min_market_n": 400,
+        "n": 88,
         "ready_cells": 0,
         "status": "COLLECTING"
       }
@@ -395,61 +425,61 @@
             "upper": 0.4
           },
           {
-            "bias_ci95_lower": -0.1396636608725786,
-            "bias_ci95_upper": 0.1930679934064466,
+            "bias_ci95_lower": -0.14907482317583862,
+            "bias_ci95_upper": 0.18540179829890804,
             "bootstrap_reps": 5000,
             "lower": 0.4,
-            "mean_calibration_bias": 0.027613437614727055,
-            "n": 31,
+            "mean_calibration_bias": 0.011997886724246194,
+            "n": 32,
             "ready": false,
             "upper": 0.5
           },
           {
-            "bias_ci95_lower": -0.22241162752784882,
-            "bias_ci95_upper": 0.10031775096785238,
+            "bias_ci95_lower": -0.2414957211618463,
+            "bias_ci95_upper": 0.07043737581273223,
             "bootstrap_reps": 5000,
             "lower": 0.5,
-            "mean_calibration_bias": -0.06014337880883331,
-            "n": 37,
+            "mean_calibration_bias": -0.08473452849840547,
+            "n": 39,
             "ready": false,
             "upper": 0.6
           },
           {
-            "bias_ci95_lower": -0.36969449409751576,
-            "bias_ci95_upper": 0.16361859872634027,
+            "bias_ci95_lower": -0.3253952161404266,
+            "bias_ci95_upper": 0.17773056385649708,
             "bootstrap_reps": 5000,
             "lower": 0.6000000000000001,
-            "mean_calibration_bias": -0.10257708081612786,
-            "n": 15,
+            "mean_calibration_bias": -0.07335311856561647,
+            "n": 16,
             "ready": false,
             "upper": 0.7000000000000001
           }
         ],
         "min_bucket_n": 80,
         "min_market_n": 400,
-        "n": 88,
+        "n": 92,
         "ready_cells": 0,
         "status": "COLLECTING"
       },
       "RL_AWAY_-1.5": {
         "cells": [
           {
-            "bias_ci95_lower": -0.04298183002705989,
-            "bias_ci95_upper": 0.3161501646570167,
+            "bias_ci95_lower": -0.050448418743920635,
+            "bias_ci95_upper": 0.297058616188466,
             "bootstrap_reps": 5000,
             "lower": 0.2,
-            "mean_calibration_bias": 0.13621154722121281,
-            "n": 28,
+            "mean_calibration_bias": 0.12369390460790647,
+            "n": 29,
             "ready": false,
             "upper": 0.30000000000000004
           },
           {
-            "bias_ci95_lower": -0.1417399738881517,
-            "bias_ci95_upper": 0.1577823056466302,
+            "bias_ci95_lower": -0.09293660192212233,
+            "bias_ci95_upper": 0.19709710959728657,
             "bootstrap_reps": 5000,
             "lower": 0.30000000000000004,
-            "mean_calibration_bias": 0.005243369763624037,
-            "n": 40,
+            "mean_calibration_bias": 0.051083189771623495,
+            "n": 43,
             "ready": false,
             "upper": 0.4
           },
@@ -476,7 +506,7 @@
         ],
         "min_bucket_n": 80,
         "min_market_n": 400,
-        "n": 88,
+        "n": 92,
         "ready_cells": 0,
         "status": "COLLECTING"
       },
@@ -493,22 +523,22 @@
             "upper": 0.30000000000000004
           },
           {
-            "bias_ci95_lower": -0.10888609937439676,
-            "bias_ci95_upper": 0.1886904958211714,
+            "bias_ci95_lower": -0.11993993196826698,
+            "bias_ci95_upper": 0.16749500842032922,
             "bootstrap_reps": 5000,
             "lower": 0.30000000000000004,
-            "mean_calibration_bias": 0.03881172920544597,
-            "n": 41,
+            "mean_calibration_bias": 0.020539640877646974,
+            "n": 43,
             "ready": false,
             "upper": 0.4
           },
           {
-            "bias_ci95_lower": -0.2434407297503779,
-            "bias_ci95_upper": 0.13825948359403137,
+            "bias_ci95_lower": -0.2614433977595957,
+            "bias_ci95_upper": 0.0959008761029851,
             "bootstrap_reps": 5000,
             "lower": 0.4,
-            "mean_calibration_bias": -0.055760428643334886,
-            "n": 26,
+            "mean_calibration_bias": -0.08336671528520034,
+            "n": 28,
             "ready": false,
             "upper": 0.5
           },
@@ -525,7 +555,7 @@
         ],
         "min_bucket_n": 80,
         "min_market_n": 400,
-        "n": 88,
+        "n": 92,
         "ready_cells": 0,
         "status": "COLLECTING"
       },
@@ -542,12 +572,12 @@
             "upper": 0.30000000000000004
           },
           {
-            "bias_ci95_lower": null,
-            "bias_ci95_upper": null,
-            "bootstrap_reps": 0,
+            "bias_ci95_lower": -0.3976880547289743,
+            "bias_ci95_upper": 0.665430980348191,
+            "bootstrap_reps": 5000,
             "lower": 0.30000000000000004,
-            "mean_calibration_bias": 0.665430980348191,
-            "n": 1,
+            "mean_calibration_bias": 0.13387146280960838,
+            "n": 2,
             "ready": false,
             "upper": 0.4
           },
@@ -562,12 +592,12 @@
             "upper": 0.5
           },
           {
-            "bias_ci95_lower": -0.18333508260235667,
-            "bias_ci95_upper": 0.11097735713668633,
+            "bias_ci95_lower": -0.19853128807877207,
+            "bias_ci95_upper": 0.10619784884138869,
             "bootstrap_reps": 5000,
             "lower": 0.5,
-            "mean_calibration_bias": -0.03530517261252066,
-            "n": 42,
+            "mean_calibration_bias": -0.04722276137942887,
+            "n": 45,
             "ready": false,
             "upper": 0.6
           },
@@ -594,7 +624,7 @@
         ],
         "min_bucket_n": 80,
         "min_market_n": 400,
-        "n": 88,
+        "n": 92,
         "ready_cells": 0,
         "status": "COLLECTING"
       }
