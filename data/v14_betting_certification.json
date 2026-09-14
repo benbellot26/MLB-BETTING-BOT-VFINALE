@@ -2,20 +2,19 @@
   "betting_status": "RESEARCH_ONLY",
   "certified": false,
   "evidence_age_hours": {
-    "calibration_observation": 12.198684844722223,
-    "calibration_report": 0.001504915,
-    "paper_report": 0.0016348,
-    "performance_observation": 206.1986848447222,
-    "performance_report": 2.478861111111111e-05,
-    "primary_sharp_benchmark_report": 0.0002805922222222222
+    "calibration_observation": 16.63290416638889,
+    "calibration_report": 0.0025391502777777778,
+    "paper_report": 0.0027233783333333334,
+    "performance_observation": 19.799570833055554,
+    "performance_report": 5.661777777777778e-05,
+    "primary_sharp_benchmark_report": 0.0004156436111111111
   },
-  "generated_at": "2026-09-13T13:51:55.265441+00:00",
+  "generated_at": "2026-09-14T15:57:58.454999+00:00",
   "legacy_evidence_can_certify": false,
   "markets": {
     "ML": {
       "betting_certified": false,
       "betting_failures": [
-        "latest_scheduled_final_performance_observation_stale>72h",
         "scheduled_final_games<600",
         "n<400",
         "sharp_paired_n<400",
@@ -38,9 +37,8 @@
       "calibration_evidence_source": "SCHEDULED_FINAL_PUBLISHED_PROBABILITY",
       "calibration_key": "SCHEDULED_FINAL_PUBLISHED_PROBABILITY",
       "calibration_status": "DIRECT_PROSPECTIVE_ECE",
-      "ece": 0.045717507047172874,
+      "ece": 0.048282263883639924,
       "failures": [
-        "latest_scheduled_final_performance_observation_stale>72h",
         "scheduled_final_games<600",
         "n<400",
         "sharp_paired_n<400",
@@ -49,7 +47,7 @@
         "pinnacle_final_brier_bootstrap_ci95_not_positive",
         "pinnacle_final_logloss_bootstrap_ci95_regression"
       ],
-      "n": 35,
+      "n": 37,
       "paper_certification_clv": {
         "benchmark": "PINNACLE_NO_VIG",
         "bootstrap_reps": 0,
@@ -80,40 +78,40 @@
       "paper_latest_primary_close_at": "2026-09-04T23:09:10.674389+00:00",
       "primary_sharp_bootstrap": {
         "brier_gain": {
-          "ci95_lower": -0.017121769497890377,
-          "ci95_upper": 0.013953841742472895,
+          "ci95_lower": -0.017891441356855727,
+          "ci95_upper": 0.011418181366193735,
           "deterministic_seed": true,
-          "mean": -0.0019191664305966635,
+          "mean": -0.0031425963958079213,
           "method": "paired nonparametric bootstrap mean",
-          "n": 35,
+          "n": 37,
           "reps": 5000
         },
         "calendar_block_brier_gain": {
-          "blocks": 5,
-          "ci95_lower": -0.01202053682640779,
-          "ci95_upper": 0.01293112789401286,
+          "blocks": 6,
+          "ci95_lower": -0.014040251688523457,
+          "ci95_upper": 0.011166422044970255,
           "deterministic_seed": true,
-          "mean": -0.0019191664305966635,
+          "mean": -0.0031425963958079213,
           "method": "calendar-block nonparametric bootstrap mean",
-          "n": 35,
+          "n": 37,
           "reps": 5000
         },
         "logloss_gain": {
-          "ci95_lower": -0.03574647611772832,
-          "ci95_upper": 0.028816014972731317,
+          "ci95_lower": -0.036036761105425204,
+          "ci95_upper": 0.025587060876607528,
           "deterministic_seed": true,
-          "mean": -0.003551496694445117,
+          "mean": -0.006052389975189794,
           "method": "paired nonparametric bootstrap mean",
-          "n": 35,
+          "n": 37,
           "reps": 5000
         },
         "model_metrics": {
-          "brier": 0.24435566089119085,
-          "ece": 0.045717507047172874,
-          "logloss": 0.6819993230330997,
-          "n": 35
+          "brier": 0.24872968836977757,
+          "ece": 0.048282263883639924,
+          "logloss": 0.6907959104712642,
+          "n": 37
         },
-        "paired_n": 35
+        "paired_n": 37
       },
       "probability_certified": false,
       "probability_status": "PROBABILITY_RESEARCH",
@@ -122,7 +120,6 @@
     "RL_AWAY_-1.5": {
       "betting_certified": false,
       "betting_failures": [
-        "latest_scheduled_final_performance_observation_stale>72h",
         "scheduled_final_games<600",
         "n<400",
         "ece>0.05_or_missing",
@@ -149,9 +146,8 @@
       "calibration_evidence_source": "SCHEDULED_FINAL_PUBLISHED_PROBABILITY",
       "calibration_key": "SCHEDULED_FINAL_PUBLISHED_PROBABILITY",
       "calibration_status": "DIRECT_PROSPECTIVE_ECE",
-      "ece": 0.06755677231103321,
+      "ece": 0.059910543848188086,
       "failures": [
-        "latest_scheduled_final_performance_observation_stale>72h",
         "scheduled_final_games<600",
         "n<400",
         "ece>0.05_or_missing",
@@ -162,7 +158,7 @@
         "pinnacle_final_brier_bootstrap_ci95_not_positive",
         "pinnacle_final_logloss_bootstrap_ci95_regression"
       ],
-      "n": 35,
+      "n": 37,
       "paper_certification_clv": {},
       "paper_execution_clv": {},
       "paper_latest_certified_close_at": null,
@@ -170,40 +166,40 @@
       "paper_latest_primary_close_at": null,
       "primary_sharp_bootstrap": {
         "brier_gain": {
-          "ci95_lower": -0.0478498752130443,
-          "ci95_upper": 0.007371678610779242,
+          "ci95_lower": -0.04499080273319696,
+          "ci95_upper": 0.006158119228555224,
           "deterministic_seed": true,
-          "mean": -0.018634105081046702,
+          "mean": -0.017664141082053057,
           "method": "paired nonparametric bootstrap mean",
-          "n": 14,
+          "n": 15,
           "reps": 5000
         },
         "calendar_block_brier_gain": {
-          "blocks": 5,
-          "ci95_lower": -0.057979482808611996,
-          "ci95_upper": 0.007994752771785138,
+          "blocks": 6,
+          "ci95_lower": -0.051767253568098276,
+          "ci95_upper": 0.007758498984291212,
           "deterministic_seed": true,
-          "mean": -0.018634105081046702,
+          "mean": -0.017664141082053057,
           "method": "calendar-block nonparametric bootstrap mean",
-          "n": 14,
+          "n": 15,
           "reps": 5000
         },
         "logloss_gain": {
-          "ci95_lower": -0.10357927320492957,
-          "ci95_upper": 0.018320584731224734,
+          "ci95_lower": -0.09643655509657865,
+          "ci95_upper": 0.016865988020274447,
           "deterministic_seed": true,
-          "mean": -0.03912983257792444,
+          "mean": -0.037074435406303424,
           "method": "paired nonparametric bootstrap mean",
-          "n": 14,
+          "n": 15,
           "reps": 5000
         },
         "model_metrics": {
-          "brier": 0.2504033077071474,
-          "ece": 0.05036724201637788,
-          "logloss": 0.6950930694335848,
-          "n": 14
+          "brier": 0.24660854466877463,
+          "ece": 0.07633380801101652,
+          "logloss": 0.6873921154441296,
+          "n": 15
         },
-        "paired_n": 14
+        "paired_n": 15
       },
       "probability_certified": false,
       "probability_status": "PROBABILITY_RESEARCH",
@@ -212,7 +208,6 @@
     "RL_HOME_-1.5": {
       "betting_certified": false,
       "betting_failures": [
-        "latest_scheduled_final_performance_observation_stale>72h",
         "scheduled_final_games<600",
         "n<400",
         "ece>0.05_or_missing",
@@ -239,9 +234,8 @@
       "calibration_evidence_source": "SCHEDULED_FINAL_PUBLISHED_PROBABILITY",
       "calibration_key": "SCHEDULED_FINAL_PUBLISHED_PROBABILITY",
       "calibration_status": "DIRECT_PROSPECTIVE_ECE",
-      "ece": 0.11365195109690307,
+      "ece": 0.11075833680362318,
       "failures": [
-        "latest_scheduled_final_performance_observation_stale>72h",
         "scheduled_final_games<600",
         "n<400",
         "ece>0.05_or_missing",
@@ -252,7 +246,7 @@
         "pinnacle_final_brier_bootstrap_ci95_not_positive",
         "pinnacle_final_logloss_bootstrap_ci95_regression"
       ],
-      "n": 35,
+      "n": 37,
       "paper_certification_clv": {},
       "paper_execution_clv": {},
       "paper_latest_certified_close_at": null,
@@ -260,40 +254,40 @@
       "paper_latest_primary_close_at": null,
       "primary_sharp_bootstrap": {
         "brier_gain": {
-          "ci95_lower": -0.01751265383588094,
-          "ci95_upper": 0.014125614253542423,
+          "ci95_lower": -0.019297027973776082,
+          "ci95_upper": 0.011704046685294203,
           "deterministic_seed": true,
-          "mean": -0.0015652808373700677,
+          "mean": -0.003528183080979537,
           "method": "paired nonparametric bootstrap mean",
-          "n": 21,
+          "n": 22,
           "reps": 5000
         },
         "calendar_block_brier_gain": {
-          "blocks": 5,
-          "ci95_lower": -0.013456371532770909,
-          "ci95_upper": 0.00955129006685853,
+          "blocks": 6,
+          "ci95_lower": -0.018605614142515603,
+          "ci95_upper": 0.00669337321087764,
           "deterministic_seed": true,
-          "mean": -0.0015652808373700677,
+          "mean": -0.003528183080979537,
           "method": "calendar-block nonparametric bootstrap mean",
-          "n": 21,
+          "n": 22,
           "reps": 5000
         },
         "logloss_gain": {
-          "ci95_lower": -0.03593720119091996,
-          "ci95_upper": 0.029365585321151938,
+          "ci95_lower": -0.03987860584431447,
+          "ci95_upper": 0.024432016245256333,
           "deterministic_seed": true,
-          "mean": -0.0032152660350782177,
+          "mean": -0.007310582482086964,
           "method": "paired nonparametric bootstrap mean",
-          "n": 21,
+          "n": 22,
           "reps": 5000
         },
         "model_metrics": {
-          "brier": 0.22370275162401956,
-          "ece": 0.12570879299646337,
-          "logloss": 0.6387494703332786,
-          "n": 21
+          "brier": 0.22185174277246153,
+          "ece": 0.13943849635073757,
+          "logloss": 0.6350881651566856,
+          "n": 22
         },
-        "paired_n": 21
+        "paired_n": 22
       },
       "probability_certified": false,
       "probability_status": "PROBABILITY_RESEARCH",
@@ -302,7 +296,6 @@
     "TOTAL_OVER": {
       "betting_certified": false,
       "betting_failures": [
-        "latest_scheduled_final_performance_observation_stale>72h",
         "scheduled_final_games<600",
         "n<400",
         "ece>0.05_or_missing",
@@ -328,9 +321,8 @@
       "calibration_evidence_source": "SCHEDULED_FINAL_PUBLISHED_PROBABILITY",
       "calibration_key": "SCHEDULED_FINAL_PUBLISHED_PROBABILITY",
       "calibration_status": "DIRECT_PROSPECTIVE_ECE",
-      "ece": 0.11846964411958377,
+      "ece": 0.10891050437215923,
       "failures": [
-        "latest_scheduled_final_performance_observation_stale>72h",
         "scheduled_final_games<600",
         "n<400",
         "ece>0.05_or_missing",
@@ -341,7 +333,7 @@
         "pinnacle_final_brier_bootstrap_ci95_not_positive",
         "pinnacle_final_logloss_bootstrap_ci95_regression"
       ],
-      "n": 35,
+      "n": 37,
       "paper_certification_clv": {
         "benchmark": "PINNACLE_NO_VIG",
         "bootstrap_reps": 0,
@@ -484,7 +476,6 @@
   "probability_policy_id": "pulsar-v14-probability-policy-v1",
   "probability_reasons": [
     "ece>0.05_or_missing",
-    "latest_scheduled_final_performance_observation_stale>72h",
     "n<400",
     "pinnacle_final_brier_bootstrap_ci95_not_positive",
     "pinnacle_final_logloss_bootstrap_ci95_regression",
@@ -505,7 +496,6 @@
     "TOTAL_OVER_latest_execution_close_missing_or_invalid",
     "TOTAL_OVER_latest_primary_close_missing_or_invalid",
     "ece>0.05_or_missing",
-    "latest_scheduled_final_performance_observation_stale>72h",
     "n<400",
     "paper_certification_clv_benchmark_mismatch",
     "paper_certification_clv_ci95_missing",
