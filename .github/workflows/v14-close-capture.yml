@@ -53,6 +53,7 @@ jobs:
             v14/component_close_capture.py \
             v14/sharp_market.py \
             v14/api_budget.py \
+            v14/odds_quota_probe.py \
             v14/cost_aware_close_capture.py \
             v14/state_branch.py
 
@@ -72,13 +73,17 @@ jobs:
           V14_MAX_ALL_ODDS_CREDITS_PER_UTC_MONTH: '450'
           V14_ODDS_PROVIDER_EMERGENCY_RESERVE_CREDITS: '50'
         run: |
-          # cost_aware_close_capture writes the reservation locally, persists that
-          # exact ledger to runtime-data, and only then may call The Odds API.
+          # The local close planner runs first. Only when a paid close is actually
+          # imminent does cost_aware_close_capture refresh provider quota through
+          # the zero-credit /sports endpoint. It records the fresh attestation,
+          # writes the paid reservation locally, persists that exact ledger to
+          # runtime-data, and only then may call the paid Odds endpoint.
           python -m v14.cost_aware_close_capture \
             --market-ledger data/v14_market_close_ledger.jsonl \
             --paper-ledger data/v14_paper_bet_ledger.jsonl \
             --bet-ledger data/v14_bet_ledger.jsonl \
             --api-usage-ledger data/v14_api_usage.jsonl \
+            --refresh-provider-quota-before-paid-reservation \
             --persist-reservation-before-network
 
       - name: Reconcile provider quota and API ledger

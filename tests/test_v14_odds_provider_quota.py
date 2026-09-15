@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import json
 import os
 from pathlib import Path
@@ -15,6 +15,7 @@ from v14.api_budget import (
     record_manual_snapshot,
     record_provider_quota,
 )
+from v14.cost_aware_close_capture import run as close_run
 from v14.odds_quota_probe import probe
 
 
@@ -36,6 +37,7 @@ class FakeResponse:
 
 class V14OddsProviderQuotaTests(unittest.TestCase):
     def _state(self,path:Path,*,remaining:int,used:int=0,last:int=3,captured_at:str="2026-09-01T10:00:00+00:00")->None:
+        path.parent.mkdir(parents=True,exist_ok=True)
         path.write_text(json.dumps({
             "schema":"pulsar-v14-odds-provider-quota-v1",
             "captured_at":captured_at,
@@ -45,6 +47,19 @@ class V14OddsProviderQuotaTests(unittest.TestCase):
             "last_request_credit_cost":last,
             "credentials_persisted":False,
         }),encoding="utf-8")
+
+    def _due_market(self,path:Path,*,now:datetime)->None:
+        row={
+            "schema":"pulsar-v14-market-close-v1",
+            "game_pk":"1",
+            "target_date":"2026-09-01",
+            "game_date":(now+timedelta(minutes=10)).isoformat(),
+            "odds_event_id":"event-1",
+            "odds_event_time_verified":True,
+            "close_history":[],
+            "best_close":None,
+        }
+        path.write_text(json.dumps(row)+"\n",encoding="utf-8")
 
     def test_response_headers_are_persisted_without_credentials(self)->None:
         with TemporaryDirectory() as tmp:
@@ -118,6 +133,87 @@ class V14OddsProviderQuotaTests(unittest.TestCase):
             first=record_provider_quota(ledger,state_path=state,now=now);second=record_provider_quota(ledger,state_path=state,now=now)
             self.assertTrue(first["recorded"]);self.assertFalse(second["recorded"])
             self.assertEqual(len(ledger.read_text(encoding="utf-8").splitlines()),1)
+
+    def test_close_refreshes_provider_quota_just_in_time_before_paid_reservation(self)->None:
+        now=datetime(2026,9,1,18,0,tzinfo=timezone.utc)
+        with TemporaryDirectory() as tmp, patch.dict(os.environ,ENV,clear=False):
+            root=Path(tmp);market=root/"market.jsonl";paper=root/"paper.jsonl";bet=root/"bet.jsonl";ledger=root/"usage.jsonl";state=root/"quota.json"
+            self._due_market(market,now=now);calls={"probe":0,"paid":0}
+
+            def quota_probe(*,api_key:str|None=None,state_path:Path|str)->dict:
+                calls["probe"]+=1
+                self.assertEqual(api_key,"top-secret")
+                self._state(Path(state_path),remaining=53,used=447,last=0,captured_at=now.isoformat())
+                return {"provider_credit_cost":0,"quota":{"credits_remaining_until_provider_reset":53}}
+
+            def paid_loader()->list[dict]:
+                calls["paid"]+=1
+                return []
+
+            out=close_run(
+                market,paper,bet,
+                api_usage_path=ledger,
+                api_key="top-secret",
+                events_loader=paid_loader,
+                now=now,
+                refresh_provider_quota_before_paid_reservation=True,
+                provider_state_path=state,
+                provider_quota_probe=quota_probe,
+            )
+            self.assertTrue(out["api_call_performed"]);self.assertTrue(out["budget_reserved"])
+            self.assertTrue(out["provider_quota_refreshed"])
+            self.assertEqual(calls,{"probe":1,"paid":1})
+            self.assertTrue(out["budget_before"]["provider_guard"]["fresh"])
+            self.assertTrue(out["provider_quota_refresh"]["attestation"]["recorded"])
+            self.assertNotIn("top-secret",ledger.read_text(encoding="utf-8"))
+
+    def test_close_fails_closed_after_fresh_provider_quota_blocks_reserve(self)->None:
+        now=datetime(2026,9,1,18,0,tzinfo=timezone.utc)
+        with TemporaryDirectory() as tmp, patch.dict(os.environ,ENV,clear=False):
+            root=Path(tmp);market=root/"market.jsonl";paper=root/"paper.jsonl";bet=root/"bet.jsonl";ledger=root/"usage.jsonl";state=root/"quota.json"
+            self._due_market(market,now=now);called={"paid":0}
+
+            def quota_probe(*,api_key:str|None=None,state_path:Path|str)->dict:
+                self._state(Path(state_path),remaining=52,used=448,last=0,captured_at=now.isoformat())
+                return {"provider_credit_cost":0,"quota":{"credits_remaining_until_provider_reset":52}}
+
+            def paid_loader()->list[dict]:
+                called["paid"]+=1
+                return []
+
+            out=close_run(
+                market,paper,bet,
+                api_usage_path=ledger,
+                events_loader=paid_loader,
+                now=now,
+                refresh_provider_quota_before_paid_reservation=True,
+                provider_state_path=state,
+                provider_quota_probe=quota_probe,
+            )
+            self.assertFalse(out["api_call_performed"]);self.assertFalse(out["budget_reserved"])
+            self.assertTrue(out["provider_quota_refreshed"]);self.assertTrue(out["budget_exhausted"])
+            self.assertEqual(called["paid"],0)
+            self.assertEqual(out["budget"]["provider_guard"]["status"],"PROVIDER_RESERVE_REACHED")
+            self.assertIn("fresh zero-credit provider quota guard blocked",out["reason"])
+            kinds=[json.loads(line)["kind"] for line in ledger.read_text(encoding="utf-8").splitlines()]
+            self.assertEqual(kinds,["ODDS_PROVIDER_QUOTA_ATTESTATION"])
+
+    def test_close_does_not_probe_provider_when_no_paid_close_is_due(self)->None:
+        now=datetime(2026,9,1,18,0,tzinfo=timezone.utc)
+        with TemporaryDirectory() as tmp, patch.dict(os.environ,ENV,clear=False):
+            root=Path(tmp);market=root/"market.jsonl";paper=root/"paper.jsonl";bet=root/"bet.jsonl";ledger=root/"usage.jsonl";state=root/"quota.json"
+            def should_not_probe(**_kwargs)->dict:
+                raise AssertionError("zero-credit provider probe should only run when a paid close is imminent")
+            out=close_run(
+                market,paper,bet,
+                api_usage_path=ledger,
+                now=now,
+                refresh_provider_quota_before_paid_reservation=True,
+                provider_state_path=state,
+                provider_quota_probe=should_not_probe,
+            )
+            self.assertFalse(out["api_call_performed"])
+            self.assertFalse(state.exists())
 
 
 if __name__=="__main__":unittest.main()

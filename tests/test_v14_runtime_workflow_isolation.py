@@ -27,6 +27,17 @@ class V14RuntimeWorkflowIsolationTests(unittest.TestCase):
         self.assertLess(production.index('v14.state_branch hydrate'), production.index('Resolve manual or objective scheduled FINAL gate'))
         self.assertLess(close.index('v14.state_branch hydrate'), close.index('Bootstrap tracked games from persisted predictions'))
 
+    def test_close_capture_requires_just_in_time_zero_credit_provider_refresh(self) -> None:
+        close = Path('.github/workflows/v14-close-capture.yml').read_text(encoding='utf-8')
+        self.assertIn('v14/odds_quota_probe.py', close)
+        self.assertIn('--refresh-provider-quota-before-paid-reservation', close)
+        self.assertIn('--persist-reservation-before-network', close)
+        self.assertLess(
+            close.index('--refresh-provider-quota-before-paid-reservation'),
+            close.index('--persist-reservation-before-network'),
+        )
+        self.assertIn('Only when a paid close is actually', close)
+
     def test_statcast_daily_persist_does_not_require_optional_shadow_files(self) -> None:
         workflow = Path('.github/workflows/v14-statcast-refresh.yml').read_text(encoding='utf-8')
         start = workflow.index('- name: Persist Statcast production and available shadow state on runtime-data')
