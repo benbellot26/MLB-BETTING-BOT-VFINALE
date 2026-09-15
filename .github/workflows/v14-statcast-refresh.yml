@@ -83,11 +83,28 @@ jobs:
             --window60 data/v14_statcast_priors_60d_shadow.json.gz \
             --output data/v14_statcast_multiwindow_shadow.json
 
-      - name: Persist Statcast production and shadow state on runtime-data
+      - name: Persist Statcast production and available shadow state on runtime-data
         run: |
+          set -euo pipefail
+          # Production priors are refreshed every run and must never depend on
+          # optional Tue/Fri multi-window shadow artifacts being present.
           python -m v14.state_branch persist \
-            --manifest research/v14_runtime_reference_paths.txt \
-            --message 'data: refresh V14 Statcast production and multi-window shadow [skip ci]'
+            --path data/v14_statcast_priors_latest.json.gz \
+            --path data/v14_statcast_priors_report.json \
+            --message 'data: refresh V14 Statcast production priors [skip ci]'
+
+          DOW=$(date -u +%u)
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "$DOW" != "2" ] && [ "$DOW" != "5" ]; then
+            echo 'PULSAR_V14_MULTIWINDOW_PERSIST_NOOP optional shadow artifacts were not refreshed today'
+            exit 0
+          fi
+
+          python -m v14.state_branch persist \
+            --path data/v14_statcast_priors_14d_shadow.json.gz \
+            --path data/v14_statcast_priors_30d_shadow.json.gz \
+            --path data/v14_statcast_priors_60d_shadow.json.gz \
+            --path data/v14_statcast_multiwindow_shadow.json \
+            --message 'data: refresh V14 Statcast multi-window shadow [skip ci]'
 
       - name: Archive refresh evidence
         if: always()
