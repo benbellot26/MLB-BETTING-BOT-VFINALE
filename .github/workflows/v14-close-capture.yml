@@ -63,7 +63,7 @@ jobs:
             --predictions data/v14_predictions.jsonl \
             --ledger data/v14_market_close_ledger.jsonl
 
-      - name: Capture closes with just-in-time provider refresh and durable pre-network reservation
+      - name: Capture closes with durable pre-network reservation when due
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           V14_MAX_PAID_PREDICTION_SNAPSHOTS_PER_SLATE: '4'
