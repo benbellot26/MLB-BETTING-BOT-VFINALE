@@ -12,10 +12,17 @@ independent and immutable. One paid snapshot is shared across exact due event
 IDs and every consumer; legacy rows without event IDs can preserve the old gate
 contract but never receive another event by accident.
 
+Close-cluster selection now prioritizes certification evidence before generic
+market archives: PAPER PRIMARY first, then all PRIMARY, then EXECUTION,
+certification-relevant games, and only then raw unique-game coverage. This keeps
+the one-close-per-slate cost policy while preventing a due certification close
+from being sacrificed merely for a larger future archive-only cluster.
+
 The close reservation is created before the paid call. Production CLI execution
-can additionally persist that reservation to ``runtime-data`` through a hook;
-if persistence fails, the Odds call is never attempted. This closes the crash
-window that could otherwise create an uncounted retry.
+can additionally refresh provider quota through the zero-credit endpoint only
+when a paid close is actually imminent, record that attestation locally, and
+persist the reservation to ``runtime-data`` through a hook. If quota refresh or
+reservation persistence fails, the paid Odds call is never attempted.
 """
 
 import argparse
@@ -25,7 +32,13 @@ from pathlib import Path
 from typing import Any, Callable
 
 from .acquisition import odds_snapshot, parse_time
-from .api_budget import LEDGER as API_USAGE_LEDGER, allowance as api_allowance, record_close_snapshot
+from .api_budget import (
+    LEDGER as API_USAGE_LEDGER,
+    PROVIDER_STATE as API_PROVIDER_STATE,
+    allowance as api_allowance,
+    record_close_snapshot,
+    record_provider_quota,
+)
 from .bet_ledger import LEDGER as BET_LEDGER
 from .component_close_capture import (
     EXECUTION,
@@ -37,6 +50,7 @@ from .component_close_capture import (
     paper_component_needs,
 )
 from .market_close_ledger import LEDGER as MARKET_LEDGER, _read as read_market, capture as capture_market
+from .odds_quota_probe import probe as probe_provider_quota
 from .paper_ledger import LEDGER as PAPER_LEDGER
 
 CERTIFIED_DUE_WINDOW_MINUTES=15.0
@@ -47,6 +61,7 @@ capture_paper=capture_paper_components
 capture_official=capture_official_components
 hydrate_first_paper=hydrate_paper_components
 ReservationHook=Callable[[dict[str,Any]],None]
+ProviderQuotaProbe=Callable[...,dict[str,Any]]
 
 
 def _current(now:datetime|None=None)->datetime:
@@ -124,6 +139,15 @@ def _cluster_key(row:dict[str,Any])->str:
     return f"legacy:{row.get('game_pk') or ''}"
 
 
+def _cluster_priority(visible:list[dict[str,Any]])->tuple[int,int,int,int,int]:
+    paper_primary=sum(row["source"]=="PAPER" and PRIMARY in (row.get("needs") or []) for row in visible)
+    primary=sum(row["source"] in {"PAPER","OFFICIAL"} and PRIMARY in (row.get("needs") or []) for row in visible)
+    execution=sum(row["source"] in {"PAPER","OFFICIAL"} and EXECUTION in (row.get("needs") or []) for row in visible)
+    certification_keys={_cluster_key(row) for row in visible if row["source"] in {"PAPER","OFFICIAL"}}
+    all_keys={_cluster_key(row) for row in visible}
+    return paper_primary,primary,execution,len(certification_keys),len(all_keys)
+
+
 def best_close_cluster(market_path:Path|str=MARKET_LEDGER,paper_path:Path|str=PAPER_LEDGER,bet_path:Path|str=BET_LEDGER,*,now:datetime|None=None)->dict[str,Any]:
     current=_current(now);sources=_source_rows(market_path,paper_path,bet_path);pending=[]
     for source,rows in sources.items():pending.extend(_qualified_rows(rows,current,source,due_only=False))
@@ -137,12 +161,24 @@ def best_close_cluster(market_path:Path|str=MARKET_LEDGER,paper_path:Path|str=PA
         visible=[row for row in pending if 0<(row["game_time"]-candidate).total_seconds()/60.0<=CERTIFIED_DUE_WINDOW_MINUTES]
         if not visible:continue
         keys={_cluster_key(row) for row in visible}
-        evidence=sum(1 for row in visible if row["source"] in {"PAPER","OFFICIAL"} for need in row.get("needs") or [] if need in {PRIMARY,EXECUTION})
-        scored.append((len(keys),evidence,candidate,visible,keys))
+        paper_primary,primary,execution,certification_games,games=_cluster_priority(visible)
+        scored.append((paper_primary,primary,execution,certification_games,games,candidate,visible,keys))
     if not scored:return {"target_at":None,"games":0,"evidence_components":0,"game_keys":[]}
-    max_games=max(row[0] for row in scored);best=[row for row in scored if row[0]==max_games];max_evidence=max(row[1] for row in best);best=[row for row in best if row[1]==max_evidence];games,evidence,target,visible,keys=min(best,key=lambda row:row[2])
+    paper_primary,primary,execution,certification_games,games,target,visible,keys=max(scored,key=lambda row:(row[0],row[1],row[2],row[3],row[4],-row[5].timestamp()))
     target_dates=sorted({str(row.get("target_date") or "") for row in visible if str(row.get("target_date") or "")})
-    return {"target_at":target.isoformat(),"games":games,"evidence_components":evidence,"game_keys":sorted(keys),"target_dates":target_dates,"sources":sorted({row["source"] for row in visible}),"policy":"MAX_UNIQUE_GAMES_THEN_PRIMARY_EXECUTION_COMPONENTS_THEN_EARLIEST"}
+    return {
+        "target_at":target.isoformat(),
+        "games":games,
+        "evidence_components":primary+execution,
+        "paper_primary_components":paper_primary,
+        "primary_components":primary,
+        "execution_components":execution,
+        "certification_games":certification_games,
+        "game_keys":sorted(keys),
+        "target_dates":target_dates,
+        "sources":sorted({row["source"] for row in visible}),
+        "policy":"PAPER_PRIMARY_THEN_PRIMARY_THEN_EXECUTION_THEN_CERTIFICATION_GAMES_THEN_UNIQUE_GAMES_THEN_EARLIEST",
+    }
 
 
 def _events_for_source(events:list[dict[str,Any]],due:list[dict[str,Any]],source:str)->list[dict[str,Any]]:
@@ -164,22 +200,79 @@ def _budget_slate(due:list[dict[str,Any]],current:datetime)->str:
     return current.date().isoformat()
 
 
-def run(market_path:Path|str=MARKET_LEDGER,paper_path:Path|str=PAPER_LEDGER,bet_path:Path|str=BET_LEDGER,*,api_usage_path:Path|str=API_USAGE_LEDGER,api_key:str|None=None,events_loader:Callable[[],list[dict[str,Any]]]|None=None,now:datetime|None=None,reservation_hook:ReservationHook|None=None)->dict[str,Any]:
+def run(
+    market_path:Path|str=MARKET_LEDGER,
+    paper_path:Path|str=PAPER_LEDGER,
+    bet_path:Path|str=BET_LEDGER,
+    *,
+    api_usage_path:Path|str=API_USAGE_LEDGER,
+    api_key:str|None=None,
+    events_loader:Callable[[],list[dict[str,Any]]]|None=None,
+    now:datetime|None=None,
+    reservation_hook:ReservationHook|None=None,
+    refresh_provider_quota_before_paid_reservation:bool=False,
+    provider_state_path:Path|str=API_PROVIDER_STATE,
+    provider_quota_probe:ProviderQuotaProbe|None=None,
+)->dict[str,Any]:
     current=_current(now);hydrated=hydrate_first_paper(market_path,paper_path);due=due_games(market_path,paper_path,bet_path,now=current);plan=best_close_cluster(market_path,paper_path,bet_path,now=current);slate_date=_budget_slate(due,current);budget=api_allowance(api_usage_path,now=current,slate_date=slate_date);component_counts=_component_due_counts(due)
+    base={"captured":{"market":0,"paper":0,"official":0},"hydrated_paper":hydrated,"due_rows":len(due),"component_due_counts":component_counts,"slate_date":slate_date,"budget":budget,"best_close_cluster":plan}
     if not due:
-        return {"api_call_performed":False,"paid_api_snapshots":0,"budget_reserved":False,"captured":{"market":0,"paper":0,"official":0},"hydrated_paper":hydrated,"due_rows":0,"component_due_counts":component_counts,"slate_date":slate_date,"budget":budget,"best_close_cluster":plan,"reason":"no row has a missing certified close component","cost_policy":"one automated close snapshot/MLB slate; local component hydration before any paid call"}
+        return {"api_call_performed":False,"paid_api_snapshots":0,"budget_reserved":False,**base,"reason":"no row has a missing certified close component","cost_policy":"one automated close snapshot/MLB slate; local component hydration before any paid call"}
     if not budget["allowed"]:
-        return {"api_call_performed":False,"paid_api_snapshots":0,"budget_reserved":False,"captured":{"market":0,"paper":0,"official":0},"hydrated_paper":hydrated,"due_rows":len(due),"component_due_counts":component_counts,"due":due,"slate_date":slate_date,"budget":budget,"best_close_cluster":plan,"budget_exhausted":True,"reason":"automated close API budget exhausted; fail closed without network call","cost_policy":"MLB-slate, automated-month, all-paid and provider-reserve guards protect the 500-credit plan"}
+        return {"api_call_performed":False,"paid_api_snapshots":0,"budget_reserved":False,**base,"due":due,"budget_exhausted":True,"reason":"automated close API budget exhausted; fail closed without network call","cost_policy":"MLB-slate, automated-month, all-paid and provider-reserve guards protect the 500-credit plan"}
     target=parse_time(plan["target_at"]) if plan.get("target_at") else current
     if target>current+timedelta(seconds=30):
-        return {"api_call_performed":False,"paid_api_snapshots":0,"budget_reserved":False,"captured":{"market":0,"paper":0,"official":0},"hydrated_paper":hydrated,"due_rows":len(due),"component_due_counts":component_counts,"due":due,"slate_date":slate_date,"budget":budget,"best_close_cluster":plan,"reason":"waiting for larger close cluster before spending the slate close snapshot","cost_policy":"single slate close snapshot is delayed only when a better pending cluster exists"}
+        return {"api_call_performed":False,"paid_api_snapshots":0,"budget_reserved":False,**base,"due":due,"reason":"waiting for larger close cluster before spending the slate close snapshot","cost_policy":"single slate close snapshot prioritizes certification PRIMARY/EXECUTION evidence before archive coverage"}
+
+    provider_refresh=None
+    if refresh_provider_quota_before_paid_reservation:
+        probe=(provider_quota_probe or probe_provider_quota)(api_key=api_key,state_path=provider_state_path)
+        attestation=record_provider_quota(api_usage_path,state_path=provider_state_path,now=current)
+        refreshed_budget=api_allowance(api_usage_path,now=current,slate_date=slate_date)
+        provider_refresh={"probe":probe,"attestation":attestation,"budget_after_refresh":refreshed_budget}
+        if not refreshed_budget["allowed"]:
+            return {
+                "api_call_performed":False,
+                "paid_api_snapshots":0,
+                "budget_reserved":False,
+                **base,
+                "budget":refreshed_budget,
+                "due":due,
+                "provider_quota_refreshed":True,
+                "provider_quota_refresh":provider_refresh,
+                "budget_exhausted":True,
+                "reason":"fresh zero-credit provider quota guard blocked paid close snapshot",
+                "cost_policy":"provider quota is refreshed just-in-time before any paid close reservation",
+            }
+        budget=refreshed_budget
+
     reservation=record_close_snapshot(api_usage_path,now=current,slate_date=slate_date,due_rows=len(due))
     if reservation_hook is not None:reservation_hook(reservation)
     events=(events_loader or (lambda:odds_snapshot(api_key=api_key)))()
     market_events=_events_for_source(events,due,"MARKET");paper_events=_events_for_source(events,due,"PAPER");official_events=_events_for_source(events,due,"OFFICIAL")
     market_changed=capture_market(market_path,api_key=api_key,events_loader=lambda:market_events,now=current);paper_changed=capture_paper(paper_path,api_key=api_key,events_loader=lambda:paper_events,now=current);official_changed=capture_official(path=bet_path,api_key=api_key,events_loader=lambda:official_events,now=current)
     hydrated+=hydrate_first_paper(market_path,paper_path);legacy_due=sum(1 for row in due if not row.get("odds_event_id"))
-    return {"api_call_performed":True,"paid_api_snapshots":1,"budget_reserved":True,"reservation":reservation,"reservation_persisted_before_network":reservation_hook is not None,"captured":{"market":market_changed,"paper":paper_changed,"official":official_changed},"hydrated_paper":hydrated,"due_rows":len(due),"component_due_counts":component_counts,"due":due,"slate_date":slate_date,"best_close_cluster":plan,"legacy_due_without_event_id":legacy_due,"consumer_event_counts":{"market":len(market_events),"paper":len(paper_events),"official":len(official_events)},"budget_before":budget,"budget_after":api_allowance(api_usage_path,now=current,slate_date=slate_date),"cost_policy":"one paid close snapshot/MLB slate shared across exact due events; reservation persisted before network in production CLI; PRIMARY and EXECUTION freeze independently"}
+    return {
+        "api_call_performed":True,
+        "paid_api_snapshots":1,
+        "budget_reserved":True,
+        "reservation":reservation,
+        "reservation_persisted_before_network":reservation_hook is not None,
+        "provider_quota_refreshed":refresh_provider_quota_before_paid_reservation,
+        "provider_quota_refresh":provider_refresh,
+        "captured":{"market":market_changed,"paper":paper_changed,"official":official_changed},
+        "hydrated_paper":hydrated,
+        "due_rows":len(due),
+        "component_due_counts":component_counts,
+        "due":due,
+        "slate_date":slate_date,
+        "best_close_cluster":plan,
+        "legacy_due_without_event_id":legacy_due,
+        "consumer_event_counts":{"market":len(market_events),"paper":len(paper_events),"official":len(official_events)},
+        "budget_before":budget,
+        "budget_after":api_allowance(api_usage_path,now=current,slate_date=slate_date),
+        "cost_policy":"one paid close snapshot/MLB slate shared across exact due events; just-in-time zero-credit provider refresh in production; reservation persisted before network; PRIMARY and EXECUTION freeze independently",
+    }
 
 
 def _runtime_reservation_hook(api_usage_path:Path|str)->ReservationHook:
@@ -193,6 +286,7 @@ def _runtime_reservation_hook(api_usage_path:Path|str)->ReservationHook:
 
 
 def main()->None:
-    parser=argparse.ArgumentParser(description="Ultra-low component-wise V14 certified close capture");parser.add_argument("--market-ledger",default=str(MARKET_LEDGER));parser.add_argument("--paper-ledger",default=str(PAPER_LEDGER));parser.add_argument("--bet-ledger",default=str(BET_LEDGER));parser.add_argument("--api-usage-ledger",default=str(API_USAGE_LEDGER));parser.add_argument("--api-key");parser.add_argument("--persist-reservation-before-network",action="store_true");args=parser.parse_args();hook=_runtime_reservation_hook(args.api_usage_ledger) if args.persist_reservation_before_network else None;print(json.dumps(run(args.market_ledger,args.paper_ledger,args.bet_ledger,api_usage_path=args.api_usage_ledger,api_key=args.api_key,reservation_hook=hook),ensure_ascii=False,sort_keys=True))
+    parser=argparse.ArgumentParser(description="Ultra-low component-wise V14 certified close capture")
+    parser.add_argument("--market-ledger",default=str(MARKET_LEDGER));parser.add_argument("--paper-ledger",default=str(PAPER_LEDGER));parser.add_argument("--bet-ledger",default=str(BET_LEDGER));parser.add_argument("--api-usage-ledger",default=str(API_USAGE_LEDGER));parser.add_argument("--api-key");parser.add_argument("--persist-reservation-before-network",action="store_true");parser.add_argument("--refresh-provider-quota-before-paid-reservation",action="store_true");args=parser.parse_args();hook=_runtime_reservation_hook(args.api_usage_ledger) if args.persist_reservation_before_network else None;print(json.dumps(run(args.market_ledger,args.paper_ledger,args.bet_ledger,api_usage_path=args.api_usage_ledger,api_key=args.api_key,reservation_hook=hook,refresh_provider_quota_before_paid_reservation=args.refresh_provider_quota_before_paid_reservation),ensure_ascii=False,sort_keys=True))
 
 if __name__=="__main__":main()
