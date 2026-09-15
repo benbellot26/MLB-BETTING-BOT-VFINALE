@@ -7,6 +7,7 @@ from tempfile import TemporaryDirectory
 import unittest
 
 from v14.cost_aware_close_capture import best_close_cluster, run as close_run
+from v14.market_close_ledger import PRIMARY_SHARP_BENCHMARK
 from v14.scheduled_prediction_gate import build as prediction_gate
 
 
@@ -16,6 +17,44 @@ def game(game_pk:str,at:datetime)->dict:
         "gameDate":at.isoformat(),
         "status":{"abstractGameState":"Preview","detailedState":"Scheduled"},
         "teams":{"home":{"team":{"name":f"Home {game_pk}"}},"away":{"team":{"name":f"Away {game_pk}"}}},
+    }
+
+
+def market_row(game_pk:str,at:datetime)->dict:
+    return {
+        "schema":"pulsar-v14-market-close-v1",
+        "game_pk":game_pk,
+        "target_date":"2026-09-01",
+        "game_date":at.isoformat(),
+        "odds_event_id":f"event-{game_pk}",
+        "odds_event_time_verified":True,
+        "close_history":[],
+        "best_close":None,
+    }
+
+
+def paper_primary_row(game_pk:str,at:datetime)->dict:
+    return {
+        "game_pk":game_pk,
+        "target_date":"2026-09-01",
+        "game_date":at.isoformat(),
+        "odds_event_id":f"event-{game_pk}",
+        # EXECUTION is complete, so only PRIMARY remains due.
+        "execution_close_odds":2.0,
+        "execution_price_clv_pp":0.0,
+    }
+
+
+def paper_execution_row(game_pk:str,at:datetime)->dict:
+    return {
+        "game_pk":game_pk,
+        "target_date":"2026-09-01",
+        "game_date":at.isoformat(),
+        "odds_event_id":f"event-{game_pk}",
+        # PRIMARY is complete, so only EXECUTION remains due.
+        "certification_clv_benchmark":PRIMARY_SHARP_BENCHMARK,
+        "closing_pinnacle_probability":0.5,
+        "certification_clv_pp":0.0,
     }
 
 
@@ -44,13 +83,11 @@ class V14UltraLowClusterPolicyTests(unittest.TestCase):
             self.assertEqual(set(out["due_game_ids"]),{"2","3","4"})
             self.assertEqual(out["best_slate_cluster"]["policy"],"MAX_GAMES_THEN_CLOSEST_TO_30M_THEN_LATEST")
 
-    def test_close_waits_for_larger_pending_cluster_without_network_call(self) -> None:
+    def test_close_waits_for_larger_pending_archive_cluster_without_network_call(self) -> None:
         now=datetime(2026,9,1,18,0,tzinfo=timezone.utc)
         with TemporaryDirectory() as tmp:
             root=Path(tmp);market=root/"market.jsonl";paper=root/"paper.jsonl";bet=root/"bet.jsonl";usage=root/"usage.jsonl"
-            rows=[]
-            for game_pk,minutes in (("1",10),("2",60),("3",60),("4",60)):
-                rows.append({"schema":"pulsar-v14-market-close-v1","game_pk":game_pk,"target_date":"2026-09-01","game_date":(now+timedelta(minutes=minutes)).isoformat(),"odds_event_id":f"event-{game_pk}","odds_event_time_verified":True,"close_history":[],"best_close":None})
+            rows=[market_row(game_pk,now+timedelta(minutes=minutes)) for game_pk,minutes in (("1",10),("2",60),("3",60),("4",60))]
             market.write_text("".join(json.dumps(row)+"\n" for row in rows),encoding="utf-8")
             plan=best_close_cluster(market,paper,bet,now=now)
             self.assertEqual(plan["games"],3);self.assertEqual(set(plan["game_keys"]),{"event:event-2","event:event-3","event:event-4"})
@@ -64,6 +101,58 @@ class V14UltraLowClusterPolicyTests(unittest.TestCase):
             self.assertFalse(out["api_call_performed"]);self.assertEqual(called["n"],0)
             self.assertEqual(out["slate_date"],"2026-09-01")
             self.assertIn("waiting for larger close cluster",out["reason"])
+
+    def test_due_paper_primary_beats_larger_future_archive_cluster(self) -> None:
+        now=datetime(2026,9,1,18,0,tzinfo=timezone.utc)
+        with TemporaryDirectory() as tmp:
+            root=Path(tmp);market=root/"market.jsonl";paper=root/"paper.jsonl";bet=root/"bet.jsonl";usage=root/"usage.jsonl"
+            market_rows=[market_row(game_pk,now+timedelta(minutes=60)) for game_pk in ("2","3","4")]
+            market.write_text("".join(json.dumps(row)+"\n" for row in market_rows),encoding="utf-8")
+            paper.write_text(json.dumps(paper_primary_row("1",now+timedelta(minutes=10)))+"\n",encoding="utf-8")
+
+            plan=best_close_cluster(market,paper,bet,now=now)
+            self.assertEqual(plan["target_at"],now.isoformat())
+            self.assertEqual(plan["paper_primary_components"],1)
+            self.assertEqual(plan["primary_components"],1)
+            self.assertEqual(plan["execution_components"],0)
+            self.assertEqual(plan["game_keys"],["event:event-1"])
+            self.assertEqual(plan["policy"],"PAPER_PRIMARY_THEN_PRIMARY_THEN_EXECUTION_THEN_CERTIFICATION_GAMES_THEN_UNIQUE_GAMES_THEN_EARLIEST")
+
+            called={"n":0}
+            def loader():
+                called["n"]+=1
+                return []
+            out=close_run(market,paper,bet,api_usage_path=usage,events_loader=loader,now=now)
+            self.assertTrue(out["api_call_performed"])
+            self.assertEqual(called["n"],1)
+            self.assertEqual(out["component_due_counts"]["primary"],1)
+
+    def test_due_paper_execution_beats_larger_future_archive_cluster(self) -> None:
+        now=datetime(2026,9,1,18,0,tzinfo=timezone.utc)
+        with TemporaryDirectory() as tmp:
+            root=Path(tmp);market=root/"market.jsonl";paper=root/"paper.jsonl";bet=root/"bet.jsonl"
+            market_rows=[market_row(game_pk,now+timedelta(minutes=60)) for game_pk in ("2","3","4")]
+            market.write_text("".join(json.dumps(row)+"\n" for row in market_rows),encoding="utf-8")
+            paper.write_text(json.dumps(paper_execution_row("1",now+timedelta(minutes=10)))+"\n",encoding="utf-8")
+
+            plan=best_close_cluster(market,paper,bet,now=now)
+            self.assertEqual(plan["target_at"],now.isoformat())
+            self.assertEqual(plan["primary_components"],0)
+            self.assertEqual(plan["execution_components"],1)
+            self.assertEqual(plan["certification_games"],1)
+            self.assertEqual(plan["game_keys"],["event:event-1"])
+
+    def test_future_primary_can_beat_current_archive_only_close(self) -> None:
+        now=datetime(2026,9,1,18,0,tzinfo=timezone.utc)
+        with TemporaryDirectory() as tmp:
+            root=Path(tmp);market=root/"market.jsonl";paper=root/"paper.jsonl";bet=root/"bet.jsonl"
+            market.write_text(json.dumps(market_row("1",now+timedelta(minutes=10)))+"\n",encoding="utf-8")
+            paper.write_text(json.dumps(paper_primary_row("2",now+timedelta(minutes=60)))+"\n",encoding="utf-8")
+
+            plan=best_close_cluster(market,paper,bet,now=now)
+            self.assertEqual(plan["target_at"],(now+timedelta(minutes=45)).isoformat())
+            self.assertEqual(plan["paper_primary_components"],1)
+            self.assertEqual(plan["game_keys"],["event:event-2"])
 
 
 if __name__=="__main__":unittest.main()
