@@ -1,5 +1,36 @@
 {
   "auto_activation": false,
+  "candidate": {
+    "markets": {
+      "ML": {
+        "brier": 0.2383768473230125,
+        "log_loss": 0.6694478571702993,
+        "n": 213
+      },
+      "RL_AWAY_-1.5": {
+        "brier": 0.21382634967815245,
+        "log_loss": 0.6174606817477718,
+        "n": 213
+      },
+      "RL_HOME_-1.5": {
+        "brier": 0.21906469709910412,
+        "log_loss": 0.6286004510887708,
+        "n": 213
+      },
+      "TOTAL_OVER": {
+        "brier": 0.24614924111835312,
+        "log_loss": 0.6854579162018529,
+        "n": 213
+      }
+    },
+    "overall": {
+      "brier": 0.22935428380465553,
+      "log_loss": 0.6502417265521737,
+      "n": 852
+    },
+    "score_games": 213,
+    "score_nll": 4.835239057681366
+  },
   "candidate_fingerprint": "bd3c867cfaa7cba16484e0a673cbba6cf39f710284cd99c2cc78c7ca50d5df11",
   "candidate_id": "distribution-r33165632253-v1",
   "candidate_parameters": {
@@ -7,14 +38,122 @@
     "environment_sigma": 0.16
   },
   "candidate_source_run_id": 33165632253,
+  "champion": {
+    "markets": {
+      "ML": {
+        "brier": 0.23809483680872465,
+        "log_loss": 0.6688208298302747,
+        "n": 213
+      },
+      "RL_AWAY_-1.5": {
+        "brier": 0.21366751607709975,
+        "log_loss": 0.6170091741346774,
+        "n": 213
+      },
+      "RL_HOME_-1.5": {
+        "brier": 0.21884504946084304,
+        "log_loss": 0.6279405657725384,
+        "n": 213
+      },
+      "TOTAL_OVER": {
+        "brier": 0.2453199567417145,
+        "log_loss": 0.6838097148669131,
+        "n": 213
+      }
+    },
+    "overall": {
+      "brier": 0.22898183977209546,
+      "log_loss": 0.649395071151101,
+      "n": 852
+    },
+    "score_games": 213,
+    "score_nll": 4.8706781316913155
+  },
   "champion_impact": false,
+  "champion_parameters": {
+    "dispersion": 7.5,
+    "environment_sigma": 0.08
+  },
   "evidence_artifact_sha256": "1d8723739e1e67da0fbce287380edca4c05186621e93abf614c232ad667bbf48",
   "evidence_contract": "persisted READY_SHADOW before first pitch; exact candidate_id, candidate_fingerprint, source_run_id and frozen parameters",
   "frozen_at": "2026-08-28T11:08:03.931066+00:00",
-  "games": 198,
+  "games": 213,
+  "market_nonregression": false,
   "minimum_prospective_games": 200,
-  "reason": "insufficient persisted strictly prospective settled shadow games",
+  "note": "PROMOTION_REVIEW is not automatic activation; champion change remains deliberate and versioned.",
+  "paired": {
+    "markets": {
+      "ML": {
+        "brier_gain": {
+          "ci95_lower": -0.001048958483991579,
+          "ci95_upper": 0.00048493745541583927,
+          "mean": -0.0002820105142878699,
+          "n": 213
+        },
+        "logloss_gain": {
+          "ci95_lower": -0.0022654326751407445,
+          "ci95_upper": 0.0010113779950914844,
+          "mean": -0.0006270273400246301,
+          "n": 213
+        },
+        "pushes_excluded": false
+      },
+      "RL_AWAY_-1.5": {
+        "brier_gain": {
+          "ci95_lower": -0.001004336099541814,
+          "ci95_upper": 0.0006866688974364447,
+          "mean": -0.00015883360105268472,
+          "n": 213
+        },
+        "logloss_gain": {
+          "ci95_lower": -0.002618634921877245,
+          "ci95_upper": 0.001715619695688614,
+          "mean": -0.00045150761309431547,
+          "n": 213
+        },
+        "pushes_excluded": false
+      },
+      "RL_HOME_-1.5": {
+        "brier_gain": {
+          "ci95_lower": -0.0009292062979795591,
+          "ci95_upper": 0.000489911021457464,
+          "mean": -0.00021964763826104748,
+          "n": 213
+        },
+        "logloss_gain": {
+          "ci95_lower": -0.0022806434241628556,
+          "ci95_upper": 0.0009608727916981496,
+          "mean": -0.0006598853162323529,
+          "n": 213
+        },
+        "pushes_excluded": false
+      },
+      "TOTAL_OVER": {
+        "brier_gain": {
+          "ci95_lower": -0.003527136736702738,
+          "ci95_upper": 0.001868567983425536,
+          "mean": -0.0008292843766386012,
+          "n": 213
+        },
+        "logloss_gain": {
+          "ci95_lower": -0.007335863594679106,
+          "ci95_upper": 0.004039460924799627,
+          "mean": -0.001648201334939739,
+          "n": 213
+        },
+        "pushes_excluded": true
+      }
+    },
+    "score_nll_gain": {
+      "ci95_lower": 0.005392241109289212,
+      "ci95_upper": 0.06548590691061125,
+      "mean": 0.03543907400995023,
+      "n": 213
+    }
+  },
+  "passes": false,
+  "promotion_gate": "persisted post-freeze native-live n>=200; paired score-NLL CI95 lower >0; each market Brier CI95 >= -0.0015 and LogLoss CI95 >= -0.003",
   "role": "PROMOTION_EVIDENCE_ONLY",
   "schema": "pulsar-v14-historical-distribution-live-validation-v3",
-  "status": "COLLECTING"
+  "status": "REJECTED_NATIVE_LIVE"
 }

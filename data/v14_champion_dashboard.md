@@ -5,21 +5,21 @@
 - Probability policy: `pulsar-v14-probability-policy-v1`
 - Betting status: **RESEARCH_ONLY**
 - Probability status: **PROBABILITY_RESEARCH**
-- Independent current-policy games: **198**
+- Independent current-policy games: **213**
 
 ## Market certification
 
 | Market | Certified | n | ECE | Main blockers |
 |---|---:|---:|---:|---|
-| ML | no | 37 | 0.0483 | scheduled_final_games<600, n<400, sharp_paired_n<400, pinnacle_final_paired_n<400 |
-| RL_AWAY_-1.5 | no | 37 | 0.0599 | scheduled_final_games<600, n<400, ece>0.05_or_missing, sharp_paired_n<400 |
-| RL_HOME_-1.5 | no | 37 | 0.1108 | scheduled_final_games<600, n<400, ece>0.05_or_missing, sharp_paired_n<400 |
-| TOTAL_OVER | no | 37 | 0.1089 | scheduled_final_games<600, n<400, ece>0.05_or_missing, sharp_paired_n<400 |
+| ML | no | 44 | 0.0656 | scheduled_final_games<600, n<400, ece>0.05_or_missing, sharp_paired_n<400 |
+| RL_AWAY_-1.5 | no | 44 | 0.0736 | scheduled_final_games<600, n<400, ece>0.05_or_missing, sharp_paired_n<400 |
+| RL_HOME_-1.5 | no | 44 | 0.0980 | scheduled_final_games<600, n<400, ece>0.05_or_missing, sharp_paired_n<400 |
+| TOTAL_OVER | no | 44 | 0.1459 | scheduled_final_games<600, n<400, ece>0.05_or_missing, sharp_paired_n<400 |
 
 ## Execution / CLV
 
-- Paper observations: **4**
-- Paper independent games: **4**
+- Paper observations: **5**
+- Paper independent games: **5**
 - PRIMARY CLV mean: **—**
 - EXECUTION CLV mean: **—**
 - System-authorized hypothetical bets: **0**
@@ -27,7 +27,7 @@
 
 ## Longitudinal history
 
-- Daily snapshots retained: **14**
+- Daily snapshots retained: **15**
 
 ## Interpretation
 
