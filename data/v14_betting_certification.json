@@ -2,19 +2,20 @@
   "betting_status": "RESEARCH_ONLY",
   "certified": false,
   "evidence_age_hours": {
-    "calibration_observation": 12.102567083888887,
-    "calibration_report": 0.0029955044444444443,
-    "paper_report": 0.003221131944444445,
-    "performance_observation": 62.569233750555554,
-    "performance_report": 4.754527777777778e-05,
-    "primary_sharp_benchmark_report": 0.0005088955555555555
+    "calibration_observation": 11.039320290000001,
+    "calibration_report": 0.0026445491666666665,
+    "paper_report": 0.002854978055555555,
+    "performance_observation": 86.12265362333333,
+    "performance_report": 3.9849722222222223e-05,
+    "primary_sharp_benchmark_report": 0.00045671805555555554
   },
-  "generated_at": "2026-09-18T13:44:09.241502+00:00",
+  "generated_at": "2026-09-19T13:17:21.553044+00:00",
   "legacy_evidence_can_certify": false,
   "markets": {
     "ML": {
       "betting_certified": false,
       "betting_failures": [
+        "latest_scheduled_final_performance_observation_stale>72h",
         "scheduled_final_games<600",
         "n<400",
         "ece>0.05_or_missing",
@@ -41,6 +42,7 @@
       "calibration_status": "DIRECT_PROSPECTIVE_ECE",
       "ece": 0.06559396117410171,
       "failures": [
+        "latest_scheduled_final_performance_observation_stale>72h",
         "scheduled_final_games<600",
         "n<400",
         "ece>0.05_or_missing",
@@ -124,6 +126,7 @@
     "RL_AWAY_-1.5": {
       "betting_certified": false,
       "betting_failures": [
+        "latest_scheduled_final_performance_observation_stale>72h",
         "scheduled_final_games<600",
         "n<400",
         "ece>0.05_or_missing",
@@ -151,6 +154,7 @@
       "calibration_status": "DIRECT_PROSPECTIVE_ECE",
       "ece": 0.07355861439309268,
       "failures": [
+        "latest_scheduled_final_performance_observation_stale>72h",
         "scheduled_final_games<600",
         "n<400",
         "ece>0.05_or_missing",
@@ -234,6 +238,7 @@
     "RL_HOME_-1.5": {
       "betting_certified": false,
       "betting_failures": [
+        "latest_scheduled_final_performance_observation_stale>72h",
         "scheduled_final_games<600",
         "n<400",
         "ece>0.05_or_missing",
@@ -262,6 +267,7 @@
       "calibration_status": "DIRECT_PROSPECTIVE_ECE",
       "ece": 0.09799464247939402,
       "failures": [
+        "latest_scheduled_final_performance_observation_stale>72h",
         "scheduled_final_games<600",
         "n<400",
         "ece>0.05_or_missing",
@@ -322,6 +328,7 @@
     "TOTAL_OVER": {
       "betting_certified": false,
       "betting_failures": [
+        "latest_scheduled_final_performance_observation_stale>72h",
         "scheduled_final_games<600",
         "n<400",
         "ece>0.05_or_missing",
@@ -349,6 +356,7 @@
       "calibration_status": "DIRECT_PROSPECTIVE_ECE",
       "ece": 0.14592761171931828,
       "failures": [
+        "latest_scheduled_final_performance_observation_stale>72h",
         "scheduled_final_games<600",
         "n<400",
         "ece>0.05_or_missing",
@@ -502,6 +510,7 @@
   "probability_policy_id": "pulsar-v14-probability-policy-v1",
   "probability_reasons": [
     "ece>0.05_or_missing",
+    "latest_scheduled_final_performance_observation_stale>72h",
     "n<400",
     "pinnacle_final_brier_bootstrap_ci95_not_positive",
     "pinnacle_final_logloss_bootstrap_ci95_regression",
@@ -522,6 +531,7 @@
     "TOTAL_OVER_latest_execution_close_missing_or_invalid",
     "TOTAL_OVER_latest_primary_close_missing_or_invalid",
     "ece>0.05_or_missing",
+    "latest_scheduled_final_performance_observation_stale>72h",
     "n<400",
     "paper_certification_clv_benchmark_mismatch",
     "paper_certification_clv_ci95_missing",
