@@ -5,7 +5,7 @@
 - Probability policy: `pulsar-v14-probability-policy-v1`
 - Betting status: **RESEARCH_ONLY**
 - Probability status: **PROBABILITY_RESEARCH**
-- Independent current-policy games: **282**
+- Independent current-policy games: **285**
 
 ## Market certification
 
@@ -27,7 +27,7 @@
 
 ## Longitudinal history
 
-- Daily snapshots retained: **20**
+- Daily snapshots retained: **21**
 
 ## Interpretation
 
